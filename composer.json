@@ -1,0 +1,31 @@
+{
+    "name": "heidi/oidc",
+    "description": "OAuth 2.0 and OpenID Connect module of the IdP: clients, authorization requests, grants, tokens, discovery, JWKS, UserInfo, logout. Pure PHP.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "oauth2",
+        "openid-connect",
+        "authorization-server"
+    ],
+    "authors": [
+        {
+            "name": "All contributors"
+        }
+    ],
+    "require": {
+        "php": ">=8.4",
+        "heidi/core": "self.version",
+        "web-token/jwt-library": "^4.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Heidi\\Oidc\\": "src/"
+        }
+    },
+    "extra": {
+        "thanks": {
+            "name": "heidi/framework"
+        }
+    }
+}
