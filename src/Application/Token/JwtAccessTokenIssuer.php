@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use function array_keys;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Key\SignatureAlgorithm;
@@ -26,11 +27,16 @@ use Symfony\Component\Uid\Uuid;
  * from, which is what a logout revokes.
  *
  * Ten minutes, and nothing stored: the token is its own record. The one who knows the user (a UserInfo
- * endpoint, a resource server) reads it and the JWK Set, and asks nothing else of the provider.
+ * endpoint, a resource server) reads it and the JWK Set, and asks nothing else of the provider. That is
+ * why the token also carries "userinfo_claims" (a private claim, RFC 7519 §4.3): the names the client
+ * asked for by "claims.userinfo" (OIDC Core §5.5), which UserInfo serves on top of the scopes and could
+ * not learn otherwise. Absent when nothing was asked; the "id_token" member was answered at issuance.
  */
 final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
 {
     public const string TYPE = 'at+jwt';
+
+    public const string USERINFO_CLAIMS = 'userinfo_claims';
 
     public function __construct(
         private JwsSignerInterface $signer,
@@ -59,6 +65,10 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
         }
         $claims['amr'] = $authorization->authenticationMethods;
         $claims['scope'] = implode(' ', $authorization->scopes);
+        $requested = $authorization->claimsRequest === null ? [] : $authorization->claimsRequest->userinfo;
+        if ($requested !== []) {
+            $claims[self::USERINFO_CLAIMS] = array_keys($requested);
+        }
         $claims['sid'] = $authorization->session->id->toRfc4122();
 
         $jws = $this->signer->sign($authorization->tenant, $this->algorithm, JwtPayload::encode($claims), [
