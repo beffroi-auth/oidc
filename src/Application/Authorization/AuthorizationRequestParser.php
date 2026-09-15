@@ -8,6 +8,7 @@ use function array_any;
 use function count;
 use function explode;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Authorization\CodeChallenge;
@@ -27,9 +28,7 @@ use Heidi\Oidc\Exception\RequestUriNotSupportedException;
 use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use function in_array;
-use function is_string;
 use function preg_match;
-use function sprintf;
 
 /**
  * Reads an authorization request (RFC 6749 §4.1.1, OIDC Core §3.1.2.1) from its parameters, in the two
@@ -41,44 +40,21 @@ use function sprintf;
  *
  * Every parameter is read as a single string: a repeated or nested parameter is refused, a parameter
  * without a value is treated as omitted (RFC 6749 §3.1), an unknown parameter is ignored (same section).
- * Nothing is cast, nothing is defaulted on the client's behalf, and every description is a constant of
- * this class.
+ * Nothing is cast, nothing is defaulted on the client's behalf (RequestParameters), and every
+ * description is a constant of this class.
  */
 final readonly class AuthorizationRequestParser
 {
     /**
-     * RFC 6749 appendix A.5: state = 1*VSCHAR (%x20-7E).
-     */
-    private const string STATE_PATTERN = '/^[\x20-\x7E]+$/';
-
-    /**
-     * A free-text parameter (nonce, login_hint): valid UTF-8 without control characters. A nonce comes
-     * back in a JSON claim, a hint reaches a form; neither has a use for a control character.
-     */
-    private const string TEXT_PATTERN = '/^[^\p{Cc}]+$/u';
-
-    /**
      * OIDC Core §3.1.2.1: max_age is a number of seconds; a decimal integer without sign, bounded so that
      * it stays a PHP integer whatever the platform.
      */
-    private const string MAX_AGE_PATTERN = '/^(?:0|[1-9][0-9]{0,17})$/';
-
-    /**
-     * RFC 5646 §2.1, loosely: a language tag is subtags of one to eight letters or digits joined by
-     * hyphens, the first one letters only. Whether the tag is supported is the integration's concern.
-     */
-    private const string LANGUAGE_TAG_PATTERN = '/^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/';
+    private const string MAX_AGE_PATTERN = '/^(?:0|[1-9][0-9]{0,17})$/D';
 
     /**
      * An acr value is a URI or a name (OIDC Core §2 "acr"): printable ASCII without space.
      */
-    private const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/';
-
-    /**
-     * RFC 7515 §7.1: a compact JWS is three base64url segments; an ID token issued here is always
-     * signed, so the third segment is never empty (OIDC Core §2 forbids "none" for the code flow).
-     */
-    private const string COMPACT_JWS_PATTERN = '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/';
+    private const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
 
     public function __construct(
         private ClientRepositoryInterface $clients,
@@ -95,7 +71,7 @@ final readonly class AuthorizationRequestParser
      */
     public function redirectTarget(Tenant $tenant, array $parameters): RedirectTarget
     {
-        $clientId = self::parameter($parameters, 'client_id', false);
+        $clientId = RequestParameters::single($parameters, 'client_id', false);
         if ($clientId === null) {
             throw new InvalidRequestException('The client_id parameter is missing.');
         }
@@ -103,19 +79,14 @@ final readonly class AuthorizationRequestParser
         if ($client === null) {
             throw new InvalidRequestException('The client is unknown.');
         }
-        $redirectUri = self::parameter($parameters, 'redirect_uri', false);
+        $redirectUri = RequestParameters::single($parameters, 'redirect_uri', false);
         if ($redirectUri === null) {
             throw new InvalidRequestException('The redirect_uri parameter is missing.');
         }
         if (! $client->hasRedirectUri($redirectUri)) {
             throw new InvalidRequestException('The redirect_uri parameter is not registered for this client.');
         }
-        $state = self::parameter($parameters, 'state', false);
-        if ($state !== null && preg_match(self::STATE_PATTERN, $state) !== 1) {
-            throw new InvalidRequestException('The state parameter must be printable ASCII text (RFC 6749 appendix A.5).');
-        }
-
-        return new RedirectTarget($client, new RedirectUri($redirectUri), $state);
+        return new RedirectTarget($client, new RedirectUri($redirectUri), RequestParameters::state($parameters, false));
     }
 
     /**
@@ -129,14 +100,14 @@ final readonly class AuthorizationRequestParser
     public function parse(RedirectTarget $target, array $parameters): AuthorizationRequest
     {
         // OIDC Core §6: a request object would replace the parameters read here; neither form is served
-        if (self::isPresent($parameters, 'request')) {
+        if (RequestParameters::isPresent($parameters, 'request')) {
             throw new RequestNotSupportedException('Request objects are not supported.');
         }
-        if (self::isPresent($parameters, 'request_uri')) {
+        if (RequestParameters::isPresent($parameters, 'request_uri')) {
             throw new RequestUriNotSupportedException('Request URIs are not supported.');
         }
 
-        $responseType = self::parameter($parameters, 'response_type', true);
+        $responseType = RequestParameters::single($parameters, 'response_type', true);
         if ($responseType === null) {
             throw new InvalidRequestException('The response_type parameter is missing.', true);
         }
@@ -144,29 +115,26 @@ final readonly class AuthorizationRequestParser
             throw new UnsupportedResponseTypeException('Only the code response type is supported.');
         }
 
-        $responseMode = self::parameter($parameters, 'response_mode', true);
+        $responseMode = RequestParameters::single($parameters, 'response_mode', true);
         if ($responseMode !== null && $responseMode !== ResponseMode::Query->value) {
             throw new InvalidRequestException('Only the query response mode is supported.', true);
         }
 
-        $scopes = $this->scopes($target, self::parameter($parameters, 'scope', true));
-        $codeChallenge = self::codeChallenge(self::parameter($parameters, 'code_challenge', true), self::parameter($parameters, 'code_challenge_method', true));
+        $scopes = $this->scopes($target, RequestParameters::single($parameters, 'scope', true));
+        $codeChallenge = self::codeChallenge(RequestParameters::single($parameters, 'code_challenge', true), RequestParameters::single($parameters, 'code_challenge_method', true));
 
-        $nonce = self::text($parameters, 'nonce');
-        $prompts = self::prompts(self::parameter($parameters, 'prompt', true));
-        $maxAge = self::parameter($parameters, 'max_age', true);
+        $nonce = RequestParameters::text($parameters, 'nonce', true);
+        $prompts = self::prompts(RequestParameters::single($parameters, 'prompt', true));
+        $maxAge = RequestParameters::single($parameters, 'max_age', true);
         if ($maxAge !== null && preg_match(self::MAX_AGE_PATTERN, $maxAge) !== 1) {
             throw new InvalidRequestException('The max_age parameter must be a non-negative integer.', true);
         }
-        $loginHint = self::text($parameters, 'login_hint');
-        $uiLocales = self::list($parameters, 'ui_locales', self::LANGUAGE_TAG_PATTERN, 'The ui_locales parameter must be a space-separated list of language tags.');
-        $acrValues = self::list($parameters, 'acr_values', self::ACR_VALUE_PATTERN, 'The acr_values parameter must be a space-separated list of printable ASCII values.');
-        $display = self::display(self::parameter($parameters, 'display', true));
-        $idTokenHint = self::parameter($parameters, 'id_token_hint', true);
-        if ($idTokenHint !== null && preg_match(self::COMPACT_JWS_PATTERN, $idTokenHint) !== 1) {
-            throw new InvalidRequestException('The id_token_hint parameter is not a signed compact JWT.', true);
-        }
-        $claims = self::claims(self::parameter($parameters, 'claims', true));
+        $loginHint = RequestParameters::text($parameters, 'login_hint', true);
+        $uiLocales = RequestParameters::uiLocales($parameters, true);
+        $acrValues = RequestParameters::list($parameters, 'acr_values', self::ACR_VALUE_PATTERN, 'The acr_values parameter must be a space-separated list of printable ASCII values.', true);
+        $display = self::display(RequestParameters::single($parameters, 'display', true));
+        $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', true);
+        $claims = self::claims(RequestParameters::single($parameters, 'claims', true));
 
         return new AuthorizationRequest(
             $target->client,
@@ -284,72 +252,5 @@ final readonly class AuthorizationRequestParser
         } catch (InvalidArgumentException) {
             throw new InvalidRequestException('The claims parameter is not a claims request (OIDC Core section 5.5).', true);
         }
-    }
-
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    private static function text(array $parameters, string $name): ?string
-    {
-        $value = self::parameter($parameters, $name, true);
-        if ($value !== null && preg_match(self::TEXT_PATTERN, $value) !== 1) {
-            throw new InvalidRequestException(sprintf('The %s parameter must be text without control characters.', $name), true);
-        }
-
-        return $value;
-    }
-
-    /**
-     * A space-separated list whose every item matches the pattern, in the order given, without repeats.
-     *
-     * @param array<string, mixed> $parameters
-     *
-     * @return list<string>
-     */
-    private static function list(array $parameters, string $name, string $pattern, string $description): array
-    {
-        $value = self::parameter($parameters, $name, true);
-        if ($value === null) {
-            return [];
-        }
-        $items = [];
-        foreach (explode(' ', $value) as $item) {
-            if (preg_match($pattern, $item) !== 1) {
-                throw new InvalidRequestException($description, true);
-            }
-            if (! in_array($item, $items, true)) {
-                $items[] = $item;
-            }
-        }
-
-        return $items;
-    }
-
-    /**
-     * RFC 6749 §3.1: a parameter without a value is treated as omitted, a parameter must not be
-     * included more than once. A value that is not a string (an array, from a repeated or nested
-     * parameter) is refused rather than reduced to one.
-     *
-     * @param array<string, mixed> $parameters
-     */
-    private static function parameter(array $parameters, string $name, bool $redirectable): ?string
-    {
-        $value = $parameters[$name] ?? '';
-        if ($value === '') {
-            return null;
-        }
-        if (! is_string($value)) {
-            throw new InvalidRequestException(sprintf('The %s parameter must be a single string.', $name), $redirectable);
-        }
-
-        return $value;
-    }
-
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    private static function isPresent(array $parameters, string $name): bool
-    {
-        return ($parameters[$name] ?? '') !== '';
     }
 }

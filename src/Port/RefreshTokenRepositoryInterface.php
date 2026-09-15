@@ -36,5 +36,13 @@ interface RefreshTokenRepositoryInterface
      */
     public function findByAuthorizationCode(string $codeHash): array;
 
+    /**
+     * Every token issued in the session, whatever its state: the end of a session revokes them all
+     * (decision 0006, architecture §4.9).
+     *
+     * @return list<RefreshToken>
+     */
+    public function findBySession(Uuid $session): array;
+
     public function save(RefreshToken $token): void;
 }

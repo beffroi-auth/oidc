@@ -40,6 +40,11 @@ final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInte
         return array_values(array_filter($this->tokens, static fn (RefreshToken $token): bool => $token->family->authorizationCodeHash === $codeHash));
     }
 
+    public function findBySession(Uuid $session): array
+    {
+        return array_values(array_filter($this->tokens, static fn (RefreshToken $token): bool => $token->session->id->equals($session)));
+    }
+
     public function save(RefreshToken $token): void
     {
         ++$this->saves;
