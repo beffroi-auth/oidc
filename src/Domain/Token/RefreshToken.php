@@ -6,7 +6,6 @@ namespace Heidi\Oidc\Domain\Token;
 
 use function array_all;
 use function array_any;
-use function base64_encode;
 use DateTimeImmutable;
 use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
@@ -19,9 +18,7 @@ use Heidi\Oidc\Exception\LogicException;
 use function min;
 use function preg_match;
 use function random_bytes;
-use function rtrim;
 use SensitiveParameter;
-use function strtr;
 
 /**
  * A refresh token (RFC 6749 §1.5, §6) as the provider keeps it: the SHA-256 of the opaque value the
@@ -123,7 +120,7 @@ final class RefreshToken
      */
     public static function generate(): string
     {
-        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        return Base64Url::encode(random_bytes(32));
     }
 
     /**

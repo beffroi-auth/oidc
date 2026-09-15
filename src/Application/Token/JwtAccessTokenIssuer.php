@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Heidi\Oidc\Application\Token;
+
+use DateInterval;
+use DateTimeImmutable;
+use Heidi\Core\Domain\Key\SignatureAlgorithm;
+use Heidi\Core\Port\JwsSignerInterface;
+use Heidi\Oidc\Domain\Token\AccessToken;
+use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\JwtPayload;
+use Heidi\Oidc\Port\AccessTokenIssuerInterface;
+use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use function implode;
+use Symfony\Component\Uid\Uuid;
+
+/**
+ * RFC 9068 (architecture §4.6): the access token is a JWT signed with the active key of the tenant, its
+ * header "typ" set to "at+jwt" (§2.1) so that no other token of this issuer passes for one and it passes
+ * for no other. The claims are those of §2.2: "iss", "exp", "aud", "sub", "client_id", "iat", "jti";
+ * "auth_time", "acr" and "amr" of §2.2.1 as the authorization recorded them; "scope" of §2.2.3 in the
+ * syntax of RFC 8693 §4.2, the scopes of this response. "aud" is the client identifier until a
+ * "resource" parameter says otherwise (RFC 8707, later). "sid" names the session the token descends
+ * from, which is what a logout revokes.
+ *
+ * Ten minutes, and nothing stored: the token is its own record. The one who knows the user (a UserInfo
+ * endpoint, a resource server) reads it and the JWK Set, and asks nothing else of the provider.
+ */
+final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
+{
+    public const string TYPE = 'at+jwt';
+
+    public function __construct(
+        private JwsSignerInterface $signer,
+        private SubjectIdentifierResolverInterface $subjects,
+        private DateInterval $lifetime = new DateInterval('PT10M'),
+        private SignatureAlgorithm $algorithm = SignatureAlgorithm::RS256,
+    ) {
+    }
+
+    public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now): AccessToken
+    {
+        $expiresAt = $now->add($this->lifetime);
+        $claims = [
+            'iss' => (string) $authorization->tenant->issuer,
+            'exp' => $expiresAt->getTimestamp(),
+            'aud' => $authorization->client->clientId,
+            'sub' => $this->subjects->resolve($authorization->user, $authorization->client)
+                ->value,
+            'client_id' => $authorization->client->clientId,
+            'iat' => $now->getTimestamp(),
+            'jti' => Uuid::v4()->toRfc4122(),
+            'auth_time' => $authorization->authenticatedAt->getTimestamp(),
+        ];
+        if ($authorization->authenticationContextClass !== null) {
+            $claims['acr'] = $authorization->authenticationContextClass;
+        }
+        $claims['amr'] = $authorization->authenticationMethods;
+        $claims['scope'] = implode(' ', $authorization->scopes);
+        $claims['sid'] = $authorization->session->id->toRfc4122();
+
+        $jws = $this->signer->sign($authorization->tenant, $this->algorithm, JwtPayload::encode($claims), [
+            'typ' => self::TYPE,
+        ]);
+
+        return new AccessToken($jws, $now, $expiresAt);
+    }
+}
