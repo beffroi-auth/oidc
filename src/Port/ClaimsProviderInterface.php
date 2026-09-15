@@ -17,6 +17,10 @@ use Heidi\Oidc\Domain\Scope\Scope;
  *
  * Every value is what the JSON will carry: a boolean is a PHP bool, a date is an integer, an address is
  * a map. Nothing of it is stringified.
+ *
+ * A provider also says what it serves, for the discovery document (OIDC Discovery §3 "scopes_supported"
+ * and "claims_supported"): the scopes it gives a meaning to and the claim names it may supply values for.
+ * "openid", "offline_access" and "sub" are not a provider's to announce.
  */
 interface ClaimsProviderInterface
 {
@@ -27,4 +31,14 @@ interface ClaimsProviderInterface
      * @return array<string, mixed> claim name to JSON value
      */
     public function claims(User $user, array $scopes, array $requested): array;
+
+    /**
+     * @return list<Scope> the scopes this provider serves claims for (§5.4)
+     */
+    public function supportedScopes(): array;
+
+    /**
+     * @return list<string> the claim names this provider may supply a value for (§5.1)
+     */
+    public function supportedClaims(): array;
 }

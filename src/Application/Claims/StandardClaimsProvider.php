@@ -6,8 +6,12 @@ namespace Heidi\Oidc\Application\Claims;
 
 use function array_filter;
 use function array_keys;
+use function array_map;
+use function array_merge;
+use function array_values;
 use Heidi\Core\Domain\Identity\Address;
 use Heidi\Core\Domain\Identity\User;
+use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use function in_array;
 
@@ -51,6 +55,19 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
         }
 
         return $claims;
+    }
+
+    public function supportedScopes(): array
+    {
+        return array_map(static fn (string $scope): Scope => new Scope($scope), array_keys(self::SCOPES));
+    }
+
+    /**
+     * The nineteen claims of §5.1 the four scopes stand for, in the order of §5.4.
+     */
+    public function supportedClaims(): array
+    {
+        return array_merge(...array_values(self::SCOPES));
     }
 
     /**
