@@ -9,6 +9,7 @@ use function array_any;
 use DateTimeImmutable;
 use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
+use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
@@ -34,6 +35,14 @@ use SensitiveParameter;
  */
 final class RefreshToken
 {
+    public readonly Tenant $tenant;
+
+    /**
+     * The client, named the way a registration names it: the object is what the client repository resolved
+     * for that identifier, and what a store keeps is the identifier.
+     */
+    public readonly string $clientId;
+
     /**
      * @var non-empty-list<Scope>
      */
@@ -90,6 +99,8 @@ final class RefreshToken
         if ($expiresAt > $family->expiresAt) {
             throw new InvalidArgumentException('A refresh token never outlives its family.');
         }
+        $this->tenant = $client->tenant;
+        $this->clientId = $client->clientId;
         $this->scopes = $scopes;
         $this->authenticationMethods = $authenticationMethods;
     }

@@ -25,6 +25,12 @@ final class Consent
     public readonly Tenant $tenant;
 
     /**
+     * The client, named the way a registration names it: the object is what the client repository resolved
+     * for that identifier, and what a store keeps is the identifier.
+     */
+    public readonly string $clientId;
+
+    /**
      * @var non-empty-list<Scope>
      */
     public readonly array $scopes;
@@ -35,7 +41,7 @@ final class Consent
      * @param list<Scope> $scopes at least one
      */
     public function __construct(
-        public readonly Uuid $id,
+        public private(set) Uuid $id,
         public readonly User $user,
         public readonly Client $client,
         array $scopes,
@@ -54,6 +60,7 @@ final class Consent
             throw new InvalidArgumentException('A consent covers at least one scope.');
         }
         $this->tenant = $user->tenant;
+        $this->clientId = $client->clientId;
         $this->scopes = $unique;
     }
 

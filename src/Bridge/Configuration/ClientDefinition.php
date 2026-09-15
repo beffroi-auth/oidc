@@ -9,6 +9,7 @@ use function array_diff;
 use function array_keys;
 use function array_map;
 use BackedEnum;
+use Heidi\Core\Domain\Credential\PasswordHash;
 use Heidi\Core\Domain\Key\SignatureAlgorithm;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\PasswordHasherInterface;
@@ -18,6 +19,7 @@ use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Client\TokenEndpointAuthMethod;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Heidi\Oidc\Exception\LogicException;
 use function implode;
 use function is_array;
 use function is_bool;
@@ -116,18 +118,37 @@ final readonly class ClientDefinition
         return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm);
     }
 
+    public function hasSecret(): bool
+    {
+        return $this->secret !== null;
+    }
+
     /**
      * Hashes the secret: as costly as hashing a password, by design, so call it once per process and keep
-     * the client.
+     * the hash.
+     *
+     * @throws LogicException for a public client, which has no secret; ask hasSecret() first
      */
-    public function toClient(Tenant $tenant, PasswordHasherInterface $hasher): Client
+    public function hashSecret(PasswordHasherInterface $hasher): PasswordHash
+    {
+        if ($this->secret === null) {
+            throw new LogicException(sprintf('The client "%s" is public and has no secret to hash.', $this->clientId));
+        }
+
+        return $hasher->hash($this->secret);
+    }
+
+    /**
+     * @param PasswordHash|null $secretHash the hash of the secret, see hashSecret(); null for a public client
+     */
+    public function toClient(Tenant $tenant, ?PasswordHash $secretHash): Client
     {
         return new Client(
             $tenant,
             $this->clientId,
             $this->name,
             $this->tokenEndpointAuthMethod,
-            $this->secret === null ? null : $hasher->hash($this->secret),
+            $secretHash,
             $this->redirectUris,
             $this->postLogoutRedirectUris,
             $this->grantTypes,

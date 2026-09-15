@@ -36,6 +36,12 @@ final class Interaction
      */
     private const string ID_PATTERN = '/^[A-Za-z0-9_-]{43}$/';
 
+    /**
+     * The client of the request, named the way a registration names it: the object is what the client
+     * repository resolved for that identifier, and what a store keeps is the identifier.
+     */
+    public readonly string $clientId;
+
     public private(set) ?AuthenticationSession $session = null;
 
     public private(set) ?Consent $consent = null;
@@ -65,6 +71,7 @@ final class Interaction
         if ($expiresAt <= $createdAt) {
             throw new InvalidArgumentException('An interaction expires after it was created.');
         }
+        $this->clientId = $request->client->clientId;
     }
 
     public static function generateId(): string

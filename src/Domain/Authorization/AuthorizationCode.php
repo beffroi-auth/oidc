@@ -8,6 +8,7 @@ use function base64_encode;
 use DateTimeImmutable;
 use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
+use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
@@ -34,6 +35,14 @@ use function strtr;
 final class AuthorizationCode
 {
     public const string HASH_PATTERN = '/^[0-9a-f]{64}$/';
+
+    public readonly Tenant $tenant;
+
+    /**
+     * The client, named the way a registration names it: the object is what the client repository resolved
+     * for that identifier, and what a store keeps is the identifier.
+     */
+    public readonly string $clientId;
 
     /**
      * @var non-empty-list<Scope>
@@ -87,6 +96,8 @@ final class AuthorizationCode
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An authorization code expires after it was issued.');
         }
+        $this->tenant = $client->tenant;
+        $this->clientId = $client->clientId;
         $this->scopes = $scopes;
         $this->authenticationMethods = $authenticationMethods;
     }
