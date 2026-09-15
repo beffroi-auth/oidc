@@ -12,6 +12,7 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Heidi\Oidc\Exception\LogicException;
 use function preg_match;
 use function random_bytes;
 use function rtrim;
@@ -26,22 +27,25 @@ use function strtr;
  * added later.
  *
  * Lifetime: 60 seconds. RFC 6749 §4.1.2 allows up to 10 minutes; a code only serves an immediate round
- * trip, and a short window bounds injection (RFC 9700 §4.5). The use of a code, and what happens when it
- * is presented twice, belong to the grant.
+ * trip, and a short window bounds injection (RFC 9700 §4.5). A code is consumed by its first presentation
+ * at the token endpoint, whatever comes of it (architecture §4.4); a second presentation is a replay, and
+ * what the grant does about it is its business.
  */
-final readonly class AuthorizationCode
+final class AuthorizationCode
 {
-    private const string HASH_PATTERN = '/^[0-9a-f]{64}$/';
+    public const string HASH_PATTERN = '/^[0-9a-f]{64}$/';
 
     /**
      * @var non-empty-list<Scope>
      */
-    public array $scopes;
+    public readonly array $scopes;
 
     /**
      * @var non-empty-list<string> the "amr" values
      */
-    public array $authenticationMethods;
+    public readonly array $authenticationMethods;
+
+    public private(set) ?DateTimeImmutable $usedAt = null;
 
     /**
      * @param string $codeHash hex SHA-256 of the code, see hash()
@@ -54,19 +58,19 @@ final readonly class AuthorizationCode
      * @param string|null $authenticationContextClass the "acr" value
      */
     public function __construct(
-        public string $codeHash,
-        public Client $client,
-        public AuthenticationSession $session,
-        public RedirectUri $redirectUri,
+        public readonly string $codeHash,
+        public readonly Client $client,
+        public readonly AuthenticationSession $session,
+        public readonly RedirectUri $redirectUri,
         array $scopes,
-        public ?string $nonce,
-        public CodeChallenge $codeChallenge,
-        public ?ClaimsRequest $claimsRequest,
-        public DateTimeImmutable $authenticatedAt,
+        public readonly ?string $nonce,
+        public readonly CodeChallenge $codeChallenge,
+        public readonly ?ClaimsRequest $claimsRequest,
+        public readonly DateTimeImmutable $authenticatedAt,
         array $authenticationMethods,
-        public ?string $authenticationContextClass,
-        public DateTimeImmutable $issuedAt,
-        public DateTimeImmutable $expiresAt,
+        public readonly ?string $authenticationContextClass,
+        public readonly DateTimeImmutable $issuedAt,
+        public readonly DateTimeImmutable $expiresAt,
     ) {
         if (preg_match(self::HASH_PATTERN, $codeHash) !== 1) {
             throw new InvalidArgumentException('An authorization code is stored as its hex SHA-256.');
@@ -101,5 +105,28 @@ final readonly class AuthorizationCode
     public static function hash(#[SensitiveParameter] string $code): string
     {
         return hash('sha256', $code);
+    }
+
+    /**
+     * The first presentation at the token endpoint, valid or not, consumes the code (RFC 6749 §4.1.2:
+     * "The client MUST NOT use the authorization code more than once"). The grant reads isUsed() before
+     * calling this: a replay is its decision, not a state error.
+     */
+    public function consume(DateTimeImmutable $now): void
+    {
+        if ($this->usedAt !== null) {
+            throw new LogicException('An authorization code is consumed once; the grant checks isUsed() first.');
+        }
+        $this->usedAt = $now;
+    }
+
+    public function isUsed(): bool
+    {
+        return $this->usedAt !== null;
+    }
+
+    public function isExpired(DateTimeImmutable $now): bool
+    {
+        return $now >= $this->expiresAt;
     }
 }

@@ -1,0 +1,64 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Heidi\Oidc\Application\Token;
+
+use DateInterval;
+use DateTimeImmutable;
+use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Oidc\Domain\Event\TokensIssued;
+use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\IssuedRefreshToken;
+use Heidi\Oidc\Domain\Token\IssuedTokens;
+use Heidi\Oidc\Domain\Token\RefreshToken;
+use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
+use Heidi\Oidc\Port\AccessTokenIssuerInterface;
+use Heidi\Oidc\Port\IdTokenIssuerInterface;
+use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
+
+/**
+ * Mints what a verified authorization entitles the client to (architecture §4.5, §4.6). refreshToken()
+ * issues a refresh token in a family, stored as its hash with a sliding expiry capped by the family;
+ * issue() mints the access token, the ID token when "openid" is among the scopes (OIDC Core §3.1.3.3,
+ * §12.2), and announces the response. Whether a refresh token is due at all, and in which family, is
+ * the grant's decision.
+ */
+final readonly class TokenIssuer
+{
+    public function __construct(
+        private AccessTokenIssuerInterface $accessTokens,
+        private IdTokenIssuerInterface $idTokens,
+        private RefreshTokenRepositoryInterface $refreshTokens,
+        private EventDispatcherInterface $events,
+        private DateInterval $refreshTokenLifetime = new DateInterval('P30D'),
+    ) {
+    }
+
+    /**
+     * A refresh token for what the resource owner granted, in the family given: a new one after a code, the
+     * one of the token presented after a refresh.
+     */
+    public function refreshToken(RefreshTokenFamily $family, GrantedAuthorization $authorization, DateTimeImmutable $now): IssuedRefreshToken
+    {
+        $value = RefreshToken::generate();
+        $token = RefreshToken::fromAuthorization(RefreshToken::hash($value), $family, $authorization, $now, $now->add($this->refreshTokenLifetime));
+        $this->refreshTokens->save($token);
+
+        return new IssuedRefreshToken($token, $value);
+    }
+
+    /**
+     * @param IssuedRefreshToken|null $refreshToken the refresh token of the response, when one is due
+     */
+    public function issue(GrantedAuthorization $authorization, ?IssuedRefreshToken $refreshToken, RequestContext $context, DateTimeImmutable $now): IssuedTokens
+    {
+        $accessToken = $this->accessTokens->issue($authorization, $now);
+        $idToken = $authorization->hasScope(Scope::openid()) ? $this->idTokens->issue($authorization, $accessToken, $now) : null;
+        $this->events->dispatch(new TokensIssued($now, $authorization, $accessToken->expiresAt, $idToken !== null, $refreshToken?->token, $context));
+
+        return new IssuedTokens($authorization, $accessToken, $idToken, $refreshToken);
+    }
+}

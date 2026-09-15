@@ -18,8 +18,19 @@ final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepo
      */
     private array $codes = [];
 
+    /**
+     * How many times save() was called, for tests that must see a write happen on an object they already hold.
+     */
+    public private(set) int $saves = 0;
+
+    public function findByCodeHash(string $codeHash): ?AuthorizationCode
+    {
+        return $this->codes[$codeHash] ?? null;
+    }
+
     public function save(AuthorizationCode $code): void
     {
+        ++$this->saves;
         $this->codes[$code->codeHash] = $code;
     }
 
