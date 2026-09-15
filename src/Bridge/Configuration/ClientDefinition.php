@@ -52,6 +52,7 @@ final readonly class ClientDefinition
         'token_endpoint_auth_method',
         'requires_consent',
         'id_token_signed_response_alg',
+        'requires_pkce',
     ];
 
     /**
@@ -72,6 +73,7 @@ final readonly class ClientDefinition
         public array $allowedScopes,
         public bool $requiresConsent,
         public SignatureAlgorithm $idTokenSignedResponseAlg,
+        public bool $requiresPkce,
     ) {
     }
 
@@ -102,6 +104,11 @@ final readonly class ClientDefinition
             throw new InvalidArgumentException(sprintf('The requires_consent option of the client "%s" must be a boolean.', $clientId));
         }
 
+        $requiresPkce = $definition['requires_pkce'] ?? true;
+        if (! is_bool($requiresPkce)) {
+            throw new InvalidArgumentException(sprintf('The requires_pkce option of the client "%s" must be a boolean.', $clientId));
+        }
+
         $name = $definition['name'] ?? $clientId;
         if (! is_string($name)) {
             throw new InvalidArgumentException(sprintf('The name of the client "%s" must be a string.', $clientId));
@@ -113,9 +120,9 @@ final readonly class ClientDefinition
         $allowedScopes = array_map(static fn (string $scope): Scope => new Scope($scope), self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']));
         $algorithm = self::enumCase($clientId, 'id_token_signed_response_alg', $definition['id_token_signed_response_alg'] ?? SignatureAlgorithm::RS256->value, SignatureAlgorithm::class);
 
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes);
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce);
     }
 
     public function hasSecret(): bool
@@ -155,6 +162,7 @@ final readonly class ClientDefinition
             $this->allowedScopes,
             $this->requiresConsent,
             $this->idTokenSignedResponseAlg,
+            $this->requiresPkce,
         );
     }
 

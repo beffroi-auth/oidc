@@ -13,7 +13,8 @@ use function in_array;
 /**
  * An authorization request that passed both stages of validation (RFC 6749 §4.1.1, OIDC Core §3.1.2.1,
  * architecture §4.2): the client and the redirect URI are the registered ones, the response type is
- * "code", the scope contains "openid", the PKCE challenge is S256. Everything the interaction (§4.3) and
+ * "code", the scope contains "openid", the PKCE challenge is S256 or, for a client that does not require
+ * one (decision 0008), absent. Everything the interaction (§4.3) and
  * the authorization code (§4.4) need is here, already typed; nothing is read from the raw parameters
  * again.
  */
@@ -22,6 +23,7 @@ final readonly class AuthorizationRequest
     /**
      * @param RedirectUri $redirectUri the one the client presented, byte for byte equal to a registered one
      * @param list<Scope> $scopes contains "openid", every scope is allowed to the client
+     * @param CodeChallenge|null $codeChallenge null only when the client does not require PKCE and sent none
      * @param string|null $state echoed as is in the response (RFC 6749 §4.1.2)
      * @param string|null $nonce bound to the ID token (OIDC Core §3.1.2.1, §3.1.3.7 step 11)
      * @param list<Prompt> $prompts OIDC Core §3.1.2.1 "prompt"
@@ -36,7 +38,7 @@ final readonly class AuthorizationRequest
         public Client $client,
         public RedirectUri $redirectUri,
         public array $scopes,
-        public CodeChallenge $codeChallenge,
+        public ?CodeChallenge $codeChallenge,
         public ?string $state = null,
         public ?string $nonce = null,
         public array $prompts = [],

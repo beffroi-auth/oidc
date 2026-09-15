@@ -17,6 +17,7 @@ use Heidi\Oidc\Domain\Authorization\Display;
 use Heidi\Oidc\Domain\Authorization\Prompt;
 use Heidi\Oidc\Domain\Authorization\RedirectTarget;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
+use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -121,7 +122,7 @@ final readonly class AuthorizationRequestParser
         }
 
         $scopes = $this->scopes($target, RequestParameters::single($parameters, 'scope', true));
-        $codeChallenge = self::codeChallenge(RequestParameters::single($parameters, 'code_challenge', true), RequestParameters::single($parameters, 'code_challenge_method', true));
+        $codeChallenge = self::codeChallenge($target->client, RequestParameters::single($parameters, 'code_challenge', true), RequestParameters::single($parameters, 'code_challenge_method', true));
 
         $nonce = RequestParameters::text($parameters, 'nonce', true);
         $prompts = self::prompts(RequestParameters::single($parameters, 'prompt', true));
@@ -189,10 +190,15 @@ final readonly class AuthorizationRequestParser
 
     /**
      * RFC 7636 §4.3 and §4.4.1: the challenge is required, and its method must be S256, whether "plain"
-     * is asked for or implied by an absent method (decision 0006).
+     * is asked for or implied by an absent method (decision 0006). A client registered without the
+     * requirement (decision 0008) may send no challenge at all; one it sends is checked like any other
+     * (RFC 9700 §2.1.1), and a method without a challenge is a malformed request either way.
      */
-    private static function codeChallenge(?string $challenge, ?string $method): CodeChallenge
+    private static function codeChallenge(Client $client, ?string $challenge, ?string $method): ?CodeChallenge
     {
+        if ($challenge === null && $method === null && ! $client->requiresPkce) {
+            return null;
+        }
         if ($challenge === null) {
             throw new InvalidRequestException('The code_challenge parameter is missing (RFC 7636 section 4.3).', true);
         }

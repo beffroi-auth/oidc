@@ -22,6 +22,7 @@ use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use function preg_match;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use SensitiveParameter;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -30,6 +31,11 @@ use Symfony\Component\Uid\Uuid;
  * request, byte for byte; the code verifier hashes to the challenge, compared in constant time; the
  * session the code was issued for is still active. Every failure is "invalid_grant" with one description:
  * which check failed is not for the caller.
+ *
+ * A code issued without a challenge, which only a client registered without the PKCE requirement gets
+ * (decision 0008), is refused when a code_verifier comes with it: RFC 9700 §4.8.2, a verifier is accepted
+ * only if a challenge was present in the authorization request. A code issued with one is refused
+ * without a verifier, whatever the client is registered with.
  *
  * A code is consumed by its first presentation, before anything else is checked, so that a failed
  * attempt cannot be retried with another verifier. Presented a second time, by whichever client, the
@@ -76,8 +82,8 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         $now = $this->clock->now();
         $code = $request->required('code');
         $redirectUri = $request->required('redirect_uri');
-        $codeVerifier = $request->required('code_verifier');
-        if (preg_match(self::CODE_VERIFIER_PATTERN, $codeVerifier) !== 1) {
+        $codeVerifier = $request->optional('code_verifier');
+        if ($codeVerifier !== null && preg_match(self::CODE_VERIFIER_PATTERN, $codeVerifier) !== 1) {
             throw new InvalidRequestException('The code_verifier parameter is not 43 to 128 unreserved characters (RFC 7636 section 4.1).');
         }
 
@@ -96,7 +102,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         if (! $record->client->equals($client)
             || $record->isExpired($now)
             || ! $record->redirectUri->matches($redirectUri)
-            || ! $record->codeChallenge->verifies($codeVerifier)
+            || ! self::pkceSatisfied($record, $codeVerifier)
             || ! $record->session->isActive($now)) {
             throw new InvalidGrantException(self::INVALID);
         }
@@ -109,6 +115,18 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         }
 
         return $this->issuer->issue($authorization, $refreshToken, $context, $now);
+    }
+
+    /**
+     * RFC 7636 §4.6 when the code carries a challenge, RFC 9700 §4.8.2 when it carries none.
+     */
+    private static function pkceSatisfied(AuthorizationCode $record, #[SensitiveParameter] ?string $codeVerifier): bool
+    {
+        if ($record->codeChallenge === null) {
+            return $codeVerifier === null;
+        }
+
+        return $codeVerifier !== null && $record->codeChallenge->verifies($codeVerifier);
     }
 
     private function refreshTokenDue(GrantedAuthorization $authorization): bool

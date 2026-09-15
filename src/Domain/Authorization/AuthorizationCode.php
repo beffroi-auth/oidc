@@ -61,7 +61,7 @@ final class AuthorizationCode
      * @param RedirectUri $redirectUri the one of the request, compared again at the token endpoint (RFC 6749 §4.1.3)
      * @param list<Scope> $scopes the scopes granted, at least one
      * @param string|null $nonce copied into the ID token (OIDC Core §3.1.3.7 step 11)
-     * @param CodeChallenge $codeChallenge verified against the code_verifier (RFC 7636 §4.6)
+     * @param CodeChallenge|null $codeChallenge verified against the code_verifier (RFC 7636 §4.6); null when the request carried none, which only a client that does not require PKCE may do (decision 0008), and then a code_verifier is refused (RFC 9700 §4.8.2)
      * @param DateTimeImmutable $authenticatedAt the "auth_time" the ID token will carry
      * @param list<string> $authenticationMethods the "amr" values, at least one
      * @param string|null $authenticationContextClass the "acr" value
@@ -73,7 +73,7 @@ final class AuthorizationCode
         public readonly RedirectUri $redirectUri,
         array $scopes,
         public readonly ?string $nonce,
-        public readonly CodeChallenge $codeChallenge,
+        public readonly ?CodeChallenge $codeChallenge,
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly DateTimeImmutable $authenticatedAt,
         array $authenticationMethods,

@@ -21,7 +21,9 @@ use function sprintf;
  * is closed: a redirect URI, a grant or a scope that is not registered is refused, there is no wildcard.
  *
  * Consent is the rule; "requiresConsent = false" is the named exception for a first-party application,
- * carried by the client and by nothing global (architecture §7).
+ * carried by the client and by nothing global (architecture §7). PKCE is the rule too; "requiresPkce = false"
+ * is the named exception of decision 0008 for a confidential client that cannot send a code_challenge, and
+ * a public client cannot hold it (RFC 9700 §2.1.1).
  */
 final readonly class Client
 {
@@ -57,6 +59,8 @@ final readonly class Client
      * @param list<RedirectUri> $postLogoutRedirectUris where the client may be sent after a logout it initiated
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code to obtain a first token
      * @param list<Scope> $allowedScopes at least one
+     * @param bool $requiresPkce false only for a confidential client, decision 0008; a request that carries a
+     *                           code_challenge is verified all the same
      */
     public function __construct(
         public Tenant $tenant,
@@ -71,9 +75,10 @@ final readonly class Client
         ?array $allowedScopes = null,
         public bool $requiresConsent = true,
         public SignatureAlgorithm $idTokenSignedResponseAlg = SignatureAlgorithm::RS256,
+        public bool $requiresPkce = true,
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes);
+        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce);
 
         $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
         $this->redirectUris = self::unique($redirectUris, $sameUri);
@@ -98,6 +103,7 @@ final readonly class Client
         array $redirectUris,
         array $grantTypes,
         array $allowedScopes,
+        bool $requiresPkce = true,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -122,6 +128,9 @@ final readonly class Client
         }
         if ($allowedScopes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one scope.', $clientId));
+        }
+        if (! $requiresPkce && ! $tokenEndpointAuthMethod->usesSecret()) {
+            throw new InvalidArgumentException(sprintf('The client "%s" is public and must use PKCE (RFC 9700 section 2.1.1): requires_pkce cannot be false.', $clientId));
         }
     }
 
