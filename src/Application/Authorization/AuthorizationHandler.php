@@ -201,7 +201,8 @@ final readonly class AuthorizationHandler
             $request->claims,
             $session->authenticatedAt(),
             $session->methodReferences(),
-            $session->authenticationContextClass,
+            $session->authenticationContextClass()
+                ->value,
             $now,
             $now->add($this->codeLifetime),
         );

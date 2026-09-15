@@ -53,6 +53,7 @@ final readonly class GrantedAuthorization
      * @param list<Scope> $grantedScopes the scopes the resource owner granted
      * @param string|null $nonce the one of the authorization request, only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
      * @param list<string> $authenticationMethods the "amr" values, at least one
+     * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
      */
     public function __construct(
         public GrantType $grantType,
@@ -64,7 +65,7 @@ final readonly class GrantedAuthorization
         public ?ClaimsRequest $claimsRequest,
         public DateTimeImmutable $authenticatedAt,
         array $authenticationMethods,
-        public ?string $authenticationContextClass,
+        public string $authenticationContextClass,
     ) {
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An authorization binds a session and a client of the same tenant.');

@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Domain\Discovery;
 
 use function array_map;
 use Heidi\Core\Domain\Key\SignatureAlgorithm;
+use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
@@ -25,8 +26,9 @@ use function substr;
  * served at the two well-known locations the specifications derive from the issuer. It says what the
  * provider does, and nothing the provider does not: one response type, one response mode, one code
  * challenge method, no request object, no "request_uri", so that a client reading it cannot ask for what
- * decision 0006 refuses. What is listed comes from the enumerations of the module wherever one exists, so
- * that the document and the endpoints cannot disagree.
+ * decision 0006 refuses. What is listed comes from the enumerations of the module or of the core wherever
+ * one exists ("acr_values_supported" is what AuthenticationContextClass can assert), so that the document
+ * and the endpoints cannot disagree.
  *
  * "authorization_response_iss_parameter_supported" (RFC 9207 §3) is what makes Symfony's oidc_login
  * require "iss" on every callback: announcing it is how the provider gets the mix-up defence enforced on
@@ -130,6 +132,7 @@ final readonly class ProviderMetadata
             'response_types_supported' => ['code'],
             'response_modes_supported' => self::values(ResponseMode::cases()),
             'grant_types_supported' => self::values(GrantType::cases()),
+            'acr_values_supported' => AuthenticationContextClass::supported(),
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => self::values(SignatureAlgorithm::cases()),
             'token_endpoint_auth_methods_supported' => self::values(TokenEndpointAuthMethod::cases()),

@@ -64,7 +64,7 @@ final class AuthorizationCode
      * @param CodeChallenge|null $codeChallenge verified against the code_verifier (RFC 7636 §4.6); null when the request carried none, which only a client that does not require PKCE may do (decision 0008), and then a code_verifier is refused (RFC 9700 §4.8.2)
      * @param DateTimeImmutable $authenticatedAt the "auth_time" the ID token will carry
      * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string|null $authenticationContextClass the "acr" value
+     * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
      */
     public function __construct(
         public readonly string $codeHash,
@@ -77,7 +77,7 @@ final class AuthorizationCode
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly DateTimeImmutable $authenticatedAt,
         array $authenticationMethods,
-        public readonly ?string $authenticationContextClass,
+        public readonly string $authenticationContextClass,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
     ) {

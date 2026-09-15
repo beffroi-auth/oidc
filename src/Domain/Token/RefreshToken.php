@@ -62,7 +62,7 @@ final class RefreshToken
      * @param list<Scope> $scopes the scopes granted, at least one
      * @param DateTimeImmutable $authenticatedAt the "auth_time" of the original authentication
      * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string|null $authenticationContextClass the "acr" value
+     * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
      * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
      */
     public function __construct(
@@ -74,7 +74,7 @@ final class RefreshToken
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly DateTimeImmutable $authenticatedAt,
         array $authenticationMethods,
-        public readonly ?string $authenticationContextClass,
+        public readonly string $authenticationContextClass,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
     ) {
