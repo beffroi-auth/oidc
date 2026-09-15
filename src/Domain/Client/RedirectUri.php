@@ -6,9 +6,12 @@ namespace Heidi\Oidc\Domain\Client;
 
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use function http_build_query;
 use function is_string;
 use function parse_url;
+use const PHP_QUERY_RFC3986;
 use function sprintf;
+use function str_contains;
 use Stringable;
 use function strtolower;
 
@@ -58,6 +61,19 @@ final readonly class RedirectUri implements Stringable
     public function equals(self $other): bool
     {
         return $this->value === $other->value;
+    }
+
+    /**
+     * The URI with response parameters added to its query component (RFC 6749 §4.1.2), the registered
+     * query retained, every value percent-encoded (RFC 3986 §2.1) so that every parser reads it the same way.
+     *
+     * @param non-empty-array<string, string> $parameters
+     */
+    public function withParameters(array $parameters): string
+    {
+        $separator = str_contains($this->value, '?') ? '&' : '?';
+
+        return $this->value . $separator . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
     }
 
     public function __toString(): string

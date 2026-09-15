@@ -8,10 +8,7 @@ use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\OAuth2Exception;
-use function http_build_query;
-use const PHP_QUERY_RFC3986;
 use function sprintf;
-use function str_contains;
 
 /**
  * An error sent back to the client (RFC 6749 §4.1.2.1): "error" and "error_description" in the query
@@ -48,7 +45,7 @@ final readonly class AuthorizationErrorResponse
     /**
      * The parameters of the response, in the order they are written.
      *
-     * @return array<string, string>
+     * @return non-empty-array<string, string>
      */
     public function parameters(): array
     {
@@ -65,15 +62,10 @@ final readonly class AuthorizationErrorResponse
     }
 
     /**
-     * The URI the user agent is sent to: the redirect URI with the response parameters added to its
-     * query component (RFC 6749 §4.1.2.1), percent-encoded (RFC 3986 §2.1) so that every parser reads
-     * them the same way.
+     * The URI the user agent is sent to (RFC 6749 §4.1.2.1).
      */
     public function toUri(): string
     {
-        $uri = (string) $this->redirectUri;
-        $separator = str_contains($uri, '?') ? '&' : '?';
-
-        return $uri . $separator . http_build_query($this->parameters(), '', '&', PHP_QUERY_RFC3986);
+        return $this->redirectUri->withParameters($this->parameters());
     }
 }

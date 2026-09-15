@@ -131,6 +131,14 @@ final readonly class Client
     }
 
     /**
+     * The same registration: a client identifier is unique within its tenant.
+     */
+    public function equals(self $other): bool
+    {
+        return $this->clientId === $other->clientId && $this->belongsTo($other->tenant);
+    }
+
+    /**
      * RFC 6749 §2.1: a client that cannot keep a secret. Its authorization codes are bound to it by PKCE only.
      */
     public function isPublic(): bool
