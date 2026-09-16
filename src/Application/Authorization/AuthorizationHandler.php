@@ -8,8 +8,10 @@ use function array_any;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\Subject;
+use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Oidc\Domain\Authorization\AuthenticationContextRequest;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Authorization\AuthorizationResponse;
@@ -31,6 +33,7 @@ use Heidi\Oidc\Exception\InteractionCompletedException;
 use Heidi\Oidc\Exception\InteractionExpiredException;
 use Heidi\Oidc\Exception\LoginRequiredException;
 use Heidi\Oidc\Exception\OAuth2Exception;
+use Heidi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\ConsentRepositoryInterface;
 use Heidi\Oidc\Port\InteractionRepositoryInterface;
@@ -50,6 +53,13 @@ use Symfony\Component\Uid\Uuid;
  * be needed is the redirected error login_required or consent_required (§3.1.2.6) and the interaction
  * is completed. The writes done here, the interaction, the consent and the code, are the ones the
  * protocol needs before answering.
+ *
+ * The "acr" the code carries is the one the request asked for when the session satisfies it, the first
+ * of the client's preferences that does, otherwise the current class of the session (§5.5.1.1). An
+ * essential request for classes the provider cannot assert at all is a failed authentication before any
+ * login: unmet_authentication_requirements, redirected. What a second credential will add here, between
+ * the two, is the step-up: a requested class the provider can assert but the session does not satisfy
+ * becomes a LoginRequirement of its own, so that the login page asks for the missing factor.
  */
 final readonly class AuthorizationHandler
 {
@@ -58,6 +68,8 @@ final readonly class AuthorizationHandler
     private const string CONSENT_REQUIRED = 'No consent covers the request and prompt=none forbids asking.';
 
     private const string ACCESS_DENIED = 'The end user denied the request.';
+
+    private const string UNMET_AUTHENTICATION_REQUIREMENTS = 'No requested acr value is one this provider can assert, see acr_values_supported.';
 
     public function __construct(
         private InteractionRepositoryInterface $interactions,
@@ -161,9 +173,11 @@ final readonly class AuthorizationHandler
     private function decide(Interaction $interaction, ?AuthenticationSession $session, RequestContext $context, DateTimeImmutable $now): AuthorizationDecision
     {
         $request = $interaction->request;
+        $requestedClasses = AuthenticationContextRequest::of($request);
         try {
             // verified before anything else, so that a forged hint is refused without a login
             $hinted = $request->idTokenHint === null ? null : $this->idTokenHints->verify($request->client, $request->idTokenHint);
+            $this->assertCanBeMet($requestedClasses);
             if ($session === null || ! $session->isActive($now)) {
                 return $this->loginRequired($interaction, LoginRequirement::NoSession);
             }
@@ -201,7 +215,7 @@ final readonly class AuthorizationHandler
             $request->claims,
             $session->authenticatedAt(),
             $session->methodReferences(),
-            $session->authenticationContextClass()
+            ($requestedClasses->firstSatisfiedBy($session) ?? $session->authenticationContextClass())
                 ->value,
             $now,
             $now->add($this->codeLifetime),
@@ -225,6 +239,20 @@ final readonly class AuthorizationHandler
         $this->interactions->save($interaction);
 
         return new LoginRequired($interaction, $requirement);
+    }
+
+    /**
+     * OIDC Core §5.5.1.1: an essential "acr" naming only classes the provider cannot assert, whatever the
+     * session, cannot be met; the authentication fails without a login (the user could do nothing about
+     * it). A voluntary request is never refused: the session's current class answers it.
+     *
+     * @throws UnmetAuthenticationRequirementsException
+     */
+    private function assertCanBeMet(AuthenticationContextRequest $requested): void
+    {
+        if ($requested->essential && ! $requested->namesNoClass() && ! $requested->canBeMetWith(AuthenticationContextClass::supported())) {
+            throw new UnmetAuthenticationRequirementsException(self::UNMET_AUTHENTICATION_REQUIREMENTS);
+        }
     }
 
     /**
