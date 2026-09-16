@@ -25,6 +25,7 @@ use function is_string;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Verifies an access token this provider issued, the way RFC 9068 §4 tells a resource server to: the
@@ -33,6 +34,10 @@ use JsonException;
  * naming the client the token was issued to ("client_id"), which must be a client the tenant knows: the
  * provider issues its access tokens to the client alone until a "resource" parameter says otherwise
  * (RFC 8707, later), and a token minted for another audience is not one of its own resources' tokens.
+ *
+ * "grant_id" is read too, the grant the token descends from: this verifier does not ask whether that
+ * grant is still alive, a resource server that holds only the token and the keys cannot; the provider's
+ * own UserInfo does, because it already knows where the grants live.
  *
  * Everything that fails is invalid_token (RFC 6750 §3.1), with one description for whatever is not an
  * access token of this provider and another for one that merely expired, because a client that can
@@ -87,7 +92,8 @@ final readonly class AccessTokenVerifier
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         $sub = $claims['sub'] ?? null;
-        if (! is_string($sub)) {
+        $grantId = $claims[JwtAccessTokenIssuer::GRANT_ID] ?? null;
+        if (! is_string($sub) || ! is_string($grantId) || ! Uuid::isValid($grantId)) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         try {
@@ -97,7 +103,7 @@ final readonly class AccessTokenVerifier
             throw new InvalidTokenException(self::NOT_ISSUED_HERE, $exception);
         }
 
-        return new VerifiedAccessToken($client, $subject, $scopes, self::userinfoClaims($claims[JwtAccessTokenIssuer::USERINFO_CLAIMS] ?? null), new DateTimeImmutable('@' . $exp));
+        return new VerifiedAccessToken($client, $subject, Uuid::fromString($grantId), $scopes, self::userinfoClaims($claims[JwtAccessTokenIssuer::USERINFO_CLAIMS] ?? null), new DateTimeImmutable('@' . $exp));
     }
 
     /**

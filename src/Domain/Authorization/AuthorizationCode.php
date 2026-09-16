@@ -19,6 +19,7 @@ use function random_bytes;
 use function rtrim;
 use SensitiveParameter;
 use function strtr;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * An authorization code (RFC 6749 §1.3.1, §4.1.2) as the provider keeps it: the SHA-256 of the value the
@@ -31,6 +32,10 @@ use function strtr;
  * trip, and a short window bounds injection (RFC 9700 §4.5). A code is consumed by its first presentation
  * at the token endpoint, whatever comes of it (architecture §4.4); a second presentation is a replay, and
  * what the grant does about it is its business.
+ *
+ * The record is also the grant the tokens descend from, named by "grantId": an opaque identifier the
+ * access tokens carry, so that the provider can tell which grant issued one without publishing the hash
+ * of the code. Revoked, the grant is the record RFC 6749 §4.1.2 asks to act on when the code is replayed.
  */
 final class AuthorizationCode
 {
@@ -56,8 +61,11 @@ final class AuthorizationCode
 
     public private(set) ?DateTimeImmutable $usedAt = null;
 
+    public private(set) ?DateTimeImmutable $revokedAt = null;
+
     /**
      * @param string $codeHash hex SHA-256 of the code, see hash()
+     * @param Uuid $grantId the opaque name of the grant, carried by every access token issued from the code
      * @param RedirectUri $redirectUri the one of the request, compared again at the token endpoint (RFC 6749 §4.1.3)
      * @param list<Scope> $scopes the scopes granted, at least one
      * @param string|null $nonce copied into the ID token (OIDC Core §3.1.3.7 step 11)
@@ -68,6 +76,7 @@ final class AuthorizationCode
      */
     public function __construct(
         public readonly string $codeHash,
+        public readonly Uuid $grantId,
         public readonly Client $client,
         public readonly AuthenticationSession $session,
         public readonly RedirectUri $redirectUri,
@@ -134,6 +143,21 @@ final class AuthorizationCode
     public function isUsed(): bool
     {
         return $this->usedAt !== null;
+    }
+
+    /**
+     * RFC 6749 §4.1.2: the replay of a code revokes what was issued from it. Said on the grant itself, so
+     * that the provider refuses the access tokens it already handed out; a third presentation says it again
+     * without changing when it was first said.
+     */
+    public function revoke(DateTimeImmutable $now): void
+    {
+        $this->revokedAt ??= $now;
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revokedAt !== null;
     }
 
     public function isExpired(DateTimeImmutable $now): bool

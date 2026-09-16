@@ -20,12 +20,14 @@ final readonly class RefreshTokenFamily
 {
     /**
      * @param string $authorizationCodeHash the hash of the code the first token was exchanged for
+     * @param Uuid $grantId the grant of that code, carried here so that a refreshed access token names the same one
      * @param DateTimeImmutable $startedAt when the code was exchanged
      * @param DateTimeImmutable $expiresAt after which no token of the family is accepted, whatever its own expiry
      */
     public function __construct(
         public Uuid $id,
         public string $authorizationCodeHash,
+        public Uuid $grantId,
         public DateTimeImmutable $startedAt,
         public DateTimeImmutable $expiresAt,
     ) {

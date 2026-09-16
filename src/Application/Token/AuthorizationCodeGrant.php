@@ -39,9 +39,10 @@ use Symfony\Component\Uid\Uuid;
  *
  * A code is consumed by its first presentation, before anything else is checked, so that a failed
  * attempt cannot be retried with another verifier. Presented a second time, by whichever client, the
- * code is a replay: every refresh token descending from it is revoked (RFC 6749 §4.1.2) and the grant
- * fails. The access tokens already issued are stateless and live ten minutes; they are the exposure
- * that decision 0006 accepts.
+ * code is a replay: the grant itself is revoked and every refresh token descending from it with it
+ * (RFC 6749 §4.1.2), and the request fails. The access tokens already issued stay valid for a resource
+ * server that holds only the token and the keys, as RFC 9068 §4 intends; the provider's own UserInfo
+ * knows where the grants live and refuses them, which is what the profile expects of it.
  *
  * A refresh token is issued when the client is registered for the refresh_token grant and either asked
  * for "offline_access" (OIDC Core §11) or is confidential and the tenant allows it without the scope
@@ -110,7 +111,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         $authorization = GrantedAuthorization::fromAuthorizationCode($record);
         $refreshToken = null;
         if ($this->refreshTokenDue($authorization)) {
-            $family = new RefreshTokenFamily(Uuid::v7(), $record->codeHash, $now, $now->add($this->refreshTokenFamilyLifetime));
+            $family = new RefreshTokenFamily(Uuid::v7(), $record->codeHash, $record->grantId, $now, $now->add($this->refreshTokenFamilyLifetime));
             $refreshToken = $this->issuer->refreshToken($family, $authorization, $now);
         }
 
@@ -142,10 +143,14 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
     }
 
     /**
-     * RFC 6749 §4.1.2: the request is denied and every token issued from the code is revoked.
+     * RFC 6749 §4.1.2: the request is denied and every token issued from the code is revoked. The grant
+     * carries the revocation for the access tokens, which are not stored; the refresh tokens carry their
+     * own, one row each.
      */
     private function replayed(AuthorizationCode $code, Client $presentedBy, RequestContext $context, DateTimeImmutable $now): void
     {
+        $code->revoke($now);
+        $this->codes->save($code);
         $revoked = [];
         foreach ($this->refreshTokens->findByAuthorizationCode($code->codeHash) as $token) {
             if ($token->isRevoked()) {

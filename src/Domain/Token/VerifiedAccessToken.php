@@ -9,12 +9,15 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * What a protected resource of the provider knows once an access token has been verified (RFC 9068 §4):
  * the client it was issued to, the subject it names, the scopes it carries (§2.2.3), the claims the
- * client asked for by name from UserInfo ("userinfo_claims", architecture §4.6) and when it expires.
- * The user behind the subject is not here: the resource looks them up, and answers for what it finds.
+ * client asked for by name from UserInfo ("userinfo_claims", architecture §4.6), the grant it descends
+ * from ("grant_id") and when it expires. The user behind the subject is not here: the resource looks
+ * them up, and answers for what it finds. Whether the grant is still alive is a question for the
+ * provider's own resources: nothing here reads a store, RFC 9068 §4 verifies a token on its own.
  */
 final readonly class VerifiedAccessToken
 {
@@ -25,6 +28,7 @@ final readonly class VerifiedAccessToken
     public function __construct(
         public Client $client,
         public Subject $subject,
+        public Uuid $grantId,
         public array $scopes,
         public array $userinfoClaims,
         public DateTimeImmutable $expiresAt,

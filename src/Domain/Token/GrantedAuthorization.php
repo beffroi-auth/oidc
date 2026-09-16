@@ -16,6 +16,7 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * What the token endpoint has established the client may receive, once a grant has been verified
@@ -54,9 +55,11 @@ final readonly class GrantedAuthorization
      * @param string|null $nonce the one of the authorization request, only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
      * @param list<string> $authenticationMethods the "amr" values, at least one
      * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
+     * @param Uuid $grantId the authorization code these tokens descend from, as the access token names it
      */
     public function __construct(
         public GrantType $grantType,
+        public Uuid $grantId,
         public Client $client,
         public AuthenticationSession $session,
         array $scopes,
@@ -96,6 +99,7 @@ final readonly class GrantedAuthorization
     {
         return new self(
             GrantType::AuthorizationCode,
+            $code->grantId,
             $code->client,
             $code->session,
             $code->scopes,
@@ -117,6 +121,7 @@ final readonly class GrantedAuthorization
     {
         return new self(
             GrantType::RefreshToken,
+            $token->family->grantId,
             $token->client,
             $token->session,
             $scopes ?? $token->scopes,

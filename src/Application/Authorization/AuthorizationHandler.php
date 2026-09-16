@@ -206,6 +206,7 @@ final readonly class AuthorizationHandler
         $code = AuthorizationCode::generate();
         $record = new AuthorizationCode(
             AuthorizationCode::hash($code),
+            Uuid::v7(),
             $request->client,
             $session,
             $request->redirectUri,

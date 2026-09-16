@@ -17,6 +17,7 @@ use Heidi\Oidc\Exception\InsufficientScopeException;
 use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Exception\MissingBearerTokenException;
 use Heidi\Oidc\Exception\OAuth2Exception;
+use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 
@@ -28,15 +29,18 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  * through the same resolver that wrote it into the tokens, so that both name the same subject (§5.3.2).
  *
  * A token without "openid" opens nothing here (§5.3.1: "the Access Token obtained through an OpenID
- * Connect Authentication Request"): insufficient_scope, 403. A token whose user is gone or disabled is
- * refused like a bad one: invalid_token. Nothing is written and nothing is announced: this is a read.
- * Errors are the ones of RFC 6750 §3.1, never a redirect: the integration turns the exception into a
- * UserInfoErrorResponse.
+ * Connect Authentication Request"): insufficient_scope, 403. A token whose grant is gone or revoked is
+ * refused as well, invalid_token: the provider knows where its grants live, which a resource server
+ * holding only the token and the keys does not, and RFC 6749 §4.1.2 asks the tokens of a replayed code
+ * to stop working. A token whose user is gone or disabled is refused the same way. Nothing is written
+ * and nothing is announced: this is a read. Errors are the ones of RFC 6750 §3.1, never a redirect: the
+ * integration turns the exception into a UserInfoErrorResponse.
  */
 final readonly class UserInfoHandler
 {
     public function __construct(
         private AccessTokenVerifier $tokens,
+        private AuthorizationCodeRepositoryInterface $grants,
         private UserRepositoryInterface $users,
         private SubjectIdentifierResolverInterface $subjects,
         private ClaimsProviderInterface $claims,
@@ -59,6 +63,10 @@ final readonly class UserInfoHandler
         $token = $this->tokens->verify($tenant, $bearer->value, $context->receivedAt);
         if (! $token->hasScope(Scope::openid())) {
             throw new InsufficientScopeException('The access token was not obtained through an OpenID Connect authentication request.', [Scope::openid()]);
+        }
+        $grant = $this->grants->findByGrantId($token->grantId);
+        if ($grant === null || $grant->isRevoked()) {
+            throw new InvalidTokenException('The access token descends from a grant this provider revoked.');
         }
         $user = $this->users->findBySubject($tenant, $token->subject);
         if ($user === null || ! $user->isEnabled()) {
