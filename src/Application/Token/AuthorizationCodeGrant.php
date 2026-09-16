@@ -38,8 +38,9 @@ use Symfony\Component\Uid\Uuid;
  * without a verifier, whatever the client is registered with.
  *
  * A code is consumed by its first presentation, before anything else is checked, so that a failed
- * attempt cannot be retried with another verifier. Presented a second time, by whichever client, the
- * code is a replay: the grant itself is revoked and every refresh token descending from it with it
+ * attempt cannot be retried with another verifier; the repository claims it in one statement, so that
+ * two requests arriving together cannot both be the first (RFC 9700 §4.5). Presented a second time, by
+ * whichever client, the code is a replay: the grant itself is revoked and every refresh token descending from it with it
  * (RFC 6749 §4.1.2), and the request fails. The access tokens already issued stay valid for a resource
  * server that holds only the token and the keys, as RFC 9068 §4 intends; the provider's own UserInfo
  * knows where the grants live and refuses them, which is what the profile expects of it.
@@ -92,13 +93,13 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         if ($record === null) {
             throw new InvalidGrantException(self::INVALID);
         }
-        if ($record->isUsed()) {
+        // The claim is atomic: of the requests presenting this code at once, the database tells exactly
+        // one that it is the first, and every other one is a replay whatever it read a moment ago.
+        if (! $this->codes->consume($record, $now)) {
             $this->replayed($record, $client, $context, $now);
 
             throw new InvalidGrantException(self::INVALID);
         }
-        $record->consume($now);
-        $this->codes->save($record);
 
         if (! $record->client->equals($client)
             || $record->isExpired($now)

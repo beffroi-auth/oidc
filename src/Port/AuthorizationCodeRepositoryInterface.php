@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Port;
 
+use DateTimeImmutable;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,6 +29,14 @@ interface AuthorizationCodeRepositoryInterface
      * The code the access tokens of that grant descend from, whatever its state.
      */
     public function findByGrantId(Uuid $grantId): ?AuthorizationCode;
+
+    /**
+     * Claims the code for this presentation and dates its use, atomically: of any number of requests
+     * presenting the same code at once, exactly one is told true. Reading isUsed() and writing the date
+     * as two steps would let two of them win and issue tokens, and neither would see a replay
+     * (RFC 6749 §4.1.2, RFC 9700 §4.5). A caller told false holds a record whose state is the winner's.
+     */
+    public function consume(AuthorizationCode $code, DateTimeImmutable $now): bool;
 
     public function save(AuthorizationCode $code): void;
 }

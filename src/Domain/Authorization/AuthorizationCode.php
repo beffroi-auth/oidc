@@ -129,8 +129,9 @@ final class AuthorizationCode
 
     /**
      * The first presentation at the token endpoint, valid or not, consumes the code (RFC 6749 §4.1.2:
-     * "The client MUST NOT use the authorization code more than once"). The grant reads isUsed() before
-     * calling this: a replay is its decision, not a state error.
+     * "The client MUST NOT use the authorization code more than once"). Which presentation is the first
+     * is not decided here: the repository claims the record atomically and calls this on the winner, so
+     * being called twice is a programming error and not a replay.
      */
     public function consume(DateTimeImmutable $now): void
     {
@@ -138,6 +139,16 @@ final class AuthorizationCode
             throw new LogicException('An authorization code is consumed once; the grant checks isUsed() first.');
         }
         $this->usedAt = $now;
+    }
+
+    /**
+     * The instant the store holds, read back by a repository whose claim was lost: the record then says
+     * when the request that won consumed the code, instead of the nothing this one read a moment
+     * earlier. Only a repository calls this; a grant calls consume() through the claim.
+     */
+    public function recordConsumption(DateTimeImmutable $usedAt): void
+    {
+        $this->usedAt = $usedAt;
     }
 
     public function isUsed(): bool

@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Bridge\InMemory;
 
 use function array_find;
 use function array_values;
+use DateTimeImmutable;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Symfony\Component\Uid\Uuid;
@@ -33,6 +34,18 @@ final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepo
     public function findByGrantId(Uuid $grantId): ?AuthorizationCode
     {
         return array_find($this->codes, static fn (AuthorizationCode $code): bool => $code->grantId->equals($grantId));
+    }
+
+    public function consume(AuthorizationCode $code, DateTimeImmutable $now): bool
+    {
+        $stored = $this->codes[$code->codeHash] ?? null;
+        if ($stored === null || $stored->isUsed()) {
+            return false;
+        }
+        ++$this->saves;
+        $stored->consume($now);
+
+        return true;
     }
 
     public function save(AuthorizationCode $code): void
