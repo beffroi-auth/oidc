@@ -13,6 +13,7 @@ use Heidi\Core\Domain\Credential\PasswordHash;
 use Heidi\Core\Domain\Key\SignatureAlgorithm;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\PasswordHasherInterface;
+use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Client\RedirectUri;
@@ -53,6 +54,7 @@ final readonly class ClientDefinition
         'requires_consent',
         'id_token_signed_response_alg',
         'requires_pkce',
+        'access_token_format',
     ];
 
     /**
@@ -74,6 +76,7 @@ final readonly class ClientDefinition
         public bool $requiresConsent,
         public SignatureAlgorithm $idTokenSignedResponseAlg,
         public bool $requiresPkce,
+        public AccessTokenFormat $accessTokenFormat,
     ) {
     }
 
@@ -120,9 +123,10 @@ final readonly class ClientDefinition
         $allowedScopes = array_map(static fn (string $scope): Scope => new Scope($scope), self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']));
         $algorithm = self::enumCase($clientId, 'id_token_signed_response_alg', $definition['id_token_signed_response_alg'] ?? SignatureAlgorithm::RS256->value, SignatureAlgorithm::class);
 
+        $accessTokenFormat = self::enumCase($clientId, 'access_token_format', $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value, AccessTokenFormat::class);
         Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat);
     }
 
     public function hasSecret(): bool
@@ -163,6 +167,7 @@ final readonly class ClientDefinition
             $this->requiresConsent,
             $this->idTokenSignedResponseAlg,
             $this->requiresPkce,
+            $this->accessTokenFormat,
         );
     }
 

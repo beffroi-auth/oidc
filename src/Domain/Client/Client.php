@@ -61,6 +61,7 @@ final readonly class Client
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client, decision 0008; a request that carries a
      *                           code_challenge is verified all the same
+     * @param AccessTokenFormat $accessTokenFormat the shape of the access tokens issued to this client (architecture §4.6)
      */
     public function __construct(
         public Tenant $tenant,
@@ -76,6 +77,7 @@ final readonly class Client
         public bool $requiresConsent = true,
         public SignatureAlgorithm $idTokenSignedResponseAlg = SignatureAlgorithm::RS256,
         public bool $requiresPkce = true,
+        public AccessTokenFormat $accessTokenFormat = AccessTokenFormat::Jwt,
     ) {
         $allowedScopes ??= [Scope::openid()];
         self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce);

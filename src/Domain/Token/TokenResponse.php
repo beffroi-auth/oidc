@@ -19,6 +19,8 @@ final readonly class TokenResponse
 {
     public const string TOKEN_TYPE = 'Bearer';
 
+    public const string CONTENT_TYPE = 'application/json';
+
     /**
      * RFC 6749 §5.1 for a success, applied to the errors of §5.2 as well: nothing the token endpoint says
      * is cached.

@@ -17,7 +17,9 @@ use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
 use Heidi\Oidc\Exception\InvalidGrantException;
 use Heidi\Oidc\Exception\InvalidRequestException;
+use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
+use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
 use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use function preg_match;
 use Psr\Clock\ClockInterface;
@@ -40,10 +42,12 @@ use Symfony\Component\Uid\Uuid;
  * A code is consumed by its first presentation, before anything else is checked, so that a failed
  * attempt cannot be retried with another verifier; the repository claims it in one statement, so that
  * two requests arriving together cannot both be the first (RFC 9700 §4.5). Presented a second time, by
- * whichever client, the code is a replay: the grant itself is revoked and every refresh token descending from it with it
- * (RFC 6749 §4.1.2), and the request fails. The access tokens already issued stay valid for a resource
- * server that holds only the token and the keys, as RFC 9068 §4 intends; the provider's own UserInfo
- * knows where the grants live and refuses them, which is what the profile expects of it.
+ * whichever client, the code is a replay: the grant itself is revoked and every token descending from it
+ * with it (RFC 6749 §4.1.2), the refresh tokens and the stored access tokens when the store can
+ * (CanRevokeAccessTokensByGrantInterface), and the request fails. The self-contained access tokens
+ * already issued stay valid for a resource server that holds only the token and the keys, as RFC 9068 §4
+ * intends; the provider's own resources know where the grants live and refuse them, which is what the
+ * profile expects of it.
  *
  * A refresh token is issued when the client is registered for the refresh_token grant and either asked
  * for "offline_access" (OIDC Core §11) or is confidential and the tenant allows it without the scope
@@ -66,6 +70,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
     public function __construct(
         private AuthorizationCodeRepositoryInterface $codes,
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private AccessTokenRepositoryInterface $accessTokens,
         private TokenIssuer $issuer,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
@@ -145,8 +150,8 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
 
     /**
      * RFC 6749 §4.1.2: the request is denied and every token issued from the code is revoked. The grant
-     * carries the revocation for the access tokens, which are not stored; the refresh tokens carry their
-     * own, one row each.
+     * carries the revocation for the self-contained access tokens, which are not stored; the refresh
+     * tokens carry their own, one row each; the stored access tokens go.
      */
     private function replayed(AuthorizationCode $code, Client $presentedBy, RequestContext $context, DateTimeImmutable $now): void
     {
@@ -160,6 +165,9 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
             $token->revoke($now);
             $this->refreshTokens->save($token);
             $revoked[] = $token;
+        }
+        if ($this->accessTokens instanceof CanRevokeAccessTokensByGrantInterface) {
+            $this->accessTokens->revokeByGrant($code->grantId);
         }
         $this->events->dispatch(new AuthorizationCodeReplayed($now, $code, $presentedBy, $revoked, $context));
     }

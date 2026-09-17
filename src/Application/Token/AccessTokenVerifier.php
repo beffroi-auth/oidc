@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Token;
 
 use function array_is_list;
+use function array_keys;
 use function array_map;
 use DateTimeImmutable;
 use function explode;
@@ -17,7 +18,9 @@ use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTokenException;
+use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -25,29 +28,42 @@ use function is_string;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;
 use JsonException;
+use SensitiveParameter;
+use function str_contains;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Verifies an access token this provider issued, the way RFC 9068 §4 tells a resource server to: the
- * signature against the published keys of the tenant, the "typ" header equal to "at+jwt" so that an ID
- * token of the same issuer never passes for one, "iss" equal to the issuer, "exp" still ahead, and "aud"
- * naming the client the token was issued to ("client_id"), which must be a client the tenant knows: the
- * provider issues its access tokens to the client alone until a "resource" parameter says otherwise
- * (RFC 8707, later), and a token minted for another audience is not one of its own resources' tokens.
+ * Verifies an access token this provider issued, in either of its shapes (architecture §4.6).
  *
- * "grant_id" is read too, the grant the token descends from: this verifier does not ask whether that
- * grant is still alive, a resource server that holds only the token and the keys cannot; the provider's
- * own UserInfo does, because it already knows where the grants live.
+ * A self-contained token is verified the way RFC 9068 §4 tells a resource server to: the signature
+ * against the published keys of the tenant, the "typ" header equal to "at+jwt" so that an ID token of the
+ * same issuer never passes for one, "iss" equal to the issuer, "exp" still ahead, and "aud" naming the
+ * client the token was issued to ("client_id"), which must be a client the tenant knows: the provider
+ * issues its access tokens to the client alone until a "resource" parameter says otherwise (RFC 8707,
+ * later), and a token minted for another audience is not one of its own resources' tokens. Every claim
+ * the issuer writes is read strictly; a payload that lacks one was not written here.
+ *
+ * An opaque token is a lookup of the record the repository keeps under its hash: the record must belong
+ * to the tenant, not be expired, and its session must not have ended; a revoked token has no record
+ * any more and is refused as unknown. A token with a dot is a JWS
+ * (RFC 7515 §7.1); one without is an opaque value (StoredAccessToken::generate() writes none), so the
+ * shape is told from the token itself and never from a hint.
+ *
+ * Neither path asks whether the grant is still alive: a resource server that holds only a JWT and the
+ * keys cannot, and the provider's own resources do it once, in AccessTokenInspector.
  *
  * Everything that fails is invalid_token (RFC 6750 §3.1), with one description for whatever is not an
- * access token of this provider and another for one that merely expired, because a client that can
- * refresh should know that this is what to do.
+ * access token of this provider, another for one that merely expired, because a client that can refresh
+ * should know that this is what to do, and a third for one whose session ended, which a refresh will
+ * not cure either.
  */
 final readonly class AccessTokenVerifier
 {
     private const string NOT_ISSUED_HERE = 'The access token is not an access token issued by this provider.';
 
     private const string EXPIRED = 'The access token expired.';
+
+    private const string REVOKED = 'The access token was revoked.';
 
     /**
      * An access token payload is a flat object whose deepest members are lists of strings ("amr",
@@ -58,13 +74,59 @@ final readonly class AccessTokenVerifier
     public function __construct(
         private JwsVerifierInterface $verifier,
         private ClientRepositoryInterface $clients,
+        private AccessTokenRepositoryInterface $storedTokens,
+        private SubjectIdentifierResolverInterface $subjects,
     ) {
     }
 
     /**
      * @throws InvalidTokenException
      */
-    public function verify(Tenant $tenant, string $accessToken, DateTimeImmutable $now): VerifiedAccessToken
+    public function verify(Tenant $tenant, #[SensitiveParameter] string $accessToken, DateTimeImmutable $now): VerifiedAccessToken
+    {
+        if (str_contains($accessToken, '.')) {
+            return $this->verifyJwt($tenant, $accessToken, $now);
+        }
+
+        return $this->verifyOpaque($tenant, $accessToken, $now);
+    }
+
+    /**
+     * @throws InvalidTokenException
+     */
+    private function verifyOpaque(Tenant $tenant, #[SensitiveParameter] string $accessToken, DateTimeImmutable $now): VerifiedAccessToken
+    {
+        $token = $this->storedTokens->find($accessToken);
+        if ($token === null || ! $token->tenant->equals($tenant)) {
+            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+        }
+        if ($token->session->hasEnded()) {
+            throw new InvalidTokenException(self::REVOKED);
+        }
+        if ($token->isExpired($now)) {
+            throw new InvalidTokenException(self::EXPIRED);
+        }
+        $requested = $token->claimsRequest === null ? [] : array_keys($token->claimsRequest->userinfo);
+
+        return new VerifiedAccessToken(
+            $token->client,
+            $this->subjects->resolve($token->session->user, $token->client),
+            $token->session->id,
+            $token->grantId,
+            $token->scopes,
+            $requested,
+            $token->authenticatedAt,
+            $token->authenticationMethods,
+            $token->authenticationContextClass,
+            $token->issuedAt,
+            $token->expiresAt,
+        );
+    }
+
+    /**
+     * @throws InvalidTokenException
+     */
+    private function verifyJwt(Tenant $tenant, #[SensitiveParameter] string $accessToken, DateTimeImmutable $now): VerifiedAccessToken
     {
         try {
             $jws = $this->verifier->verify($tenant, $accessToken);
@@ -79,7 +141,9 @@ final readonly class AccessTokenVerifier
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         $exp = $claims['exp'] ?? null;
-        if (! is_int($exp)) {
+        $iat = $claims['iat'] ?? null;
+        $authTime = $claims['auth_time'] ?? null;
+        if (! is_int($exp) || ! is_int($iat) || ! is_int($authTime) || $exp <= $iat) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         // RFC 7519 §4.1.4: the current time must be before "exp"; no leeway, the clocks are the provider's own
@@ -92,8 +156,10 @@ final readonly class AccessTokenVerifier
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         $sub = $claims['sub'] ?? null;
+        $sid = $claims['sid'] ?? null;
         $grantId = $claims[JwtAccessTokenIssuer::GRANT_ID] ?? null;
-        if (! is_string($sub) || ! is_string($grantId) || ! Uuid::isValid($grantId)) {
+        $acr = $claims['acr'] ?? null;
+        if (! is_string($sub) || ! is_string($sid) || ! Uuid::isValid($sid) || ! is_string($grantId) || ! Uuid::isValid($grantId) || ! is_string($acr) || $acr === '') {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         try {
@@ -103,7 +169,19 @@ final readonly class AccessTokenVerifier
             throw new InvalidTokenException(self::NOT_ISSUED_HERE, $exception);
         }
 
-        return new VerifiedAccessToken($client, $subject, Uuid::fromString($grantId), $scopes, self::userinfoClaims($claims[JwtAccessTokenIssuer::USERINFO_CLAIMS] ?? null), new DateTimeImmutable('@' . $exp));
+        return new VerifiedAccessToken(
+            $client,
+            $subject,
+            Uuid::fromString($sid),
+            Uuid::fromString($grantId),
+            $scopes,
+            self::stringList($claims[JwtAccessTokenIssuer::USERINFO_CLAIMS] ?? []),
+            new DateTimeImmutable('@' . $authTime),
+            self::stringList($claims['amr'] ?? null),
+            $acr,
+            new DateTimeImmutable('@' . $iat),
+            new DateTimeImmutable('@' . $exp),
+        );
     }
 
     /**
@@ -155,25 +233,23 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * Architecture §4.6: a list of claim names; absent, the client asked for none by name.
+     * A list of non-empty strings, as "amr" (RFC 8176) and "userinfo_claims" (architecture §4.6) are
+     * written; "userinfo_claims" is absent when the client asked for no claim by name, "amr" never is.
      *
      * @throws InvalidTokenException
      * @return list<string>
      */
-    private static function userinfoClaims(mixed $names): array
+    private static function stringList(mixed $values): array
     {
-        if ($names === null) {
-            return [];
-        }
-        if (! is_array($names) || ! array_is_list($names)) {
+        if (! is_array($values) || ! array_is_list($values)) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
-        foreach ($names as $name) {
-            if (! is_string($name) || $name === '') {
+        foreach ($values as $value) {
+            if (! is_string($value) || $value === '') {
                 throw new InvalidTokenException(self::NOT_ISSUED_HERE);
             }
         }
 
-        return $names;
+        return $values;
     }
 }

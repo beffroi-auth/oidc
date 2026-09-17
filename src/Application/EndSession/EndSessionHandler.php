@@ -15,6 +15,8 @@ use Heidi\Oidc\Domain\EndSession\LoggedOut;
 use Heidi\Oidc\Domain\EndSession\LogoutConfirmationReason;
 use Heidi\Oidc\Domain\EndSession\LogoutConfirmationRequired;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
+use Heidi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
 use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
@@ -30,15 +32,16 @@ use Psr\Clock\ClockInterface;
  *
  * Ending a session goes through the SessionTerminator of the core, so that it leaves the same trace
  * as any other end (AuthenticationSessionEnded, ended by the relying party), and revokes every refresh
- * token issued in it (decision 0006): the grant already refuses a token of an ended session, the
- * revocation makes it visible. Both writes are the ones the protocol needs before answering
- * (architecture §5.6).
+ * token issued in it, and every stored access token when the store can (CanRevokeAccessTokensBySessionInterface),
+ * decision 0006: the grant and the verifier already refuse a token of an ended session, the revocation
+ * makes it visible. These writes are the ones the protocol needs before answering (architecture §5.6).
  */
 final readonly class EndSessionHandler
 {
     public function __construct(
         private SessionTerminator $sessions,
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private AccessTokenRepositoryInterface $accessTokens,
         private ClockInterface $clock,
     ) {
     }
@@ -117,6 +120,9 @@ final readonly class EndSessionHandler
             }
             $token->revoke($now);
             $this->refreshTokens->save($token);
+        }
+        if ($this->accessTokens instanceof CanRevokeAccessTokensBySessionInterface) {
+            $this->accessTokens->revokeBySession($session->id);
         }
         $this->sessions->end($session, SessionEnd::RelyingParty, $context);
 

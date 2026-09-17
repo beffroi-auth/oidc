@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Discovery;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use Heidi\Core\Domain\Key\SignatureAlgorithm;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Issuer;
@@ -115,7 +117,9 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * The document, members in the order OIDC Discovery §3 lists them, then those of RFC 8414 §2 and
+     * The document, members in the order OIDC Discovery §3 lists them, then those of RFC 8414 §2 (the
+     * revocation and introspection endpoints, how a client authenticates there, RFC 7009 §2.1 and
+     * RFC 7662 §2.1, and the algorithm a signed introspection response is signed with, RFC 9701 §6) and
      * RFC 9207 §3 it does not have, then the end session endpoint (RP-Initiated Logout §2.1).
      *
      * @return array<string, mixed>
@@ -141,6 +145,11 @@ final readonly class ProviderMetadata
             'request_parameter_supported' => false,
             'request_uri_parameter_supported' => false,
             'code_challenge_methods_supported' => self::values(CodeChallengeMethod::cases()),
+            'revocation_endpoint' => $this->endpoints->revocation,
+            'revocation_endpoint_auth_methods_supported' => self::values(TokenEndpointAuthMethod::cases()),
+            'introspection_endpoint' => $this->endpoints->introspection,
+            'introspection_endpoint_auth_methods_supported' => self::values(self::secretMethods()),
+            'introspection_signing_alg_values_supported' => self::values(SignatureAlgorithm::cases()),
             'authorization_response_iss_parameter_supported' => true,
             'end_session_endpoint' => $this->endpoints->endSession,
         ];
@@ -152,6 +161,17 @@ final readonly class ProviderMetadata
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
+    }
+
+    /**
+     * RFC 7662 §2.1: the introspection endpoint requires client authentication, which a public client
+     * cannot give; the methods announced are the ones that prove a secret.
+     *
+     * @return list<TokenEndpointAuthMethod>
+     */
+    private static function secretMethods(): array
+    {
+        return array_values(array_filter(TokenEndpointAuthMethod::cases(), static fn (TokenEndpointAuthMethod $method): bool => $method->usesSecret()));
     }
 
     /**
