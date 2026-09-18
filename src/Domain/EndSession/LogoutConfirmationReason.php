@@ -18,6 +18,14 @@ enum LogoutConfirmationReason: string
     case NoHint = 'no_hint';
 
     /**
+     * The request carries an id_token_hint this provider cannot verify today: signed by a key it retired,
+     * or by nobody it knows. Nothing the hint says is trusted, and the request is treated as one without
+     * a hint (§6), instead of being refused: a relying party that kept an ID token across a rotation is
+     * still asking for a logout.
+     */
+    case InvalidHint = 'invalid_hint';
+
+    /**
      * The hint names another user than the one of the session.
      */
     case DifferentUser = 'different_user';

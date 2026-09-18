@@ -25,7 +25,8 @@ use Psr\Clock\ClockInterface;
  * Logout 1.0 §2, architecture §4.9). The session ends without a question only when the hint proves
  * the request is about it: same user and same session as the "sid" of the hint. Otherwise §2 requires
  * asking the user, and §6 says why: a logout request without a valid hint is a denial of service in
- * waiting. The integration shows the confirmation page, which re-submits the same parameters, and calls
+ * waiting; a hint the provider could not verify (signed by a retired key, or forged) is such a request.
+ * The integration shows the confirmation page, which re-submits the same parameters, and calls
  * confirm() when the user said yes; there is nothing to park in between. When the browser holds no
  * active session, there is nothing to ask and nothing to end: the request is honoured as is (§4, a
  * logout request is idempotent).
@@ -82,13 +83,13 @@ final readonly class EndSessionHandler
 
     /**
      * §2: the provider must ask when no id_token_hint was given, or when the hint does not belong to
-     * the current session and user.
+     * the current session and user; a hint that could not be verified belongs to nothing.
      */
     private static function confirmationReason(EndSessionRequest $request, AuthenticationSession $session): ?LogoutConfirmationReason
     {
         $hint = $request->idTokenHint;
         if ($hint === null) {
-            return LogoutConfirmationReason::NoHint;
+            return $request->invalidIdTokenHint ? LogoutConfirmationReason::InvalidHint : LogoutConfirmationReason::NoHint;
         }
         if (! $session->user->subject->equals($hint->subject)) {
             return LogoutConfirmationReason::DifferentUser;

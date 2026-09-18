@@ -23,6 +23,13 @@ use Heidi\Oidc\Port\ClientRepositoryInterface;
  * and only when it registered that exact URI (§3). A failure is invalid_request, shown to the user:
  * §4 forbids any redirection once the request is found wrong, so no error is ever redirectable here.
  *
+ * A hint that is a signed JWT but not one this provider can verify today (signed by a key it retired,
+ * or by nobody it knows) is not a failure of the request: it identifies no client and proves nothing,
+ * and the request goes on as one without a hint, marked so that the handler asks the user (§2, §6)
+ * instead of refusing a relying party that kept an ID token across a rotation. Its
+ * post_logout_redirect_uri is then honoured only when client_id identifies the client (§3), dropped
+ * otherwise: the provider never redirects on the word of a token it did not verify.
+ *
  * Every parameter is read as a single string: a repeated or nested parameter is refused, a parameter
  * without a value is treated as omitted, an unknown parameter is ignored (RequestParameters).
  */
@@ -42,9 +49,17 @@ final readonly class EndSessionRequestParser
     public function parse(Tenant $tenant, array $parameters): EndSessionRequest
     {
         $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', false);
-        $hint = $idTokenHint === null ? null : $this->idTokenHints->read($tenant, $idTokenHint, false);
+        $hint = null;
+        $invalidHint = false;
+        if ($idTokenHint !== null) {
+            try {
+                $hint = $this->idTokenHints->read($tenant, $idTokenHint, false);
+            } catch (InvalidRequestException) {
+                $invalidHint = true;
+            }
+        }
         $client = $this->client($tenant, $hint, RequestParameters::single($parameters, 'client_id', false));
-        $postLogoutRedirectUri = self::postLogoutRedirectUri($client, RequestParameters::single($parameters, 'post_logout_redirect_uri', false));
+        $postLogoutRedirectUri = self::postLogoutRedirectUri($client, RequestParameters::single($parameters, 'post_logout_redirect_uri', false), $invalidHint);
 
         return new EndSessionRequest(
             $tenant,
@@ -54,6 +69,7 @@ final readonly class EndSessionRequestParser
             RequestParameters::state($parameters, false),
             RequestParameters::text($parameters, 'logout_hint', false),
             RequestParameters::uiLocales($parameters, false),
+            $invalidHint,
         );
     }
 
@@ -85,14 +101,20 @@ final readonly class EndSessionRequestParser
 
     /**
      * §3: no redirection without a client to check the URI against, and none to a URI the client did
-     * not register byte for byte.
+     * not register byte for byte. Without a client, the URI is a fault of the request, unless the hint
+     * that should have named the client could not be verified: the URI is then dropped, and the user
+     * asked, rather than a relying party refused for a token the provider no longer verifies.
      */
-    private static function postLogoutRedirectUri(?Client $client, ?string $postLogoutRedirectUri): ?RedirectUri
+    private static function postLogoutRedirectUri(?Client $client, ?string $postLogoutRedirectUri, bool $invalidHint): ?RedirectUri
     {
         if ($postLogoutRedirectUri === null) {
             return null;
         }
         if ($client === null) {
+            if ($invalidHint) {
+                return null;
+            }
+
             throw new InvalidRequestException('The post_logout_redirect_uri parameter requires id_token_hint or client_id to identify the client.');
         }
         if (! $client->hasPostLogoutRedirectUri($postLogoutRedirectUri)) {

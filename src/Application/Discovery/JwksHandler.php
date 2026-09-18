@@ -17,11 +17,18 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 final readonly class JwksHandler
 {
     /**
-     * @param int $maxAge how long a client may cache the set, in seconds; five minutes by default, short enough for a rotation to be seen without a restart
+     * Five minutes: short enough for a rotation to be seen without a restart, long enough to spare the
+     * endpoint. The staging window of a rotation is at least this plus the refetch cooldown of the
+     * relying party (architecture §3.3), so the value is one setting of the bundle, never two.
+     */
+    public const int DEFAULT_MAX_AGE = 300;
+
+    /**
+     * @param int $maxAge how long a client may cache the set, in seconds
      */
     public function __construct(
         private SigningKeyProviderInterface $keys,
-        private int $maxAge = 300,
+        private int $maxAge = self::DEFAULT_MAX_AGE,
     ) {
         if ($maxAge < 0) {
             throw new InvalidArgumentException('The cache lifetime of the JWK Set is a number of seconds.');

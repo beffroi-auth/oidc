@@ -31,8 +31,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * verify() adds what the authorization endpoint needs: "aud" containing the client identifier, and the
  * error sent back to the client. The logout endpoint calls read() and finds the client in "aud" itself,
- * because it may have no other way to know which client asks; its errors are shown, never redirected
- * (RP-Initiated Logout §4).
+ * because it may have no other way to know which client asks; it turns the refusal into a hint that
+ * identifies nobody and asks the user (RP-Initiated Logout §2, §6), and shows its own errors, never
+ * redirected (§4).
  */
 final readonly class IdTokenHintVerifier
 {
