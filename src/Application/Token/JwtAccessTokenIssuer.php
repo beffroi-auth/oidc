@@ -45,7 +45,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
     public function __construct(
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
-        private DateInterval $lifetime = new DateInterval('PT10M'),
+        public DateInterval $lifetime = new DateInterval('PT10M'),
         private SignatureAlgorithm $algorithm = SignatureAlgorithm::RS256,
     ) {
     }

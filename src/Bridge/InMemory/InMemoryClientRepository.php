@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Bridge\InMemory;
 
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 
@@ -27,6 +28,11 @@ final class InMemoryClientRepository implements ClientRepositoryInterface
         }
 
         return null;
+    }
+
+    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
+    {
+        return array_any($this->clients, fn ($client) => $client->belongsTo($tenant) && $client->accessTokenFormat === $format);
     }
 
     public function save(Client $client): void

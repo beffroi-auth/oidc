@@ -36,7 +36,7 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
         private ClaimsProviderInterface $claims,
-        private DateInterval $lifetime = new DateInterval('PT10M'),
+        public DateInterval $lifetime = new DateInterval('PT10M'),
     ) {
     }
 

@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Bridge\Configuration;
 use Heidi\Core\Domain\Credential\PasswordHash;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\PasswordHasherInterface;
+use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use WeakMap;
@@ -67,5 +68,13 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface
         }
 
         return $clients[$clientId];
+    }
+
+    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
+    {
+        if ($tenant->slug !== $this->tenantSlug) {
+            return false;
+        }
+        return array_any($this->definitions, fn ($definition) => $definition->accessTokenFormat === $format);
     }
 }
