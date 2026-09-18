@@ -13,20 +13,14 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * What a protected resource of the provider knows once an access token has been verified, whatever its
- * shape (RFC 9068 §4 for the JWT, the record of the provider for the opaque one, architecture §4.6): the
- * client it was issued to, the subject it names, the session and the grant it descends from ("sid",
- * "grant_id"), the scopes it carries (§2.2.3), the claims the client asked for by name from UserInfo
- * ("userinfo_claims"), the authentication it stands on ("auth_time", "amr", "acr", §2.2.1) and its two
- * dates. The user behind the subject is not here: the resource looks them up, and answers for what it
- * finds. Whether the grant is still alive is a question for the provider's own resources: nothing here
- * reads a grant, a resource server holding only a JWT and the keys cannot either.
+ * What a verified access token says, whatever its shape (RFC 9068 §4, architecture §4.6). Neither the
+ * user nor the grant is looked up here.
  */
 final readonly class VerifiedAccessToken
 {
     /**
      * @param list<Scope> $scopes
-     * @param list<string> $userinfoClaims the names of OIDC Core §5.5, in the order the client gave them
+     * @param list<string> $userinfoClaims the names of OIDC Core §5.5
      * @param list<string> $authenticationMethods the "amr" values
      * @param string $authenticationContextClass the "acr" value
      */

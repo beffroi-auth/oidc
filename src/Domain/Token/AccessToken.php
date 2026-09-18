@@ -9,9 +9,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * An access token as the token endpoint hands it out (RFC 6749 §1.4, §5.1): the value the client will
- * present, and until when it is valid. Stateless: nothing of it is stored (architecture §4.6); what the
- * value contains is the issuer's business.
+ * An access token as the token endpoint hands it out (RFC 6749 §5.1); what the value contains is the issuer's business.
  */
 final readonly class AccessToken
 {
@@ -30,13 +28,13 @@ final readonly class AccessToken
     }
 
     /**
-     * RFC 6749 §5.1 "expires_in": the lifetime in seconds, counted from issuance.
+     * RFC 6749 §5.1 "expires_in".
      *
      * @return positive-int
      */
     public function expiresIn(): int
     {
-        /** @var positive-int $seconds the constructor guarantees it */
+        /** @var positive-int $seconds */
         $seconds = $this->expiresAt->getTimestamp() - $this->issuedAt->getTimestamp();
 
         return $seconds;

@@ -16,11 +16,8 @@ use Heidi\Oidc\Exception\UnsupportedGrantTypeException;
 use function sprintf;
 
 /**
- * The token endpoint (RFC 6749 §3.2, architecture §4.5): the client is authenticated first, so that
- * nothing about the request is told to a caller that is not a client; then "grant_type" names a grant
- * the provider offers ("unsupported_grant_type" otherwise) and the client is registered for
- * ("unauthorized_client" otherwise); then the grant does the rest. Errors are the ones of §5.2, never a
- * redirect: the integration turns the exception into a TokenErrorResponse.
+ * The token endpoint (RFC 6749 §3.2, architecture §4.5): the client first, then the grant type, then the
+ * grant. Errors are the ones of §5.2, never a redirect.
  */
 final readonly class TokenHandler
 {
@@ -47,8 +44,7 @@ final readonly class TokenHandler
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization request header, if any
-     * @param array<string, mixed> $parameters the decoded application/x-www-form-urlencoded body
+     * @param array<string, mixed> $parameters the form parameters of the request body
      *
      * @throws OAuth2Exception
      */

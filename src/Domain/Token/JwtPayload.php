@@ -11,18 +11,17 @@ use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 
 /**
- * How a claims set becomes the payload of a JWT (RFC 7519 §3): one JSON object, UTF-8 as it is, slashes
- * as they are, a float kept a float. A claim that cannot be encoded is a programming error, not a
- * response.
+ * A claims set as the payload of a JWT (RFC 7519 §3): UTF-8 and slashes as they are, a float kept a float.
  */
 final readonly class JwtPayload
 {
     /**
+     * An empty claims set is "{}", which json_encode() would write as "[]".
+     *
      * @param array<string, mixed> $claims
      */
     public static function encode(array $claims): string
     {
-        // an empty claims set is still an object, which json_encode() would write as a list
         if ($claims === []) {
             return '{}';
         }

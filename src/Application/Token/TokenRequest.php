@@ -9,15 +9,13 @@ use function is_string;
 use function sprintf;
 
 /**
- * The form parameters of a token request (RFC 6749 §3.2, §4.1.3, §6), read with the rules of §3.1 that
- * the authorization endpoint applies too: a parameter without a value is treated as omitted, a value that
- * is not a single string (an array, from a repeated or nested parameter) is refused rather than reduced
- * to one. The client credentials are read by the ClientAuthenticator, not here.
+ * The form parameters of a token request (RFC 6749 §3.2), read with the rules of §3.1: empty is omitted,
+ * repeated or nested is refused. The client credentials are read by the ClientAuthenticator.
  */
 final readonly class TokenRequest
 {
     /**
-     * @param array<string, mixed> $parameters the decoded application/x-www-form-urlencoded body
+     * @param array<string, mixed> $parameters
      */
     public function __construct(
         private array $parameters,

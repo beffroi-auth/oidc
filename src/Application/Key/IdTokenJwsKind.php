@@ -10,8 +10,7 @@ use Heidi\Core\Port\IssuedJwsKindInterface;
 use Heidi\Oidc\Application\Token\JwtIdTokenIssuer;
 
 /**
- * The ID token, a JWS every tenant issues (OIDC Core §2), alive for the lifetime its issuer writes in
- * "exp": read from the issuer so that the retirement of a key and the tokens it signed cannot disagree.
+ * The ID token (OIDC Core §2). The lifetime is read from the issuer so that the two cannot disagree.
  */
 final readonly class IdTokenJwsKind implements IssuedJwsKindInterface
 {

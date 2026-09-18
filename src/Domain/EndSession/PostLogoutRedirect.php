@@ -7,10 +7,8 @@ namespace Heidi\Oidc\Domain\EndSession;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 
 /**
- * Where the user agent is sent once the logout is done (OIDC RP-Initiated Logout 1.0 §3): the
- * post_logout_redirect_uri the client presented, byte for byte equal to one it registered, with "state"
- * echoed when the request carried one. Nothing else: no code, no "iss" (RFC 9207 covers authorization
- * responses only), and never a URI the client did not register.
+ * Where the user agent is sent once the logout is done (RP-Initiated Logout §3): a registered URI, "state"
+ * echoed, no "iss" (RFC 9207 covers authorization responses only).
  */
 final readonly class PostLogoutRedirect
 {
@@ -20,9 +18,6 @@ final readonly class PostLogoutRedirect
     ) {
     }
 
-    /**
-     * The URI the user agent is sent to.
-     */
     public function toUri(): string
     {
         if ($this->state === null) {

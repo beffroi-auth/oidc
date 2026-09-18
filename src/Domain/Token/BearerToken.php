@@ -10,16 +10,9 @@ use function preg_match;
 use SensitiveParameter;
 
 /**
- * A bearer token as a protected resource receives it (RFC 6750 §2): in the Authorization header with
- * the "Bearer" scheme (§2.1, the scheme compared without regard to case as RFC 9110 §11.1 requires), or as
- * the "access_token" parameter of an application/x-www-form-urlencoded body (§2.2). Never in the query
- * string (§2.3): RFC 9700 §4.3.2 advises against it, URLs end up in logs and referrers, and the
- * integration is not to hand query parameters here. Both methods at once is one request too many (§2,
- * "Clients MUST NOT use more than one method"): invalid_request.
- *
- * The token itself is the b64token of §2.1: an opaque string that a compact JWS fits. A header that
- * names the scheme without a token that fits it is malformed, invalid_request (§3.1); a header of another
- * scheme is not a bearer token at all and is left to whoever understands it.
+ * A bearer token as a protected resource receives it (RFC 6750 §2): the Authorization header (§2.1) or
+ * the form body (§2.2), never the query string (§2.3, RFC 9700 §4.3.2), never both. A header of another
+ * scheme is left to whoever understands it.
  */
 final readonly class BearerToken
 {
@@ -31,9 +24,7 @@ final readonly class BearerToken
     private const string HEADER = '/^Bearer +(' . self::B64TOKEN . ')$/i';
 
     /**
-     * The header names the Bearer scheme when "Bearer" is not followed by another character of a scheme
-     * name (tchar, RFC 9110 §5.6.2): "Bearerish" is another scheme, "Bearer" followed by anything else,
-     * a token, a tab, nothing, is ours to read.
+     * "Bearer" not followed by another tchar (RFC 9110 §5.6.2): "Bearerish" is another scheme.
      */
     private const string SCHEME = '/^Bearer(?![!#$%&\'*+\-.^_`|~0-9A-Za-z])/i';
 
@@ -46,11 +37,9 @@ final readonly class BearerToken
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization request header, if any
-     * @param array<string, mixed> $parameters the decoded application/x-www-form-urlencoded body, if any; never the query string
+     * @param array<string, mixed> $parameters the form parameters of the request body, never the query string
      *
      * @throws InvalidRequestException when the token is malformed or sent twice
-     * @return self|null null when the request carries no bearer token
      */
     public static function fromRequest(?string $authorizationHeader, array $parameters): ?self
     {

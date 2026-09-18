@@ -13,14 +13,9 @@ use Heidi\Oidc\Port\ClientRepositoryInterface;
 use WeakMap;
 
 /**
- * The clients of a tenant, declared in the bundle configuration (architecture §4.1 and §5.1). Definitions
- * are validated when the repository is built, so that a wrong one fails at boot; the secret of a client is
- * hashed the first time that client is looked up, then kept for the life of the process, because hashing
- * costs what a password hash costs and most requests never look a client up.
- *
- * The repository holds no tenant: it knows the slug its definitions belong to and builds the clients for
- * the tenant instance it is given, one set per instance, so that a client always points at the tenant of
- * the request that asked for it, whatever the integration does with tenant instances between requests.
+ * The clients declared in the configuration (architecture §4.1, §5.1): validated at boot, the secret hashed
+ * on the first lookup. The clients are built per tenant instance, so that a client always points at the
+ * tenant of the request that asked for it.
  */
 final class ConfigurationClientRepository implements ClientRepositoryInterface
 {
@@ -30,7 +25,7 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface
     private array $definitions = [];
 
     /**
-     * @var array<string, PasswordHash> the hashed secrets, by client identifier, hashed once
+     * @var array<string, PasswordHash> by client identifier
      */
     private array $secretHashes = [];
 
@@ -40,8 +35,7 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface
     private WeakMap $clients;
 
     /**
-     * @param string $tenantSlug the tenant the definitions belong to
-     * @param array<string, array<string, mixed>> $definitions keyed by client identifier, as the configuration gives them
+     * @param array<string, array<string, mixed>> $definitions by client identifier
      */
     public function __construct(
         private readonly string $tenantSlug,

@@ -8,8 +8,7 @@ use RuntimeException;
 use function sprintf;
 
 /**
- * An interaction was resumed after it had been granted, denied or failed. Shown to the user by the
- * integration, never sent to the client: the client already received its answer.
+ * Resumed after it was granted, denied or failed; shown to the user, never sent to the client.
  */
 final class InteractionCompletedException extends RuntimeException implements ExceptionInterface
 {

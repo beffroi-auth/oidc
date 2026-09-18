@@ -8,10 +8,8 @@ use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * The successful answer of the UserInfo endpoint (OIDC Core §5.3.2): a JSON object whose first member is
- * "sub", followed by the claims about the end user, each a JSON value of its own kind, never stringified.
- * The response is about a person and was obtained with a credential: nothing of it is cached (RFC 6750
- * §5.2 for the token, and the same care for what it unlocks).
+ * The successful answer of the UserInfo endpoint (OIDC Core §5.3.2): "sub" first, every claim a JSON value
+ * of its own kind, nothing cached.
  */
 final readonly class UserInfoResponse
 {
@@ -28,8 +26,7 @@ final readonly class UserInfoResponse
     public array $claims;
 
     /**
-     * @param string $subject the "sub" the token names, as the resolver of §8 rendered it
-     * @param array<string, mixed> $claims the claims about the user; a "sub" among them is dropped, §5.3.2 makes it the token's
+     * @param array<string, mixed> $claims a "sub" among them is dropped, §5.3.2 makes it the token's
      */
     public function __construct(
         public string $subject,
@@ -44,9 +41,6 @@ final readonly class UserInfoResponse
         ] + $claims;
     }
 
-    /**
-     * @return string the JSON object, UTF-8, booleans and numbers as they are
-     */
     public function toJson(): string
     {
         return JwtPayload::encode($this->claims);

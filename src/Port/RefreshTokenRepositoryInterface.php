@@ -8,9 +8,8 @@ use Heidi\Oidc\Domain\Token\RefreshToken;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Where refresh tokens live between two refreshes (architecture §4.6). A token is looked up by its hash,
- * never by its value. Rotated and revoked tokens stay, so that the reuse of one can be told from an
- * unknown token and the family it belongs to can be revoked at once.
+ * Where refresh tokens live (architecture §4.6). Rotated and revoked tokens stay, so that a reuse can be
+ * told from an unknown token.
  */
 interface RefreshTokenRepositoryInterface
 {
@@ -20,27 +19,19 @@ interface RefreshTokenRepositoryInterface
     public function findByTokenHash(string $tokenHash): ?RefreshToken;
 
     /**
-     * Every token of the family, rotated and revoked ones included.
-     *
-     * @return list<RefreshToken>
+     * @return list<RefreshToken> rotated and revoked ones included
      */
     public function findByFamily(Uuid $family): array;
 
     /**
-     * Every token descending from the code, whatever its state: the replay of a code revokes them all
-     * (RFC 6749 §4.1.2).
-     *
      * @param string $codeHash see AuthorizationCode::hash()
      *
-     * @return list<RefreshToken>
+     * @return list<RefreshToken> whatever their state
      */
     public function findByAuthorizationCode(string $codeHash): array;
 
     /**
-     * Every token issued in the session, whatever its state: the end of a session revokes them all
-     * (decision 0006, architecture §4.9).
-     *
-     * @return list<RefreshToken>
+     * @return list<RefreshToken> whatever their state
      */
     public function findBySession(Uuid $session): array;
 

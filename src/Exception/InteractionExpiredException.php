@@ -8,8 +8,7 @@ use RuntimeException;
 use function sprintf;
 
 /**
- * An interaction was resumed after its lifetime. Shown to the user by the integration, who starts again
- * from the client; nothing is sent to the redirect URI on the client's behalf.
+ * Resumed after its lifetime; shown to the user, never sent to the client.
  */
 final class InteractionExpiredException extends RuntimeException implements ExceptionInterface
 {

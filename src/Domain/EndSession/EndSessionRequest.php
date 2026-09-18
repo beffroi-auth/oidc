@@ -11,24 +11,14 @@ use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * A logout request that passed validation (OIDC RP-Initiated Logout 1.0 §2, architecture §4.9): the
- * hint verified and naming a client of the tenant, the client the one the hint or client_id names, the
- * post_logout_redirect_uri one that client registered. Everything the handler needs is here, typed;
- * nothing is read from the raw parameters again. A request may name no client at all: a logout link
- * without parameters is a valid request, it just cannot redirect anywhere afterwards (§3). A request may
- * also carry a hint the provider could not verify (signed by a retired key, or by nobody it knows): the
- * hint is then absent here and the request says so, for the handler to ask the user (§2, §6).
+ * A logout request that passed validation (RP-Initiated Logout §2, architecture §4.9), typed. It may
+ * name no client at all (§3), or carry a hint the provider could not verify, absent here and said so.
  */
 final readonly class EndSessionRequest
 {
     /**
-     * @param Client|null $client the client the request identifies, by the audience of the hint or by client_id
-     * @param IdTokenHint|null $idTokenHint the verified hint, issued to the client
-     * @param RedirectUri|null $postLogoutRedirectUri registered on the client, byte for byte
-     * @param string|null $state echoed as is in the redirect (§2 "state")
-     * @param string|null $logoutHint a hint about the end user (§2 "logout_hint"), shown to nobody but the confirmation page
-     * @param list<string> $uiLocales preferred languages, most preferred first (§2 "ui_locales")
-     * @param bool $invalidIdTokenHint whether the request carried an id_token_hint this provider could not verify, which identifies no client and proves no session
+     * @param list<string> $uiLocales most preferred first
+     * @param bool $invalidIdTokenHint the request carried a hint this provider could not verify
      */
     public function __construct(
         public Tenant $tenant,
@@ -57,9 +47,6 @@ final readonly class EndSessionRequest
         }
     }
 
-    /**
-     * Where to send the user agent after the logout, when the client asked and may be honoured (§3).
-     */
     public function redirect(): ?PostLogoutRedirect
     {
         if ($this->postLogoutRedirectUri === null) {

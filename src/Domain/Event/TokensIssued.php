@@ -12,17 +12,12 @@ use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\RefreshToken;
 
 /**
- * The token endpoint answered a client. The event says what was authorized and what kind of tokens
- * left, never their values: the access token and the ID token are not stored anywhere, the refresh
- * token is named by its record.
+ * The token endpoint answered a client: what was authorized and which tokens left, never their values.
  */
 final readonly class TokensIssued implements DomainEventInterface
 {
     public Tenant $tenant;
 
-    /**
-     * @param RefreshToken|null $refreshToken the record of the refresh token issued, if one was
-     */
     public function __construct(
         public DateTimeImmutable $occurredAt,
         public GrantedAuthorization $authorization,

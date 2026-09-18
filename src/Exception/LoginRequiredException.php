@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Exception;
 
 /**
- * OIDC Core §3.1.2.6 "login_required": the request said prompt=none and the user is not authenticated,
- * or not as the request demands (prompt is read after the client and its redirect URI, so the error is
- * always sent back to the client).
+ * OIDC Core §3.1.2.6 "login_required": prompt=none and the user is not authenticated as the request demands.
  */
 final class LoginRequiredException extends OAuth2Exception
 {

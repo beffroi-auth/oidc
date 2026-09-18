@@ -16,15 +16,9 @@ use Stringable;
 use function strtolower;
 
 /**
- * A redirection URI registered for a client, for the authorization response (RFC 6749 §3.1.2) or for the
- * end of a session (OIDC RP-Initiated Logout 1.0 §2). It is kept byte for byte: the request is compared to
- * it with a simple string comparison (RFC 6749 §3.1.2.3, RFC 3986 §6.2.1), never with a pattern, never
- * after a normalisation (RFC 9700 §4.1.3).
- *
- * The URI is absolute, without a fragment (RFC 6749 §3.1.2) and over HTTPS. The one named exception is
- * plain HTTP on a loopback host, the same one the issuer allows, so that a client under development can
- * register "http://localhost:8000/login/check". Custom schemes and the variable loopback port of native
- * applications (RFC 8252 §7.3) are not accepted: they are out of the scope of the first spike.
+ * A redirection URI registered for a client (RFC 6749 §3.1.2, RP-Initiated Logout §2), compared byte for
+ * byte (RFC 6749 §3.1.2.3, RFC 9700 §4.1.3). Absolute, no fragment, HTTPS; plain HTTP on a loopback host
+ * only. No custom scheme, no variable loopback port (RFC 8252 §7.3).
  */
 final readonly class RedirectUri implements Stringable
 {
@@ -64,8 +58,7 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * The URI with response parameters added to its query component (RFC 6749 §4.1.2), the registered
-     * query retained, every value percent-encoded (RFC 3986 §2.1) so that every parser reads it the same way.
+     * RFC 6749 §4.1.2: the registered query retained, every value percent-encoded (RFC 3986 §2.1).
      *
      * @param non-empty-array<string, string> $parameters
      */

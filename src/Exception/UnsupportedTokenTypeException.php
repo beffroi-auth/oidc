@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Exception;
 
 /**
- * RFC 7009 §2.2.1 "unsupported_token_type": the revocation endpoint was handed a token of this provider
- * that it has no way to revoke, a self-contained access token, which lives in nobody's store and expires
- * on its own (architecture §4.6). Answered 400, never a redirect.
+ * RFC 7009 §2.2.1 "unsupported_token_type": a token the provider has no way to revoke (architecture §4.6).
  */
 final class UnsupportedTokenTypeException extends OAuth2Exception
 {

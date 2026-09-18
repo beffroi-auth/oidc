@@ -21,21 +21,10 @@ use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * Decides what a validated logout request does to the session the browser holds (OIDC RP-Initiated
- * Logout 1.0 §2, architecture §4.9). The session ends without a question only when the hint proves
- * the request is about it: same user and same session as the "sid" of the hint. Otherwise §2 requires
- * asking the user, and §6 says why: a logout request without a valid hint is a denial of service in
- * waiting; a hint the provider could not verify (signed by a retired key, or forged) is such a request.
- * The integration shows the confirmation page, which re-submits the same parameters, and calls
- * confirm() when the user said yes; there is nothing to park in between. When the browser holds no
- * active session, there is nothing to ask and nothing to end: the request is honoured as is (§4, a
- * logout request is idempotent).
- *
- * Ending a session goes through the SessionTerminator of the core, so that it leaves the same trace
- * as any other end (AuthenticationSessionEnded, ended by the relying party), and revokes every refresh
- * token issued in it, and every stored access token when the store can (CanRevokeAccessTokensBySessionInterface),
- * decision 0006: the grant and the verifier already refuse a token of an ended session, the revocation
- * makes it visible. These writes are the ones the protocol needs before answering (architecture §5.6).
+ * Decides what a logout request does to the session the browser holds (RP-Initiated Logout §2,
+ * architecture §4.9): ends it without a question when the hint proves the request is about it, asks the
+ * user otherwise (§2, §6), honours the request as is when there is no session (§4). Ending a session
+ * goes through the SessionTerminator and revokes the tokens issued in it (decision 0006).
  */
 final readonly class EndSessionHandler
 {
@@ -47,9 +36,6 @@ final readonly class EndSessionHandler
     ) {
     }
 
-    /**
-     * @param AuthenticationSession|null $session the session the browser is bound to, if any
-     */
     public function begin(EndSessionRequest $request, ?AuthenticationSession $session, RequestContext $context): EndSessionDecision
     {
         $now = $this->clock->now();
@@ -66,9 +52,7 @@ final readonly class EndSessionHandler
     }
 
     /**
-     * After the confirmation page, when the user said yes: the session ends whatever the hint said,
-     * because the user, not the hint, is now the one asking (§2: "If the End-User says yes, then the
-     * OP MUST log out the End-User").
+     * After the confirmation page, when the user said yes: the session ends whatever the hint said (§2).
      */
     public function confirm(EndSessionRequest $request, ?AuthenticationSession $session, RequestContext $context): LoggedOut
     {
@@ -82,8 +66,7 @@ final readonly class EndSessionHandler
     }
 
     /**
-     * §2: the provider must ask when no id_token_hint was given, or when the hint does not belong to
-     * the current session and user; a hint that could not be verified belongs to nothing.
+     * §2: no hint, an unverifiable one, or one that does not belong to the current session and user.
      */
     private static function confirmationReason(EndSessionRequest $request, AuthenticationSession $session): ?LogoutConfirmationReason
     {

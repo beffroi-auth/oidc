@@ -8,8 +8,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * A refresh token at the one moment both sides of it exist: the record the provider keeps and the value
- * the client is about to receive. The value goes into the response and nowhere else.
+ * A refresh token at the one moment both its record and its value exist.
  */
 final readonly class IssuedRefreshToken
 {

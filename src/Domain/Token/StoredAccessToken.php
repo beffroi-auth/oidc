@@ -17,25 +17,16 @@ use function preg_match;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * An opaque access token as the provider keeps it (architecture §4.6): the SHA-256 of the random value
- * the client received, and everything a resource of the provider or the introspection endpoint (RFC 7662)
- * answers with: the client, the session and the user behind it, the grant the token descends from, the
- * scopes of the response, the claims asked for by name (OIDC Core §5.5), the authentication as it stood
- * when the user authorized ("auth_time", "amr", "acr"), and the two dates. The same facts a self-contained
- * token carries as claims, kept here instead, so that the token itself tells whoever holds it nothing.
- *
- * The record is written once and never changes: the repository draws the value, keeps the record under
- * its hash, and removes it when the token is revoked, with the session it descends from (a logout), with
- * the grant (a replayed code, RFC 6749 §4.1.2), or by the client at the revocation endpoint (RFC 7009).
- * A revoked token is then an unknown one, which is all a bearer token needs to be refused (RFC 6750 §3.1).
+ * An opaque access token as the provider keeps it (architecture §4.6): the SHA-256 of the value, and the
+ * facts a self-contained token would carry as claims. Written once; a revoked token is removed and
+ * becomes an unknown one (RFC 6750 §3.1).
  */
 final readonly class StoredAccessToken
 {
     public Tenant $tenant;
 
     /**
-     * The client, named the way a registration names it: the object is what the client repository resolved
-     * for that identifier, and what a store keeps is the identifier.
+     * What a store keeps; the object is what the client repository resolved for it.
      */
     public string $clientId;
 
@@ -50,12 +41,10 @@ final readonly class StoredAccessToken
     public array $authenticationMethods;
 
     /**
-     * @param string $tokenHash hex SHA-256 of the token, see OpaqueTokenValue::hash()
-     * @param Uuid $grantId the authorization code the token descends from, what the replay of that code revokes
-     * @param list<Scope> $scopes the scopes of the response, at least one
-     * @param DateTimeImmutable $authenticatedAt the "auth_time" of the original authentication
+     * @param string $tokenHash see OpaqueTokenValue::hash()
+     * @param list<Scope> $scopes at least one
      * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
+     * @param string $authenticationContextClass the "acr" value
      */
     public function __construct(
         public string $tokenHash,
@@ -91,10 +80,6 @@ final readonly class StoredAccessToken
         $this->authenticationMethods = $authenticationMethods;
     }
 
-    /**
-     * The record of a token the issuer mints: the scopes of this response, and the authentication as the
-     * authorization records it.
-     */
     public static function fromAuthorization(string $tokenHash, GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self
     {
         return new self(

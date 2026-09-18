@@ -9,10 +9,7 @@ use function random_bytes;
 use SensitiveParameter;
 
 /**
- * The value of an opaque token and how a store names it (architecture §4.6): 256 bits from the CSPRNG,
- * base64url without padding (43 characters, no dot, which is how it is told from a compact JWS at a
- * glance), kept and looked up as its hex SHA-256, so that a leaked table of tokens yields nothing usable.
- * The repositories draw and hash, the rest of the module never sees a hash.
+ * The value of an opaque token (architecture §4.6): 256 bits in base64url, no dot, kept as its hex SHA-256.
  */
 final readonly class OpaqueTokenValue
 {

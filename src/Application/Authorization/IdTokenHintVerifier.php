@@ -22,18 +22,10 @@ use JsonException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Reads what an id_token_hint says (OIDC Core §3.1.2.1, RP-Initiated Logout §2). The token must be one
- * this provider signed: signature against the published keys of the tenant, "iss" equal to the issuer,
- * a "sub" the core accepts, and a "sid" that is a UUID when there is one. "exp" is not looked at: the
- * hint may describe a past session, and a client keeps the last ID token it received (RP-Initiated
- * Logout §2 says so in as many words). A hint that fails any of this is refused as invalid_request
- * rather than ignored, so that a client never learns anything from a token it did not obtain here.
- *
- * verify() adds what the authorization endpoint needs: "aud" containing the client identifier, and the
- * error sent back to the client. The logout endpoint calls read() and finds the client in "aud" itself,
- * because it may have no other way to know which client asks; it turns the refusal into a hint that
- * identifies nobody and asks the user (RP-Initiated Logout §2, §6), and shows its own errors, never
- * redirected (§4).
+ * Reads an id_token_hint (OIDC Core §3.1.2.1, RP-Initiated Logout §2): signed by a published key of the
+ * tenant, "iss" equal to the issuer, a valid "sub" and "sid". "exp" is not looked at, the hint may
+ * describe a past session. verify() also checks "aud" for the authorization endpoint; the logout endpoint
+ * calls read() and finds the client in "aud" itself.
  */
 final readonly class IdTokenHintVerifier
 {
@@ -42,8 +34,7 @@ final readonly class IdTokenHintVerifier
     private const string NOT_FOR_CLIENT = 'The id_token_hint parameter is not an ID token issued to this client.';
 
     /**
-     * An ID token payload nests at most an object of claims holding an "address" object; anything deeper
-     * was not issued here.
+     * Deeper than an "address" object inside the claims was not issued here.
      */
     private const int MAX_DEPTH = 4;
 
@@ -53,8 +44,7 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * @throws InvalidRequestException always redirectable: the hint is read after the client and its redirect URI
-     * @return Subject the "sub" the hint names
+     * @throws InvalidRequestException always redirectable
      */
     public function verify(Client $client, string $idTokenHint): Subject
     {
@@ -67,8 +57,6 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * @param bool $redirectable whether the error may be sent back to a client: only when the endpoint has validated one and its redirect URI
-     *
      * @throws InvalidRequestException
      */
     public function read(Tenant $tenant, string $idTokenHint, bool $redirectable): IdTokenHint
@@ -94,9 +82,6 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * The claims of an ID token are a JSON object (OIDC Core §2); a list has no "iss" and is refused
-     * further down like any other.
-     *
      * @throws JsonException
      * @return array<array-key, mixed>
      */
@@ -111,7 +96,7 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * OIDC Core §2 "aud": a single string or a list of strings. Anything else names no client.
+     * OIDC Core §2 "aud": a string or a list of strings.
      *
      * @return list<string>
      */
@@ -129,8 +114,7 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * The "sid" claim as this provider writes it (architecture §4.6): an RFC 9562 UUID. A token with a
-     * "sid" of any other shape was not issued here.
+     * An RFC 9562 UUID, as this provider writes it (architecture §4.6).
      */
     private static function sessionId(mixed $sid, bool $redirectable): ?Uuid
     {

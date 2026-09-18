@@ -33,29 +33,10 @@ use function str_contains;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Verifies an access token this provider issued, in either of its shapes (architecture §4.6).
- *
- * A self-contained token is verified the way RFC 9068 §4 tells a resource server to: the signature
- * against the published keys of the tenant, the "typ" header equal to "at+jwt" so that an ID token of the
- * same issuer never passes for one, "iss" equal to the issuer, "exp" still ahead, and "aud" naming the
- * client the token was issued to ("client_id"), which must be a client the tenant knows: the provider
- * issues its access tokens to the client alone until a "resource" parameter says otherwise (RFC 8707,
- * later), and a token minted for another audience is not one of its own resources' tokens. Every claim
- * the issuer writes is read strictly; a payload that lacks one was not written here.
- *
- * An opaque token is a lookup of the record the repository keeps under its hash: the record must belong
- * to the tenant, not be expired, and its session must not have ended; a revoked token has no record
- * any more and is refused as unknown. A token with a dot is a JWS
- * (RFC 7515 §7.1); one without is an opaque value (StoredAccessToken::generate() writes none), so the
- * shape is told from the token itself and never from a hint.
- *
- * Neither path asks whether the grant is still alive: a resource server that holds only a JWT and the
- * keys cannot, and the provider's own resources do it once, in AccessTokenInspector.
- *
- * Everything that fails is invalid_token (RFC 6750 §3.1), with one description for whatever is not an
- * access token of this provider, another for one that merely expired, because a client that can refresh
- * should know that this is what to do, and a third for one whose session ended, which a refresh will
- * not cure either.
+ * Verifies an access token of this provider in either shape (architecture §4.6): a JWS the way RFC 9068
+ * §4 tells a resource server to, every claim the issuer writes read strictly; an opaque one by the record
+ * kept under its hash. The shape is told from the token itself (a dot), never from a hint. Whether the
+ * grant is still alive is asked once, in AccessTokenInspector. Every failure is invalid_token (RFC 6750 §3.1).
  */
 final readonly class AccessTokenVerifier
 {
@@ -66,8 +47,7 @@ final readonly class AccessTokenVerifier
     private const string REVOKED = 'The access token was revoked.';
 
     /**
-     * An access token payload is a flat object whose deepest members are lists of strings ("amr",
-     * "userinfo_claims"); anything deeper was not issued here.
+     * Deeper than the lists of strings ("amr", "userinfo_claims") was not issued here.
      */
     private const int MAX_DEPTH = 3;
 
@@ -146,7 +126,7 @@ final readonly class AccessTokenVerifier
         if (! is_int($exp) || ! is_int($iat) || ! is_int($authTime) || $exp <= $iat) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
-        // RFC 7519 §4.1.4: the current time must be before "exp"; no leeway, the clocks are the provider's own
+        // RFC 7519 §4.1.4, no leeway: the clocks are the provider's own
         if ($exp <= $now->getTimestamp()) {
             throw new InvalidTokenException(self::EXPIRED);
         }
@@ -185,9 +165,6 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * The claims of a JWT are a JSON object (RFC 7519 §3); a list has no "iss" and is refused further
-     * down like any other.
-     *
      * @throws JsonException
      * @return array<array-key, mixed>
      */
@@ -214,8 +191,7 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * RFC 9068 §2.2.3, RFC 8693 §4.2: "scope" is a string of scope tokens separated by single spaces;
-     * absent, the token carries none.
+     * RFC 9068 §2.2.3, RFC 8693 §4.2; absent, the token carries none.
      *
      * @throws OidcInvalidArgumentException when a scope token is not one
      * @return list<Scope>
@@ -233,8 +209,7 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * A list of non-empty strings, as "amr" (RFC 8176) and "userinfo_claims" (architecture §4.6) are
-     * written; "userinfo_claims" is absent when the client asked for no claim by name, "amr" never is.
+     * As "amr" (RFC 8176) and "userinfo_claims" (architecture §4.6) are written.
      *
      * @throws InvalidTokenException
      * @return list<string>

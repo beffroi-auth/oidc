@@ -7,9 +7,7 @@ namespace Heidi\Oidc\Exception;
 use Heidi\Oidc\Domain\Scope\Scope;
 
 /**
- * RFC 6750 §3.1 "insufficient_scope": the bearer token is valid but does not carry a scope the resource
- * requires; 403, and the challenge names the scopes that would have sufficed, so that the client can ask
- * for them. Never a redirect: only a protected resource raises it.
+ * RFC 6750 §3.1 "insufficient_scope": 403, the challenge naming the scopes that would have sufficed.
  */
 final class InsufficientScopeException extends OAuth2Exception
 {
@@ -19,7 +17,7 @@ final class InsufficientScopeException extends OAuth2Exception
     public readonly array $scopes;
 
     /**
-     * @param list<Scope> $scopes the scopes necessary to access the resource, at least one
+     * @param list<Scope> $scopes at least one
      */
     public function __construct(string $description, array $scopes)
     {

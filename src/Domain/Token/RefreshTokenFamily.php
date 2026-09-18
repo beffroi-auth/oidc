@@ -11,19 +11,12 @@ use function preg_match;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * The lineage of refresh tokens that descends from one authorization code (architecture §4.4, §4.6):
- * every rotation issues a new token in the same family, so that the reuse of a rotated token, or the
- * replay of the code, revokes them all at once (RFC 6749 §4.1.2, RFC 9700 §4.13.2). The family carries
- * the absolute lifetime that no rotation extends; each token carries its own sliding one.
+ * The lineage of refresh tokens descending from one authorization code (architecture §4.6), revoked at
+ * once on a reuse or a replay (RFC 6749 §4.1.2, RFC 9700 §4.13.2). It carries the absolute lifetime no
+ * rotation extends.
  */
 final readonly class RefreshTokenFamily
 {
-    /**
-     * @param string $authorizationCodeHash the hash of the code the first token was exchanged for
-     * @param Uuid $grantId the grant of that code, carried here so that a refreshed access token names the same one
-     * @param DateTimeImmutable $startedAt when the code was exchanged
-     * @param DateTimeImmutable $expiresAt after which no token of the family is accepted, whatever its own expiry
-     */
     public function __construct(
         public Uuid $id,
         public string $authorizationCodeHash,

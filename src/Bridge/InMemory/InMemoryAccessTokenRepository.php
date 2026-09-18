@@ -36,7 +36,7 @@ final class InMemoryAccessTokenRepository implements AccessTokenRepositoryInterf
     }
 
     /**
-     * A record put there by a test, under the hash of the value it chose.
+     * For tests: a record under the hash of the value they chose.
      */
     public function keep(StoredAccessToken $token): void
     {

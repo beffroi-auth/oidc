@@ -20,14 +20,8 @@ use function rtrim;
 use function strtr;
 
 /**
- * An authorization request parked while the integration authenticates the user and asks for their
- * consent (architecture §4.3). The authorization endpoint logs nobody in: it creates this, hands the
- * browser to the login and consent pages, and is resumed with what they established.
- *
- * The identifier is 256 random bits, so that it can travel in a URL without being guessable; the bundle
- * still binds it to the browser session and refuses to resume an interaction that session did not begin,
- * which closes login CSRF and the replay of an identifier read in a log. An interaction lives ten minutes
- * and is completed once: granted, denied, or failed with an error sent to the client.
+ * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier
+ * is 256 random bits and the bundle binds it to the browser session; an interaction is completed once.
  */
 final class Interaction
 {
@@ -37,8 +31,7 @@ final class Interaction
     private const string ID_PATTERN = '/^[A-Za-z0-9_-]{43}$/';
 
     /**
-     * The client of the request, named the way a registration names it: the object is what the client
-     * repository resolved for that identifier, and what a store keeps is the identifier.
+     * What a store keeps; the object is what the client repository resolved for it.
      */
     public readonly string $clientId;
 
@@ -49,7 +42,7 @@ final class Interaction
     public private(set) ?DateTimeImmutable $completedAt = null;
 
     /**
-     * @param string|null $locale the language of the pages shown for this interaction, chosen by the integration from ui_locales then Accept-Language (architecture §5.7)
+     * @param string|null $locale the language of the pages of this interaction (architecture §5.7)
      */
     public function __construct(
         public readonly string $id,
@@ -80,8 +73,7 @@ final class Interaction
     }
 
     /**
-     * Records the session the user is authenticated with. A session of another user than the one a
-     * consent was recorded for drops that consent: it was theirs, not this user's.
+     * A session of another user than the one a consent was recorded for drops that consent.
      */
     public function authenticate(AuthenticationSession $session, DateTimeImmutable $now): void
     {
@@ -98,9 +90,6 @@ final class Interaction
         $this->session = $session;
     }
 
-    /**
-     * Records the consent that covers the request, freshly granted or found in force.
-     */
     public function consent(Consent $consent, DateTimeImmutable $now): void
     {
         $this->assertResumable($now);
@@ -116,9 +105,6 @@ final class Interaction
         $this->consent = $consent;
     }
 
-    /**
-     * Whatever the outcome, a completed interaction is never resumed again.
-     */
     public function complete(DateTimeImmutable $now): void
     {
         $this->assertResumable($now);
@@ -136,8 +122,8 @@ final class Interaction
     }
 
     /**
-     * @throws InteractionCompletedException when the interaction was already granted, denied or failed
-     * @throws InteractionExpiredException when the user took more than the lifetime of the interaction
+     * @throws InteractionCompletedException
+     * @throws InteractionExpiredException
      */
     public function assertResumable(DateTimeImmutable $now): void
     {

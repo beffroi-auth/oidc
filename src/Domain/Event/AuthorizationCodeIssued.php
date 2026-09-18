@@ -11,8 +11,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 
 /**
- * An authorization code left for a client. The record carries the hash only; the value is in the user
- * agent and nowhere else.
+ * An authorization code left for a client; the record carries the hash only.
  */
 final readonly class AuthorizationCodeIssued implements DomainEventInterface
 {

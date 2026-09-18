@@ -28,31 +28,9 @@ use SensitiveParameter;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * RFC 6749 §4.1.3, RFC 7636 §4.6, OIDC Core §3.1.3 (architecture §4.5): the code is known, not yet
- * presented, issued to this client and not expired; "redirect_uri" is the one of the authorization
- * request, byte for byte; the code verifier hashes to the challenge, compared in constant time; the
- * session the code was issued for is still active. Every failure is "invalid_grant" with one description:
- * which check failed is not for the caller.
- *
- * A code issued without a challenge, which only a client registered without the PKCE requirement gets
- * (decision 0008), is refused when a code_verifier comes with it: RFC 9700 §4.8.2, a verifier is accepted
- * only if a challenge was present in the authorization request. A code issued with one is refused
- * without a verifier, whatever the client is registered with.
- *
- * A code is consumed by its first presentation, before anything else is checked, so that a failed
- * attempt cannot be retried with another verifier; the repository claims it in one statement, so that
- * two requests arriving together cannot both be the first (RFC 9700 §4.5). Presented a second time, by
- * whichever client, the code is a replay: the grant itself is revoked and every token descending from it
- * with it (RFC 6749 §4.1.2), the refresh tokens and the stored access tokens when the store can
- * (CanRevokeAccessTokensByGrantInterface), and the request fails. The self-contained access tokens
- * already issued stay valid for a resource server that holds only the token and the keys, as RFC 9068 §4
- * intends; the provider's own resources know where the grants live and refuse them, which is what the
- * profile expects of it.
- *
- * A refresh token is issued when the client is registered for the refresh_token grant and either asked
- * for "offline_access" (OIDC Core §11) or is confidential and the tenant allows it without the scope
- * (architecture §4.5, §9: a choice made for the relying parties that expect one without asking, oidc_login
- * included). A public client without "offline_access" gets none.
+ * RFC 6749 §4.1.3, RFC 7636 §4.6, OIDC Core §3.1.3 (architecture §4.5). Every failure is "invalid_grant"
+ * with one description. The code is consumed by its first presentation (RFC 9700 §4.5); presented again,
+ * the grant and every token descending from it are revoked (RFC 6749 §4.1.2).
  */
 final readonly class AuthorizationCodeGrant implements GrantInterface
 {
@@ -65,7 +43,6 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
 
     /**
      * @param DateInterval $refreshTokenFamilyLifetime the absolute lifetime no rotation extends (architecture §4.6)
-     * @param bool $refreshTokenWithoutOfflineAccess whether a confidential client gets a refresh token without asking for "offline_access" (architecture §9)
      */
     public function __construct(
         private AuthorizationCodeRepositoryInterface $codes,
@@ -98,8 +75,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         if ($record === null) {
             throw new InvalidGrantException(self::INVALID);
         }
-        // The claim is atomic: of the requests presenting this code at once, the database tells exactly
-        // one that it is the first, and every other one is a replay whatever it read a moment ago.
+        // atomic: of the requests presenting this code at once, exactly one is the first
         if (! $this->codes->consume($record, $now)) {
             $this->replayed($record, $client, $context, $now);
 
@@ -149,9 +125,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
     }
 
     /**
-     * RFC 6749 §4.1.2: the request is denied and every token issued from the code is revoked. The grant
-     * carries the revocation for the self-contained access tokens, which are not stored; the refresh
-     * tokens carry their own, one row each; the stored access tokens go.
+     * RFC 6749 §4.1.2: every token issued from the code is revoked.
      */
     private function replayed(AuthorizationCode $code, Client $presentedBy, RequestContext $context, DateTimeImmutable $now): void
     {

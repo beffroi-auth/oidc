@@ -13,12 +13,8 @@ use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use SensitiveParameter;
 
 /**
- * What the provider's own resources ask of an access token before honouring it (architecture §4.6, §4.7,
- * §4.12), whatever its shape: verified as one of the provider's, descending from a grant that is still
- * alive, naming a user the provider still serves. A resource server that holds only a JWT and the keys
- * cannot ask the last two; the provider knows where its grants and its users live, and RFC 6749 §4.1.2
- * asks the tokens of a replayed code to stop working. UserInfo answers with the user found here, the
- * introspection endpoint (RFC 7662) tells a resource server what it found. Nothing is written.
+ * What the provider's own resources ask of an access token (architecture §4.6, §4.7, §4.12): verified,
+ * descending from a grant still alive, naming a user still served.
  */
 final readonly class AccessTokenInspector
 {

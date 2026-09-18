@@ -10,8 +10,7 @@ use function sprintf;
 use Stringable;
 
 /**
- * One scope token (RFC 6749 §3.3): scope-token = 1*( %x21 / %x23-5B / %x5D-7E ), so no space, no double
- * quote, no backslash. Compared byte for byte.
+ * One scope token (RFC 6749 §3.3), compared byte for byte.
  */
 final readonly class Scope implements Stringable
 {

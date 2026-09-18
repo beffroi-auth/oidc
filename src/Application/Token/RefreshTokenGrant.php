@@ -24,19 +24,9 @@ use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * RFC 6749 §6, RFC 9700 §4.13 (architecture §4.5): the token is known, issued to this client, not
- * revoked, not expired, and not yet rotated; the scope asked for, if any, is within the one granted,
- * otherwise "invalid_scope". The token is rotated on every use: the one presented is marked, its
- * successor is issued in the same family with the same scopes (§6: "the refresh token scope MUST be
- * identical to that of the refresh token included by the client in the request"). An ID token is
- * reissued when "openid" is among the scopes of the response, without nonce (OIDC Core §12.2).
- *
- * A rotated token presented again is a reuse (RFC 9700 §4.13.2): the whole family is revoked and the
- * grant fails, because the provider cannot tell the legitimate client from the one holding a copy.
- *
- * The session the token descends from may have expired: offline access is what a refresh token is for.
- * It must not have been ended: a logout revokes the tokens of the session (architecture §4.9), and a
- * token that outlived that revocation is refused here rather than honoured.
+ * RFC 6749 §6, RFC 9700 §4.13 (architecture §4.5): the token is rotated on every use, its successor in
+ * the same family with the same scopes; a rotated token presented again revokes the family (§4.13.2).
+ * The session may have expired, not have been ended (architecture §4.9).
  */
 final readonly class RefreshTokenGrant implements GrantInterface
 {
@@ -87,7 +77,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
     }
 
     /**
-     * RFC 6749 §3.3: scope = scope-token *( SP scope-token ), read without repeats.
+     * RFC 6749 §3.3, without repeats.
      *
      * @return non-empty-list<Scope>|null null when the client did not narrow the scope
      */
@@ -108,12 +98,12 @@ final readonly class RefreshTokenGrant implements GrantInterface
             }
         }
 
-        /** @var non-empty-list<Scope> $scopes the first token was either refused or kept */
+        /** @var non-empty-list<Scope> $scopes */
         return $scopes;
     }
 
     /**
-     * RFC 9700 §4.13.2: the family is revoked, the presented token included, and the detection is announced.
+     * RFC 9700 §4.13.2.
      */
     private function reused(RefreshToken $presented, RequestContext $context, DateTimeImmutable $now): void
     {

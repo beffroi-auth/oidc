@@ -16,19 +16,10 @@ use Heidi\Oidc\Port\IdTokenIssuerInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
- * OIDC Core §2, §3.1.3.6 (architecture §4.6): the ID token is a JWT signed with the active key of the
- * tenant, in the algorithm the client registered for it, "kid" in the header. Its claims: "iss", "sub",
- * "aud" and "azp" (the client identifier, the only audience), "exp", "iat", "auth_time", "nonce" when
- * the tokens answer an authorization code, "acr", "amr", "at_hash" of the access token of the same
- * response, "sid" of the session. "acr" is always there: the class of the session as it stood when the user
- * authorized, which is what §5.5.1.1 asks for when the request carried "acr_values" and what the request
- * asked for is either that class or one the provider cannot provide. The claims asked for in "claims.id_token"
- * (§5.5) are added from the claims provider; the ones the scopes stand for are not, they belong to
- * UserInfo when an access token is issued (§5.4).
- *
- * The protocol claims win over anything a provider returns under the same name. No "typ" header: the
- * specification defines none for an ID token, and a resource server that requires "at+jwt" (RFC 9068
- * §4) refuses it, which is the point.
+ * OIDC Core §2, §3.1.3.6 (architecture §4.6): signed in the algorithm the client registered for, "acr"
+ * always present, "at_hash" of the access token of the same response, the "claims.id_token" of §5.5 added
+ * from the claims provider. The protocol claims win over a provider's. No "typ" header: a resource server
+ * requiring "at+jwt" refuses it, which is the point.
  */
 final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 {

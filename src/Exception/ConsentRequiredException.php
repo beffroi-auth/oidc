@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Exception;
 
 /**
- * OIDC Core §3.1.2.6 "consent_required": the request said prompt=none and no consent covers it. Always
- * sent back to the client.
+ * OIDC Core §3.1.2.6 "consent_required": prompt=none and no consent covers the request.
  */
 final class ConsentRequiredException extends OAuth2Exception
 {

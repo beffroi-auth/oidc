@@ -11,17 +11,13 @@ use function implode;
 use function sprintf;
 
 /**
- * An error of the UserInfo endpoint, as RFC 6750 §3 has a protected resource answer it (OIDC Core
- * §5.3.3): the status, and a "WWW-Authenticate: Bearer" challenge carrying "error", "error_description"
- * and, for insufficient_scope, the "scope" that would have sufficed. A request without any bearer token
- * gets the bare challenge, no error code (§3.1): a caller that did not know the scheme learns it, and
- * nothing else. The body repeats the error as a JSON object when there is one, for the human reading a
- * client's log; the challenge is what the protocol reads.
+ * An error of the UserInfo endpoint (RFC 6750 §3, OIDC Core §5.3.3): the challenge is what the protocol
+ * reads, bare when the request carried no bearer token (§3.1); the body repeats it for the human.
  */
 final readonly class UserInfoErrorResponse
 {
     /**
-     * @param string|null $scope the "scope" attribute of the challenge, space separated, when the error is insufficient_scope
+     * @param string|null $scope the "scope" attribute of the challenge, for insufficient_scope
      */
     public function __construct(
         public int $statusCode,
@@ -41,8 +37,7 @@ final readonly class UserInfoErrorResponse
     }
 
     /**
-     * RFC 6750 §3: the value of the WWW-Authenticate header. The descriptions are the ASCII of RFC 6749
-     * §5.2 without double quote nor backslash, so they need no escaping inside the quoted strings.
+     * RFC 6750 §3; the descriptions carry no double quote nor backslash and need no escaping.
      */
     public function challenge(): string
     {
@@ -71,10 +66,7 @@ final readonly class UserInfoErrorResponse
     }
 
     /**
-     * The members of the JSON body, in the order they are written; none when there is no error code and
-     * the body is empty.
-     *
-     * @return array<string, string>
+     * @return array<string, string> empty when there is no error code
      */
     public function parameters(): array
     {

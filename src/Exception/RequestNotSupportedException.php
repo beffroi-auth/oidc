@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Exception;
 
 /**
- * OIDC Core §3.1.2.6 "request_not_supported": the provider does not accept the "request" parameter
- * (request objects by value, OIDC Core §6.1), and says so in its metadata. Always sent back to the client:
- * the parameter is only looked at once the client and its redirect URI are known.
+ * OIDC Core §3.1.2.6 "request_not_supported": no request object by value (§6.1).
  */
 final class RequestNotSupportedException extends OAuth2Exception
 {

@@ -22,20 +22,9 @@ use function strtr;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * An authorization code (RFC 6749 §1.3.1, §4.1.2) as the provider keeps it: the SHA-256 of the value the
- * client received, never the value itself, and everything the token endpoint will need to answer the
- * grant (architecture §4.4). "authenticatedAt", the methods and the context class are copied from the
- * session at issuance: the ID token describes the authentication the code was issued after, not a proof
- * added later.
- *
- * Lifetime: 60 seconds. RFC 6749 §4.1.2 allows up to 10 minutes; a code only serves an immediate round
- * trip, and a short window bounds injection (RFC 9700 §4.5). A code is consumed by its first presentation
- * at the token endpoint, whatever comes of it (architecture §4.4); a second presentation is a replay, and
- * what the grant does about it is its business.
- *
- * The record is also the grant the tokens descend from, named by "grantId": an opaque identifier the
- * access tokens carry, so that the provider can tell which grant issued one without publishing the hash
- * of the code. Revoked, the grant is the record RFC 6749 §4.1.2 asks to act on when the code is replayed.
+ * An authorization code (RFC 6749 §4.1.2, architecture §4.4) as the provider keeps it: the SHA-256 of the
+ * value, and everything the token endpoint needs, the authentication facts copied from the session at
+ * issuance. The record is also the grant the tokens descend from, named by "grantId".
  */
 final class AuthorizationCode
 {
@@ -44,8 +33,7 @@ final class AuthorizationCode
     public readonly Tenant $tenant;
 
     /**
-     * The client, named the way a registration names it: the object is what the client repository resolved
-     * for that identifier, and what a store keeps is the identifier.
+     * What a store keeps; the object is what the client repository resolved for it.
      */
     public readonly string $clientId;
 
@@ -64,15 +52,11 @@ final class AuthorizationCode
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
     /**
-     * @param string $codeHash hex SHA-256 of the code, see hash()
-     * @param Uuid $grantId the opaque name of the grant, carried by every access token issued from the code
-     * @param RedirectUri $redirectUri the one of the request, compared again at the token endpoint (RFC 6749 §4.1.3)
-     * @param list<Scope> $scopes the scopes granted, at least one
-     * @param string|null $nonce copied into the ID token (OIDC Core §3.1.3.7 step 11)
-     * @param CodeChallenge|null $codeChallenge verified against the code_verifier (RFC 7636 §4.6); null when the request carried none, which only a client that does not require PKCE may do (decision 0008), and then a code_verifier is refused (RFC 9700 §4.8.2)
-     * @param DateTimeImmutable $authenticatedAt the "auth_time" the ID token will carry
+     * @param string $codeHash see hash()
+     * @param list<Scope> $scopes at least one
+     * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE (decision 0008)
      * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
+     * @param string $authenticationContextClass the "acr" value
      */
     public function __construct(
         public readonly string $codeHash,
@@ -112,26 +96,21 @@ final class AuthorizationCode
     }
 
     /**
-     * A fresh code: 256 bits from the CSPRNG, base64url without padding (43 characters).
+     * 256 bits, base64url without padding.
      */
     public static function generate(): string
     {
         return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
     }
 
-    /**
-     * How a code is stored and looked up: a leaked table of codes yields nothing usable.
-     */
     public static function hash(#[SensitiveParameter] string $code): string
     {
         return hash('sha256', $code);
     }
 
     /**
-     * The first presentation at the token endpoint, valid or not, consumes the code (RFC 6749 §4.1.2:
-     * "The client MUST NOT use the authorization code more than once"). Which presentation is the first
-     * is not decided here: the repository claims the record atomically and calls this on the winner, so
-     * being called twice is a programming error and not a replay.
+     * RFC 6749 §4.1.2. The repository claims the record atomically and calls this on the winner; called
+     * twice is a programming error, not a replay.
      */
     public function consume(DateTimeImmutable $now): void
     {
@@ -142,9 +121,7 @@ final class AuthorizationCode
     }
 
     /**
-     * The instant the store holds, read back by a repository whose claim was lost: the record then says
-     * when the request that won consumed the code, instead of the nothing this one read a moment
-     * earlier. Only a repository calls this; a grant calls consume() through the claim.
+     * For a repository whose claim was lost: the instant the store holds.
      */
     public function recordConsumption(DateTimeImmutable $usedAt): void
     {
@@ -157,9 +134,7 @@ final class AuthorizationCode
     }
 
     /**
-     * RFC 6749 §4.1.2: the replay of a code revokes what was issued from it. Said on the grant itself, so
-     * that the provider refuses the access tokens it already handed out; a third presentation says it again
-     * without changing when it was first said.
+     * RFC 6749 §4.1.2: the replay of a code revokes what was issued from it.
      */
     public function revoke(DateTimeImmutable $now): void
     {

@@ -8,8 +8,7 @@ use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\AuthorizationResponse;
 
 /**
- * Everything is acquired: the code is issued and the user agent goes back to the client. The interaction
- * is completed.
+ * The code is issued and the user agent goes back to the client.
  */
 final readonly class Granted implements AuthorizationDecision
 {

@@ -7,9 +7,7 @@ namespace Heidi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 6750 §3.1 "invalid_token": the bearer token is expired, revoked, malformed, or invalid for another
- * reason; the resource answers 401 with the challenge, and the client may ask for a new token. Never a
- * redirect: only a protected resource raises it.
+ * RFC 6750 §3.1 "invalid_token": 401 with the challenge.
  */
 final class InvalidTokenException extends OAuth2Exception
 {

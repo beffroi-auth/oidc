@@ -20,11 +20,8 @@ use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Mints what a verified authorization entitles the client to (architecture §4.5, §4.6). refreshToken()
- * issues a refresh token in a family, stored as its hash with a sliding expiry capped by the family;
- * issue() mints the access token, the ID token when "openid" is among the scopes (OIDC Core §3.1.3.3,
- * §12.2), and announces the response. Whether a refresh token is due at all, and in which family, is
- * the grant's decision.
+ * Mints what a verified authorization entitles the client to (architecture §4.5, §4.6); whether a
+ * refresh token is due, and in which family, is the grant's decision.
  */
 final readonly class TokenIssuer
 {
@@ -37,10 +34,6 @@ final readonly class TokenIssuer
     ) {
     }
 
-    /**
-     * A refresh token for what the resource owner granted, in the family given: a new one after a code, the
-     * one of the token presented after a refresh.
-     */
     public function refreshToken(RefreshTokenFamily $family, GrantedAuthorization $authorization, DateTimeImmutable $now): IssuedRefreshToken
     {
         $value = RefreshToken::generate();
@@ -51,7 +44,7 @@ final readonly class TokenIssuer
     }
 
     /**
-     * @param IssuedRefreshToken|null $refreshToken the refresh token of the response, when one is due
+     * The ID token is issued when "openid" is among the scopes (OIDC Core §3.1.3.3, §12.2).
      */
     public function issue(GrantedAuthorization $authorization, ?IssuedRefreshToken $refreshToken, RequestContext $context, DateTimeImmutable $now): IssuedTokens
     {

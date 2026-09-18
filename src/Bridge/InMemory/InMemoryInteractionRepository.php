@@ -19,7 +19,7 @@ final class InMemoryInteractionRepository implements InteractionRepositoryInterf
     private array $interactions = [];
 
     /**
-     * How many times save() was called, for tests that must see a write happen on an object they already hold.
+     * For tests that must see a write happen on an object they already hold.
      */
     public private(set) int $saves = 0;
 
@@ -35,7 +35,7 @@ final class InMemoryInteractionRepository implements InteractionRepositoryInterf
     }
 
     /**
-     * The interaction saved last, for tests that only hold the exception it ended with.
+     * For tests that only hold the exception it ended with.
      */
     public function last(): ?Interaction
     {

@@ -29,20 +29,14 @@ use Symfony\Component\Uid\Uuid;
 use function urldecode;
 
 /**
- * Authenticates the client of a token request (RFC 6749 §2.3.1, §3.2.1). The Authorization header is read
- * first (client_secret_basic), then the form parameters (client_secret_post), then a bare client_id (a
- * public client, "none"). Using both a header and a body secret is "invalid_request"; an unknown client, a
- * method other than the registered one or a wrong secret is "invalid_client", answered 401 with a
- * WWW-Authenticate challenge when the header was used (RFC 6749 §5.2).
- *
- * A presented secret is always verified once, against the client's hash or against a decoy, so that the
- * time taken does not tell an unknown client from a known one. The hasher compares in constant time.
+ * Authenticates the client of a token request (RFC 6749 §2.3.1, §3.2.1): client_secret_basic, then
+ * client_secret_post, then a bare client_id for a public client. A presented secret is always verified
+ * once, against the client's hash or a decoy, so that the time taken tells nothing.
  */
 final class ClientAuthenticator
 {
     /**
-     * One description once a client identifier is involved: whether the client exists, which method it
-     * registered and whether the secret was close are for the audit trail, not for the caller.
+     * One description whatever the cause; the cause is for the audit trail.
      */
     private const string FAILED = 'Client authentication failed.';
 
@@ -57,7 +51,6 @@ final class ClientAuthenticator
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization request header, if any
      * @param array<string, mixed> $parameters the form parameters of the request body
      *
      * @throws OAuth2Exception
@@ -68,7 +61,7 @@ final class ClientAuthenticator
         $basic = null;
         if ($authorizationHeader !== null) {
             $challenge = sprintf('Basic realm="%s"', $tenant->issuer);
-            // RFC 7235 §2.1: the scheme is case-insensitive and is followed by at least one space
+            // RFC 7235 §2.1: case-insensitive scheme, at least one space
             if (preg_match('/^Basic[ \t]+(\S*)$/i', $authorizationHeader, $matches) !== 1) {
                 throw $this->failure($tenant, $context, ClientAuthenticationFailureReason::UnsupportedScheme, null, null, new InvalidClientException('The Authorization header must use the Basic scheme.', $challenge));
             }
@@ -120,7 +113,7 @@ final class ClientAuthenticator
             throw $this->failure($tenant, $context, ClientAuthenticationFailureReason::UnexpectedMethod, $clientId, $method, new InvalidClientException(self::FAILED, $challenge));
         }
         if ($secret !== null) {
-            /** @var PasswordHash $hash a confidential client always has one */
+            /** @var PasswordHash $hash */
             $hash = $client->secretHash;
             if (! $this->hasher->verify($hash, $secret)) {
                 throw $this->failure($tenant, $context, ClientAuthenticationFailureReason::InvalidSecret, $clientId, $method, new InvalidClientException(self::FAILED, $challenge));
@@ -131,10 +124,9 @@ final class ClientAuthenticator
     }
 
     /**
-     * RFC 6749 §2.3.1: the client identifier and the secret are each form-urlencoded, joined by a colon,
-     * then Basic-encoded (RFC 7617 §2). Decoded here in the reverse order.
+     * RFC 6749 §2.3.1 and RFC 7617 §2, in the reverse order.
      *
-     * @return array{string, string}|null the identifier and the secret, or null when the credentials cannot be read
+     * @return array{string, string}|null
      */
     private static function decodeBasic(string $credentials): ?array
     {

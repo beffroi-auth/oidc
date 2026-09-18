@@ -15,18 +15,15 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * What a user agreed to let a client obtain about them, and when. A consent is looked up before the
- * consent page is shown (architecture §4.3): a request whose scopes are all covered by an active consent
- * does not ask again. A new grant to the same client supersedes the previous one, which is revoked; the
- * history stays readable.
+ * What a user agreed to let a client obtain about them (architecture §4.3). A new grant to the same client
+ * supersedes the previous one, which is revoked.
  */
 final class Consent
 {
     public readonly Tenant $tenant;
 
     /**
-     * The client, named the way a registration names it: the object is what the client repository resolved
-     * for that identifier, and what a store keeps is the identifier.
+     * What a store keeps; the object is what the client repository resolved for it.
      */
     public readonly string $clientId;
 
@@ -83,8 +80,7 @@ final class Consent
     }
 
     /**
-     * The first revocation wins: a consent superseded by a new grant and then revoked by the user keeps
-     * the date it stopped applying.
+     * The first revocation wins.
      */
     public function revoke(DateTimeImmutable $now): void
     {

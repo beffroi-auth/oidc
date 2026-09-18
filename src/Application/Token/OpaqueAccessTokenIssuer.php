@@ -12,12 +12,8 @@ use Heidi\Oidc\Port\AccessTokenIssuerInterface;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 
 /**
- * The opaque shape of the access token (architecture §4.6): a random value the client presents as it is,
- * and a record the provider keeps under its hash with everything the JWT shape would carry as claims,
- * both the repository's doing. Whoever holds the token learns nothing from it; whoever must honour it
- * asks the introspection endpoint (RFC 7662), which is also how a revocation reaches a resource server
- * before the token expires. Same lifetime as the JWT shape: a revocation is a facility, not a reason to
- * live longer.
+ * The opaque shape of the access token (architecture §4.6): a random value, and a record kept under its
+ * hash with everything the JWT shape would carry. Same lifetime as the JWT shape.
  */
 final readonly class OpaqueAccessTokenIssuer implements AccessTokenIssuerInterface
 {

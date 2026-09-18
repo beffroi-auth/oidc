@@ -17,9 +17,7 @@ use function sprintf;
 
 /**
  * Mints the access token in the shape the client is registered for (architecture §4.6): one issuer per
- * AccessTokenFormat, the signed JWT of RFC 9068 and the opaque reference today, whatever comes next
- * (a COSE or a PASETO token) as one more case and one more entry. The grants and the token issuer do not
- * know which shape; the registration of the client does, and nothing global overrides it.
+ * AccessTokenFormat, nothing global.
  */
 final readonly class AccessTokenIssuer implements AccessTokenIssuerInterface
 {
@@ -29,7 +27,7 @@ final readonly class AccessTokenIssuer implements AccessTokenIssuerInterface
     private array $issuers;
 
     /**
-     * @param array<string, AccessTokenIssuerInterface> $issuers keyed by the value of the AccessTokenFormat each one writes; every format has one, no key is unknown
+     * @param array<string, AccessTokenIssuerInterface> $issuers by the value of the AccessTokenFormat each one writes
      */
     public function __construct(array $issuers)
     {

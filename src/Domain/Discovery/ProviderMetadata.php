@@ -23,18 +23,9 @@ use function strlen;
 use function substr;
 
 /**
- * The metadata of a tenant as an OpenID Provider (OIDC Discovery §3) and as an OAuth 2.0 authorization
- * server (RFC 8414 §2): one document for both, since the members of the second are a subset of the first,
- * served at the two well-known locations the specifications derive from the issuer. It says what the
- * provider does, and nothing the provider does not: one response type, one response mode, one code
- * challenge method, no request object, no "request_uri", so that a client reading it cannot ask for what
- * decision 0006 refuses. What is listed comes from the enumerations of the module or of the core wherever
- * one exists ("acr_values_supported" is what AuthenticationContextClass can assert), so that the document
- * and the endpoints cannot disagree.
- *
- * "authorization_response_iss_parameter_supported" (RFC 9207 §3) is what makes Symfony's oidc_login
- * require "iss" on every callback: announcing it is how the provider gets the mix-up defence enforced on
- * the client side too.
+ * The metadata of a tenant (OIDC Discovery §3, RFC 8414 §2): one document, two well-known locations. It
+ * says what the provider does and nothing it does not (decision 0006); what is listed comes from the
+ * enumerations of the module, so that the document and the endpoints cannot disagree.
  */
 final readonly class ProviderMetadata
 {
@@ -45,7 +36,7 @@ final readonly class ProviderMetadata
     public const string AUTHORIZATION_SERVER_METADATA_PATH = '/.well-known/oauth-authorization-server';
 
     /**
-     * @var non-empty-list<Scope> "openid" first (OIDC Discovery §3: the server MUST support it), no duplicate
+     * @var non-empty-list<Scope> "openid" first, no duplicate
      */
     public array $scopesSupported;
 
@@ -60,9 +51,9 @@ final readonly class ProviderMetadata
     public array $headers;
 
     /**
-     * @param list<Scope> $scopesSupported the scopes the provider serves, "openid" added if missing
-     * @param list<string> $claimsSupported the claim names the provider may supply values for, "sub" added if missing
-     * @param int $maxAge how long a client may cache the document, in seconds: the document changes when the deployment does
+     * @param list<Scope> $scopesSupported "openid" added if missing
+     * @param list<string> $claimsSupported "sub" added if missing
+     * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
         public Issuer $issuer,
@@ -97,7 +88,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * OIDC Discovery §4.1: the well-known path is appended to the issuer, path included.
+     * OIDC Discovery §4.1: appended to the issuer, path included.
      */
     public function openIdConfigurationUrl(): string
     {
@@ -105,9 +96,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * RFC 8414 §3: the well-known path is inserted between the host and the path of the issuer, so that
-     * "https://as.example/tenant1" is served at "https://as.example/.well-known/oauth-authorization-server/tenant1".
-     * The two locations only differ when the issuer carries a path.
+     * RFC 8414 §3: inserted between the host and the path of the issuer.
      */
     public function authorizationServerMetadataUrl(): string
     {
@@ -117,10 +106,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * The document, members in the order OIDC Discovery §3 lists them, then those of RFC 8414 §2 (the
-     * revocation and introspection endpoints, how a client authenticates there, RFC 7009 §2.1 and
-     * RFC 7662 §2.1, and the algorithm a signed introspection response is signed with, RFC 9701 §6) and
-     * RFC 9207 §3 it does not have, then the end session endpoint (RP-Initiated Logout §2.1).
+     * In the order of OIDC Discovery §3, then RFC 8414 §2, RFC 9701 §6, RFC 9207 §3, RP-Initiated Logout §2.1.
      *
      * @return array<string, mixed>
      */
@@ -155,17 +141,13 @@ final readonly class ProviderMetadata
         ];
     }
 
-    /**
-     * @return string the JSON object, UTF-8, booleans as they are
-     */
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
     }
 
     /**
-     * RFC 7662 §2.1: the introspection endpoint requires client authentication, which a public client
-     * cannot give; the methods announced are the ones that prove a secret.
+     * RFC 7662 §2.1: the methods that prove a secret.
      *
      * @return list<TokenEndpointAuthMethod>
      */

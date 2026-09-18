@@ -8,13 +8,12 @@ use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Oidc\Domain\Scope\Scope;
 
 /**
- * Send the user to the consent page, which shows the client and the scopes and calls grantConsent() or
- * deny(). The interaction is saved and waits.
+ * Send the user to the consent page, which calls grantConsent() or deny().
  */
 final readonly class ConsentRequired implements AuthorizationDecision
 {
     /**
-     * @param list<Scope> $scopes what the client asks for, all of them: the user answers for the whole request
+     * @param list<Scope> $scopes the whole request; the user answers for all of them
      */
     public function __construct(
         public Interaction $interaction,

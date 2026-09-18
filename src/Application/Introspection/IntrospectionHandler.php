@@ -19,22 +19,9 @@ use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 
 /**
- * The introspection endpoint (RFC 7662 §2, architecture §4.12): a resource server that holds an opaque
- * access token, or a self-contained one it would rather not verify itself, asks the provider what the
- * token is. The caller is authenticated first, as a client, with a secret: §2.1 requires it against
- * token scanning, and a public client has nothing to authenticate with, so it is refused. Then the token
- * is inspected the way UserInfo inspects one (verified in its shape, its grant alive, its user served),
- * and answered with what the provider knows of it, or with "active": false and nothing else.
- *
- * A token is described to the client it was issued to and to nobody else: "aud" is that client until a
- * "resource" parameter says otherwise (RFC 8707, later), and a caller that is not in the audience of a
- * token learns nothing from it, not even that it exists (§2.2, §4). "token_type_hint" is read as a
- * string and then ignored: the shape of a token is told from the token itself, which §2.1 allows.
- *
- * When asked, the answer is signed (RFC 9701 §4, §5): the members travel as the "token_introspection"
- * claim of a JWT that names the provider as "iss", the caller as "aud" and the moment as "iat", under
- * the active key of the tenant, with the "typ" of §5, which is what Symfony's Oauth2TokenHandler verifies.
- * Nothing is written and nothing is announced: this is a read.
+ * The introspection endpoint (RFC 7662 §2, architecture §4.12). The caller is a confidential client (§2.1);
+ * a token is described to the client it was issued to and to nobody else (§2.2, §4); "token_type_hint" is
+ * ignored. When asked, the answer is signed as RFC 9701 §4 and §5 describe.
  */
 final readonly class IntrospectionHandler
 {
@@ -47,9 +34,8 @@ final readonly class IntrospectionHandler
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization request header, if any
-     * @param array<string, mixed> $parameters the decoded application/x-www-form-urlencoded body
-     * @param bool $signed whether the caller asked for a signed response (RFC 9701 §4, the Accept header)
+     * @param array<string, mixed> $parameters the form parameters of the request body
+     * @param bool $signed a signed response was asked for (RFC 9701 §4)
      *
      * @throws OAuth2Exception invalid_client or invalid_request; never for a token that is not active
      */

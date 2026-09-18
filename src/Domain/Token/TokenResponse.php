@@ -10,10 +10,7 @@ use function implode;
 use SensitiveParameter;
 
 /**
- * The successful answer of the token endpoint (RFC 6749 §5.1, OIDC Core §3.1.3.3): a JSON object with
- * "access_token", "token_type" (always "Bearer", RFC 6750), "expires_in", "refresh_token" and "id_token"
- * when issued, and "scope" always, so that the client never has to guess what it got. The response
- * carries credentials: "Cache-Control: no-store" and "Pragma: no-cache" are part of it (§5.1).
+ * The successful answer of the token endpoint (RFC 6749 §5.1, OIDC Core §3.1.3.3); "scope" is always there.
  */
 final readonly class TokenResponse
 {
@@ -22,8 +19,7 @@ final readonly class TokenResponse
     public const string CONTENT_TYPE = 'application/json';
 
     /**
-     * RFC 6749 §5.1 for a success, applied to the errors of §5.2 as well: nothing the token endpoint says
-     * is cached.
+     * RFC 6749 §5.1, for the errors of §5.2 as well.
      */
     public const array HEADERS = [
         'Cache-Control' => 'no-store',
@@ -36,8 +32,8 @@ final readonly class TokenResponse
     public array $scopes;
 
     /**
-     * @param positive-int $expiresIn the lifetime of the access token in seconds
-     * @param list<Scope> $scopes the scopes the access token covers, at least one
+     * @param positive-int $expiresIn
+     * @param list<Scope> $scopes at least one
      */
     public function __construct(
         #[SensitiveParameter]
@@ -62,8 +58,6 @@ final readonly class TokenResponse
     }
 
     /**
-     * The members of the JSON object, in the order they are written.
-     *
      * @return non-empty-array<string, string|positive-int>
      */
     public function parameters(): array

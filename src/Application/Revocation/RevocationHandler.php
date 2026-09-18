@@ -26,21 +26,10 @@ use SensitiveParameter;
 use function str_contains;
 
 /**
- * The revocation endpoint (RFC 7009 §2, architecture §4.12): a client gives a token back, and the
- * provider stops honouring it at once. The client is authenticated first, the way the token endpoint
- * authenticates it; a public client may revoke what it holds (§2.1), it is its token. Then the token is
- * looked up as a stored access token, then as a refresh token, and revoked when it was issued to the
- * caller. A refresh token takes with it the stored access tokens of its grant (§2.1: "SHOULD also
- * invalidate all access tokens based on the same authorization grant") when the store can; the family
- * is not revoked, a rotated predecessor is already dead and a reuse of it is still told apart.
- *
- * A token the provider cannot find, and a token of another client, are answered 200 without a word
- * (§2.2: "invalid tokens do not cause an error response since the client cannot handle such an error in
- * a reasonable way"), which is also what keeps this endpoint from telling whether a token exists. An
- * access token the provider cannot take back is refused with unsupported_token_type (§2.2.1): the
- * self-contained one, which nothing stores, and a stored one whose store does not revoke
- * (CanRevokeAccessTokenInterface); nothing here pretends a token stopped working. "token_type_hint" is
- * read as a string and then ignored: both stores are consulted.
+ * The revocation endpoint (RFC 7009 §2, architecture §4.12): a stored access token or a refresh token
+ * issued to the caller is revoked, a refresh token taking the access tokens of its grant with it (§2.1).
+ * An unknown token or another client's is answered 200 without a word (§2.2); an access token the
+ * provider cannot take back is unsupported_token_type (§2.2.1). "token_type_hint" is ignored.
  */
 final readonly class RevocationHandler
 {
@@ -54,8 +43,7 @@ final readonly class RevocationHandler
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization request header, if any
-     * @param array<string, mixed> $parameters the decoded application/x-www-form-urlencoded body
+     * @param array<string, mixed> $parameters the form parameters of the request body
      *
      * @throws OAuth2Exception invalid_client, invalid_request or unsupported_token_type
      */
@@ -84,8 +72,7 @@ final readonly class RevocationHandler
     }
 
     /**
-     * A JWS that verifies as an access token of this provider cannot be revoked; one that does not is
-     * an invalid token, answered 200 like any other.
+     * A JWS that verifies cannot be revoked; one that does not is an invalid token, answered 200.
      */
     private function refuseSelfContained(Tenant $tenant, #[SensitiveParameter] string $token, DateTimeImmutable $now): void
     {

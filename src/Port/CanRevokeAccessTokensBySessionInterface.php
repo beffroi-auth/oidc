@@ -8,8 +8,7 @@ use Heidi\Oidc\Domain\Token\StoredAccessToken;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A companion of AccessTokenRepositoryInterface: the store can take back every token issued in a session,
- * which the end of the session asks for (decision 0006, architecture §4.9).
+ * A companion of AccessTokenRepositoryInterface: every token of a session, for its end (architecture §4.9).
  */
 interface CanRevokeAccessTokensBySessionInterface
 {

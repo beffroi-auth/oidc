@@ -12,16 +12,13 @@ use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
 
 /**
- * The discovery endpoint (OIDC Discovery §4, architecture §4.8): the metadata of a tenant, assembled from
- * its issuer, the endpoints the integration serves it at, and what the claims provider announces (§3
- * "scopes_supported" and "claims_supported"), "offline_access" (OIDC Core §11) being the provider's own
- * and "openid" the document's. Everything else in the document is fixed by the module. Nothing is
- * written, nothing is announced: this is a read of the configuration.
+ * The discovery endpoint (OIDC Discovery §4, architecture §4.8): the issuer, the endpoints, what the claims
+ * provider announces; everything else is fixed by the module.
  */
 final readonly class DiscoveryHandler
 {
     /**
-     * @param int $maxAge how long a client may cache the document, in seconds; one hour by default, what oidc_login keeps it anyway
+     * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
         private EndpointLocatorInterface $endpoints,

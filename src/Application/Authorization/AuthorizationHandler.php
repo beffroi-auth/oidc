@@ -43,23 +43,10 @@ use function sprintf;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Decides what a validated authorization request still needs (architecture §4.3): a login, a consent,
- * or nothing, in which case the code is issued. begin() parks the request in an Interaction; the
- * integration sends the browser where the decision says, then calls resume() with the session it holds,
- * grantConsent() or deny() from the consent page. The same rules are applied at every step, so that a
- * session that ended between two pages sends the user back to the login.
- *
- * With prompt=none the provider may show nothing (OIDC Core §3.1.2.1): a login or a consent that would
- * be needed is the redirected error login_required or consent_required (§3.1.2.6) and the interaction
- * is completed. The writes done here, the interaction, the consent and the code, are the ones the
- * protocol needs before answering.
- *
- * The "acr" the code carries is the one the request asked for when the session satisfies it, the first
- * of the client's preferences that does, otherwise the current class of the session (§5.5.1.1). An
- * essential request for classes the provider cannot assert at all is a failed authentication before any
- * login: unmet_authentication_requirements, redirected. What a second credential will add here, between
- * the two, is the step-up: a requested class the provider can assert but the session does not satisfy
- * becomes a LoginRequirement of its own, so that the login page asks for the missing factor.
+ * Decides what a validated authorization request still needs (architecture §4.3): a login, a consent, or
+ * nothing, in which case the code is issued. begin() parks the request in an Interaction; resume(),
+ * grantConsent() and deny() apply the same rules at every step. With prompt=none a needed page is the
+ * redirected error login_required or consent_required (OIDC Core §3.1.2.6).
  */
 final readonly class AuthorizationHandler
 {
@@ -84,12 +71,9 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * Parks the request and takes the first decision.
+     * @param string|null $locale the language of the pages of this interaction
      *
-     * @param AuthenticationSession|null $session the session the browser is bound to, if any
-     * @param string|null $locale the language of the pages of this interaction, chosen by the integration
-     *
-     * @throws OAuth2Exception a redirectable error, the interaction being completed
+     * @throws OAuth2Exception redirectable, the interaction being completed
      */
     public function begin(AuthorizationRequest $request, ?AuthenticationSession $session, RequestContext $context, ?string $locale = null): AuthorizationDecision
     {
@@ -100,7 +84,7 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the login page: the same decision, with the session the browser now holds.
+     * After the login page.
      *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
@@ -115,8 +99,7 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the consent page, when the user agreed: the consent is recorded for every scope of the
-     * request, on top of what the user had already granted this client, and the decision follows.
+     * After the consent page, when the user agreed: the scopes of the request are added to the consent in force.
      *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
@@ -152,8 +135,7 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the consent page, when the user refused: access_denied goes back to the client
-     * (RFC 6749 §4.1.2.1) and the interaction is over.
+     * After the consent page, when the user refused (RFC 6749 §4.1.2.1).
      *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
@@ -175,7 +157,7 @@ final readonly class AuthorizationHandler
         $request = $interaction->request;
         $requestedClasses = AuthenticationContextRequest::of($request);
         try {
-            // verified before anything else, so that a forged hint is refused without a login
+            // before anything else: a forged hint is refused without a login
             $hinted = $request->idTokenHint === null ? null : $this->idTokenHints->verify($request->client, $request->idTokenHint);
             $this->assertCanBeMet($requestedClasses);
             if ($session === null || ! $session->isActive($now)) {
@@ -243,9 +225,8 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * OIDC Core §5.5.1.1: an essential "acr" naming only classes the provider cannot assert, whatever the
-     * session, cannot be met; the authentication fails without a login (the user could do nothing about
-     * it). A voluntary request is never refused: the session's current class answers it.
+     * OIDC Core §5.5.1.1: an essential "acr" naming only classes the provider cannot assert fails without a
+     * login; a voluntary one is never refused.
      *
      * @throws UnmetAuthenticationRequirementsException
      */
@@ -257,9 +238,7 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * OIDC Core §3.1.2.1 and architecture §4.3, for an active session: an id_token_hint naming another
-     * user, prompt=login, prompt=select_account, max_age exceeded. A login done during this interaction
-     * satisfies prompt=login and max_age, otherwise a max_age of a few seconds could never be met.
+     * OIDC Core §3.1.2.1: a login done during this interaction satisfies prompt=login and max_age.
      */
     private function loginRequirement(Interaction $interaction, AuthenticationSession $session, ?Subject $hinted, DateTimeImmutable $now): ?LoginRequirement
     {
@@ -284,9 +263,7 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * Architecture §4.3: a client that does not require consent skips the step; prompt=consent asks
-     * again unless the consent was given during this interaction; otherwise the consent in force must
-     * cover every scope of the request.
+     * Architecture §4.3: prompt=consent asks again unless the consent was given during this interaction.
      */
     private function consentRequirement(Interaction $interaction, AuthenticationSession $session, DateTimeImmutable $now): ?ConsentRequirement
     {

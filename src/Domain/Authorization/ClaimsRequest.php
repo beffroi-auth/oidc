@@ -19,23 +19,18 @@ use JsonException;
 use function sprintf;
 
 /**
- * The "claims" parameter of an authorization request (OIDC Core §5.5): a JSON object whose "userinfo"
- * and "id_token" members list the claims the client wants in each place, each either null or an object
- * of §5.5.1. Members that are not understood are ignored, as the specification requires; a member that
- * is understood but malformed is refused, because nothing is guessed on the client's behalf.
+ * The "claims" parameter (OIDC Core §5.5): an unknown member is ignored, a malformed one refused.
  */
 final readonly class ClaimsRequest
 {
     /**
-     * The defined structure nests four containers (the object, a member, a claim, the "values" list) and
-     * json_decode() counts the scalar inside the last one as a fifth level. Deeper JSON is not a claims
-     * request.
+     * Four containers and the scalar inside the last one, as json_decode() counts.
      */
     private const int MAX_DEPTH = 5;
 
     /**
-     * @param array<string, ClaimRequest> $userinfo claims requested from the UserInfo endpoint, by name
-     * @param array<string, ClaimRequest> $idToken claims requested in the ID token, by name
+     * @param array<string, ClaimRequest> $userinfo by name
+     * @param array<string, ClaimRequest> $idToken by name
      */
     public function __construct(
         public array $userinfo = [],
@@ -44,6 +39,8 @@ final readonly class ClaimsRequest
     }
 
     /**
+     * An empty object decodes as an empty list and asks for nothing.
+     *
      * @throws InvalidArgumentException when the JSON is not a claims request
      */
     public static function fromJson(string $json): self
@@ -53,7 +50,6 @@ final readonly class ClaimsRequest
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('The claims request is not valid JSON.', previous: $exception);
         }
-        // an empty object and an empty list decode alike; both ask for nothing
         if (! is_array($decoded) || ($decoded !== [] && array_is_list($decoded))) {
             throw new InvalidArgumentException('The claims request must be a JSON object (OIDC Core §5.5).');
         }
@@ -67,6 +63,8 @@ final readonly class ClaimsRequest
     }
 
     /**
+     * A claim name made of digits became an integer key when decoded; it names no claim.
+     *
      * @param array<array-key, mixed> $decoded
      *
      * @return array<string, ClaimRequest>
@@ -82,7 +80,6 @@ final readonly class ClaimsRequest
         }
         $claims = [];
         foreach ($member as $claim => $request) {
-            // a name made of digits only became an integer key when the JSON was decoded; it names no claim
             if (! is_string($claim) || $claim === '') {
                 throw new InvalidArgumentException(sprintf('A claim name in "%s" must be a non-empty string that is not a number.', $name));
             }

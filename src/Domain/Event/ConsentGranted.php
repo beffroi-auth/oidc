@@ -19,9 +19,6 @@ final readonly class ConsentGranted implements DomainEventInterface
 
     public Tenant $tenant;
 
-    /**
-     * @param Consent|null $supersedes the consent in force until this one, if any
-     */
     public function __construct(
         public Consent $consent,
         public ?Consent $supersedes,

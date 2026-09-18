@@ -12,12 +12,9 @@ use function preg_match;
 use function sprintf;
 
 /**
- * How the browser-facing endpoints read their parameters (RFC 6749 §3.1, OIDC RP-Initiated Logout 1.0
- * §2): every parameter is a single string, a repeated or nested one is refused, one without a value is
- * treated as omitted, an unknown one is ignored. Nothing is cast, nothing is defaulted on the client's
- * behalf, and every pattern is anchored at the very end of the value (the D modifier), because "$"
- * alone lets a trailing newline through. Whether a failure may be sent back to the client is the caller's to say: only the
- * authorization endpoint ever redirects one, and only once it holds a validated redirect URI.
+ * How the browser-facing endpoints read their parameters (RFC 6749 §3.1): a single string, a repeated
+ * or nested one refused, an empty one omitted, an unknown one ignored. Nothing is cast; every pattern
+ * ends with the D modifier. Whether a failure is redirectable is the caller's to say.
  */
 final readonly class RequestParameters
 {
@@ -27,27 +24,22 @@ final readonly class RequestParameters
     public const string STATE_PATTERN = '/^[\x20-\x7E]+$/D';
 
     /**
-     * A free-text parameter (nonce, login_hint, logout_hint): valid UTF-8 without control characters. A
-     * nonce comes back in a JSON claim, a hint reaches a form; neither has a use for a control character.
+     * Free text (nonce, login_hint, logout_hint): valid UTF-8 without control characters.
      */
     public const string TEXT_PATTERN = '/^[^\p{Cc}]+$/Du';
 
     /**
-     * RFC 5646 §2.1, loosely: a language tag is subtags of one to eight letters or digits joined by
-     * hyphens, the first one letters only. Whether the tag is supported is the integration's concern.
+     * RFC 5646 §2.1, loosely; whether the tag is supported is the integration's concern.
      */
     public const string LANGUAGE_TAG_PATTERN = '/^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/D';
 
     /**
-     * RFC 7515 §7.1: a compact JWS is three base64url segments; an ID token issued here is always
-     * signed, so the third segment is never empty (OIDC Core §2 forbids "none" for the code flow).
+     * RFC 7515 §7.1, the third segment never empty (OIDC Core §2 forbids "none").
      */
     public const string COMPACT_JWS_PATTERN = '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D';
 
     /**
-     * RFC 6749 §3.1: a parameter without a value is treated as omitted, a parameter must not be
-     * included more than once. A value that is not a string (an array, from a repeated or nested
-     * parameter) is refused rather than reduced to one.
+     * RFC 6749 §3.1: empty is omitted, repeated or nested is refused.
      *
      * @param array<string, mixed> $parameters
      */
@@ -112,7 +104,7 @@ final readonly class RequestParameters
     }
 
     /**
-     * OIDC Core §3.1.2.1 and RP-Initiated Logout §2 "ui_locales": language tags, most preferred first.
+     * OIDC Core §3.1.2.1 "ui_locales": most preferred first.
      *
      * @param array<string, mixed> $parameters
      *
@@ -124,7 +116,7 @@ final readonly class RequestParameters
     }
 
     /**
-     * A space-separated list whose every item matches the pattern, in the order given, without repeats.
+     * Space-separated, every item matching the pattern, without repeats.
      *
      * @param array<string, mixed> $parameters
      *

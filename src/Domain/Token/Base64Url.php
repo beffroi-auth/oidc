@@ -9,8 +9,7 @@ use function rtrim;
 use function strtr;
 
 /**
- * RFC 4648 §5 without padding, as RFC 7515 §2 defines "base64url" for everything JOSE: token values,
- * "at_hash", and the identifiers that travel in a JWT.
+ * RFC 4648 §5 without padding, as RFC 7515 §2 defines "base64url".
  */
 final readonly class Base64Url
 {

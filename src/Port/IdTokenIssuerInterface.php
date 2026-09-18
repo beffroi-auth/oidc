@@ -9,9 +9,7 @@ use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 
 /**
- * Mints the ID token of a response (OIDC Core §2, §3.1.3.6; architecture §4.6). The access token of the
- * same response is given for "at_hash"; the nonce, the authentication and the claims requested are in
- * the authorization.
+ * Mints the ID token of a response (OIDC Core §2, architecture §4.6); the access token is given for "at_hash".
  */
 interface IdTokenIssuerInterface
 {

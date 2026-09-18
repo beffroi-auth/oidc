@@ -19,14 +19,8 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * What the token endpoint has established the client may receive, once a grant has been verified
- * (architecture §4.5): the client, the session and the user behind it, the scopes of this response and
- * those the resource owner granted, the nonce when the tokens answer an authorization code, the claims
- * requested, and the authentication as it stood when the user authorized ("auth_time", "amr", "acr").
- * The issuers of the access token and of the ID token read it; nothing else does.
- *
- * "scopes" is what this response carries, "grantedScopes" what the user granted: a refresh may narrow
- * the former (RFC 6749 §6), the refresh token keeps the latter.
+ * What a verified grant entitles the client to (architecture §4.5), read by the token issuers. "scopes"
+ * is what this response carries, "grantedScopes" what the user granted (RFC 6749 §6).
  */
 final readonly class GrantedAuthorization
 {
@@ -50,12 +44,11 @@ final readonly class GrantedAuthorization
     public array $authenticationMethods;
 
     /**
-     * @param list<Scope> $scopes the scopes of this response, at least one, all among the granted ones
-     * @param list<Scope> $grantedScopes the scopes the resource owner granted
-     * @param string|null $nonce the one of the authorization request, only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
+     * @param list<Scope> $scopes at least one, all among the granted ones
+     * @param list<Scope> $grantedScopes
+     * @param string|null $nonce only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
      * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string $authenticationContextClass the "acr" value, the class of the session when the user authorized
-     * @param Uuid $grantId the authorization code these tokens descend from, as the access token names it
+     * @param string $authenticationContextClass the "acr" value
      */
     public function __construct(
         public GrantType $grantType,
@@ -93,7 +86,7 @@ final readonly class GrantedAuthorization
     }
 
     /**
-     * RFC 6749 §4.1.3, OIDC Core §3.1.3: everything the code recorded, scopes included.
+     * RFC 6749 §4.1.3, OIDC Core §3.1.3.
      */
     public static function fromAuthorizationCode(AuthorizationCode $code): self
     {
@@ -113,9 +106,9 @@ final readonly class GrantedAuthorization
     }
 
     /**
-     * RFC 6749 §6: the scopes of the token, or the narrower ones the client asked for; no nonce.
+     * RFC 6749 §6: no nonce.
      *
-     * @param list<Scope>|null $scopes the scopes requested, null for the ones of the token
+     * @param list<Scope>|null $scopes null for the ones of the token
      */
     public static function fromRefreshToken(RefreshToken $token, ?array $scopes): self
     {

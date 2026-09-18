@@ -11,14 +11,12 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\TokenEndpointAuthMethod;
 
 /**
- * A client failed to authenticate at the token endpoint. Announced for every failure, whatever the reason,
- * so that a secret being guessed or a misconfigured relying party shows up in the audit trail.
+ * A client failed to authenticate at the token endpoint, whatever the reason.
  */
 final readonly class ClientAuthenticationFailed implements DomainEventInterface
 {
     /**
-     * @param string|null $clientId as the caller presented it, kept as typed; null when none could be read
-     * @param TokenEndpointAuthMethod|null $method the method the caller used, when one could be told
+     * @param string|null $clientId kept as typed
      */
     public function __construct(
         public DateTimeImmutable $occurredAt,

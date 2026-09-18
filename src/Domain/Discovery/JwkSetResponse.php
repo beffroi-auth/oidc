@@ -10,16 +10,9 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**
- * The answer of the JWK Set endpoint (RFC 7517 §5, OIDC Discovery §3 "jwks_uri"): the public keys of the
- * tenant that may still have signed a token in circulation, the active one and those retiring, each with
- * "kid", "kty", "alg" and "use" (RFC 7517 §4), never a private member. Public and cacheable for a short
- * while: the document is the same for everybody, and a client that meets an unknown "kid" fetches it
- * again on its own (Symfony's oidc_login does, with a cooldown), so a rotation in spike 2 does not wait
- * for the cache to expire. A set without any key is not cached at all, so that the first key generated is
- * seen at once.
- *
- * "application/json" rather than the "application/jwk-set+json" of RFC 7517 §8.5.1 because that is what
- * every provider in the wild serves and what every client library reads without looking twice.
+ * The answer of the JWK Set endpoint (RFC 7517 §5): the published keys of the tenant, public members only,
+ * cacheable for a short while; an empty set is not cached. "application/json" rather than the type of
+ * RFC 7517 §8.5.1, which is what clients read.
  */
 final readonly class JwkSetResponse
 {
@@ -45,9 +38,6 @@ final readonly class JwkSetResponse
         ];
     }
 
-    /**
-     * @return string the JWK Set as a JSON object with its "keys" list (RFC 7517 §5.1)
-     */
     public function toJson(): string
     {
         return JwtPayload::encode($this->keys->toJwks());

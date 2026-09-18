@@ -32,28 +32,19 @@ use function in_array;
 use function preg_match;
 
 /**
- * Reads an authorization request (RFC 6749 §4.1.1, OIDC Core §3.1.2.1) from its parameters, in the two
- * stages RFC 6749 §4.1.2.1 and RFC 9700 §4.1 impose: first the client and the redirect URI, whose
- * failures are shown to the user and never redirected; then everything else, whose failures are sent
- * back to the client with "state" and "iss". The integration calls the two stages in turn and reads
- * OAuth2Exception::$redirectable to know what to do with a failure; the stages are separate so that
- * the integration holds the RedirectTarget before any redirectable error can exist.
- *
- * Every parameter is read as a single string: a repeated or nested parameter is refused, a parameter
- * without a value is treated as omitted (RFC 6749 §3.1), an unknown parameter is ignored (same section).
- * Nothing is cast, nothing is defaulted on the client's behalf (RequestParameters), and every
- * description is a constant of this class.
+ * Reads an authorization request (RFC 6749 §4.1.1, OIDC Core §3.1.2.1) in the two stages of RFC 6749
+ * §4.1.2.1: the client and the redirect URI first, whose failures are never redirected; everything else
+ * then, whose failures go back to the client with "state" and "iss".
  */
 final readonly class AuthorizationRequestParser
 {
     /**
-     * OIDC Core §3.1.2.1: max_age is a number of seconds; a decimal integer without sign, bounded so that
-     * it stays a PHP integer whatever the platform.
+     * OIDC Core §3.1.2.1: seconds, bounded to a PHP integer.
      */
     private const string MAX_AGE_PATTERN = '/^(?:0|[1-9][0-9]{0,17})$/D';
 
     /**
-     * An acr value is a URI or a name (OIDC Core §2 "acr"): printable ASCII without space.
+     * OIDC Core §2 "acr": printable ASCII without space.
      */
     private const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
 
@@ -63,12 +54,11 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * First stage (RFC 6749 §4.1.2.1, OIDC Core §3.1.2.2 steps 1 and 2): a known client, a redirect URI
-     * byte for byte equal to a registered one (RFC 6749 §3.1.2.3), and a state the response can echo.
+     * First stage (RFC 6749 §4.1.2.1, §3.1.2.3): the client, the redirect URI byte for byte, the state.
      *
-     * @param array<string, mixed> $parameters the query parameters of the request
+     * @param array<string, mixed> $parameters
      *
-     * @throws OAuth2Exception never redirectable: the error is shown to the user
+     * @throws OAuth2Exception never redirectable
      */
     public function redirectTarget(Tenant $tenant, array $parameters): RedirectTarget
     {
@@ -91,16 +81,15 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): the response type, the scope,
-     * the PKCE challenge and every optional parameter of OIDC Core §3.1.2.1.
+     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): everything else. Neither form
+     * of request object is served (OIDC Core §6).
      *
-     * @param array<string, mixed> $parameters the same parameters the target was read from
+     * @param array<string, mixed> $parameters
      *
-     * @throws OAuth2Exception always redirectable: the error is sent to the target
+     * @throws OAuth2Exception always redirectable
      */
     public function parse(RedirectTarget $target, array $parameters): AuthorizationRequest
     {
-        // OIDC Core §6: a request object would replace the parameters read here; neither form is served
         if (RequestParameters::isPresent($parameters, 'request')) {
             throw new RequestNotSupportedException('Request objects are not supported.');
         }
@@ -157,8 +146,7 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * RFC 6749 §3.3: scope = scope-token *( SP scope-token ); OIDC Core §3.1.2.2 step 3: it contains
-     * "openid"; every token is one the client is allowed (RFC 6749 §4.1.2.1 "invalid_scope").
+     * RFC 6749 §3.3, OIDC Core §3.1.2.2 step 3: contains "openid", every token allowed to the client.
      *
      * @return list<Scope>
      */
@@ -189,10 +177,8 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * RFC 7636 §4.3 and §4.4.1: the challenge is required, and its method must be S256, whether "plain"
-     * is asked for or implied by an absent method (decision 0006). A client registered without the
-     * requirement (decision 0008) may send no challenge at all; one it sends is checked like any other
-     * (RFC 9700 §2.1.1), and a method without a challenge is a malformed request either way.
+     * RFC 7636 §4.3, §4.4.1: S256 only (decision 0006). A client exempted by decision 0008 may send no
+     * challenge; one it sends is checked like any other (RFC 9700 §2.1.1).
      */
     private static function codeChallenge(Client $client, ?string $challenge, ?string $method): ?CodeChallenge
     {
@@ -213,7 +199,7 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * OIDC Core §3.1.2.1 "prompt": space delimited, case sensitive, from a closed list; "none" alone.
+     * OIDC Core §3.1.2.1 "prompt": a closed list, "none" alone.
      *
      * @return list<Prompt>
      */

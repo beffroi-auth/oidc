@@ -30,16 +30,13 @@ use SensitiveParameter;
 use function sprintf;
 
 /**
- * One client as the configuration declares it (architecture §5.1), read strictly: every key is known,
- * every value has the type the key expects, nothing is cast. The secret stays in clear here, as the
- * configuration holds it, and is hashed when the client is built.
+ * One client as the configuration declares it (architecture §5.1), read strictly, nothing cast. The
+ * secret stays in clear until the client is built.
  */
 final readonly class ClientDefinition
 {
     /**
-     * RFC 6749 appendix A.2: a client secret is made of visible ASCII characters (VSCHAR). Shorter than
-     * 32 of them, it is not the high-entropy secret RFC 6819 §5.1.4.2.2 asks for; the configuration is
-     * refused rather than the secret being weak.
+     * RFC 6749 appendix A.2, at least 32 characters (RFC 6819 §5.1.4.2.2).
      */
     private const string SECRET_PATTERN = '/^[\x21-\x7E]{32,}$/';
 
@@ -135,10 +132,9 @@ final readonly class ClientDefinition
     }
 
     /**
-     * Hashes the secret: as costly as hashing a password, by design, so call it once per process and keep
-     * the hash.
+     * As costly as hashing a password: once per process.
      *
-     * @throws LogicException for a public client, which has no secret; ask hasSecret() first
+     * @throws LogicException for a public client
      */
     public function hashSecret(PasswordHasherInterface $hasher): PasswordHash
     {
@@ -149,9 +145,6 @@ final readonly class ClientDefinition
         return $hasher->hash($this->secret);
     }
 
-    /**
-     * @param PasswordHash|null $secretHash the hash of the secret, see hashSecret(); null for a public client
-     */
     public function toClient(Tenant $tenant, ?PasswordHash $secretHash): Client
     {
         return new Client(

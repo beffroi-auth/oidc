@@ -8,9 +8,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * What one token request produced (architecture §4.5): the access token, the ID token when "openid" was
- * among the scopes, and the refresh token if one was due. The response is built from it; the events are
- * not, because they must not carry the values.
+ * What one token request produced (architecture §4.5).
  */
 final readonly class IssuedTokens
 {

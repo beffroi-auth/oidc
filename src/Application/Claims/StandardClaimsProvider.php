@@ -16,15 +16,9 @@ use Heidi\Oidc\Port\ClaimsProviderInterface;
 use function in_array;
 
 /**
- * The standard claims of OIDC Core §5.1, read from the user of the core. The four scopes of §5.4 each
- * stand for a fixed set of them; a claim asked for by name (§5.5) is served whether or not its scope
- * was, because §5.5 exists to ask for less than a scope, and the "value" and "values" members of a
- * request (§5.5.1) are not looked at: the provider says what it knows, the client checks what it got.
- *
- * Claims about an absent attribute are left out, "email_verified" and "phone_number_verified" included:
- * a verification flag is only meaningful next to the value it qualifies. When the value is there, the
- * flag is there too, true or false, as a JSON boolean and never as a string (architecture §9). A
- * deployment that wants claims of its own chains another provider; this one knows the standard ones.
+ * The standard claims of OIDC Core §5.1: the four scopes of §5.4, a claim asked for by name (§5.5) served
+ * whether or not its scope was. An absent attribute yields no claim, its verification flag included; a
+ * flag present is a JSON boolean (architecture §9).
  */
 final readonly class StandardClaimsProvider implements ClaimsProviderInterface
 {
@@ -62,17 +56,13 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
         return array_map(static fn (string $scope): Scope => new Scope($scope), array_keys(self::SCOPES));
     }
 
-    /**
-     * The nineteen claims of §5.1 the four scopes stand for, in the order of §5.4.
-     */
     public function supportedClaims(): array
     {
         return array_merge(...array_values(self::SCOPES));
     }
 
     /**
-     * Every standard claim the user could carry, null when the attribute is absent, in the order of
-     * OIDC Core §5.1 so that a response reads like the specification.
+     * In the order of OIDC Core §5.1, null when the attribute is absent.
      *
      * @return array<string, mixed>
      */
@@ -104,7 +94,7 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
     }
 
     /**
-     * OIDC Core §5.1.1: a JSON object with the members that have a value; no member, no claim.
+     * OIDC Core §5.1.1: no member, no claim.
      *
      * @return array<string, string>|null
      */

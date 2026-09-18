@@ -7,13 +7,12 @@ namespace Heidi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 6749 §4.1.2.1 and §5.2 "invalid_scope": the requested scope is malformed, unknown, not allowed to
- * this client, or does not contain "openid" (OIDC Core §3.1.2.2). The token endpoint answers 400.
+ * RFC 6749 §4.1.2.1, §5.2 "invalid_scope".
  */
 final class InvalidScopeException extends OAuth2Exception
 {
     /**
-     * @param bool $redirectable true only from the authorization endpoint once the client and its redirect URI are known
+     * @param bool $redirectable only from the authorization endpoint, once the redirect URI is known
      */
     public function __construct(string $description, bool $redirectable = false, ?Throwable $previous = null)
     {

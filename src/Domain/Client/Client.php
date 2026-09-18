@@ -16,20 +16,14 @@ use SensitiveParameter;
 use function sprintf;
 
 /**
- * A relying party registered with a tenant (RFC 6749 §2, RFC 7591 §2 for the vocabulary). The secret is
- * hashed like a password and compared by the hasher, never in clear; a public client has none. Every list
- * is closed: a redirect URI, a grant or a scope that is not registered is refused, there is no wildcard.
- *
- * Consent is the rule; "requiresConsent = false" is the named exception for a first-party application,
- * carried by the client and by nothing global (architecture §7). PKCE is the rule too; "requiresPkce = false"
- * is the named exception of decision 0008 for a confidential client that cannot send a code_challenge, and
- * a public client cannot hold it (RFC 9700 §2.1.1).
+ * A relying party registered with a tenant (RFC 6749 §2, RFC 7591 §2). Every list is closed, no wildcard.
+ * "requiresConsent = false" and "requiresPkce = false" are the named exceptions of architecture §7 and
+ * decision 0008, carried by the client and by nothing global.
  */
 final readonly class Client
 {
     /**
-     * RFC 6749 appendix A.1: a client identifier is made of visible ASCII characters (VSCHAR, %x20-7E).
-     * Leading and trailing spaces are refused because nobody types them on purpose.
+     * RFC 6749 appendix A.1, without leading nor trailing space.
      */
     private const string CLIENT_ID_PATTERN = '/^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$/';
 
@@ -54,14 +48,12 @@ final readonly class Client
     public array $allowedScopes;
 
     /**
-     * @param PasswordHash|null $secretHash null for a public client, required for a confidential one
-     * @param list<RedirectUri> $redirectUris at least one, compared byte for byte
-     * @param list<RedirectUri> $postLogoutRedirectUris where the client may be sent after a logout it initiated
-     * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code to obtain a first token
+     * @param PasswordHash|null $secretHash null for a public client
+     * @param list<RedirectUri> $redirectUris at least one
+     * @param list<RedirectUri> $postLogoutRedirectUris
+     * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
      * @param list<Scope> $allowedScopes at least one
-     * @param bool $requiresPkce false only for a confidential client, decision 0008; a request that carries a
-     *                           code_challenge is verified all the same
-     * @param AccessTokenFormat $accessTokenFormat the shape of the access tokens issued to this client (architecture §4.6)
+     * @param bool $requiresPkce false only for a confidential client (decision 0008)
      */
     public function __construct(
         public Tenant $tenant,
@@ -90,8 +82,7 @@ final readonly class Client
     }
 
     /**
-     * The rules a registration must meet, checked here and by whoever reads a registration before a
-     * client exists, so that a wrong configuration fails at boot and not at the first token request.
+     * The rules a registration must meet, so that a wrong configuration fails at boot.
      *
      * @param list<RedirectUri> $redirectUris
      * @param list<GrantType> $grantTypes
@@ -141,16 +132,13 @@ final readonly class Client
         return $this->tenant->equals($tenant);
     }
 
-    /**
-     * The same registration: a client identifier is unique within its tenant.
-     */
     public function equals(self $other): bool
     {
         return $this->clientId === $other->clientId && $this->belongsTo($other->tenant);
     }
 
     /**
-     * RFC 6749 §2.1: a client that cannot keep a secret. Its authorization codes are bound to it by PKCE only.
+     * RFC 6749 §2.1.
      */
     public function isPublic(): bool
     {
@@ -158,7 +146,7 @@ final readonly class Client
     }
 
     /**
-     * RFC 6749 §3.1.2.3: the requested URI is compared byte for byte to the registered ones.
+     * RFC 6749 §3.1.2.3: byte for byte.
      */
     public function hasRedirectUri(string $redirectUri): bool
     {
@@ -166,7 +154,7 @@ final readonly class Client
     }
 
     /**
-     * OIDC RP-Initiated Logout 1.0 §2: a post_logout_redirect_uri is honoured only when registered.
+     * RP-Initiated Logout §2.
      */
     public function hasPostLogoutRedirectUri(string $redirectUri): bool
     {

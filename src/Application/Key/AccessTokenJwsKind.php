@@ -12,9 +12,8 @@ use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 
 /**
- * The self-contained access token (RFC 9068, "at+jwt"), a JWS the tenant issues only when a client of its
- * is registered for that shape (architecture §4.6): an opaque access token depends on no key and does not
- * hold a retirement back. The lifetime is read from the issuer so that the two cannot disagree.
+ * The "at+jwt" access token (RFC 9068), issued only when a client of the tenant is registered for that
+ * shape (architecture §4.6). The lifetime is read from the issuer so that the two cannot disagree.
  */
 final readonly class AccessTokenJwsKind implements IssuedJwsKindInterface
 {

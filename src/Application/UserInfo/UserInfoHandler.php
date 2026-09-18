@@ -19,18 +19,10 @@ use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
- * The UserInfo endpoint (OIDC Core §5.3, architecture §4.7): a protected resource of the provider that
- * takes a bearer token (RFC 6750 §2), has it inspected as one of its own access tokens, in either shape
- * (architecture §4.6), and answers with the claims about the end user that the token entitles the client
- * to: those the scopes of the token stand for (§5.4) and those the client asked for by name (§5.5), read
- * from the token or its record, plus "sub" through the same resolver that named the subject in the
- * token, so that both name the same subject (§5.3.2).
- *
- * A token without "openid" opens nothing here (§5.3.1: "the Access Token obtained through an OpenID
- * Connect Authentication Request"): insufficient_scope, 403. A token whose grant is gone or revoked, or
- * whose user is gone or disabled, is refused by the inspector, invalid_token. Nothing is written and
- * nothing is announced: this is a read. Errors are the ones of RFC 6750 §3.1, never a redirect: the
- * integration turns the exception into a UserInfoErrorResponse.
+ * The UserInfo endpoint (OIDC Core §5.3, architecture §4.7): a bearer token (RFC 6750 §2) inspected as
+ * an access token of the provider, answered with the claims its scopes stand for (§5.4) and those asked
+ * for by name (§5.5). A token without "openid" is insufficient_scope (§5.3.1). Errors are the ones of
+ * RFC 6750 §3.1.
  */
 final readonly class UserInfoHandler
 {
@@ -42,10 +34,9 @@ final readonly class UserInfoHandler
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization request header, if any
-     * @param array<string, mixed> $parameters the decoded application/x-www-form-urlencoded body, if any; never the query string (RFC 6750 §2.3)
+     * @param array<string, mixed> $parameters the form parameters of the request body, never the query string (RFC 6750 §2.3)
      *
-     * @throws MissingBearerTokenException when the request carries no bearer token: 401, bare challenge
+     * @throws MissingBearerTokenException 401 with a bare challenge
      * @throws OAuth2Exception invalid_request, invalid_token or insufficient_scope
      */
     public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context): UserInfoResponse
@@ -61,7 +52,6 @@ final readonly class UserInfoHandler
         }
         $user = $inspected->user;
 
-        // §5.5.1 "essential", "value" and "values" are not read by the provider, so the names are enough to ask again
         $requested = array_fill_keys($token->userinfoClaims, new ClaimRequest());
 
         return new UserInfoResponse(
