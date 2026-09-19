@@ -20,7 +20,6 @@ use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use function preg_match;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -46,7 +45,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
      */
     public function __construct(
         private AuthorizationCodeRepositoryInterface $codes,
-        private RefreshTokenRepositoryInterface $refreshTokens,
+        private RefreshTokenRevocation $refreshTokens,
         private AccessTokenRepositoryInterface $accessTokens,
         private TokenIssuer $issuer,
         private ClockInterface $clock,
@@ -131,15 +130,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
     {
         $code->revoke($now);
         $this->codes->save($code);
-        $revoked = [];
-        foreach ($this->refreshTokens->findByAuthorizationCode($code->codeHash) as $token) {
-            if ($token->isRevoked()) {
-                continue;
-            }
-            $token->revoke($now);
-            $this->refreshTokens->save($token);
-            $revoked[] = $token;
-        }
+        $revoked = $this->refreshTokens->revokeByAuthorizationCode($code->codeHash, $now);
         if ($this->accessTokens instanceof CanRevokeAccessTokensByGrantInterface) {
             $this->accessTokens->revokeByGrant($code->grantId);
         }

@@ -155,18 +155,14 @@ final readonly class AuthorizationRequestParser
         if ($scope === null) {
             throw new InvalidRequestException('The scope parameter is missing.', true);
         }
-        $scopes = [];
-        foreach (explode(' ', $scope) as $token) {
-            try {
-                $candidate = new Scope($token);
-            } catch (InvalidArgumentException) {
-                throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', true);
-            }
+        try {
+            $scopes = Scope::parseList($scope);
+        } catch (InvalidArgumentException) {
+            throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', true);
+        }
+        foreach ($scopes as $candidate) {
             if (! $target->client->allowsScope($candidate)) {
                 throw new InvalidScopeException('The requested scope is not allowed for this client.', true);
-            }
-            if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals($candidate))) {
-                $scopes[] = $candidate;
             }
         }
         if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals(Scope::openid()))) {

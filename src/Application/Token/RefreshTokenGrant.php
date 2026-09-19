@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
-use function array_any;
 use DateTimeImmutable;
-use function explode;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantType;
@@ -34,6 +32,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
 
     public function __construct(
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private RefreshTokenRevocation $revocation,
         private TokenIssuer $issuer,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
@@ -86,20 +85,11 @@ final readonly class RefreshTokenGrant implements GrantInterface
         if ($scope === null) {
             return null;
         }
-        $scopes = [];
-        foreach (explode(' ', $scope) as $token) {
-            try {
-                $candidate = new Scope($token);
-            } catch (InvalidArgumentException $exception) {
-                throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', previous: $exception);
-            }
-            if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals($candidate))) {
-                $scopes[] = $candidate;
-            }
+        try {
+            return Scope::parseList($scope);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', previous: $exception);
         }
-
-        /** @var non-empty-list<Scope> $scopes */
-        return $scopes;
     }
 
     /**
@@ -107,15 +97,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
      */
     private function reused(RefreshToken $presented, RequestContext $context, DateTimeImmutable $now): void
     {
-        $revoked = [];
-        foreach ($this->refreshTokens->findByFamily($presented->family->id) as $token) {
-            if ($token->isRevoked()) {
-                continue;
-            }
-            $token->revoke($now);
-            $this->refreshTokens->save($token);
-            $revoked[] = $token;
-        }
+        $revoked = $this->revocation->revokeFamily($presented->family->id, $now);
         $this->events->dispatch(new RefreshTokenReuseDetected($now, $presented, $revoked, $context));
     }
 }

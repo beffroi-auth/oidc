@@ -6,9 +6,7 @@ namespace Heidi\Oidc\Application\Token;
 
 use function array_is_list;
 use function array_keys;
-use function array_map;
 use DateTimeImmutable;
-use function explode;
 use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\InvalidArgumentException;
@@ -205,7 +203,7 @@ final readonly class AccessTokenVerifier
             throw new OidcInvalidArgumentException('The scope claim is not a string.');
         }
 
-        return array_map(static fn (string $token): Scope => new Scope($token), explode(' ', $scope));
+        return Scope::parseList($scope);
     }
 
     /**

@@ -9,6 +9,7 @@ use Heidi\Core\Application\Authentication\SessionTerminator;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Session\SessionEnd;
+use Heidi\Oidc\Application\Token\RefreshTokenRevocation;
 use Heidi\Oidc\Domain\EndSession\EndSessionDecision;
 use Heidi\Oidc\Domain\EndSession\EndSessionRequest;
 use Heidi\Oidc\Domain\EndSession\LoggedOut;
@@ -17,7 +18,6 @@ use Heidi\Oidc\Domain\EndSession\LogoutConfirmationRequired;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -30,7 +30,7 @@ final readonly class EndSessionHandler
 {
     public function __construct(
         private SessionTerminator $sessions,
-        private RefreshTokenRepositoryInterface $refreshTokens,
+        private RefreshTokenRevocation $refreshTokens,
         private AccessTokenRepositoryInterface $accessTokens,
         private ClockInterface $clock,
     ) {
@@ -98,13 +98,7 @@ final readonly class EndSessionHandler
 
     private function end(EndSessionRequest $request, AuthenticationSession $session, RequestContext $context, DateTimeImmutable $now): LoggedOut
     {
-        foreach ($this->refreshTokens->findBySession($session->id) as $token) {
-            if ($token->isRevoked()) {
-                continue;
-            }
-            $token->revoke($now);
-            $this->refreshTokens->save($token);
-        }
+        $this->refreshTokens->revokeBySession($session->id, $now);
         if ($this->accessTokens instanceof CanRevokeAccessTokensBySessionInterface) {
             $this->accessTokens->revokeBySession($session->id);
         }
