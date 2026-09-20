@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Authorization;
 
-use function array_any;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
+use Heidi\Core\Domain\Session\AuthenticationContextPolicy;
 use Heidi\Core\Domain\Session\AuthenticationSession;
-use function in_array;
 use function is_string;
 
 /**
  * What a request says about the "acr" of the ID token (OIDC Core §3.1.2.1, §5.5.1.1): the "acr" claim
  * request of "claims.id_token" first, "acr_values" as the voluntary form otherwise. A value that is not
- * a string names no class and matches none.
+ * a string names no class and matches none; a name the policy of the tenant does not declare neither
+ * (decision 0010).
  */
 final readonly class AuthenticationContextRequest
 {
@@ -45,13 +45,43 @@ final readonly class AuthenticationContextRequest
     }
 
     /**
-     * Whether a requested class is one the provider can assert at all (§5.5.1.1).
+     * The requested values that are classes of the policy, in the client's order of preference.
      *
-     * @param non-empty-list<string> $supported
+     * @return list<AuthenticationContextClass>
      */
-    public function canBeMetWith(array $supported): bool
+    public function classesOf(AuthenticationContextPolicy $policy): array
     {
-        return array_any($this->values, static fn (string|int|float|bool $value): bool => in_array($value, $supported, true));
+        $classes = [];
+        foreach ($this->values as $value) {
+            $class = is_string($value) ? $policy->named($value) : null;
+            if ($class !== null) {
+                $classes[] = $class;
+            }
+        }
+
+        return $classes;
+    }
+
+    /**
+     * The requested classes among the given ones, in the client's order: those a login can still prove
+     * when the given ones are what the provider proves (§5.5.1.1).
+     *
+     * @param list<AuthenticationContextClass> $classes
+     *
+     * @return list<AuthenticationContextClass>
+     */
+    public function among(array $classes): array
+    {
+        $among = [];
+        foreach ($this->values as $value) {
+            foreach ($classes as $class) {
+                if ($class->value === $value) {
+                    $among[] = $class;
+                }
+            }
+        }
+
+        return $among;
     }
 
     /**
@@ -59,11 +89,7 @@ final readonly class AuthenticationContextRequest
      */
     public function firstSatisfiedBy(AuthenticationSession $session): ?AuthenticationContextClass
     {
-        foreach ($this->values as $value) {
-            if (! is_string($value) || ! AuthenticationContextClass::isWellFormed($value)) {
-                continue;
-            }
-            $class = new AuthenticationContextClass($value);
+        foreach ($this->classesOf($session->tenant->authenticationContextPolicy) as $class) {
             if ($session->satisfies($class)) {
                 return $class;
             }

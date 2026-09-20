@@ -9,9 +9,13 @@ namespace Heidi\Oidc\Domain\Interaction;
  */
 final readonly class LoginRequired implements AuthorizationDecision
 {
+    /**
+     * @param StepUp|null $stepUp what the login has to add, with StrongerFactorRequired only
+     */
     public function __construct(
         public Interaction $interaction,
         public LoginRequirement $requirement,
+        public ?StepUp $stepUp = null,
     ) {
     }
 }

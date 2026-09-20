@@ -26,6 +26,7 @@ use Heidi\Oidc\Domain\Interaction\Granted;
 use Heidi\Oidc\Domain\Interaction\Interaction;
 use Heidi\Oidc\Domain\Interaction\LoginRequired;
 use Heidi\Oidc\Domain\Interaction\LoginRequirement;
+use Heidi\Oidc\Domain\Interaction\StepUp;
 use Heidi\Oidc\Exception\AccessDeniedException;
 use Heidi\Oidc\Exception\ConsentRequiredException;
 use Heidi\Oidc\Exception\InteractionCompletedException;
@@ -36,6 +37,7 @@ use Heidi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\ConsentRepositoryInterface;
 use Heidi\Oidc\Port\InteractionRepositoryInterface;
+use Heidi\Oidc\Port\ProvableMethodsInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use function sprintf;
@@ -45,7 +47,9 @@ use Symfony\Component\Uid\Uuid;
  * Decides what a validated authorization request still needs (architecture §4.3): a login, a consent, or
  * nothing, in which case the code is issued. begin() parks the request in an Interaction; resume(),
  * grantConsent() and deny() apply the same rules at every step. With prompt=none a needed page is the
- * redirected error login_required or consent_required (OIDC Core §3.1.2.6).
+ * redirected error login_required or consent_required (OIDC Core §3.1.2.6). A requested "acr" is read
+ * against the policy of the tenant (decision 0010): refused before any login when the provider can prove
+ * none of the requested classes, a step-up when it can and the session satisfies none.
  */
 final readonly class AuthorizationHandler
 {
@@ -57,11 +61,14 @@ final readonly class AuthorizationHandler
 
     private const string UNMET_AUTHENTICATION_REQUIREMENTS = 'No requested acr value is one this provider can assert, see acr_values_supported.';
 
+    private const string UNMET_AFTER_LOGIN = 'The end user did not authenticate as any requested acr value demands.';
+
     public function __construct(
         private InteractionRepositoryInterface $interactions,
         private ConsentRepositoryInterface $consents,
         private AuthorizationCodeRepositoryInterface $codes,
         private IdTokenHintVerifier $idTokenHints,
+        private ProvableMethodsInterface $provable,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
         private DateInterval $interactionLifetime = new DateInterval('PT10M'),
@@ -150,17 +157,20 @@ final readonly class AuthorizationHandler
     {
         $request = $interaction->request;
         $requestedClasses = AuthenticationContextRequest::of($request);
+        $provableClasses = $requestedClasses->among($request->client->tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods()));
         try {
             // before anything else: a forged hint is refused without a login
             $hinted = $request->idTokenHint === null ? null : $this->idTokenHints->verify($request->client, $request->idTokenHint);
-            $this->assertCanBeMet($requestedClasses);
+            $this->assertCanBeMet($requestedClasses, $provableClasses);
             if ($session === null || ! $session->isActive($now)) {
                 return $this->loginRequired($interaction, LoginRequirement::NoSession);
             }
-            $loginRequirement = $this->loginRequirement($interaction, $session, $hinted, $now);
+            $stepUp = $this->stepUp($requestedClasses, $provableClasses, $session);
+            $loginRequirement = $this->loginRequirement($interaction, $session, $hinted, $stepUp, $now);
             if ($loginRequirement !== null) {
-                return $this->loginRequired($interaction, $loginRequirement);
+                return $this->loginRequired($interaction, $loginRequirement, $loginRequirement === LoginRequirement::StrongerFactorRequired ? $stepUp : null);
             }
+            $this->assertMet($requestedClasses, $session);
             $interaction->authenticate($session, $now);
 
             $consentRequirement = $this->consentRequirement($interaction, $session, $now);
@@ -205,33 +215,65 @@ final readonly class AuthorizationHandler
     /**
      * @throws LoginRequiredException when prompt=none forbids the login page
      */
-    private function loginRequired(Interaction $interaction, LoginRequirement $requirement): LoginRequired
+    private function loginRequired(Interaction $interaction, LoginRequirement $requirement, ?StepUp $stepUp = null): LoginRequired
     {
         if ($interaction->request->hasPrompt(Prompt::None)) {
             throw new LoginRequiredException(self::LOGIN_REQUIRED);
         }
         $this->interactions->save($interaction);
 
-        return new LoginRequired($interaction, $requirement);
+        return new LoginRequired($interaction, $requirement, $stepUp);
     }
 
     /**
      * OIDC Core §5.5.1.1: an essential "acr" naming only classes the provider cannot assert fails without a
      * login; a voluntary one is never refused.
      *
+     * @param list<AuthenticationContextClass> $provable the requested classes the provider can prove
+     *
      * @throws UnmetAuthenticationRequirementsException
      */
-    private function assertCanBeMet(AuthenticationContextRequest $requested): void
+    private function assertCanBeMet(AuthenticationContextRequest $requested, array $provable): void
     {
-        if ($requested->essential && ! $requested->namesNoClass() && ! $requested->canBeMetWith(AuthenticationContextClass::supported())) {
+        if ($requested->essential && ! $requested->namesNoClass() && $provable === []) {
             throw new UnmetAuthenticationRequirementsException(self::UNMET_AUTHENTICATION_REQUIREMENTS);
         }
     }
 
     /**
-     * OIDC Core §3.1.2.1: a login done during this interaction satisfies prompt=login and max_age.
+     * Decision 0010: the client asked for classes the provider can prove and the session satisfies none,
+     * so the login page asks for what is missing rather than for a new login.
+     *
+     * @param list<AuthenticationContextClass> $provable the requested classes the provider can prove
      */
-    private function loginRequirement(Interaction $interaction, AuthenticationSession $session, ?Subject $hinted, DateTimeImmutable $now): ?LoginRequirement
+    private function stepUp(AuthenticationContextRequest $requested, array $provable, AuthenticationSession $session): ?StepUp
+    {
+        if ($provable === [] || $requested->firstSatisfiedBy($session) !== null) {
+            return null;
+        }
+
+        return new StepUp($session->proofs, $provable);
+    }
+
+    /**
+     * OIDC Core §5.5.1.1: an essential "acr" still unsatisfied once the login of this interaction is done
+     * is a failed authentication; a voluntary one gets the class the session has.
+     *
+     * @throws UnmetAuthenticationRequirementsException
+     */
+    private function assertMet(AuthenticationContextRequest $requested, AuthenticationSession $session): void
+    {
+        if ($requested->essential && ! $requested->namesNoClass() && $requested->firstSatisfiedBy($session) === null) {
+            throw new UnmetAuthenticationRequirementsException(self::UNMET_AFTER_LOGIN);
+        }
+    }
+
+    /**
+     * OIDC Core §3.1.2.1: a login done during this interaction satisfies prompt=login, max_age and a
+     * step-up, whatever it proved; the step-up comes before prompt=login so that the page names what is
+     * missing when a client sends both, as Symfony's re-authentication does.
+     */
+    private function loginRequirement(Interaction $interaction, AuthenticationSession $session, ?Subject $hinted, ?StepUp $stepUp, DateTimeImmutable $now): ?LoginRequirement
     {
         $request = $interaction->request;
         if ($hinted !== null && ! $session->user->subject->equals($hinted)) {
@@ -239,6 +281,9 @@ final readonly class AuthorizationHandler
         }
         if ($session->authenticatedAt() >= $interaction->createdAt) {
             return null;
+        }
+        if ($stepUp !== null) {
+            return LoginRequirement::StrongerFactorRequired;
         }
         if ($request->hasPrompt(Prompt::Login)) {
             return LoginRequirement::ReauthenticationRequested;

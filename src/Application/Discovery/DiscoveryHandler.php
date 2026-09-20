@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Discovery;
 
+use function array_map;
+use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Token\GrantInterface;
@@ -13,13 +15,15 @@ use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
+use Heidi\Oidc\Port\ProvableMethodsInterface;
 use function in_array;
 
 /**
  * The discovery endpoint (OIDC Discovery §4, architecture §4.8): the issuer, the endpoints, what the claims
  * provider announces, the grants wired into the token endpoint (the same tagged grants TokenHandler
- * serves) and the client authentication methods ClientAuthenticator implements; "offline_access" when the
- * refresh token grant is served. Everything else is fixed by the module.
+ * serves), the client authentication methods ClientAuthenticator implements and the classes of the policy
+ * of the tenant the wired logins can prove (decision 0010); "offline_access" when the refresh token grant
+ * is served. Everything else is fixed by the module.
  */
 final readonly class DiscoveryHandler
 {
@@ -35,6 +39,7 @@ final readonly class DiscoveryHandler
     public function __construct(
         private EndpointLocatorInterface $endpoints,
         private ClaimsProviderInterface $claims,
+        private ProvableMethodsInterface $provable,
         iterable $grants,
         private int $maxAge = 3600,
     ) {
@@ -65,6 +70,10 @@ final readonly class DiscoveryHandler
             $this->claims->supportedClaims(),
             $this->grantTypes,
             ClientAuthenticator::methods(),
+            array_map(
+                static fn (AuthenticationContextClass $class): string => $class->value,
+                $tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods()),
+            ),
             $this->maxAge,
         );
     }

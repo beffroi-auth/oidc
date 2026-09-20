@@ -9,7 +9,6 @@ use function array_map;
 use function array_unique;
 use function array_values;
 use Heidi\Core\Domain\Key\SignatureAlgorithm;
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
@@ -27,9 +26,10 @@ use function substr;
 /**
  * The metadata of a tenant (OIDC Discovery §3, RFC 8414 §2): one document, two well-known locations. It
  * says what the provider does and nothing it does not (decision 0006): the grant types are the grants
- * wired into the token endpoint and the client authentication methods those the client authenticator
- * implements, given by the discovery handler, never read from an enumeration, so that the document and
- * the endpoints cannot disagree; the rest is fixed by the module.
+ * wired into the token endpoint, the client authentication methods those the client authenticator
+ * implements and the "acr" values the classes of the tenant's policy its logins can prove, given by the
+ * discovery handler, never read from an enumeration, so that the document and the endpoints cannot
+ * disagree; the rest is fixed by the module.
  */
 final readonly class ProviderMetadata
 {
@@ -60,6 +60,11 @@ final readonly class ProviderMetadata
     public array $tokenEndpointAuthMethodsSupported;
 
     /**
+     * @var non-empty-list<string> no duplicate
+     */
+    public array $acrValuesSupported;
+
+    /**
      * @var array<string, string>
      */
     public array $headers;
@@ -69,6 +74,7 @@ final readonly class ProviderMetadata
      * @param list<string> $claimsSupported "sub" added if missing
      * @param list<GrantType> $grantTypesSupported the grants the token endpoint serves, at least one
      * @param list<TokenEndpointAuthMethod> $tokenEndpointAuthMethodsSupported the methods the token endpoint takes, at least one
+     * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
      * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
@@ -78,6 +84,7 @@ final readonly class ProviderMetadata
         array $claimsSupported,
         array $grantTypesSupported,
         array $tokenEndpointAuthMethodsSupported,
+        array $acrValuesSupported,
         public int $maxAge,
     ) {
         if ($maxAge < 0) {
@@ -90,6 +97,10 @@ final readonly class ProviderMetadata
         $methods = array_values(array_unique($tokenEndpointAuthMethodsSupported, SORT_REGULAR));
         if ($methods === []) {
             throw new InvalidArgumentException('A token endpoint takes at least one client authentication method (RFC 8414 section 2).');
+        }
+        $acrValues = array_values(array_unique($acrValuesSupported));
+        if ($acrValues === []) {
+            throw new InvalidArgumentException('A provider asserts at least one authentication context class (OIDC Discovery section 3).');
         }
         $scopes = [Scope::openid()];
         foreach ($scopesSupported as $scope) {
@@ -110,6 +121,7 @@ final readonly class ProviderMetadata
         $this->claimsSupported = $claims;
         $this->grantTypesSupported = $grantTypes;
         $this->tokenEndpointAuthMethodsSupported = $methods;
+        $this->acrValuesSupported = $acrValues;
         $this->headers = [
             'Cache-Control' => sprintf('public, max-age=%d', $maxAge),
         ];
@@ -150,7 +162,7 @@ final readonly class ProviderMetadata
             'response_types_supported' => ['code'],
             'response_modes_supported' => self::values(ResponseMode::cases()),
             'grant_types_supported' => self::values($this->grantTypesSupported),
-            'acr_values_supported' => AuthenticationContextClass::supported(),
+            'acr_values_supported' => $this->acrValuesSupported,
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => self::values(SignatureAlgorithm::cases()),
             'token_endpoint_auth_methods_supported' => self::values($this->tokenEndpointAuthMethodsSupported),

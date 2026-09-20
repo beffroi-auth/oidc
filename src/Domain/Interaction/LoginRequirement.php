@@ -30,4 +30,10 @@ enum LoginRequirement: string
      * id_token_hint names another user than the one of the session
      */
     case DifferentUser = 'different_user';
+
+    /**
+     * acr_values, or the "acr" claim request, names classes the provider can prove and the session
+     * satisfies none (decision 0010): a step-up, one more proof on the same session
+     */
+    case StrongerFactorRequired = 'stronger_factor_required';
 }
