@@ -26,9 +26,12 @@ use Heidi\Oidc\Exception\InvalidScopeException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\RequestNotSupportedException;
 use Heidi\Oidc\Exception\RequestUriNotSupportedException;
+use Heidi\Oidc\Exception\UnsupportedResponseModeException;
 use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\ServedResponseModesInterface;
 use function in_array;
+use function is_string;
 use function preg_match;
 
 /**
@@ -50,11 +53,13 @@ final readonly class AuthorizationRequestParser
 
     public function __construct(
         private ClientRepositoryInterface $clients,
+        private ServedResponseModesInterface $responseModes,
     ) {
     }
 
     /**
-     * First stage (RFC 6749 §4.1.2.1, §3.1.2.3): the client, the redirect URI byte for byte, the state.
+     * First stage (RFC 6749 §4.1.2.1, §3.1.2.3): the client, the redirect URI byte for byte, the state
+     * and the mode the answer will use.
      *
      * @param array<string, mixed> $parameters
      *
@@ -77,7 +82,27 @@ final readonly class AuthorizationRequestParser
         if (! $client->hasRedirectUri($redirectUri)) {
             throw new InvalidRequestException('The redirect_uri parameter is not registered for this client.');
         }
-        return new RedirectTarget($client, new RedirectUri($redirectUri), RequestParameters::state($parameters, false));
+        return new RedirectTarget($client, new RedirectUri($redirectUri), RequestParameters::state($parameters, false), $this->responseMode($parameters));
+    }
+
+    /**
+     * The mode the answer will use (OAuth 2.0 Multiple Response Type Encoding Practices §2.1), read with
+     * the redirect URI because it says how anything reaches the client, a refusal of the second stage as
+     * well as a code (OIDC Core §3.1.2.6). It refuses nothing, the failures of this stage being pages:
+     * anything but a mode the integration wired falls back to the default, so that the refusal the
+     * second stage throws reaches the client in the one mode it is sure to read.
+     *
+     * @param array<string, mixed> $parameters
+     */
+    private function responseMode(array $parameters): ResponseMode
+    {
+        $requested = $parameters['response_mode'] ?? null;
+        if (! is_string($requested)) {
+            return ResponseMode::Query;
+        }
+        $mode = ResponseMode::tryFrom($requested);
+
+        return $mode !== null && in_array($mode, $this->responseModes->servedResponseModes(), true) ? $mode : ResponseMode::Query;
     }
 
     /**
@@ -106,8 +131,8 @@ final readonly class AuthorizationRequestParser
         }
 
         $responseMode = RequestParameters::single($parameters, 'response_mode', true);
-        if ($responseMode !== null && $responseMode !== ResponseMode::Query->value) {
-            throw new InvalidRequestException('Only the query response mode is supported.', true);
+        if ($responseMode !== null && $responseMode !== $target->responseMode->value) {
+            throw new UnsupportedResponseModeException('The requested response mode is not supported.');
         }
 
         $scopes = $this->scopes($target, RequestParameters::single($parameters, 'scope', true));
@@ -141,7 +166,7 @@ final readonly class AuthorizationRequestParser
             $display,
             $idTokenHint,
             $claims,
-            ResponseMode::Query,
+            $target->responseMode,
         );
     }
 

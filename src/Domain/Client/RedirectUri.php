@@ -24,6 +24,12 @@ final readonly class RedirectUri implements Stringable
 {
     public string $value;
 
+    /**
+     * RFC 6454 §3.2: the scheme, the host and the port, which is what a Content-Security-Policy source
+     * expression names when a page is allowed to post here (Form Post Response Mode §2).
+     */
+    public string $origin;
+
     public function __construct(string $value)
     {
         $parts = parse_url($value);
@@ -42,6 +48,8 @@ final readonly class RedirectUri implements Stringable
         }
 
         $this->value = $value;
+        $port = $parts['port'] ?? null;
+        $this->origin = $scheme . '://' . strtolower($parts['host']) . ($port === null ? '' : ':' . $port);
     }
 
     /**

@@ -26,10 +26,11 @@ use function substr;
 /**
  * The metadata of a tenant (OIDC Discovery §3, RFC 8414 §2): one document, two well-known locations. It
  * says what the provider does and nothing it does not (decision 0006): the grant types are the grants
- * wired into the token endpoint, the client authentication methods those the client authenticator
- * implements and the "acr" values the classes of the tenant's policy its logins can prove, given by the
- * discovery handler, never read from an enumeration, so that the document and the endpoints cannot
- * disagree; the rest is fixed by the module.
+ * wired into the token endpoint, the response modes the ways of answering wired into the authorization
+ * endpoint, the client authentication methods those the client authenticator implements and the "acr"
+ * values the classes of the tenant's policy its logins can prove, given by the discovery handler, never
+ * read from an enumeration, so that the document and the endpoints cannot disagree; the rest is fixed by
+ * the module.
  */
 final readonly class ProviderMetadata
 {
@@ -48,6 +49,11 @@ final readonly class ProviderMetadata
      * @var non-empty-list<string> "sub" first, no duplicate
      */
     public array $claimsSupported;
+
+    /**
+     * @var non-empty-list<ResponseMode> no duplicate
+     */
+    public array $responseModesSupported;
 
     /**
      * @var non-empty-list<GrantType> no duplicate
@@ -72,6 +78,7 @@ final readonly class ProviderMetadata
     /**
      * @param list<Scope> $scopesSupported "openid" added if missing
      * @param list<string> $claimsSupported "sub" added if missing
+     * @param list<ResponseMode> $responseModesSupported the modes the authorization endpoint answers in, at least one
      * @param list<GrantType> $grantTypesSupported the grants the token endpoint serves, at least one
      * @param list<TokenEndpointAuthMethod> $tokenEndpointAuthMethodsSupported the methods the token endpoint takes, at least one
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
@@ -82,6 +89,7 @@ final readonly class ProviderMetadata
         public ProviderEndpoints $endpoints,
         array $scopesSupported,
         array $claimsSupported,
+        array $responseModesSupported,
         array $grantTypesSupported,
         array $tokenEndpointAuthMethodsSupported,
         array $acrValuesSupported,
@@ -89,6 +97,10 @@ final readonly class ProviderMetadata
     ) {
         if ($maxAge < 0) {
             throw new InvalidArgumentException('The cache lifetime of the provider metadata is a number of seconds.');
+        }
+        $responseModes = array_values(array_unique($responseModesSupported, SORT_REGULAR));
+        if ($responseModes === []) {
+            throw new InvalidArgumentException('An authorization endpoint answers in at least one response mode (RFC 8414 section 2).');
         }
         $grantTypes = array_values(array_unique($grantTypesSupported, SORT_REGULAR));
         if ($grantTypes === []) {
@@ -117,6 +129,7 @@ final readonly class ProviderMetadata
                 $claims[] = $claim;
             }
         }
+        $this->responseModesSupported = $responseModes;
         $this->scopesSupported = $scopes;
         $this->claimsSupported = $claims;
         $this->grantTypesSupported = $grantTypes;
@@ -160,7 +173,7 @@ final readonly class ProviderMetadata
             'jwks_uri' => $this->endpoints->jwks,
             'scopes_supported' => array_map(static fn (Scope $scope): string => $scope->value, $this->scopesSupported),
             'response_types_supported' => ['code'],
-            'response_modes_supported' => self::values(ResponseMode::cases()),
+            'response_modes_supported' => self::values($this->responseModesSupported),
             'grant_types_supported' => self::values($this->grantTypesSupported),
             'acr_values_supported' => $this->acrValuesSupported,
             'subject_types_supported' => ['public'],

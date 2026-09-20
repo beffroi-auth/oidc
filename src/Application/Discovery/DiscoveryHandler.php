@@ -16,14 +16,16 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
+use Heidi\Oidc\Port\ServedResponseModesInterface;
 use function in_array;
 
 /**
  * The discovery endpoint (OIDC Discovery §4, architecture §4.8): the issuer, the endpoints, what the claims
  * provider announces, the grants wired into the token endpoint (the same tagged grants TokenHandler
- * serves), the client authentication methods ClientAuthenticator implements and the classes of the policy
- * of the tenant the wired logins can prove (decision 0010); "offline_access" when the refresh token grant
- * is served. Everything else is fixed by the module.
+ * serves), the response modes the authorization endpoint answers in (the same ways of answering the
+ * parser accepts), the client authentication methods ClientAuthenticator implements and the classes of
+ * the policy of the tenant the wired logins can prove (decision 0010); "offline_access" when the refresh
+ * token grant is served. Everything else is fixed by the module.
  */
 final readonly class DiscoveryHandler
 {
@@ -40,6 +42,7 @@ final readonly class DiscoveryHandler
         private EndpointLocatorInterface $endpoints,
         private ClaimsProviderInterface $claims,
         private ProvableMethodsInterface $provable,
+        private ServedResponseModesInterface $responseModes,
         iterable $grants,
         private int $maxAge = 3600,
     ) {
@@ -68,6 +71,7 @@ final readonly class DiscoveryHandler
             $this->endpoints->locate($tenant),
             $scopes,
             $this->claims->supportedClaims(),
+            $this->responseModes->servedResponseModes(),
             $this->grantTypes,
             ClientAuthenticator::methods(),
             array_map(

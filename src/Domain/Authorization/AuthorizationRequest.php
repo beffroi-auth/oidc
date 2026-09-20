@@ -45,7 +45,7 @@ final readonly class AuthorizationRequest
 
     public function redirectTarget(): RedirectTarget
     {
-        return new RedirectTarget($this->client, $this->redirectUri, $this->state);
+        return new RedirectTarget($this->client, $this->redirectUri, $this->state, $this->responseMode);
     }
 
     public function hasScope(Scope $scope): bool

@@ -41,9 +41,4 @@ final readonly class AuthorizationResponse
 
         return $parameters;
     }
-
-    public function toUri(): string
-    {
-        return $this->redirectUri->withParameters($this->parameters());
-    }
 }
