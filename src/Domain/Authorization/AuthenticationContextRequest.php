@@ -45,6 +45,17 @@ final readonly class AuthenticationContextRequest
     }
 
     /**
+     * Whether the request binds the provider to a class (OIDC Core §5.5.1.1): it does when it is
+     * essential and names one, and only then is a class the session does not satisfy a refusal. A
+     * voluntary request is never refused, and an essential one that names nothing asks for no class in
+     * particular.
+     */
+    public function demandsAClass(): bool
+    {
+        return $this->essential && ! $this->namesNoClass();
+    }
+
+    /**
      * The requested values that are classes of the policy, in the client's order of preference.
      *
      * @return list<AuthenticationContextClass>

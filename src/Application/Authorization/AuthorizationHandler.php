@@ -242,7 +242,7 @@ final readonly class AuthorizationHandler
      */
     private function assertCanBeMet(AuthenticationContextRequest $requested, array $provable): void
     {
-        if ($requested->essential && ! $requested->namesNoClass() && $provable === []) {
+        if ($requested->demandsAClass() && $provable === []) {
             throw new UnmetAuthenticationRequirementsException(self::UNMET_AUTHENTICATION_REQUIREMENTS);
         }
     }
@@ -272,7 +272,7 @@ final readonly class AuthorizationHandler
      */
     private function assertCanBeMetByTheUser(AuthenticationContextRequest $requested, AuthenticationSession $session, ?StepUp $stepUp): void
     {
-        if ($requested->essential && ! $requested->namesNoClass() && $stepUp === null && $requested->firstSatisfiedBy($session) === null) {
+        if ($requested->demandsAClass() && $stepUp === null && $requested->firstSatisfiedBy($session) === null) {
             throw new UnmetAuthenticationRequirementsException(self::UNMET_BY_THE_USER);
         }
     }
@@ -285,7 +285,7 @@ final readonly class AuthorizationHandler
      */
     private function assertMet(AuthenticationContextRequest $requested, AuthenticationSession $session): void
     {
-        if ($requested->essential && ! $requested->namesNoClass() && $requested->firstSatisfiedBy($session) === null) {
+        if ($requested->demandsAClass() && $requested->firstSatisfiedBy($session) === null) {
             throw new UnmetAuthenticationRequirementsException(self::UNMET_AFTER_LOGIN);
         }
     }
