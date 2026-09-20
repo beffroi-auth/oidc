@@ -8,13 +8,15 @@ use function array_find;
 use function array_values;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
+use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
+use Heidi\Oidc\Port\LoggedInClientsInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepositoryInterface
+final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepositoryInterface, LoggedInClientsInterface
 {
     /**
      * @var array<string, AuthorizationCode> by code hash
@@ -46,6 +48,21 @@ final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepo
         $stored->consume($now);
 
         return true;
+    }
+
+    /**
+     * @return list<Client>
+     */
+    public function ofSession(Uuid $session): array
+    {
+        $clients = [];
+        foreach ($this->codes as $code) {
+            if ($code->isUsed() && $code->session->id->equals($session)) {
+                $clients[$code->clientId] = $code->client;
+            }
+        }
+
+        return array_values($clients);
     }
 
     public function save(AuthorizationCode $code): void

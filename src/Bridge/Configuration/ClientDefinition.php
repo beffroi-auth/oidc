@@ -15,6 +15,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Client\TokenEndpointAuthMethod;
@@ -52,6 +53,8 @@ final readonly class ClientDefinition
         'id_token_signed_response_alg',
         'requires_pkce',
         'access_token_format',
+        'backchannel_logout_uri',
+        'backchannel_logout_session_required',
     ];
 
     /**
@@ -74,6 +77,8 @@ final readonly class ClientDefinition
         public SignatureAlgorithm $idTokenSignedResponseAlg,
         public bool $requiresPkce,
         public AccessTokenFormat $accessTokenFormat,
+        public ?ClientUri $backChannelLogoutUri,
+        public bool $backChannelLogoutSessionRequired,
     ) {
     }
 
@@ -121,9 +126,20 @@ final readonly class ClientDefinition
         $algorithm = self::enumCase($clientId, 'id_token_signed_response_alg', $definition['id_token_signed_response_alg'] ?? SignatureAlgorithm::RS256->value, SignatureAlgorithm::class);
 
         $accessTokenFormat = self::enumCase($clientId, 'access_token_format', $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value, AccessTokenFormat::class);
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat);
+        $backChannelLogoutUri = $definition['backchannel_logout_uri'] ?? null;
+        if ($backChannelLogoutUri !== null && ! is_string($backChannelLogoutUri)) {
+            throw new InvalidArgumentException(sprintf('The backchannel_logout_uri option of the client "%s" must be a string.', $clientId));
+        }
+        $backChannelLogoutUri = $backChannelLogoutUri === null ? null : new ClientUri($backChannelLogoutUri);
+        $backChannelLogoutSessionRequired = $definition['backchannel_logout_session_required'] ?? false;
+        if (! is_bool($backChannelLogoutSessionRequired)) {
+            throw new InvalidArgumentException(sprintf('The backchannel_logout_session_required option of the client "%s" must be a boolean.', $clientId));
+        }
+
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired);
+
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired);
     }
 
     public function hasSecret(): bool
@@ -161,6 +177,8 @@ final readonly class ClientDefinition
             $this->idTokenSignedResponseAlg,
             $this->requiresPkce,
             $this->accessTokenFormat,
+            $this->backChannelLogoutUri,
+            $this->backChannelLogoutSessionRequired,
         );
     }
 

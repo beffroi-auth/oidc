@@ -54,6 +54,8 @@ final readonly class Client
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
+     * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
+     * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
      */
     public function __construct(
         public Tenant $tenant,
@@ -70,9 +72,11 @@ final readonly class Client
         public SignatureAlgorithm $idTokenSignedResponseAlg = SignatureAlgorithm::RS256,
         public bool $requiresPkce = true,
         public AccessTokenFormat $accessTokenFormat = AccessTokenFormat::Jwt,
+        public ?ClientUri $backChannelLogoutUri = null,
+        public bool $backChannelLogoutSessionRequired = false,
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce);
+        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired);
 
         $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
         $this->redirectUris = self::unique($redirectUris, $sameUri);
@@ -97,6 +101,8 @@ final readonly class Client
         array $grantTypes,
         array $allowedScopes,
         bool $requiresPkce = true,
+        bool $hasBackChannelLogoutUri = false,
+        bool $backChannelLogoutSessionRequired = false,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -124,6 +130,9 @@ final readonly class Client
         }
         if (! $requiresPkce && ! $tokenEndpointAuthMethod->usesSecret()) {
             throw new InvalidArgumentException(sprintf('The client "%s" is public and must use PKCE (RFC 9700 section 2.1.1): requires_pkce cannot be false.', $clientId));
+        }
+        if ($backChannelLogoutSessionRequired && ! $hasBackChannelLogoutUri) {
+            throw new InvalidArgumentException(sprintf('The client "%s" requires a "sid" in its logout token but registers no backchannel_logout_uri to receive one (Back-Channel Logout 1.0 §2.2).', $clientId));
         }
     }
 

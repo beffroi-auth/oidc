@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Heidi\Oidc\Domain\Event;
+
+use DateTimeImmutable;
+use Heidi\Core\Domain\Event\DomainEventInterface;
+use Heidi\Core\Domain\Session\AuthenticationSession;
+use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ClientUri;
+
+/**
+ * A logout token was minted for one client of a session that ended (Back-Channel Logout 1.0 §2.6).
+ * Carrying it to the URI the client registered is the integration's, asynchronously (architecture §5.6):
+ * a client that does not answer never keeps a session open at the provider.
+ */
+final readonly class LogoutTokenIssued implements DomainEventInterface
+{
+    public Tenant $tenant;
+
+    /**
+     * @param ClientUri $logoutUri the back-channel logout URI of the client, named here so that the sender has nothing to decide
+     * @param string $token the compact JWS, the one parameter of the request to come
+     */
+    public function __construct(
+        public Client $client,
+        public ClientUri $logoutUri,
+        public AuthenticationSession $session,
+        public string $token,
+        public DateTimeImmutable $occurredAt,
+        public RequestContext $context,
+    ) {
+        $this->tenant = $client->tenant;
+    }
+}
