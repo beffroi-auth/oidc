@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Core\Port\CredentialRepositoryInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationContextRequest;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
@@ -49,7 +50,9 @@ use Symfony\Component\Uid\Uuid;
  * grantConsent() and deny() apply the same rules at every step. With prompt=none a needed page is the
  * redirected error login_required or consent_required (OIDC Core §3.1.2.6). A requested "acr" is read
  * against the policy of the tenant (decision 0010): refused before any login when the provider can prove
- * none of the requested classes, a step-up when it can and the session satisfies none.
+ * none of the requested classes, then against what the user of the session can still prove with the
+ * credentials they hold: refused before any page when none of them would satisfy a requested class and
+ * the request is essential, answered with what the session has when it is voluntary, a step-up when one would.
  */
 final readonly class AuthorizationHandler
 {
@@ -61,6 +64,8 @@ final readonly class AuthorizationHandler
 
     private const string UNMET_AUTHENTICATION_REQUIREMENTS = 'No requested acr value is one this provider can assert, see acr_values_supported.';
 
+    private const string UNMET_BY_THE_USER = 'The end user holds no credential able to satisfy any requested acr value.';
+
     private const string UNMET_AFTER_LOGIN = 'The end user did not authenticate as any requested acr value demands.';
 
     public function __construct(
@@ -69,6 +74,7 @@ final readonly class AuthorizationHandler
         private AuthorizationCodeRepositoryInterface $codes,
         private IdTokenHintVerifier $idTokenHints,
         private ProvableMethodsInterface $provable,
+        private CredentialRepositoryInterface $credentials,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
         private DateInterval $interactionLifetime = new DateInterval('PT10M'),
@@ -166,6 +172,7 @@ final readonly class AuthorizationHandler
                 return $this->loginRequired($interaction, LoginRequirement::NoSession);
             }
             $stepUp = $this->stepUp($requestedClasses, $provableClasses, $session);
+            $this->assertCanBeMetByTheUser($requestedClasses, $session, $stepUp);
             $loginRequirement = $this->loginRequirement($interaction, $session, $hinted, $stepUp, $now);
             if ($loginRequirement !== null) {
                 return $this->loginRequired($interaction, $loginRequirement, $loginRequirement === LoginRequirement::StrongerFactorRequired ? $stepUp : null);
@@ -241,8 +248,9 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * Decision 0010: the client asked for classes the provider can prove and the session satisfies none,
-     * so the login page asks for what is missing rather than for a new login.
+     * Decision 0010: the client asked for classes the provider can prove, the session satisfies none and a
+     * credential of the user would, so the login page asks for what is missing rather than for a new
+     * login. The credentials are read only when a class is in question.
      *
      * @param list<AuthenticationContextClass> $provable the requested classes the provider can prove
      */
@@ -252,7 +260,21 @@ final readonly class AuthorizationHandler
             return null;
         }
 
-        return new StepUp($session->proofs, $provable);
+        return StepUp::towards($session->proofs, $provable, $this->credentials->findByUser($session->user));
+    }
+
+    /**
+     * OIDC Core §5.5.1.1, as for a class the provider cannot prove: an essential "acr" the session does
+     * not satisfy and no credential of the user could is a failed authentication before any page, the
+     * user can do nothing about it there; a voluntary one gets the class the session has.
+     *
+     * @throws UnmetAuthenticationRequirementsException
+     */
+    private function assertCanBeMetByTheUser(AuthenticationContextRequest $requested, AuthenticationSession $session, ?StepUp $stepUp): void
+    {
+        if ($requested->essential && ! $requested->namesNoClass() && $stepUp === null && $requested->firstSatisfiedBy($session) === null) {
+            throw new UnmetAuthenticationRequirementsException(self::UNMET_BY_THE_USER);
+        }
     }
 
     /**
