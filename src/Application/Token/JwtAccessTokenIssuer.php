@@ -51,9 +51,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
             'client_id' => $authorization->client->clientId,
             'iat' => $now->getTimestamp(),
             'jti' => Uuid::v4()->toRfc4122(),
-            'auth_time' => $authorization->authenticatedAt->getTimestamp(),
-            'acr' => $authorization->authenticationContextClass,
-            'amr' => $authorization->authenticationMethods,
+            ...$authorization->authentication->toClaims(),
         ];
         $claims['scope'] = implode(' ', $authorization->scopes);
         $requested = $authorization->claimsRequest === null ? [] : $authorization->claimsRequest->userinfo;

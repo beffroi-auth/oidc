@@ -71,9 +71,7 @@ final readonly class IntrospectionResponse
             'sub' => $token->subject->value,
             'aud' => $token->client->clientId,
             'iss' => $issuer->value,
-            'auth_time' => $token->authenticatedAt->getTimestamp(),
-            'acr' => $token->authenticationContextClass,
-            'amr' => $token->authenticationMethods,
+            ...$token->authentication->toClaims(),
             'sid' => $token->sessionId->toRfc4122(),
             'grant_id' => $token->grantId->toRfc4122(),
         ], null);

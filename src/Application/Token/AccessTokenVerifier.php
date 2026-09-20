@@ -12,6 +12,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\InvalidArgumentException;
 use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
+use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
@@ -93,9 +94,7 @@ final readonly class AccessTokenVerifier
             $token->grantId,
             $token->scopes,
             $requested,
-            $token->authenticatedAt,
-            $token->authenticationMethods,
-            $token->authenticationContextClass,
+            $token->authentication,
             $token->issuedAt,
             $token->expiresAt,
         );
@@ -120,8 +119,7 @@ final readonly class AccessTokenVerifier
         }
         $exp = $claims['exp'] ?? null;
         $iat = $claims['iat'] ?? null;
-        $authTime = $claims['auth_time'] ?? null;
-        if (! is_int($exp) || ! is_int($iat) || ! is_int($authTime) || $exp <= $iat) {
+        if (! is_int($exp) || ! is_int($iat) || $exp <= $iat) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         // RFC 7519 §4.1.4, no leeway: the clocks are the provider's own
@@ -136,13 +134,13 @@ final readonly class AccessTokenVerifier
         $sub = $claims['sub'] ?? null;
         $sid = $claims['sid'] ?? null;
         $grantId = $claims[JwtAccessTokenIssuer::GRANT_ID] ?? null;
-        $acr = $claims['acr'] ?? null;
-        if (! is_string($sub) || ! is_string($sid) || ! Uuid::isValid($sid) || ! is_string($grantId) || ! Uuid::isValid($grantId) || ! is_string($acr) || $acr === '') {
+        if (! is_string($sub) || ! is_string($sid) || ! Uuid::isValid($sid) || ! is_string($grantId) || ! Uuid::isValid($grantId)) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         try {
             $subject = new Subject($sub);
             $scopes = self::scopes($claims['scope'] ?? null);
+            $authentication = AuthenticationSnapshot::fromClaims($claims);
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE, $exception);
         }
@@ -154,9 +152,7 @@ final readonly class AccessTokenVerifier
             Uuid::fromString($grantId),
             $scopes,
             self::stringList($claims[JwtAccessTokenIssuer::USERINFO_CLAIMS] ?? []),
-            new DateTimeImmutable('@' . $authTime),
-            self::stringList($claims['amr'] ?? null),
-            $acr,
+            $authentication,
             new DateTimeImmutable('@' . $iat),
             new DateTimeImmutable('@' . $exp),
         );
@@ -207,7 +203,7 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * As "amr" (RFC 8176) and "userinfo_claims" (architecture §4.6) are written.
+     * As "userinfo_claims" (architecture §4.6) is written.
      *
      * @throws InvalidTokenException
      * @return list<string>

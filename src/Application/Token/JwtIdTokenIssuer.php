@@ -42,13 +42,13 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
             'exp' => $now->add($this->lifetime)
                 ->getTimestamp(),
             'iat' => $now->getTimestamp(),
-            'auth_time' => $authorization->authenticatedAt->getTimestamp(),
+            'auth_time' => $authorization->authentication->authenticatedAt->getTimestamp(),
         ];
         if ($authorization->nonce !== null) {
             $claims['nonce'] = $authorization->nonce;
         }
-        $claims['acr'] = $authorization->authenticationContextClass;
-        $claims['amr'] = $authorization->authenticationMethods;
+        $claims['acr'] = $authorization->authentication->contextClass;
+        $claims['amr'] = $authorization->authentication->methods;
         $claims['azp'] = $authorization->client->clientId;
         $claims['at_hash'] = TokenHash::of($accessToken->value, $algorithm);
         $claims['sid'] = $authorization->session->id->toRfc4122();

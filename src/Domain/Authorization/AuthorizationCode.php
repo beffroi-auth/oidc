@@ -23,8 +23,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * An authorization code (RFC 6749 §4.1.2, architecture §4.4) as the provider keeps it: the SHA-256 of the
- * value, and everything the token endpoint needs, the authentication facts copied from the session at
- * issuance. The record is also the grant the tokens descend from, named by "grantId".
+ * value, and everything the token endpoint needs, what the session had proven, frozen in an
+ * AuthenticationSnapshot at issuance. The record is also the grant the tokens descend from, named by "grantId".
  */
 final class AuthorizationCode
 {
@@ -42,11 +42,6 @@ final class AuthorizationCode
      */
     public readonly array $scopes;
 
-    /**
-     * @var non-empty-list<string> the "amr" values
-     */
-    public readonly array $authenticationMethods;
-
     public private(set) ?DateTimeImmutable $usedAt = null;
 
     public private(set) ?DateTimeImmutable $revokedAt = null;
@@ -55,8 +50,7 @@ final class AuthorizationCode
      * @param string $codeHash see hash()
      * @param list<Scope> $scopes at least one
      * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE (decision 0008)
-     * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string $authenticationContextClass the "acr" value
+     * @param AuthenticationSnapshot $authentication what the session had proven, frozen for every token of the grant
      */
     public function __construct(
         public readonly string $codeHash,
@@ -68,9 +62,7 @@ final class AuthorizationCode
         public readonly ?string $nonce,
         public readonly ?CodeChallenge $codeChallenge,
         public readonly ?ClaimsRequest $claimsRequest,
-        public readonly DateTimeImmutable $authenticatedAt,
-        array $authenticationMethods,
-        public readonly string $authenticationContextClass,
+        public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
     ) {
@@ -83,16 +75,12 @@ final class AuthorizationCode
         if ($scopes === []) {
             throw new InvalidArgumentException('An authorization code grants at least one scope.');
         }
-        if ($authenticationMethods === []) {
-            throw new InvalidArgumentException('An authorization code records at least one authentication method (RFC 8176).');
-        }
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An authorization code expires after it was issued.');
         }
         $this->tenant = $client->tenant;
         $this->clientId = $client->clientId;
         $this->scopes = $scopes;
-        $this->authenticationMethods = $authenticationMethods;
     }
 
     /**

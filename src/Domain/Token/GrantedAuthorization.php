@@ -6,10 +6,10 @@ namespace Heidi\Oidc\Domain\Token;
 
 use function array_all;
 use function array_any;
-use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
@@ -39,16 +39,10 @@ final readonly class GrantedAuthorization
     public array $grantedScopes;
 
     /**
-     * @var non-empty-list<string> the "amr" values
-     */
-    public array $authenticationMethods;
-
-    /**
      * @param list<Scope> $scopes at least one, all among the granted ones
      * @param list<Scope> $grantedScopes
      * @param string|null $nonce only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
-     * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string $authenticationContextClass the "acr" value
+     * @param AuthenticationSnapshot $authentication what the session had proven at the grant, written in every token
      */
     public function __construct(
         public GrantType $grantType,
@@ -59,9 +53,7 @@ final readonly class GrantedAuthorization
         array $grantedScopes,
         public ?string $nonce,
         public ?ClaimsRequest $claimsRequest,
-        public DateTimeImmutable $authenticatedAt,
-        array $authenticationMethods,
-        public string $authenticationContextClass,
+        public AuthenticationSnapshot $authentication,
     ) {
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An authorization binds a session and a client of the same tenant.');
@@ -72,9 +64,6 @@ final readonly class GrantedAuthorization
         if (! array_all($scopes, static fn (Scope $scope): bool => array_any($grantedScopes, static fn (Scope $granted): bool => $granted->equals($scope)))) {
             throw new InvalidArgumentException('The scopes of a response are among the granted ones (RFC 6749 section 6).');
         }
-        if ($authenticationMethods === []) {
-            throw new InvalidArgumentException('An authorization records at least one authentication method (RFC 8176).');
-        }
         if ($grantType === GrantType::RefreshToken && $nonce !== null) {
             throw new InvalidArgumentException('An ID token issued on a refresh carries no nonce (OIDC Core section 12.2).');
         }
@@ -82,7 +71,6 @@ final readonly class GrantedAuthorization
         $this->user = $session->user;
         $this->scopes = $scopes;
         $this->grantedScopes = $grantedScopes;
-        $this->authenticationMethods = $authenticationMethods;
     }
 
     /**
@@ -99,9 +87,7 @@ final readonly class GrantedAuthorization
             $code->scopes,
             $code->nonce,
             $code->claimsRequest,
-            $code->authenticatedAt,
-            $code->authenticationMethods,
-            $code->authenticationContextClass,
+            $code->authentication,
         );
     }
 
@@ -121,9 +107,7 @@ final readonly class GrantedAuthorization
             $token->scopes,
             null,
             $token->claimsRequest,
-            $token->authenticatedAt,
-            $token->authenticationMethods,
-            $token->authenticationContextClass,
+            $token->authentication,
         );
     }
 

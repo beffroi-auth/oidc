@@ -10,6 +10,7 @@ use DateTimeImmutable;
 use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
@@ -40,11 +41,6 @@ final class RefreshToken
      */
     public readonly array $scopes;
 
-    /**
-     * @var non-empty-list<string> the "amr" values
-     */
-    public readonly array $authenticationMethods;
-
     public private(set) ?DateTimeImmutable $rotatedAt = null;
 
     public private(set) ?DateTimeImmutable $revokedAt = null;
@@ -52,8 +48,7 @@ final class RefreshToken
     /**
      * @param string $tokenHash see hash()
      * @param list<Scope> $scopes at least one
-     * @param list<string> $authenticationMethods the "amr" values, at least one
-     * @param string $authenticationContextClass the "acr" value
+     * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
      * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
      */
     public function __construct(
@@ -63,9 +58,7 @@ final class RefreshToken
         public readonly AuthenticationSession $session,
         array $scopes,
         public readonly ?ClaimsRequest $claimsRequest,
-        public readonly DateTimeImmutable $authenticatedAt,
-        array $authenticationMethods,
-        public readonly string $authenticationContextClass,
+        public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
     ) {
@@ -77,9 +70,6 @@ final class RefreshToken
         }
         if ($scopes === []) {
             throw new InvalidArgumentException('A refresh token grants at least one scope.');
-        }
-        if ($authenticationMethods === []) {
-            throw new InvalidArgumentException('A refresh token records at least one authentication method (RFC 8176).');
         }
         if ($issuedAt < $family->startedAt) {
             throw new InvalidArgumentException('A refresh token is issued after its family started.');
@@ -93,7 +83,6 @@ final class RefreshToken
         $this->tenant = $client->tenant;
         $this->clientId = $client->clientId;
         $this->scopes = $scopes;
-        $this->authenticationMethods = $authenticationMethods;
     }
 
     public static function fromAuthorization(string $tokenHash, RefreshTokenFamily $family, GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self
@@ -105,9 +94,7 @@ final class RefreshToken
             $authorization->session,
             $authorization->grantedScopes,
             $authorization->claimsRequest,
-            $authorization->authenticatedAt,
-            $authorization->authenticationMethods,
-            $authorization->authenticationContextClass,
+            $authorization->authentication,
             $now,
             min($expiresAt, $family->expiresAt),
         );

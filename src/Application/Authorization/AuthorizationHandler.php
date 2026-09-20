@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Authorization;
 
-use function array_any;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\Subject;
@@ -12,6 +11,7 @@ use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Domain\Authorization\AuthenticationContextRequest;
+use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Authorization\AuthorizationResponse;
@@ -26,7 +26,6 @@ use Heidi\Oidc\Domain\Interaction\Granted;
 use Heidi\Oidc\Domain\Interaction\Interaction;
 use Heidi\Oidc\Domain\Interaction\LoginRequired;
 use Heidi\Oidc\Domain\Interaction\LoginRequirement;
-use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\AccessDeniedException;
 use Heidi\Oidc\Exception\ConsentRequiredException;
 use Heidi\Oidc\Exception\InteractionCompletedException;
@@ -116,15 +115,10 @@ final readonly class AuthorizationHandler
 
         $client = $interaction->request->client;
         $previous = $this->consents->findActive($session->user, $client);
-        $scopes = $previous === null ? [] : $previous->scopes;
-        foreach ($interaction->request->scopes as $scope) {
-            if (! array_any($scopes, static fn (Scope $granted): bool => $granted->equals($scope))) {
-                $scopes[] = $scope;
-            }
-        }
-        $consent = new Consent(Uuid::v7(), $session->user, $client, $scopes, $now);
-        if ($previous !== null) {
-            $previous->revoke($now);
+        if ($previous === null) {
+            $consent = new Consent(Uuid::v7(), $session->user, $client, $interaction->request->scopes, $now);
+        } else {
+            $consent = $previous->extendedWith($interaction->request->scopes, Uuid::v7(), $now);
             $this->consents->save($previous);
         }
         $this->consents->save($consent);
@@ -196,10 +190,7 @@ final readonly class AuthorizationHandler
             $request->nonce,
             $request->codeChallenge,
             $request->claims,
-            $session->authenticatedAt(),
-            $session->methodReferences(),
-            ($requestedClasses->firstSatisfiedBy($session) ?? $session->authenticationContextClass())
-                ->value,
+            AuthenticationSnapshot::ofSession($session, $requestedClasses->firstSatisfiedBy($session) ?? $session->authenticationContextClass()),
             $now,
             $now->add($this->codeLifetime),
         );

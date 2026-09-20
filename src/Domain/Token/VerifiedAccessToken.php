@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\Token;
 use function array_any;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\Subject;
+use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -21,8 +22,6 @@ final readonly class VerifiedAccessToken
     /**
      * @param list<Scope> $scopes
      * @param list<string> $userinfoClaims the names of OIDC Core §5.5
-     * @param list<string> $authenticationMethods the "amr" values
-     * @param string $authenticationContextClass the "acr" value
      */
     public function __construct(
         public Client $client,
@@ -31,9 +30,7 @@ final readonly class VerifiedAccessToken
         public Uuid $grantId,
         public array $scopes,
         public array $userinfoClaims,
-        public DateTimeImmutable $authenticatedAt,
-        public array $authenticationMethods,
-        public string $authenticationContextClass,
+        public AuthenticationSnapshot $authentication,
         public DateTimeImmutable $issuedAt,
         public DateTimeImmutable $expiresAt,
     ) {

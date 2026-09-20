@@ -62,6 +62,20 @@ final class Consent
     }
 
     /**
+     * The consent that supersedes this one when the user agrees to more: its scopes and the ones given,
+     * each once, from now; this one is revoked. What a user agreed to is never taken back by a new
+     * agreement (architecture §4.3).
+     *
+     * @param list<Scope> $scopes
+     */
+    public function extendedWith(array $scopes, Uuid $id, DateTimeImmutable $now): self
+    {
+        $this->revoke($now);
+
+        return new self($id, $this->user, $this->client, [...$this->scopes, ...$scopes], $now);
+    }
+
+    /**
      * @param list<Scope> $scopes
      */
     public function covers(array $scopes): bool
