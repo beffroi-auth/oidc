@@ -116,7 +116,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         if (! $authorization->client->allowsGrant(GrantType::RefreshToken)) {
             return false;
         }
-        if ($authorization->hasScope(new Scope('offline_access'))) {
+        if ($authorization->hasScope(Scope::offlineAccess())) {
             return true;
         }
 

@@ -32,6 +32,14 @@ final readonly class Scope implements Stringable
     }
 
     /**
+     * OIDC Core §11: what a client asks for to obtain a refresh token.
+     */
+    public static function offlineAccess(): self
+    {
+        return new self('offline_access');
+    }
+
+    /**
      * A "scope" parameter or claim (RFC 6749 §3.3, RFC 8693 §4.2): space-delimited tokens, a set, so a token
      * repeated counts once, in the order first seen. Written once here, whoever reads it: the authorization
      * request, the refresh token grant, the access token verifier.

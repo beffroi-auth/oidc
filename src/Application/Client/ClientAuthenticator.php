@@ -40,6 +40,12 @@ final class ClientAuthenticator
      */
     private const string FAILED = 'Client authentication failed.';
 
+    /**
+     * The methods this authenticator implements, in the order it tries them; what the discovery document
+     * announces (OIDC Discovery §3), so that it cannot say more than the endpoint takes.
+     */
+    private const array METHODS = [TokenEndpointAuthMethod::ClientSecretBasic, TokenEndpointAuthMethod::ClientSecretPost, TokenEndpointAuthMethod::None];
+
     private ?PasswordHash $decoyHash = null;
 
     public function __construct(
@@ -48,6 +54,14 @@ final class ClientAuthenticator
         private readonly ClockInterface $clock,
         private readonly EventDispatcherInterface $events,
     ) {
+    }
+
+    /**
+     * @return non-empty-list<TokenEndpointAuthMethod>
+     */
+    public static function methods(): array
+    {
+        return self::METHODS;
     }
 
     /**
