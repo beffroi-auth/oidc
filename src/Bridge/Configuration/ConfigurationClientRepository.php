@@ -14,6 +14,7 @@ use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 use WeakMap;
 
 /**
@@ -21,7 +22,7 @@ use WeakMap;
  * on the first lookup. The clients are built per tenant instance, so that a client always points at the
  * tenant of the request that asked for it.
  */
-final class ConfigurationClientRepository implements ClientRepositoryInterface
+final class ConfigurationClientRepository implements ClientRepositoryInterface, PushedAuthorizationRequirementInterface
 {
     /**
      * @var array<string, ClientDefinition>
@@ -79,5 +80,19 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface
             return false;
         }
         return array_any($this->definitions, fn ($definition) => $definition->accessTokenFormat === $format);
+    }
+
+    /**
+     * RFC 9126 §5: the document says so when every client declared here does, which is what makes it the
+     * truth about the endpoint and not a second place to keep in agreement (issue #98). A tenant nothing
+     * is declared for requires nothing of anybody.
+     */
+    public function requiresPushedAuthorizationRequests(Tenant $tenant): bool
+    {
+        if ($tenant->slug !== $this->tenantSlug || $this->definitions === []) {
+            return false;
+        }
+
+        return array_all($this->definitions, static fn (ClientDefinition $definition): bool => $definition->requiresPushedAuthorizationRequests);
     }
 }

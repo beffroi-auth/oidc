@@ -62,10 +62,12 @@ final readonly class AuthorizationRequestParser
      * and the mode the answer will use.
      *
      * @param array<string, mixed> $parameters
+     * @param bool $pushed whether the parameters are the ones of a request the client pushed (RFC 9126
+     *                     §2), which is the only way a client that requires it may start one
      *
      * @throws OAuth2Exception never redirectable
      */
-    public function redirectTarget(Tenant $tenant, array $parameters): RedirectTarget
+    public function redirectTarget(Tenant $tenant, array $parameters, bool $pushed = false): RedirectTarget
     {
         $clientId = RequestParameters::single($parameters, 'client_id', false);
         if ($clientId === null) {
@@ -74,6 +76,11 @@ final readonly class AuthorizationRequestParser
         $client = $this->clients->findByClientId($tenant, $clientId);
         if ($client === null) {
             throw new InvalidRequestException('The client is unknown.');
+        }
+        // RFC 9126 §6: before the redirect URI is even read, so that a client held to pushing its
+        // requests is told so on a page and nothing of the request reaches the browser it came from
+        if (! $pushed && $client->requiresPushedAuthorizationRequests) {
+            throw new InvalidRequestException('The client only starts an authorization request by pushing it (RFC 9126 section 6).');
         }
         $redirectUri = RequestParameters::single($parameters, 'redirect_uri', false);
         if ($redirectUri === null) {

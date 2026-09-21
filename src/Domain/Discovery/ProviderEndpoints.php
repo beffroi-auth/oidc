@@ -13,8 +13,9 @@ use function strtolower;
 
 /**
  * The endpoints a tenant announces (OIDC Discovery §3, RP-Initiated Logout §2.1, RFC 8414 §2): absolute,
- * no fragment, no credentials, HTTPS with plain HTTP on a loopback host only. The token, introspection and
- * revocation endpoints have no exception (RFC 6749 §3.2, RFC 7662 §2.1, RFC 7009 §2).
+ * no fragment, no credentials, HTTPS with plain HTTP on a loopback host only. The token, introspection,
+ * revocation and pushed authorization request endpoints have no exception (RFC 6749 §3.2, RFC 7662 §2.1,
+ * RFC 7009 §2, RFC 9126 §2).
  */
 final readonly class ProviderEndpoints
 {
@@ -32,7 +33,9 @@ final readonly class ProviderEndpoints
 
     public string $revocation;
 
-    public function __construct(string $authorization, string $token, string $userinfo, string $jwks, string $endSession, string $introspection, string $revocation)
+    public string $pushedAuthorizationRequest;
+
+    public function __construct(string $authorization, string $token, string $userinfo, string $jwks, string $endSession, string $introspection, string $revocation, string $pushedAuthorizationRequest)
     {
         $this->authorization = self::secureUrl('authorization', $authorization, true);
         $this->token = self::secureUrl('token', $token, false);
@@ -41,6 +44,7 @@ final readonly class ProviderEndpoints
         $this->endSession = self::secureUrl('end session', $endSession, true);
         $this->introspection = self::secureUrl('introspection', $introspection, false);
         $this->revocation = self::secureUrl('revocation', $revocation, false);
+        $this->pushedAuthorizationRequest = self::secureUrl('pushed authorization request', $pushedAuthorizationRequest, false);
     }
 
     private static function secureUrl(string $name, string $url, bool $loopbackInClear): string
@@ -65,6 +69,6 @@ final readonly class ProviderEndpoints
 
         throw new InvalidArgumentException($loopbackInClear
             ? sprintf('The %s endpoint "%s" must use HTTPS; plain HTTP is only accepted on a loopback host.', $name, $url)
-            : sprintf('The %s endpoint "%s" must use HTTPS (RFC 6749 section 3.2), on a loopback host too.', $name, $url));
+            : sprintf('The %s endpoint "%s" must use HTTPS (RFC 6749 section 3.2, RFC 9126 section 2), on a loopback host too.', $name, $url));
     }
 }

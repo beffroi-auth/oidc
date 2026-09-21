@@ -18,7 +18,8 @@ use function sprintf;
 /**
  * A relying party registered with a tenant (RFC 6749 §2, RFC 7591 §2). Every list is closed, no wildcard.
  * "requiresConsent = false" and "requiresPkce = false" are the named exceptions of architecture §7 and
- * decision 0008, carried by the client and by nothing global.
+ * decision 0008, carried by the client and by nothing global; "requiresPushedAuthorizationRequests"
+ * tightens the other way, one client at a time and never by a switch of the deployment (RFC 9126 §6).
  */
 final readonly class Client
 {
@@ -54,6 +55,7 @@ final readonly class Client
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
+     * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
      * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
      * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
@@ -85,6 +87,7 @@ final readonly class Client
         public ?ClientJwks $jwks = null,
         public ?ClientUri $jwksUri = null,
         public ?CertificateIdentityInterface $certificateIdentity = null,
+        public bool $requiresPushedAuthorizationRequests = false,
     ) {
         $allowedScopes ??= [Scope::openid()];
         self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null);

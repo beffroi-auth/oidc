@@ -29,9 +29,16 @@ use function sprintf;
 final class ClientAuthenticationRequest
 {
     /**
-     * RFC 6749 §2.3.1, RFC 7523 §2.2: the parameters a client authentication reads, all of them strings.
+     * RFC 6749 §2.3.1, RFC 7523 §2.2: what a client authentication proves the client with, and what an
+     * endpoint keeping a request for later therefore never keeps (RFC 9126 §2.1).
      */
-    private const array CREDENTIAL_PARAMETERS = ['client_id', 'client_secret', 'client_assertion', 'client_assertion_type'];
+    private const array PROVING_PARAMETERS = ['client_secret', 'client_assertion', 'client_assertion_type'];
+
+    /**
+     * The parameters a client authentication reads, all of them strings: what proves the client, and the
+     * name it goes by, which is a parameter of the request in its own right.
+     */
+    private const array CREDENTIAL_PARAMETERS = ['client_id', ...self::PROVING_PARAMETERS];
 
     public const string AUTHORIZATION_HEADER = 'the Authorization header';
 
@@ -68,6 +75,25 @@ final class ClientAuthenticationRequest
                 throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, null, null, sprintf('The %s parameter must be a string.', $name));
             }
         }
+    }
+
+    /**
+     * The parameters of a request once what proved the client is taken out of them, for an endpoint that
+     * keeps a request the client will come back to (RFC 9126 §2). A credential authenticates the request
+     * that carries it and nothing else, and a store holding one would hold a secret it has no use for;
+     * "client_id" stays, being a parameter of the authorization request itself.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @return array<string, mixed>
+     */
+    public static function withoutCredentials(array $parameters): array
+    {
+        foreach (self::PROVING_PARAMETERS as $name) {
+            unset($parameters[$name]);
+        }
+
+        return $parameters;
     }
 
     /**

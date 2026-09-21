@@ -8,11 +8,12 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryClientRepository implements ClientRepositoryInterface
+final class InMemoryClientRepository implements ClientRepositoryInterface, PushedAuthorizationRequirementInterface
 {
     /**
      * @var list<Client>
@@ -33,6 +34,16 @@ final class InMemoryClientRepository implements ClientRepositoryInterface
     public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
     {
         return array_any($this->clients, fn ($client) => $client->belongsTo($tenant) && $client->accessTokenFormat === $format);
+    }
+
+    /**
+     * RFC 9126 §5: a tenant with no client of its own requires nothing of anybody.
+     */
+    public function requiresPushedAuthorizationRequests(Tenant $tenant): bool
+    {
+        $registered = array_filter($this->clients, static fn (Client $client): bool => $client->belongsTo($tenant));
+
+        return $registered !== [] && array_all($registered, static fn (Client $client): bool => $client->requiresPushedAuthorizationRequests);
     }
 
     public function save(Client $client): void

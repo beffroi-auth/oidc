@@ -61,6 +61,7 @@ final readonly class ClientDefinition
         'requires_consent',
         'id_token_signed_response_alg',
         'requires_pkce',
+        'require_pushed_authorization_requests',
         'access_token_format',
         'backchannel_logout_uri',
         'backchannel_logout_session_required',
@@ -90,6 +91,7 @@ final readonly class ClientDefinition
         public bool $requiresConsent,
         public SignatureAlgorithmInterface $idTokenSignedResponseAlg,
         public bool $requiresPkce,
+        public bool $requiresPushedAuthorizationRequests,
         public AccessTokenFormat $accessTokenFormat,
         public ?ClientUri $backChannelLogoutUri,
         public bool $backChannelLogoutSessionRequired,
@@ -155,6 +157,8 @@ final readonly class ClientDefinition
             throw new InvalidArgumentException(sprintf('The id_token_signed_response_alg option of the client "%s" must be one of: %s.', $clientId, implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all()))), 0, $exception);
         }
 
+        $requiresPushedAuthorizationRequests = self::flag($clientId, 'require_pushed_authorization_requests', $definition);
+
         $accessTokenFormat = self::enumCase($clientId, 'access_token_format', $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value, AccessTokenFormat::class);
 
         $jwks = self::jwks($clientId, $definition);
@@ -169,7 +173,7 @@ final readonly class ClientDefinition
 
         Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity);
     }
 
     public function hasSecret(): bool
@@ -216,6 +220,7 @@ final readonly class ClientDefinition
             $this->jwks,
             $this->jwksUri,
             $this->certificateIdentity,
+            $this->requiresPushedAuthorizationRequests,
         );
     }
 

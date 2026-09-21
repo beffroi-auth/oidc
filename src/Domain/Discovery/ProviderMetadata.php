@@ -36,7 +36,8 @@ use function substr;
  * values the classes of the tenant's policy its logins can prove, the signing algorithms those the
  * provider is wired with and the logout channels the ways of telling a client a session ended that are
  * wired, given by the discovery handler, never read from an enumeration, so that the document and the
- * endpoints cannot disagree; the rest is fixed by the module.
+ * endpoints cannot disagree; whether a request must be pushed is what every registered client requires
+ * (RFC 9126 §5), read the same way; the rest is fixed by the module.
  */
 final readonly class ProviderMetadata
 {
@@ -101,12 +102,14 @@ final readonly class ProviderMetadata
      * @param list<SignatureAlgorithmInterface> $signingAlgorithmsSupported the algorithms the provider signs its JWS with, at least one
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
      * @param ProviderEndpoints|null $mutualTlsEndpoints the same endpoints where a client presenting a certificate reaches them (RFC 8705 §5), null when no listener of the deployment asks for one
+     * @param bool $requiresPushedAuthorizationRequests whether every client of the tenant only starts an authorization request by pushing it (RFC 9126 §5)
      * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
         public Issuer $issuer,
         public ProviderEndpoints $endpoints,
         public ?ProviderEndpoints $mutualTlsEndpoints,
+        public bool $requiresPushedAuthorizationRequests,
         array $scopesSupported,
         array $claimsSupported,
         array $responseModesSupported,
@@ -192,7 +195,8 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * In the order of OIDC Discovery §3, then RFC 8414 §2, RFC 9701 §6, RFC 9207 §3, RP-Initiated Logout §2.1.
+     * In the order of OIDC Discovery §3, then RFC 8414 §2, RFC 9126 §5, RFC 9701 §6, RFC 9207 §3,
+     * RP-Initiated Logout §2.1.
      *
      * @return array<string, mixed>
      */
@@ -221,6 +225,10 @@ final readonly class ProviderMetadata
             'revocation_endpoint' => $this->endpoints->revocation,
             'revocation_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
             'revocation_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->clientAuthenticationMethodsSupported),
+            // RFC 9126 §5: where a request is pushed, and whether pushing it is the only way in, which
+            // is what every client registered here requires and not a switch of the deployment (§6)
+            'pushed_authorization_request_endpoint' => $this->endpoints->pushedAuthorizationRequest,
+            'require_pushed_authorization_requests' => $this->requiresPushedAuthorizationRequests,
             'introspection_endpoint' => $this->endpoints->introspection,
             'introspection_endpoint_auth_methods_supported' => $this->methodNames($this->authenticatingMethods()),
             'introspection_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->authenticatingMethods()),
@@ -276,6 +284,7 @@ final readonly class ProviderMetadata
                 'userinfo_endpoint' => $endpoints->userinfo,
                 'introspection_endpoint' => $endpoints->introspection,
                 'revocation_endpoint' => $endpoints->revocation,
+                'pushed_authorization_request_endpoint' => $endpoints->pushedAuthorizationRequest,
             ],
         ];
     }
