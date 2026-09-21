@@ -16,6 +16,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
+use Heidi\Oidc\Port\ServedLogoutChannelsInterface;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
 use function in_array;
 
@@ -24,8 +25,9 @@ use function in_array;
  * provider announces, the grants wired into the token endpoint (the same tagged grants TokenHandler
  * serves), the response modes the authorization endpoint answers in (the same ways of answering the
  * parser accepts), the client authentication methods ClientAuthenticator implements and the classes of
- * the policy of the tenant the wired logins can prove (decision 0010); "offline_access" when the refresh
- * token grant is served. Everything else is fixed by the module.
+ * the policy of the tenant the wired logins can prove (decision 0010), the ways of telling a client that
+ * a session ended the integration wires; "offline_access" when the refresh token grant is served.
+ * Everything else is fixed by the module.
  */
 final readonly class DiscoveryHandler
 {
@@ -43,6 +45,7 @@ final readonly class DiscoveryHandler
         private ClaimsProviderInterface $claims,
         private ProvableMethodsInterface $provable,
         private ServedResponseModesInterface $responseModes,
+        private ServedLogoutChannelsInterface $logoutChannels,
         iterable $grants,
         private int $maxAge = 3600,
     ) {
@@ -78,6 +81,7 @@ final readonly class DiscoveryHandler
                 static fn (AuthenticationContextClass $class): string => $class->value,
                 $tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods()),
             ),
+            $this->logoutChannels->servedLogoutChannels(),
             $this->maxAge,
         );
     }

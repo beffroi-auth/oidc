@@ -56,6 +56,8 @@ final readonly class Client
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
      * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
      * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
+     * @param ClientUri|null $frontChannelLogoutUri null for a client the logout page does not load
+     * @param bool $frontChannelLogoutSessionRequired needs a front-channel logout URI (Front-Channel Logout 1.0 §3)
      */
     public function __construct(
         public Tenant $tenant,
@@ -74,9 +76,11 @@ final readonly class Client
         public AccessTokenFormat $accessTokenFormat = AccessTokenFormat::Jwt,
         public ?ClientUri $backChannelLogoutUri = null,
         public bool $backChannelLogoutSessionRequired = false,
+        public ?ClientUri $frontChannelLogoutUri = null,
+        public bool $frontChannelLogoutSessionRequired = false,
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired);
+        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired);
 
         $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
         $this->redirectUris = self::unique($redirectUris, $sameUri);
@@ -103,6 +107,8 @@ final readonly class Client
         bool $requiresPkce = true,
         bool $hasBackChannelLogoutUri = false,
         bool $backChannelLogoutSessionRequired = false,
+        bool $hasFrontChannelLogoutUri = false,
+        bool $frontChannelLogoutSessionRequired = false,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -133,6 +139,9 @@ final readonly class Client
         }
         if ($backChannelLogoutSessionRequired && ! $hasBackChannelLogoutUri) {
             throw new InvalidArgumentException(sprintf('The client "%s" requires a "sid" in its logout token but registers no backchannel_logout_uri to receive one (Back-Channel Logout 1.0 §2.2).', $clientId));
+        }
+        if ($frontChannelLogoutSessionRequired && ! $hasFrontChannelLogoutUri) {
+            throw new InvalidArgumentException(sprintf('The client "%s" requires an "iss" and a "sid" on its logout URI but registers no frontchannel_logout_uri to carry them (Front-Channel Logout 1.0 §3).', $clientId));
         }
     }
 

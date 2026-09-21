@@ -55,6 +55,8 @@ final readonly class ClientDefinition
         'access_token_format',
         'backchannel_logout_uri',
         'backchannel_logout_session_required',
+        'frontchannel_logout_uri',
+        'frontchannel_logout_session_required',
     ];
 
     /**
@@ -79,6 +81,8 @@ final readonly class ClientDefinition
         public AccessTokenFormat $accessTokenFormat,
         public ?ClientUri $backChannelLogoutUri,
         public bool $backChannelLogoutSessionRequired,
+        public ?ClientUri $frontChannelLogoutUri,
+        public bool $frontChannelLogoutSessionRequired,
     ) {
     }
 
@@ -127,19 +131,14 @@ final readonly class ClientDefinition
 
         $accessTokenFormat = self::enumCase($clientId, 'access_token_format', $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value, AccessTokenFormat::class);
 
-        $backChannelLogoutUri = $definition['backchannel_logout_uri'] ?? null;
-        if ($backChannelLogoutUri !== null && ! is_string($backChannelLogoutUri)) {
-            throw new InvalidArgumentException(sprintf('The backchannel_logout_uri option of the client "%s" must be a string.', $clientId));
-        }
-        $backChannelLogoutUri = $backChannelLogoutUri === null ? null : new ClientUri($backChannelLogoutUri);
-        $backChannelLogoutSessionRequired = $definition['backchannel_logout_session_required'] ?? false;
-        if (! is_bool($backChannelLogoutSessionRequired)) {
-            throw new InvalidArgumentException(sprintf('The backchannel_logout_session_required option of the client "%s" must be a boolean.', $clientId));
-        }
+        $backChannelLogoutUri = self::logoutUri($clientId, 'backchannel_logout_uri', $definition);
+        $backChannelLogoutSessionRequired = self::flag($clientId, 'backchannel_logout_session_required', $definition);
+        $frontChannelLogoutUri = self::logoutUri($clientId, 'frontchannel_logout_uri', $definition);
+        $frontChannelLogoutSessionRequired = self::flag($clientId, 'frontchannel_logout_session_required', $definition);
 
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired);
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired);
     }
 
     public function hasSecret(): bool
@@ -179,7 +178,41 @@ final readonly class ClientDefinition
             $this->accessTokenFormat,
             $this->backChannelLogoutUri,
             $this->backChannelLogoutSessionRequired,
+            $this->frontChannelLogoutUri,
+            $this->frontChannelLogoutSessionRequired,
         );
+    }
+
+    /**
+     * A URI the provider calls or loads when a session ends (Back-Channel Logout 1.0 §2.2, Front-Channel
+     * Logout 1.0 §3), read and validated as every other URI a client registers.
+     *
+     * @param array<string, mixed> $definition
+     */
+    private static function logoutUri(string $clientId, string $key, array $definition): ?ClientUri
+    {
+        $uri = $definition[$key] ?? null;
+        if ($uri === null) {
+            return null;
+        }
+        if (! is_string($uri)) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $key, $clientId));
+        }
+
+        return new ClientUri($uri);
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     */
+    private static function flag(string $clientId, string $key, array $definition): bool
+    {
+        $value = $definition[$key] ?? false;
+        if (! is_bool($value)) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a boolean.', $key, $clientId));
+        }
+
+        return $value;
     }
 
     /**

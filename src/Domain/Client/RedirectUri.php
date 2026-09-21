@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Client;
 
-use function http_build_query;
-use const PHP_QUERY_RFC3986;
-use function str_contains;
 use Stringable;
 
 /**
@@ -23,11 +20,13 @@ final readonly class RedirectUri implements Stringable
      */
     public string $origin;
 
+    private ClientUri $uri;
+
     public function __construct(string $value)
     {
-        $uri = new ClientUri($value);
-        $this->value = $uri->value;
-        $this->origin = $uri->origin;
+        $this->uri = new ClientUri($value);
+        $this->value = $this->uri->value;
+        $this->origin = $this->uri->origin;
     }
 
     /**
@@ -44,15 +43,13 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * RFC 6749 §4.1.2: the registered query retained, every value percent-encoded (RFC 3986 §2.1).
+     * RFC 6749 §4.1.2, see ClientUri.
      *
      * @param non-empty-array<string, string> $parameters
      */
     public function withParameters(array $parameters): string
     {
-        $separator = str_contains($this->value, '?') ? '&' : '?';
-
-        return $this->value . $separator . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
+        return $this->uri->withParameters($parameters);
     }
 
     public function __toString(): string

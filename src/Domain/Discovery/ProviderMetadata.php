@@ -14,6 +14,7 @@ use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Client\TokenEndpointAuthMethod;
+use Heidi\Oidc\Domain\EndSession\LogoutChannel;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -28,9 +29,9 @@ use function substr;
  * says what the provider does and nothing it does not (decision 0006): the grant types are the grants
  * wired into the token endpoint, the response modes the ways of answering wired into the authorization
  * endpoint, the client authentication methods those the client authenticator implements and the "acr"
- * values the classes of the tenant's policy its logins can prove, given by the discovery handler, never
- * read from an enumeration, so that the document and the endpoints cannot disagree; the rest is fixed by
- * the module.
+ * values the classes of the tenant's policy its logins can prove and the logout channels the ways of
+ * telling a client a session ended that are wired, given by the discovery handler, never read from an
+ * enumeration, so that the document and the endpoints cannot disagree; the rest is fixed by the module.
  */
 final readonly class ProviderMetadata
 {
@@ -71,6 +72,11 @@ final readonly class ProviderMetadata
     public array $acrValuesSupported;
 
     /**
+     * @var list<LogoutChannel> no duplicate
+     */
+    public array $logoutChannelsSupported;
+
+    /**
      * @var array<string, string>
      */
     public array $headers;
@@ -82,6 +88,7 @@ final readonly class ProviderMetadata
      * @param list<GrantType> $grantTypesSupported the grants the token endpoint serves, at least one
      * @param list<TokenEndpointAuthMethod> $tokenEndpointAuthMethodsSupported the methods the token endpoint takes, at least one
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
+     * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
      * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
@@ -93,6 +100,7 @@ final readonly class ProviderMetadata
         array $grantTypesSupported,
         array $tokenEndpointAuthMethodsSupported,
         array $acrValuesSupported,
+        array $logoutChannelsSupported,
         public int $maxAge,
     ) {
         if ($maxAge < 0) {
@@ -135,6 +143,7 @@ final readonly class ProviderMetadata
         $this->grantTypesSupported = $grantTypes;
         $this->tokenEndpointAuthMethodsSupported = $methods;
         $this->acrValuesSupported = $acrValues;
+        $this->logoutChannelsSupported = array_values(array_unique($logoutChannelsSupported, SORT_REGULAR));
         $this->headers = [
             'Cache-Control' => sprintf('public, max-age=%d', $maxAge),
         ];
@@ -191,12 +200,27 @@ final readonly class ProviderMetadata
             'introspection_signing_alg_values_supported' => self::values(SignatureAlgorithm::cases()),
             'authorization_response_iss_parameter_supported' => true,
             'end_session_endpoint' => $this->endpoints->endSession,
+            // Back-Channel Logout 1.0 §3 and Front-Channel Logout 1.0 §3: a channel that is served
+            // always carries the session, so what announces one announces the other
+            'backchannel_logout_supported' => $this->serves(LogoutChannel::BackChannel),
+            'backchannel_logout_session_supported' => $this->serves(LogoutChannel::BackChannel),
+            'frontchannel_logout_supported' => $this->serves(LogoutChannel::FrontChannel),
+            'frontchannel_logout_session_supported' => $this->serves(LogoutChannel::FrontChannel),
         ];
     }
 
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
+    }
+
+    /**
+     * Back-Channel Logout 1.0 §3, Front-Channel Logout 1.0 §3: a channel nothing serves is announced as
+     * not served, never left out.
+     */
+    private function serves(LogoutChannel $channel): bool
+    {
+        return in_array($channel, $this->logoutChannelsSupported, true);
     }
 
     /**

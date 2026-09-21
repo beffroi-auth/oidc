@@ -6,9 +6,12 @@ namespace Heidi\Oidc\Domain\Client;
 
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use function http_build_query;
 use function is_string;
 use function parse_url;
+use const PHP_QUERY_RFC3986;
 use function sprintf;
+use function str_contains;
 use Stringable;
 use function strtolower;
 
@@ -48,6 +51,20 @@ final readonly class ClientUri implements Stringable
         $this->value = $value;
         $port = $parts['port'] ?? null;
         $this->origin = $scheme . '://' . strtolower($parts['host']) . ($port === null ? '' : ':' . $port);
+    }
+
+    /**
+     * The registered query is kept and the parameters are added to it, every value percent-encoded
+     * (RFC 3986 §2.1): what a redirection carries back (RFC 6749 §4.1.2) and what a front-channel logout
+     * URI is given (Front-Channel Logout 1.0 §2).
+     *
+     * @param non-empty-array<string, string> $parameters
+     */
+    public function withParameters(array $parameters): string
+    {
+        $separator = str_contains($this->value, '?') ? '&' : '?';
+
+        return $this->value . $separator . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
     }
 
     public function equals(self $other): bool
