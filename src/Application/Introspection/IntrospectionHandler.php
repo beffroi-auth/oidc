@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Introspection;
 
-use Heidi\Core\Domain\Key\SignatureAlgorithm;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\JwsSignerInterface;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Token\AccessTokenInspector;
 use Heidi\Oidc\Application\Token\TokenRequest;
@@ -29,7 +29,7 @@ final readonly class IntrospectionHandler
         private ClientAuthenticator $clients,
         private AccessTokenInspector $tokens,
         private JwsSignerInterface $signer,
-        private SignatureAlgorithm $algorithm = SignatureAlgorithm::RS256,
+        private SignatureAlgorithmsInterface $algorithms,
     ) {
     }
 
@@ -76,7 +76,7 @@ final readonly class IntrospectionHandler
             'token_introspection' => $response->members,
         ]);
 
-        return $response->signed($this->signer->sign($tenant, $this->algorithm, $payload, [
+        return $response->signed($this->signer->sign($tenant, $this->algorithms->defaultAlgorithm(), $payload, [
             'typ' => IntrospectionResponse::JWT_TYPE,
         ]));
     }

@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Bridge\Configuration;
 use Heidi\Core\Domain\Credential\PasswordHash;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\PasswordHasherInterface;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
@@ -41,9 +42,10 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface
         private readonly string $tenantSlug,
         array $definitions,
         private readonly PasswordHasherInterface $hasher,
+        SignatureAlgorithmsInterface $algorithms,
     ) {
         foreach ($definitions as $clientId => $definition) {
-            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition);
+            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $algorithms);
         }
         $this->clients = new WeakMap();
     }

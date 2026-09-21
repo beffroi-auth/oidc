@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Application\EndSession;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Port\JwsSignerInterface;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\EndSession\LogoutToken;
 use Heidi\Oidc\Domain\Token\JwtPayload;
@@ -24,6 +25,7 @@ final readonly class LogoutTokenIssuer
     public function __construct(
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
+        private SignatureAlgorithmsInterface $algorithms,
     ) {
     }
 
@@ -41,7 +43,7 @@ final readonly class LogoutTokenIssuer
             $now,
         );
 
-        return $this->signer->sign($session->tenant, $client->idTokenSignedResponseAlg, JwtPayload::encode($token->claims()), [
+        return $this->signer->sign($session->tenant, $client->idTokenSignedResponseAlg ?? $this->algorithms->defaultAlgorithm(), JwtPayload::encode($token->claims()), [
             'typ' => LogoutToken::TYPE,
         ]);
     }

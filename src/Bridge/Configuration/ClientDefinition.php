@@ -10,9 +10,11 @@ use function array_keys;
 use function array_map;
 use BackedEnum;
 use Heidi\Core\Domain\Credential\PasswordHash;
-use Heidi\Core\Domain\Key\SignatureAlgorithm;
+use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Exception\UnsupportedAlgorithmException;
 use Heidi\Core\Port\PasswordHasherInterface;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientUri;
@@ -76,7 +78,7 @@ final readonly class ClientDefinition
         public array $grantTypes,
         public array $allowedScopes,
         public bool $requiresConsent,
-        public SignatureAlgorithm $idTokenSignedResponseAlg,
+        public SignatureAlgorithmInterface $idTokenSignedResponseAlg,
         public bool $requiresPkce,
         public AccessTokenFormat $accessTokenFormat,
         public ?ClientUri $backChannelLogoutUri,
@@ -88,8 +90,9 @@ final readonly class ClientDefinition
 
     /**
      * @param array<string, mixed> $definition the keys of architecture §5.1, in snake_case
+     * @param SignatureAlgorithmsInterface $algorithms what the provider signs with: a client registers one of those names, or none and takes the default
      */
-    public static function fromArray(string $clientId, array $definition): self
+    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms): self
     {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -127,7 +130,15 @@ final readonly class ClientDefinition
         $postLogoutRedirectUris = array_map(static fn (string $uri): RedirectUri => new RedirectUri($uri), self::stringList($clientId, 'post_logout_redirect_uris', $definition['post_logout_redirect_uris'] ?? []));
         $grantTypes = array_map(static fn (string $grant): GrantType => self::enumCase($clientId, 'grant_types', $grant, GrantType::class), self::stringList($clientId, 'grant_types', $definition['grant_types'] ?? [GrantType::AuthorizationCode->value, GrantType::RefreshToken->value]));
         $allowedScopes = array_map(static fn (string $scope): Scope => new Scope($scope), self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']));
-        $algorithm = self::enumCase($clientId, 'id_token_signed_response_alg', $definition['id_token_signed_response_alg'] ?? SignatureAlgorithm::RS256->value, SignatureAlgorithm::class);
+        $signedResponseAlg = $definition['id_token_signed_response_alg'] ?? null;
+        if ($signedResponseAlg !== null && ! is_string($signedResponseAlg)) {
+            throw new InvalidArgumentException(sprintf('The id_token_signed_response_alg option of the client "%s" must be a string.', $clientId));
+        }
+        try {
+            $algorithm = $signedResponseAlg === null ? $algorithms->defaultAlgorithm() : $algorithms->named($signedResponseAlg);
+        } catch (UnsupportedAlgorithmException $exception) {
+            throw new InvalidArgumentException(sprintf('The id_token_signed_response_alg option of the client "%s" must be one of: %s.', $clientId, implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all()))), 0, $exception);
+        }
 
         $accessTokenFormat = self::enumCase($clientId, 'access_token_format', $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value, AccessTokenFormat::class);
 

@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Application\Discovery;
 use function array_map;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Token\GrantInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
@@ -26,7 +27,8 @@ use function in_array;
  * serves), the response modes the authorization endpoint answers in (the same ways of answering the
  * parser accepts), the client authentication methods ClientAuthenticator implements and the classes of
  * the policy of the tenant the wired logins can prove (decision 0010), the ways of telling a client that
- * a session ended the integration wires; "offline_access" when the refresh token grant is served.
+ * a session ended the integration wires, the algorithms it signs its JWS with; "offline_access" when the
+ * refresh token grant is served.
  * Everything else is fixed by the module.
  */
 final readonly class DiscoveryHandler
@@ -46,6 +48,7 @@ final readonly class DiscoveryHandler
         private ProvableMethodsInterface $provable,
         private ServedResponseModesInterface $responseModes,
         private ServedLogoutChannelsInterface $logoutChannels,
+        private SignatureAlgorithmsInterface $algorithms,
         iterable $grants,
         private int $maxAge = 3600,
     ) {
@@ -81,6 +84,7 @@ final readonly class DiscoveryHandler
                 static fn (AuthenticationContextClass $class): string => $class->value,
                 $tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods()),
             ),
+            $this->algorithms->all(),
             $this->logoutChannels->servedLogoutChannels(),
             $this->maxAge,
         );

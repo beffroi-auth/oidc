@@ -8,7 +8,7 @@ use function array_filter;
 use function array_map;
 use function array_unique;
 use function array_values;
-use Heidi\Core\Domain\Key\SignatureAlgorithm;
+use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
@@ -29,9 +29,10 @@ use function substr;
  * says what the provider does and nothing it does not (decision 0006): the grant types are the grants
  * wired into the token endpoint, the response modes the ways of answering wired into the authorization
  * endpoint, the client authentication methods those the client authenticator implements and the "acr"
- * values the classes of the tenant's policy its logins can prove and the logout channels the ways of
- * telling a client a session ended that are wired, given by the discovery handler, never read from an
- * enumeration, so that the document and the endpoints cannot disagree; the rest is fixed by the module.
+ * values the classes of the tenant's policy its logins can prove, the signing algorithms those the
+ * provider is wired with and the logout channels the ways of telling a client a session ended that are
+ * wired, given by the discovery handler, never read from an enumeration, so that the document and the
+ * endpoints cannot disagree; the rest is fixed by the module.
  */
 final readonly class ProviderMetadata
 {
@@ -72,6 +73,11 @@ final readonly class ProviderMetadata
     public array $acrValuesSupported;
 
     /**
+     * @var non-empty-list<SignatureAlgorithmInterface> no duplicate
+     */
+    public array $signingAlgorithmsSupported;
+
+    /**
      * @var list<LogoutChannel> no duplicate
      */
     public array $logoutChannelsSupported;
@@ -88,6 +94,7 @@ final readonly class ProviderMetadata
      * @param list<GrantType> $grantTypesSupported the grants the token endpoint serves, at least one
      * @param list<TokenEndpointAuthMethod> $tokenEndpointAuthMethodsSupported the methods the token endpoint takes, at least one
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
+     * @param list<SignatureAlgorithmInterface> $signingAlgorithmsSupported the algorithms the provider signs its JWS with, at least one
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
      * @param int $maxAge how long a client may cache the document, in seconds
      */
@@ -100,6 +107,7 @@ final readonly class ProviderMetadata
         array $grantTypesSupported,
         array $tokenEndpointAuthMethodsSupported,
         array $acrValuesSupported,
+        array $signingAlgorithmsSupported,
         array $logoutChannelsSupported,
         public int $maxAge,
     ) {
@@ -122,6 +130,10 @@ final readonly class ProviderMetadata
         if ($acrValues === []) {
             throw new InvalidArgumentException('A provider asserts at least one authentication context class (OIDC Discovery section 3).');
         }
+        $algorithms = array_values(array_unique($signingAlgorithmsSupported, SORT_REGULAR));
+        if ($algorithms === []) {
+            throw new InvalidArgumentException('A provider signs its JWS with at least one algorithm (OIDC Discovery section 3).');
+        }
         $scopes = [Scope::openid()];
         foreach ($scopesSupported as $scope) {
             if (! in_array($scope->value, array_map(static fn (Scope $known): string => $known->value, $scopes), true)) {
@@ -143,6 +155,7 @@ final readonly class ProviderMetadata
         $this->grantTypesSupported = $grantTypes;
         $this->tokenEndpointAuthMethodsSupported = $methods;
         $this->acrValuesSupported = $acrValues;
+        $this->signingAlgorithmsSupported = $algorithms;
         $this->logoutChannelsSupported = array_values(array_unique($logoutChannelsSupported, SORT_REGULAR));
         $this->headers = [
             'Cache-Control' => sprintf('public, max-age=%d', $maxAge),
@@ -186,7 +199,7 @@ final readonly class ProviderMetadata
             'grant_types_supported' => self::values($this->grantTypesSupported),
             'acr_values_supported' => $this->acrValuesSupported,
             'subject_types_supported' => ['public'],
-            'id_token_signing_alg_values_supported' => self::values(SignatureAlgorithm::cases()),
+            'id_token_signing_alg_values_supported' => $this->algorithmNames(),
             'token_endpoint_auth_methods_supported' => self::values($this->tokenEndpointAuthMethodsSupported),
             'claims_supported' => $this->claimsSupported,
             'claims_parameter_supported' => true,
@@ -197,7 +210,7 @@ final readonly class ProviderMetadata
             'revocation_endpoint_auth_methods_supported' => self::values($this->tokenEndpointAuthMethodsSupported),
             'introspection_endpoint' => $this->endpoints->introspection,
             'introspection_endpoint_auth_methods_supported' => self::values($this->secretMethods()),
-            'introspection_signing_alg_values_supported' => self::values(SignatureAlgorithm::cases()),
+            'introspection_signing_alg_values_supported' => $this->algorithmNames(),
             'authorization_response_iss_parameter_supported' => true,
             'end_session_endpoint' => $this->endpoints->endSession,
             // Back-Channel Logout 1.0 §3 and Front-Channel Logout 1.0 §3: a channel that is served
@@ -212,6 +225,17 @@ final readonly class ProviderMetadata
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
+    }
+
+    /**
+     * RFC 8414 §2 and OIDC Discovery §3: the "alg" of every algorithm the provider is wired with, in the
+     * order they are wired.
+     *
+     * @return non-empty-list<string>
+     */
+    private function algorithmNames(): array
+    {
+        return array_map(static fn (SignatureAlgorithmInterface $algorithm): string => $algorithm->name(), $this->signingAlgorithmsSupported);
     }
 
     /**
@@ -234,7 +258,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * @param list<ResponseMode|GrantType|SignatureAlgorithm|TokenEndpointAuthMethod|CodeChallengeMethod> $cases
+     * @param list<ResponseMode|GrantType|TokenEndpointAuthMethod|CodeChallengeMethod> $cases
      *
      * @return list<string>
      */

@@ -7,8 +7,8 @@ namespace Heidi\Oidc\Application\Token;
 use function array_keys;
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Key\SignatureAlgorithm;
 use Heidi\Core\Port\JwsSignerInterface;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\JwtPayload;
@@ -21,7 +21,9 @@ use Symfony\Component\Uid\Uuid;
  * RFC 9068 (architecture §4.6): "typ" is "at+jwt" (§2.1), the claims are those of §2.2 and §2.2.1, "scope"
  * in the syntax of RFC 8693 §4.2, "aud" the client identifier. Two private claims (RFC 7519 §4.3): "grant_id"
  * names the code the token descends from, "userinfo_claims" what the client asked for by name (OIDC Core §5.5).
- * Nothing is stored: the token is its own record.
+ * Nothing is stored: the token is its own record. An access token is read by resource servers, not by the
+ * client, so it is signed with the algorithm the provider signs with by default, never the one the client
+ * registered for its ID tokens.
  */
 final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
 {
@@ -34,8 +36,8 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
     public function __construct(
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
+        private SignatureAlgorithmsInterface $algorithms,
         public DateInterval $lifetime = new DateInterval('PT10M'),
-        private SignatureAlgorithm $algorithm = SignatureAlgorithm::RS256,
     ) {
     }
 
@@ -61,7 +63,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
         $claims['sid'] = $authorization->session->id->toRfc4122();
         $claims[self::GRANT_ID] = $authorization->grantId->toRfc4122();
 
-        $jws = $this->signer->sign($authorization->tenant, $this->algorithm, JwtPayload::encode($claims), [
+        $jws = $this->signer->sign($authorization->tenant, $this->algorithms->defaultAlgorithm(), JwtPayload::encode($claims), [
             'typ' => self::TYPE,
         ]);
 

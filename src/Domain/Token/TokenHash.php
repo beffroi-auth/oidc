@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Domain\Token;
 
 use function hash;
-use Heidi\Core\Domain\Key\SignatureAlgorithm;
+use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use function intdiv;
 use SensitiveParameter;
 use function strlen;
@@ -16,7 +16,7 @@ use function substr;
  */
 final readonly class TokenHash
 {
-    public static function of(#[SensitiveParameter] string $value, SignatureAlgorithm $algorithm): string
+    public static function of(#[SensitiveParameter] string $value, SignatureAlgorithmInterface $algorithm): string
     {
         $digest = hash($algorithm->digestAlgorithm(), $value, true);
 

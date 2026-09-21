@@ -6,7 +6,7 @@ namespace Heidi\Oidc\Domain\Client;
 
 use function array_any;
 use Heidi\Core\Domain\Credential\PasswordHash;
-use Heidi\Core\Domain\Key\SignatureAlgorithm;
+use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -54,6 +54,7 @@ final readonly class Client
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
+     * @param SignatureAlgorithmInterface|null $idTokenSignedResponseAlg the algorithm the client registered its ID tokens and its logout tokens in (OIDC Registration §2), null for a client that registered none: the provider signs them with its default
      * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
      * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
      * @param ClientUri|null $frontChannelLogoutUri null for a client the logout page does not load
@@ -71,7 +72,7 @@ final readonly class Client
         array $grantTypes = [GrantType::AuthorizationCode],
         ?array $allowedScopes = null,
         public bool $requiresConsent = true,
-        public SignatureAlgorithm $idTokenSignedResponseAlg = SignatureAlgorithm::RS256,
+        public ?SignatureAlgorithmInterface $idTokenSignedResponseAlg = null,
         public bool $requiresPkce = true,
         public AccessTokenFormat $accessTokenFormat = AccessTokenFormat::Jwt,
         public ?ClientUri $backChannelLogoutUri = null,
