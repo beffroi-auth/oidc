@@ -6,6 +6,8 @@ namespace Heidi\Oidc\Domain\Client;
 
 use function array_any;
 use function array_find;
+use function hash_equals;
+use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
 use function is_string;
@@ -76,5 +78,30 @@ final readonly class ClientJwks
     public function holds(string $keyId): bool
     {
         return array_any($this->keys, static fn (array $key): bool => ($key['kid'] ?? null) === $keyId);
+    }
+
+    /**
+     * RFC 8705 §2.2: whether one of the keys published is this very certificate, which is what
+     * "self_signed_tls_client_auth" authenticates against. A key publishes its certificate in its "x5c"
+     * (RFC 7517 §4.7) or names it by thumbprint in its "x5t#S256" (§4.9); a key that does neither
+     * publishes a public key and no certificate, and authenticates nobody here.
+     *
+     * The certificate is compared and not the key inside it: a certificate reissued on the same key is
+     * another certificate, it is not the one the client registered, and it binds tokens to another
+     * thumbprint (§3.1).
+     */
+    public function publishes(ClientCertificate $certificate): bool
+    {
+        return array_any($this->keys, static function (array $key) use ($certificate): bool {
+            $thumbprint = $key['x5t#S256'] ?? null;
+            if (is_string($thumbprint) && hash_equals($certificate->x5tS256(), $thumbprint)) {
+                return true;
+            }
+            $chain = $key['x5c'] ?? null;
+            $leaf = is_array($chain) ? $chain[0] ?? null : null;
+            $published = is_string($leaf) ? ClientCertificate::fromBase64($leaf) : null;
+
+            return $published !== null && $published->isSameAs($certificate);
+        });
     }
 }

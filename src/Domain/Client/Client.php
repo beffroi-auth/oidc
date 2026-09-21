@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\Client;
 use function array_any;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
@@ -53,6 +54,7 @@ final readonly class Client
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
+     * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
      * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
      * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
      * @param SignatureAlgorithmInterface|null $idTokenSignedResponseAlg the algorithm the client registered its ID tokens and its logout tokens in (OIDC Registration §2), null for a client that registered none: the provider signs them with its default
@@ -82,9 +84,10 @@ final readonly class Client
         public bool $frontChannelLogoutSessionRequired = false,
         public ?ClientJwks $jwks = null,
         public ?ClientUri $jwksUri = null,
+        public ?CertificateIdentityInterface $certificateIdentity = null,
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null);
+        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null);
         if ($secret !== null && $authenticationMethod instanceof SecretBearingMethodInterface && ! $authenticationMethod->accepts($secret)) {
             throw new InvalidArgumentException(sprintf('The secret of the client "%s" is not kept in a shape %s verifies against.', $clientId, $authenticationMethod->name()));
         }
@@ -118,6 +121,7 @@ final readonly class Client
         bool $frontChannelLogoutSessionRequired = false,
         bool $hasJwks = false,
         bool $hasJwksUri = false,
+        bool $hasCertificateIdentity = false,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -136,6 +140,12 @@ final readonly class Client
         }
         if ($authenticationMethod instanceof KeyBearingMethodInterface && ! $hasJwks && ! $hasJwksUri) {
             throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which verifies a signature of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId, $authenticationMethod->name()));
+        }
+        if ($authenticationMethod instanceof CertificateIdentityBearingMethodInterface && ! $hasCertificateIdentity) {
+            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which recognises it by what its certificate says about it, and therefore registers one of the values of RFC 8705 section 2.1.2.', $clientId, $authenticationMethod->name()));
+        }
+        if (! $authenticationMethod instanceof CertificateIdentityBearingMethodInterface && $hasCertificateIdentity) {
+            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which reads nothing of a certificate, and therefore registers none of the values of RFC 8705 section 2.1.2.', $clientId, $authenticationMethod->name()));
         }
         if ($redirectUris === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" registers at least one redirect URI (RFC 6749 §3.1.2.2).', $clientId));

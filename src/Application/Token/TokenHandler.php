@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Application\Token;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
+use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Token\TokenResponse;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -47,12 +48,13 @@ final readonly class TokenHandler
 
     /**
      * @param array<string, mixed> $parameters the form parameters of the request body
+     * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake (RFC 8705 §2)
      *
      * @throws OAuth2Exception
      */
-    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context): TokenResponse
+    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null): TokenResponse
     {
-        $client = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->token, $authorizationHeader, $parameters, $context);
+        $client = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->token, $authorizationHeader, $parameters, $context, $certificate);
         $request = new TokenRequest($parameters);
 
         $grantType = GrantType::tryFrom($request->required('grant_type'));
@@ -60,7 +62,7 @@ final readonly class TokenHandler
         if ($grantType === null || $grant === null) {
             throw new UnsupportedGrantTypeException('The grant type is not supported by this provider.');
         }
-        if (! $client->allowsGrant($grantType)) {
+        if (! $client->client->allowsGrant($grantType)) {
             throw new UnauthorizedClientException('The client is not registered for this grant type.');
         }
 

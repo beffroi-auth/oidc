@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Discovery;
 
+use function array_any;
 use function array_filter;
 use function array_map;
 use function array_merge;
@@ -14,6 +15,7 @@ use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
 use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
+use Heidi\Oidc\Domain\Client\CertificateBindingMethodInterface;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\EndSession\LogoutChannel;
@@ -98,11 +100,13 @@ final readonly class ProviderMetadata
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
      * @param list<SignatureAlgorithmInterface> $signingAlgorithmsSupported the algorithms the provider signs its JWS with, at least one
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
+     * @param ProviderEndpoints|null $mutualTlsEndpoints the same endpoints where a client presenting a certificate reaches them (RFC 8705 §5), null when no listener of the deployment asks for one
      * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
         public Issuer $issuer,
         public ProviderEndpoints $endpoints,
+        public ?ProviderEndpoints $mutualTlsEndpoints,
         array $scopesSupported,
         array $claimsSupported,
         array $responseModesSupported,
@@ -229,12 +233,51 @@ final readonly class ProviderMetadata
             'backchannel_logout_session_supported' => $this->serves(LogoutChannel::BackChannel),
             'frontchannel_logout_supported' => $this->serves(LogoutChannel::FrontChannel),
             'frontchannel_logout_session_supported' => $this->serves(LogoutChannel::FrontChannel),
+            // RFC 8705 §3.3: whether the provider binds an access token to the certificate its client
+            // presented, which is whether a method that proves one is wired and nothing else
+            'tls_client_certificate_bound_access_tokens' => $this->bindsAccessTokensToCertificates(),
+            ...$this->mutualTlsEndpointAliases(),
         ];
     }
 
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
+    }
+
+    /**
+     * RFC 8705 §3.3, derived from the wired methods as every other list of this document is (issue #98):
+     * a provider that authenticates no client by its certificate binds no token to one.
+     */
+    private function bindsAccessTokensToCertificates(): bool
+    {
+        return array_any($this->clientAuthenticationMethodsSupported, static fn (ClientAuthenticationMethodInterface $method): bool => $method instanceof CertificateBindingMethodInterface);
+    }
+
+    /**
+     * RFC 8705 §5: where a client that presents a certificate reaches the endpoints that authenticate it
+     * and the resources that honour a bound token. The aliases are the endpoints themselves, located a
+     * second time by the integration on the host its listener asks for a certificate on, so that the two
+     * cannot name different things; a deployment that has no such host announces no alias at all rather
+     * than an object naming the ordinary endpoints.
+     *
+     * @return array<string, mixed>
+     */
+    private function mutualTlsEndpointAliases(): array
+    {
+        $endpoints = $this->mutualTlsEndpoints;
+        if ($endpoints === null) {
+            return [];
+        }
+
+        return [
+            'mtls_endpoint_aliases' => [
+                'token_endpoint' => $endpoints->token,
+                'userinfo_endpoint' => $endpoints->userinfo,
+                'introspection_endpoint' => $endpoints->introspection,
+                'revocation_endpoint' => $endpoints->revocation,
+            ],
+        ];
     }
 
     /**

@@ -16,6 +16,8 @@ use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
+use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
+use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Domain\Client\ClientJwks;
@@ -26,6 +28,8 @@ use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
+use Heidi\Oidc\Exception\UnreadableCertificateException;
+use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use function implode;
 use function is_array;
@@ -64,6 +68,7 @@ final readonly class ClientDefinition
         'frontchannel_logout_session_required',
         'jwks',
         'jwks_uri',
+        ...CertificateIdentities::NAMES,
     ];
 
     /**
@@ -92,6 +97,7 @@ final readonly class ClientDefinition
         public bool $frontChannelLogoutSessionRequired,
         public ?ClientJwks $jwks,
         public ?ClientUri $jwksUri,
+        public ?CertificateIdentityInterface $certificateIdentity,
     ) {
     }
 
@@ -99,8 +105,9 @@ final readonly class ClientDefinition
      * @param array<string, mixed> $definition the keys of architecture §5.1, in snake_case
      * @param SignatureAlgorithmsInterface $algorithms what the provider signs with: a client registers one of those names, or none and takes the default
      * @param ClientAuthenticationMethodsInterface $methods what the provider authenticates clients with: a client registers one of those names
+     * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
      */
-    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms, ClientAuthenticationMethodsInterface $methods): self
+    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms, ClientAuthenticationMethodsInterface $methods, CertificateReaderInterface $certificates): self
     {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -158,9 +165,11 @@ final readonly class ClientDefinition
         $frontChannelLogoutUri = self::clientUri($clientId, 'frontchannel_logout_uri', $definition);
         $frontChannelLogoutSessionRequired = self::flag($clientId, 'frontchannel_logout_session_required', $definition);
 
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null);
+        $certificateIdentity = self::certificateIdentity($clientId, $definition, $certificates);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri);
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null);
+
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity);
     }
 
     public function hasSecret(): bool
@@ -206,6 +215,7 @@ final readonly class ClientDefinition
             $this->frontChannelLogoutSessionRequired,
             $this->jwks,
             $this->jwksUri,
+            $this->certificateIdentity,
         );
     }
 
@@ -230,6 +240,36 @@ final readonly class ClientDefinition
         }
 
         throw new InvalidArgumentException(sprintf('The token_endpoint_auth_method option of the client "%s" must be one of: %s.', $clientId, implode(', ', array_map(static fn (ClientAuthenticationMethodInterface $method): string => $method->name(), $wired))));
+    }
+
+    /**
+     * What names the client in the certificate it presents (RFC 8705 §2.1.2): one of the five keys, and
+     * one only. A distinguished name is written back by the reader that will read the one of the
+     * certificate, so that the registration is kept in the form the comparison will be made in and a
+     * name that is not a distinguished name fails at boot rather than at the first request.
+     *
+     * @param array<string, mixed> $definition
+     */
+    private static function certificateIdentity(string $clientId, array $definition, CertificateReaderInterface $certificates): ?CertificateIdentityInterface
+    {
+        $registration = [];
+        foreach (CertificateIdentities::NAMES as $key) {
+            $value = $definition[$key] ?? null;
+            if ($value !== null && ! is_string($value)) {
+                throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $key, $clientId));
+            }
+            $registration[$key] = $value;
+        }
+        $subjectDn = $registration[CertificateIdentities::SUBJECT_DN];
+        if ($subjectDn !== null) {
+            try {
+                $registration[CertificateIdentities::SUBJECT_DN] = $certificates->distinguishedName($subjectDn);
+            } catch (UnreadableCertificateException $exception) {
+                throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a distinguished name of RFC 4514.', CertificateIdentities::SUBJECT_DN, $clientId), 0, $exception);
+            }
+        }
+
+        return CertificateIdentities::fromRegistration($registration);
     }
 
     /**

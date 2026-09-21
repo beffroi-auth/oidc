@@ -34,6 +34,11 @@ final readonly class ClientSecretPost implements SecretKeepingMethodInterface, A
         return 'client_secret_post';
     }
 
+    public function mechanism(): string
+    {
+        return ClientAuthenticationRequest::BODY_SECRET;
+    }
+
     public function authenticatesClient(): bool
     {
         return true;

@@ -46,6 +46,11 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
         return 'private_key_jwt';
     }
 
+    public function mechanism(): string
+    {
+        return ClientAuthenticationRequest::ASSERTION;
+    }
+
     public function authenticatesClient(): bool
     {
         return true;

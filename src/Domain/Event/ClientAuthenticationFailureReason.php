@@ -45,4 +45,15 @@ enum ClientAuthenticationFailureReason: string
      * The keys of the client could not be read back from its "jwks_uri".
      */
     case UnreadableClientKeys = 'unreadable_client_keys';
+
+    /**
+     * RFC 8705 §2: the certificate presented is not the one the client registered, or is not one the
+     * client publishes.
+     */
+    case UnexpectedCertificate = 'unexpected_certificate';
+
+    /**
+     * What the edge handed over is not an X.509 certificate.
+     */
+    case UnreadableCertificate = 'unreadable_certificate';
 }

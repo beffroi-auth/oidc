@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Application\Token;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Oidc\Application\Client\AuthenticatedClient;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantType;
@@ -60,7 +61,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         return GrantType::AuthorizationCode;
     }
 
-    public function grant(Client $client, TokenRequest $request, RequestContext $context): IssuedTokens
+    public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens
     {
         $now = $this->clock->now();
         $code = $request->required('code');
@@ -76,12 +77,12 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         }
         // atomic: of the requests presenting this code at once, exactly one is the first
         if (! $this->codes->consume($record, $now)) {
-            $this->replayed($record, $client, $context, $now);
+            $this->replayed($record, $client->client, $context, $now);
 
             throw new InvalidGrantException(self::INVALID);
         }
 
-        if (! $record->client->equals($client)
+        if (! $record->client->equals($client->client)
             || $record->isExpired($now)
             || ! $record->redirectUri->matches($redirectUri)
             || ! self::pkceSatisfied($record, $codeVerifier)
@@ -89,7 +90,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
             throw new InvalidGrantException(self::INVALID);
         }
 
-        $authorization = GrantedAuthorization::fromAuthorizationCode($record);
+        $authorization = GrantedAuthorization::fromAuthorizationCode($record, $client->confirmation);
         $refreshToken = null;
         if ($this->refreshTokenDue($authorization)) {
             $family = new RefreshTokenFamily(Uuid::v7(), $record->codeHash, $record->grantId, $now, $now->add($this->refreshTokenFamilyLifetime));

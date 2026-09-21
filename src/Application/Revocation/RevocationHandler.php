@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Token\AccessTokenVerifier;
 use Heidi\Oidc\Application\Token\TokenRequest;
+use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\TokenRevoked;
 use Heidi\Oidc\Domain\Token\RefreshToken;
@@ -46,12 +47,14 @@ final readonly class RevocationHandler
 
     /**
      * @param array<string, mixed> $parameters the form parameters of the request body
+     * @param ClientCertificate|null $certificate the certificate the caller presented at the TLS handshake (RFC 8705 §2)
      *
      * @throws OAuth2Exception invalid_client, invalid_request or unsupported_token_type
      */
-    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context): void
+    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null): void
     {
-        $caller = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->revocation, $authorizationHeader, $parameters, $context);
+        $caller = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->revocation, $authorizationHeader, $parameters, $context, $certificate)
+            ->client;
         $request = new TokenRequest($parameters);
         $token = $request->required('token');
         $request->optional('token_type_hint');

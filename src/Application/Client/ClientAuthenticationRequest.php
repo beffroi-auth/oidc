@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Application\Client;
 
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\ClientAssertion;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Exception\InvalidClientAssertionException;
@@ -15,10 +16,15 @@ use function sprintf;
 
 /**
  * One request at an endpoint that authenticates a client (RFC 6749 §2.3): the header it carries, the
- * form parameters it carries, and the URL of the endpoint that received it, which an assertion may name
- * as its audience (RFC 7523 §3). The parameters a client authentication reads are checked to be strings
- * as soon as the request is built: a request whose credentials are not strings is refused before
- * anything is read, and the audit trail keeps no identifier from it, because none of it can be trusted.
+ * form parameters it carries, the certificate its connection proved (RFC 8705 §2), and the URL of the
+ * endpoint that received it, which an assertion may name as its audience (RFC 7523 §3). The parameters a
+ * client authentication reads are checked to be strings as soon as the request is built: a request whose
+ * credentials are not strings is refused before anything is read, and the audit trail keeps no identifier
+ * from it, because none of it can be trusted.
+ *
+ * The constants below name what of a request a method reads. Two methods that read the same one are one
+ * mechanism of RFC 6749 §2.3 and not two, which is how the two mutual-TLS methods of RFC 8705 §2 can
+ * both take the one certificate the connection carries.
  */
 final class ClientAuthenticationRequest
 {
@@ -27,6 +33,16 @@ final class ClientAuthenticationRequest
      */
     private const array CREDENTIAL_PARAMETERS = ['client_id', 'client_secret', 'client_assertion', 'client_assertion_type'];
 
+    public const string AUTHORIZATION_HEADER = 'the Authorization header';
+
+    public const string BODY_SECRET = 'the client_secret parameter';
+
+    public const string ASSERTION = 'the client_assertion parameter';
+
+    public const string CERTIFICATE = 'the certificate of the connection';
+
+    public const string IDENTIFIER = 'the client_id parameter';
+
     private bool $assertionRead = false;
 
     private ?ClientAssertion $assertion = null;
@@ -34,6 +50,7 @@ final class ClientAuthenticationRequest
     /**
      * @param string $endpoint the absolute URL of the endpoint that received the request
      * @param array<string, mixed> $parameters the form parameters of the request body
+     * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake, null when it presented none, which is the ordinary case (RFC 8705 §2)
      *
      * @throws ClientAuthenticationFailure when a credential parameter is present and is not a string
      */
@@ -43,6 +60,7 @@ final class ClientAuthenticationRequest
         public readonly ?string $authorizationHeader,
         private readonly array $parameters,
         public readonly RequestContext $context,
+        public readonly ?ClientCertificate $certificate = null,
     ) {
         foreach (self::CREDENTIAL_PARAMETERS as $name) {
             $value = $parameters[$name] ?? null;

@@ -11,6 +11,7 @@ use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
+use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use WeakMap;
@@ -46,9 +47,10 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface
         private readonly PasswordHasherInterface $hasher,
         SignatureAlgorithmsInterface $algorithms,
         ClientAuthenticationMethodsInterface $methods,
+        CertificateReaderInterface $certificates,
     ) {
         foreach ($definitions as $clientId => $definition) {
-            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $algorithms, $methods);
+            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $algorithms, $methods, $certificates);
         }
         $this->clients = new WeakMap();
     }

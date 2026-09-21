@@ -19,6 +19,11 @@ final readonly class NoAuthentication implements AuthenticationMethodInterface
         return 'none';
     }
 
+    public function mechanism(): string
+    {
+        return ClientAuthenticationRequest::IDENTIFIER;
+    }
+
     public function authenticatesClient(): bool
     {
         return false;

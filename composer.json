@@ -16,6 +16,7 @@
     "require": {
         "php": ">=8.4",
         "heidi/core": "self.version",
+        "spomky-labs/pki-framework": "^1.2.1",
         "web-token/jwt-library": "^4.2"
     },
     "autoload": {

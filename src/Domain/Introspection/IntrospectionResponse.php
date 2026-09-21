@@ -74,6 +74,8 @@ final readonly class IntrospectionResponse
             ...$token->authentication->toClaims(),
             'sid' => $token->sessionId->toRfc4122(),
             'grant_id' => $token->grantId->toRfc4122(),
+            // RFC 8705 §3.2: a resource server reads here what it must ask the caller to present again
+            ...($token->confirmation?->toClaims() ?? []),
         ], null);
     }
 

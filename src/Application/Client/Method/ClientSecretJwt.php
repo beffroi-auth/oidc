@@ -48,6 +48,11 @@ final readonly class ClientSecretJwt implements AssertionMethodInterface, Secret
         return 'client_secret_jwt';
     }
 
+    public function mechanism(): string
+    {
+        return ClientAuthenticationRequest::ASSERTION;
+    }
+
     public function authenticatesClient(): bool
     {
         return true;

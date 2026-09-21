@@ -16,6 +16,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
+use Heidi\Oidc\Port\MutualTlsEndpointLocatorInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
 use Heidi\Oidc\Port\ServedLogoutChannelsInterface;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
@@ -44,6 +45,7 @@ final readonly class DiscoveryHandler
      */
     public function __construct(
         private EndpointLocatorInterface $endpoints,
+        private MutualTlsEndpointLocatorInterface $mutualTlsEndpoints,
         private ClaimsProviderInterface $claims,
         private ProvableMethodsInterface $provable,
         private ServedResponseModesInterface $responseModes,
@@ -76,6 +78,7 @@ final readonly class DiscoveryHandler
         return new ProviderMetadata(
             $tenant->issuer,
             $this->endpoints->locate($tenant),
+            $this->mutualTlsEndpoints->locateMutualTls($tenant),
             $scopes,
             $this->claims->supportedClaims(),
             $this->responseModes->servedResponseModes(),

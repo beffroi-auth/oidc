@@ -23,7 +23,8 @@ use Symfony\Component\Uid\Uuid;
  * names the code the token descends from, "userinfo_claims" what the client asked for by name (OIDC Core §5.5).
  * Nothing is stored: the token is its own record. An access token is read by resource servers, not by the
  * client, so it is signed with the algorithm the provider signs with by default, never the one the client
- * registered for its ID tokens.
+ * registered for its ID tokens. A token issued on a request that proved a key carries the "cnf" of
+ * RFC 7800 §3.1, which is what binds it to that key (RFC 8705 §3).
  */
 final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
 {
@@ -62,6 +63,9 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
         }
         $claims['sid'] = $authorization->session->id->toRfc4122();
         $claims[self::GRANT_ID] = $authorization->grantId->toRfc4122();
+        // RFC 8705 §3.1: what the client proved at the request this token answers, so that a resource
+        // server verifying the token offline knows what to ask its caller to present again
+        $claims = [...$claims, ...($authorization->confirmation?->toClaims() ?? [])];
 
         $jws = $this->signer->sign($authorization->tenant, $this->algorithms->defaultAlgorithm(), JwtPayload::encode($claims), [
             'typ' => self::TYPE,

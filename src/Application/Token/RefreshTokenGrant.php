@@ -6,7 +6,7 @@ namespace Heidi\Oidc\Application\Token;
 
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Application\Client\AuthenticatedClient;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Event\RefreshTokenReuseDetected;
 use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
@@ -44,14 +44,14 @@ final readonly class RefreshTokenGrant implements GrantInterface
         return GrantType::RefreshToken;
     }
 
-    public function grant(Client $client, TokenRequest $request, RequestContext $context): IssuedTokens
+    public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens
     {
         $now = $this->clock->now();
         $value = $request->required('refresh_token');
         $scopes = self::scopes($request->optional('scope'));
 
         $token = $this->refreshTokens->findByTokenHash(RefreshToken::hash($value));
-        if ($token === null || ! $token->client->equals($client) || $token->isRevoked()) {
+        if ($token === null || ! $token->client->equals($client->client) || $token->isRevoked()) {
             throw new InvalidGrantException(self::INVALID);
         }
         if ($token->isRotated()) {
@@ -68,7 +68,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
 
         $token->rotate($now);
         $this->refreshTokens->save($token);
-        $authorization = GrantedAuthorization::fromRefreshToken($token, $scopes);
+        $authorization = GrantedAuthorization::fromRefreshToken($token, $scopes, $client->confirmation);
         $successor = $this->issuer->refreshToken($token->family, $authorization, $now);
         $this->events->dispatch(new RefreshTokenRotated($token, $successor->token, $context));
 

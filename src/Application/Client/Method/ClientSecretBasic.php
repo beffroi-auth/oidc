@@ -39,6 +39,11 @@ final readonly class ClientSecretBasic implements SecretKeepingMethodInterface, 
         return 'client_secret_basic';
     }
 
+    public function mechanism(): string
+    {
+        return ClientAuthenticationRequest::AUTHORIZATION_HEADER;
+    }
+
     public function authenticatesClient(): bool
     {
         return true;

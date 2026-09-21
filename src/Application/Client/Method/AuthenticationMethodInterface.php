@@ -18,6 +18,16 @@ use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 interface AuthenticationMethodInterface extends ClientAuthenticationMethodInterface
 {
     /**
+     * What of the request this method reads, one of the names ClientAuthenticationRequest gives them.
+     * Two methods that read the same thing are one mechanism of RFC 6749 §2.3, whichever of them a
+     * client registered; two methods that read different things are two, and a request presenting both
+     * is refused.
+     *
+     * @return non-empty-string
+     */
+    public function mechanism(): string;
+
+    /**
      * The identifier the request claims under this method, null when the request does not present this
      * method at all.
      *
