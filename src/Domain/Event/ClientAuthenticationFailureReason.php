@@ -30,4 +30,19 @@ enum ClientAuthenticationFailureReason: string
     case UnexpectedMethod = 'unexpected_method';
 
     case InvalidSecret = 'invalid_secret';
+
+    /**
+     * RFC 7523 §3: the assertion does not verify, or a claim it must carry is missing or wrong.
+     */
+    case InvalidAssertion = 'invalid_assertion';
+
+    /**
+     * RFC 7523 §3: an assertion whose "jti" was already used inside its validity.
+     */
+    case ReplayedAssertion = 'replayed_assertion';
+
+    /**
+     * The keys of the client could not be read back from its "jwks_uri".
+     */
+    case UnreadableClientKeys = 'unreadable_client_keys';
 }

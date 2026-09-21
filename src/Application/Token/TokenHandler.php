@@ -13,6 +13,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnauthorizedClientException;
 use Heidi\Oidc\Exception\UnsupportedGrantTypeException;
+use Heidi\Oidc\Port\EndpointLocatorInterface;
 use function sprintf;
 
 /**
@@ -31,6 +32,7 @@ final readonly class TokenHandler
      */
     public function __construct(
         private ClientAuthenticator $clients,
+        private EndpointLocatorInterface $endpoints,
         iterable $grants,
     ) {
         $indexed = [];
@@ -50,7 +52,7 @@ final readonly class TokenHandler
      */
     public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context): TokenResponse
     {
-        $client = $this->clients->authenticate($tenant, $authorizationHeader, $parameters, $context);
+        $client = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->token, $authorizationHeader, $parameters, $context);
         $request = new TokenRequest($parameters);
 
         $grantType = GrantType::tryFrom($request->required('grant_type'));

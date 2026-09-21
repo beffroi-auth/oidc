@@ -8,13 +8,13 @@ use function array_map;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Token\GrantInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Discovery\ProviderMetadata;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
+use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
 use Heidi\Oidc\Port\ServedLogoutChannelsInterface;
@@ -25,7 +25,7 @@ use function in_array;
  * The discovery endpoint (OIDC Discovery §4, architecture §4.8): the issuer, the endpoints, what the claims
  * provider announces, the grants wired into the token endpoint (the same tagged grants TokenHandler
  * serves), the response modes the authorization endpoint answers in (the same ways of answering the
- * parser accepts), the client authentication methods ClientAuthenticator implements and the classes of
+ * parser accepts), the client authentication methods it is wired with and the classes of
  * the policy of the tenant the wired logins can prove (decision 0010), the ways of telling a client that
  * a session ended the integration wires, the algorithms it signs its JWS with; "offline_access" when the
  * refresh token grant is served.
@@ -47,6 +47,7 @@ final readonly class DiscoveryHandler
         private ClaimsProviderInterface $claims,
         private ProvableMethodsInterface $provable,
         private ServedResponseModesInterface $responseModes,
+        private ClientAuthenticationMethodsInterface $clientAuthenticationMethods,
         private ServedLogoutChannelsInterface $logoutChannels,
         private SignatureAlgorithmsInterface $algorithms,
         iterable $grants,
@@ -79,7 +80,7 @@ final readonly class DiscoveryHandler
             $this->claims->supportedClaims(),
             $this->responseModes->servedResponseModes(),
             $this->grantTypes,
-            ClientAuthenticator::methods(),
+            $this->clientAuthenticationMethods->clientAuthenticationMethods(),
             array_map(
                 static fn (AuthenticationContextClass $class): string => $class->value,
                 $tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods()),

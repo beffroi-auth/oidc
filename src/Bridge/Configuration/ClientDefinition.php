@@ -9,21 +9,24 @@ use function array_diff;
 use function array_keys;
 use function array_map;
 use BackedEnum;
-use Heidi\Core\Domain\Credential\PasswordHash;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\UnsupportedAlgorithmException;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Heidi\Oidc\Domain\Client\ClientJwks;
+use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Client\TokenEndpointAuthMethod;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
+use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use function implode;
 use function is_array;
 use function is_bool;
@@ -59,6 +62,8 @@ final readonly class ClientDefinition
         'backchannel_logout_session_required',
         'frontchannel_logout_uri',
         'frontchannel_logout_session_required',
+        'jwks',
+        'jwks_uri',
     ];
 
     /**
@@ -72,7 +77,7 @@ final readonly class ClientDefinition
         public string $name,
         #[SensitiveParameter]
         private ?string $secret,
-        public TokenEndpointAuthMethod $tokenEndpointAuthMethod,
+        public ClientAuthenticationMethodInterface $authenticationMethod,
         public array $redirectUris,
         public array $postLogoutRedirectUris,
         public array $grantTypes,
@@ -85,14 +90,17 @@ final readonly class ClientDefinition
         public bool $backChannelLogoutSessionRequired,
         public ?ClientUri $frontChannelLogoutUri,
         public bool $frontChannelLogoutSessionRequired,
+        public ?ClientJwks $jwks,
+        public ?ClientUri $jwksUri,
     ) {
     }
 
     /**
      * @param array<string, mixed> $definition the keys of architecture §5.1, in snake_case
      * @param SignatureAlgorithmsInterface $algorithms what the provider signs with: a client registers one of those names, or none and takes the default
+     * @param ClientAuthenticationMethodsInterface $methods what the provider authenticates clients with: a client registers one of those names
      */
-    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms): self
+    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms, ClientAuthenticationMethodsInterface $methods): self
     {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -109,7 +117,7 @@ final readonly class ClientDefinition
             }
         }
 
-        $method = self::enumCase($clientId, 'token_endpoint_auth_method', $definition['token_endpoint_auth_method'] ?? TokenEndpointAuthMethod::ClientSecretBasic->value, TokenEndpointAuthMethod::class);
+        $method = self::method($clientId, $definition['token_endpoint_auth_method'] ?? null, $methods);
 
         $requiresConsent = $definition['requires_consent'] ?? true;
         if (! is_bool($requiresConsent)) {
@@ -142,14 +150,17 @@ final readonly class ClientDefinition
 
         $accessTokenFormat = self::enumCase($clientId, 'access_token_format', $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value, AccessTokenFormat::class);
 
-        $backChannelLogoutUri = self::logoutUri($clientId, 'backchannel_logout_uri', $definition);
+        $jwks = self::jwks($clientId, $definition);
+        $jwksUri = self::clientUri($clientId, 'jwks_uri', $definition);
+
+        $backChannelLogoutUri = self::clientUri($clientId, 'backchannel_logout_uri', $definition);
         $backChannelLogoutSessionRequired = self::flag($clientId, 'backchannel_logout_session_required', $definition);
-        $frontChannelLogoutUri = self::logoutUri($clientId, 'frontchannel_logout_uri', $definition);
+        $frontChannelLogoutUri = self::clientUri($clientId, 'frontchannel_logout_uri', $definition);
         $frontChannelLogoutSessionRequired = self::flag($clientId, 'frontchannel_logout_session_required', $definition);
 
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired);
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri);
     }
 
     public function hasSecret(): bool
@@ -158,27 +169,29 @@ final readonly class ClientDefinition
     }
 
     /**
-     * As costly as hashing a password: once per process.
+     * The registered secret in the shape the method it registered verifies against. As costly as hashing
+     * a password when the method keeps a hash: once per process.
      *
-     * @throws LogicException for a public client
+     * @throws LogicException for a client whose method proves no secret
      */
-    public function hashSecret(PasswordHasherInterface $hasher): PasswordHash
+    public function keepSecret(PasswordHasherInterface $hasher): ClientSecretInterface
     {
-        if ($this->secret === null) {
-            throw new LogicException(sprintf('The client "%s" is public and has no secret to hash.', $this->clientId));
+        $method = $this->authenticationMethod;
+        if ($this->secret === null || ! $method instanceof SecretKeepingMethodInterface) {
+            throw new LogicException(sprintf('The client "%s" registers no secret to keep.', $this->clientId));
         }
 
-        return $hasher->hash($this->secret);
+        return $method->keep($this->secret, $hasher);
     }
 
-    public function toClient(Tenant $tenant, ?PasswordHash $secretHash): Client
+    public function toClient(Tenant $tenant, ?ClientSecretInterface $secret): Client
     {
         return new Client(
             $tenant,
             $this->clientId,
             $this->name,
-            $this->tokenEndpointAuthMethod,
-            $secretHash,
+            $this->authenticationMethod,
+            $secret,
             $this->redirectUris,
             $this->postLogoutRedirectUris,
             $this->grantTypes,
@@ -191,16 +204,60 @@ final readonly class ClientDefinition
             $this->backChannelLogoutSessionRequired,
             $this->frontChannelLogoutUri,
             $this->frontChannelLogoutSessionRequired,
+            $this->jwks,
+            $this->jwksUri,
         );
     }
 
     /**
-     * A URI the provider calls or loads when a session ends (Back-Channel Logout 1.0 §2.2, Front-Channel
-     * Logout 1.0 §3), read and validated as every other URI a client registers.
+     * The method the client registers, among those the provider is wired with (issue #98): a name
+     * nothing authenticates with fails at boot with the list of the wired ones, because the
+     * configuration tree cannot know that list.
+     */
+    private static function method(string $clientId, mixed $name, ClientAuthenticationMethodsInterface $methods): ClientAuthenticationMethodInterface
+    {
+        $wired = $methods->clientAuthenticationMethods();
+        if ($name === null) {
+            return $wired[0];
+        }
+        if (! is_string($name)) {
+            throw new InvalidArgumentException(sprintf('The token_endpoint_auth_method option of the client "%s" must be a string.', $clientId));
+        }
+        foreach ($wired as $method) {
+            if ($method->name() === $name) {
+                return $method;
+            }
+        }
+
+        throw new InvalidArgumentException(sprintf('The token_endpoint_auth_method option of the client "%s" must be one of: %s.', $clientId, implode(', ', array_map(static fn (ClientAuthenticationMethodInterface $method): string => $method->name(), $wired))));
+    }
+
+    /**
+     * The JWK Set a client publishes inline (RFC 7591 §2), read as the document it is.
      *
      * @param array<string, mixed> $definition
      */
-    private static function logoutUri(string $clientId, string $key, array $definition): ?ClientUri
+    private static function jwks(string $clientId, array $definition): ?ClientJwks
+    {
+        $jwks = $definition['jwks'] ?? null;
+        if ($jwks === null) {
+            return null;
+        }
+        if (! is_array($jwks)) {
+            throw new InvalidArgumentException(sprintf('The jwks option of the client "%s" must be a JWK Set (RFC 7517 section 5).', $clientId));
+        }
+
+        return ClientJwks::fromDocument($jwks);
+    }
+
+    /**
+     * A URI the provider calls or loads: where a logout token goes (Back-Channel Logout 1.0 §2.2), what
+     * the logout page frames (Front-Channel Logout 1.0 §3), where the keys of the client are read back
+     * from (RFC 7591 §2). Read and validated as every other URI a client registers.
+     *
+     * @param array<string, mixed> $definition
+     */
+    private static function clientUri(string $clientId, string $key, array $definition): ?ClientUri
     {
         $uri = $definition[$key] ?? null;
         if ($uri === null) {

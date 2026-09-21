@@ -20,6 +20,7 @@ use Heidi\Oidc\Exception\UnsupportedTokenTypeException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokenInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
+use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
@@ -35,6 +36,7 @@ final readonly class RevocationHandler
 {
     public function __construct(
         private ClientAuthenticator $clients,
+        private EndpointLocatorInterface $endpoints,
         private AccessTokenVerifier $verifier,
         private AccessTokenRepositoryInterface $accessTokens,
         private RefreshTokenRepositoryInterface $refreshTokens,
@@ -49,7 +51,7 @@ final readonly class RevocationHandler
      */
     public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context): void
     {
-        $caller = $this->clients->authenticate($tenant, $authorizationHeader, $parameters, $context);
+        $caller = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->revocation, $authorizationHeader, $parameters, $context);
         $request = new TokenRequest($parameters);
         $token = $request->required('token');
         $request->optional('token_type_hint');

@@ -6,14 +6,16 @@ namespace Heidi\Oidc\Domain\Discovery;
 
 use function array_filter;
 use function array_map;
+use function array_merge;
 use function array_unique;
 use function array_values;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
+use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
+use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
-use Heidi\Oidc\Domain\Client\TokenEndpointAuthMethod;
 use Heidi\Oidc\Domain\EndSession\LogoutChannel;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\JwtPayload;
@@ -63,9 +65,9 @@ final readonly class ProviderMetadata
     public array $grantTypesSupported;
 
     /**
-     * @var non-empty-list<TokenEndpointAuthMethod> no duplicate
+     * @var non-empty-list<ClientAuthenticationMethodInterface> no duplicate
      */
-    public array $tokenEndpointAuthMethodsSupported;
+    public array $clientAuthenticationMethodsSupported;
 
     /**
      * @var non-empty-list<string> no duplicate
@@ -92,7 +94,7 @@ final readonly class ProviderMetadata
      * @param list<string> $claimsSupported "sub" added if missing
      * @param list<ResponseMode> $responseModesSupported the modes the authorization endpoint answers in, at least one
      * @param list<GrantType> $grantTypesSupported the grants the token endpoint serves, at least one
-     * @param list<TokenEndpointAuthMethod> $tokenEndpointAuthMethodsSupported the methods the token endpoint takes, at least one
+     * @param list<ClientAuthenticationMethodInterface> $clientAuthenticationMethodsSupported the methods the endpoints that authenticate a client take, at least one
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
      * @param list<SignatureAlgorithmInterface> $signingAlgorithmsSupported the algorithms the provider signs its JWS with, at least one
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
@@ -105,7 +107,7 @@ final readonly class ProviderMetadata
         array $claimsSupported,
         array $responseModesSupported,
         array $grantTypesSupported,
-        array $tokenEndpointAuthMethodsSupported,
+        array $clientAuthenticationMethodsSupported,
         array $acrValuesSupported,
         array $signingAlgorithmsSupported,
         array $logoutChannelsSupported,
@@ -122,7 +124,12 @@ final readonly class ProviderMetadata
         if ($grantTypes === []) {
             throw new InvalidArgumentException('A provider serves at least one grant type (RFC 8414 section 2).');
         }
-        $methods = array_values(array_unique($tokenEndpointAuthMethodsSupported, SORT_REGULAR));
+        $methods = [];
+        foreach ($clientAuthenticationMethodsSupported as $method) {
+            if (! in_array($method->name(), array_map(static fn (ClientAuthenticationMethodInterface $kept): string => $kept->name(), $methods), true)) {
+                $methods[] = $method;
+            }
+        }
         if ($methods === []) {
             throw new InvalidArgumentException('A token endpoint takes at least one client authentication method (RFC 8414 section 2).');
         }
@@ -153,7 +160,7 @@ final readonly class ProviderMetadata
         $this->scopesSupported = $scopes;
         $this->claimsSupported = $claims;
         $this->grantTypesSupported = $grantTypes;
-        $this->tokenEndpointAuthMethodsSupported = $methods;
+        $this->clientAuthenticationMethodsSupported = $methods;
         $this->acrValuesSupported = $acrValues;
         $this->signingAlgorithmsSupported = $algorithms;
         $this->logoutChannelsSupported = array_values(array_unique($logoutChannelsSupported, SORT_REGULAR));
@@ -200,16 +207,19 @@ final readonly class ProviderMetadata
             'acr_values_supported' => $this->acrValuesSupported,
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => $this->algorithmNames(),
-            'token_endpoint_auth_methods_supported' => self::values($this->tokenEndpointAuthMethodsSupported),
+            'token_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
+            'token_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->clientAuthenticationMethodsSupported),
             'claims_supported' => $this->claimsSupported,
             'claims_parameter_supported' => true,
             'request_parameter_supported' => false,
             'request_uri_parameter_supported' => false,
             'code_challenge_methods_supported' => self::values(CodeChallengeMethod::cases()),
             'revocation_endpoint' => $this->endpoints->revocation,
-            'revocation_endpoint_auth_methods_supported' => self::values($this->tokenEndpointAuthMethodsSupported),
+            'revocation_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
+            'revocation_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->clientAuthenticationMethodsSupported),
             'introspection_endpoint' => $this->endpoints->introspection,
-            'introspection_endpoint_auth_methods_supported' => self::values($this->secretMethods()),
+            'introspection_endpoint_auth_methods_supported' => $this->methodNames($this->authenticatingMethods()),
+            'introspection_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->authenticatingMethods()),
             'introspection_signing_alg_values_supported' => $this->algorithmNames(),
             'authorization_response_iss_parameter_supported' => true,
             'end_session_endpoint' => $this->endpoints->endSession,
@@ -248,17 +258,49 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * RFC 7662 §2.1: the methods that prove a secret, among those the token endpoint takes.
+     * RFC 7662 §2.1: the methods that authenticate the caller, among those the provider takes; a public
+     * client has none and the introspection endpoint does not serve it.
      *
-     * @return list<TokenEndpointAuthMethod>
+     * @return list<ClientAuthenticationMethodInterface>
      */
-    private function secretMethods(): array
+    private function authenticatingMethods(): array
     {
-        return array_values(array_filter($this->tokenEndpointAuthMethodsSupported, static fn (TokenEndpointAuthMethod $method): bool => $method->usesSecret()));
+        return array_values(array_filter($this->clientAuthenticationMethodsSupported, static fn (ClientAuthenticationMethodInterface $method): bool => $method->authenticatesClient()));
     }
 
     /**
-     * @param list<ResponseMode|GrantType|TokenEndpointAuthMethod|CodeChallengeMethod> $cases
+     * @param list<ClientAuthenticationMethodInterface> $methods
+     *
+     * @return list<string>
+     */
+    private function methodNames(array $methods): array
+    {
+        return array_map(static fn (ClientAuthenticationMethodInterface $method): string => $method->name(), $methods);
+    }
+
+    /**
+     * OIDC Discovery §3 and RFC 8414 §2: the "alg" the assertions of the wired methods may be signed
+     * with, each named once, in the order the methods are wired. A provider that takes no assertion
+     * announces an empty list rather than a name it would refuse.
+     *
+     * @param list<ClientAuthenticationMethodInterface> $methods
+     *
+     * @return list<string>
+     */
+    private function assertionSigningAlgorithms(array $methods): array
+    {
+        $algorithms = [];
+        foreach ($methods as $method) {
+            if ($method instanceof AssertionMethodInterface) {
+                $algorithms = array_merge($algorithms, $method->assertionSigningAlgorithms());
+            }
+        }
+
+        return array_values(array_unique($algorithms));
+    }
+
+    /**
+     * @param list<ResponseMode|GrantType|CodeChallengeMethod> $cases
      *
      * @return list<string>
      */

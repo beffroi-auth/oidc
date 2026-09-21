@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Domain\Client;
 
 use function array_any;
-use Heidi\Core\Domain\Credential\PasswordHash;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Scope\Scope;
@@ -48,12 +47,14 @@ final readonly class Client
     public array $allowedScopes;
 
     /**
-     * @param PasswordHash|null $secretHash null for a public client
+     * @param ClientSecretInterface|null $secret the shared secret the registered method needs, in the shape it verifies against; null when the method needs none
      * @param list<RedirectUri> $redirectUris at least one
      * @param list<RedirectUri> $postLogoutRedirectUris
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
+     * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
+     * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
      * @param SignatureAlgorithmInterface|null $idTokenSignedResponseAlg the algorithm the client registered its ID tokens and its logout tokens in (OIDC Registration §2), null for a client that registered none: the provider signs them with its default
      * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
      * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
@@ -64,9 +65,9 @@ final readonly class Client
         public Tenant $tenant,
         public string $clientId,
         public string $name,
-        public TokenEndpointAuthMethod $tokenEndpointAuthMethod,
+        public ClientAuthenticationMethodInterface $authenticationMethod,
         #[SensitiveParameter]
-        public ?PasswordHash $secretHash,
+        public ?ClientSecretInterface $secret,
         array $redirectUris,
         array $postLogoutRedirectUris = [],
         array $grantTypes = [GrantType::AuthorizationCode],
@@ -79,9 +80,14 @@ final readonly class Client
         public bool $backChannelLogoutSessionRequired = false,
         public ?ClientUri $frontChannelLogoutUri = null,
         public bool $frontChannelLogoutSessionRequired = false,
+        public ?ClientJwks $jwks = null,
+        public ?ClientUri $jwksUri = null,
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $tokenEndpointAuthMethod, $secretHash !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired);
+        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null);
+        if ($secret !== null && $authenticationMethod instanceof SecretBearingMethodInterface && ! $authenticationMethod->accepts($secret)) {
+            throw new InvalidArgumentException(sprintf('The secret of the client "%s" is not kept in a shape %s verifies against.', $clientId, $authenticationMethod->name()));
+        }
 
         $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
         $this->redirectUris = self::unique($redirectUris, $sameUri);
@@ -100,7 +106,7 @@ final readonly class Client
     public static function assertConsistent(
         string $clientId,
         string $name,
-        TokenEndpointAuthMethod $tokenEndpointAuthMethod,
+        ClientAuthenticationMethodInterface $authenticationMethod,
         bool $hasSecret,
         array $redirectUris,
         array $grantTypes,
@@ -110,6 +116,8 @@ final readonly class Client
         bool $backChannelLogoutSessionRequired = false,
         bool $hasFrontChannelLogoutUri = false,
         bool $frontChannelLogoutSessionRequired = false,
+        bool $hasJwks = false,
+        bool $hasJwksUri = false,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -117,11 +125,17 @@ final readonly class Client
         if ($name === '') {
             throw new InvalidArgumentException(sprintf('The client "%s" has a name.', $clientId));
         }
-        if ($tokenEndpointAuthMethod->usesSecret() && ! $hasSecret) {
-            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s and therefore needs a secret.', $clientId, $tokenEndpointAuthMethod->value));
+        if ($authenticationMethod instanceof SecretBearingMethodInterface && ! $hasSecret) {
+            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s and therefore needs a secret.', $clientId, $authenticationMethod->name()));
         }
-        if (! $tokenEndpointAuthMethod->usesSecret() && $hasSecret) {
-            throw new InvalidArgumentException(sprintf('The client "%s" is public (token endpoint authentication method "none") and cannot hold a secret.', $clientId));
+        if (! $authenticationMethod instanceof SecretBearingMethodInterface && $hasSecret) {
+            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which proves no shared secret, and therefore cannot hold a secret.', $clientId, $authenticationMethod->name()));
+        }
+        if ($hasJwks && $hasJwksUri) {
+            throw new InvalidArgumentException(sprintf('The client "%s" publishes its keys either inline in "jwks" or behind a "jwks_uri", never both (RFC 7591 section 2).', $clientId));
+        }
+        if ($authenticationMethod instanceof KeyBearingMethodInterface && ! $hasJwks && ! $hasJwksUri) {
+            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which verifies a signature of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId, $authenticationMethod->name()));
         }
         if ($redirectUris === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" registers at least one redirect URI (RFC 6749 §3.1.2.2).', $clientId));
@@ -135,7 +149,7 @@ final readonly class Client
         if ($allowedScopes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one scope.', $clientId));
         }
-        if (! $requiresPkce && ! $tokenEndpointAuthMethod->usesSecret()) {
+        if (! $requiresPkce && ! $authenticationMethod->authenticatesClient()) {
             throw new InvalidArgumentException(sprintf('The client "%s" is public and must use PKCE (RFC 9700 section 2.1.1): requires_pkce cannot be false.', $clientId));
         }
         if ($backChannelLogoutSessionRequired && ! $hasBackChannelLogoutUri) {
@@ -161,7 +175,7 @@ final readonly class Client
      */
     public function isPublic(): bool
     {
-        return ! $this->tokenEndpointAuthMethod->usesSecret();
+        return ! $this->authenticationMethod->authenticatesClient();
     }
 
     /**
