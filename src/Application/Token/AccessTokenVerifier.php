@@ -34,16 +34,16 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Verifies an access token of this provider in either shape (architecture §4.6): a JWS the way RFC 9068
  * §4 tells a resource server to, every claim the issuer writes read strictly; an opaque one by the record
- * kept under its hash. The shape is told from the token itself (a dot), never from a hint. Whether the
- * grant is still alive is asked once, in AccessTokenInspector. Every failure is invalid_token (RFC 6750 §3.1).
+ * kept under its hash. The shape is told from the token itself (a dot), never from a hint. What the
+ * provider knows beyond the token, whether the session has ended, whether the grant is still alive and
+ * whether the user is still served, is asked once and for both shapes in AccessTokenInspector. Every
+ * failure is invalid_token (RFC 6750 §3.1).
  */
 final readonly class AccessTokenVerifier
 {
     private const string NOT_ISSUED_HERE = 'The access token is not an access token issued by this provider.';
 
     private const string EXPIRED = 'The access token expired.';
-
-    private const string REVOKED = 'The access token was revoked.';
 
     /**
      * Deeper than the lists of strings ("amr", "userinfo_claims") was not issued here.
@@ -78,9 +78,6 @@ final readonly class AccessTokenVerifier
         $token = $this->storedTokens->find($accessToken);
         if ($token === null || ! $token->tenant->equals($tenant)) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
-        }
-        if ($token->session->hasEnded()) {
-            throw new InvalidTokenException(self::REVOKED);
         }
         if ($token->isExpired($now)) {
             throw new InvalidTokenException(self::EXPIRED);
