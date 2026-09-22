@@ -6,6 +6,8 @@ namespace Heidi\Oidc\Bridge\Configuration;
 
 use function array_key_exists;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
+use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
@@ -50,9 +52,11 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
         SignatureAlgorithmsInterface $algorithms,
         ClientAuthenticationMethodsInterface $methods,
         CertificateReaderInterface $certificates,
+        KeyEncryptionAlgorithmsInterface $keyEncryption,
+        ContentEncryptionAlgorithmsInterface $contentEncryption,
     ) {
         foreach ($definitions as $clientId => $definition) {
-            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $algorithms, $methods, $certificates);
+            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $algorithms, $methods, $certificates, $keyEncryption, $contentEncryption);
         }
         $this->clients = new WeakMap();
     }

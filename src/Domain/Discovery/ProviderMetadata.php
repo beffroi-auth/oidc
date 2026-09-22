@@ -94,12 +94,12 @@ final readonly class ProviderMetadata
     /**
      * @var list<KeyEncryptionAlgorithmInterface> no duplicate
      */
-    public array $requestObjectEncryptionAlgorithmsSupported;
+    public array $encryptionAlgorithmsSupported;
 
     /**
      * @var list<ContentEncryptionAlgorithmInterface> no duplicate
      */
-    public array $requestObjectEncryptionMethodsSupported;
+    public array $encryptionMethodsSupported;
 
     /**
      * @var array<string, string>
@@ -115,8 +115,8 @@ final readonly class ProviderMetadata
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
      * @param list<SignatureAlgorithmInterface> $signingAlgorithmsSupported the algorithms the provider signs its JWS with, at least one
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
-     * @param list<KeyEncryptionAlgorithmInterface> $requestObjectEncryptionAlgorithmsSupported the "alg" a client may encrypt a request object to this provider with, none of them where nothing is wired
-     * @param list<ContentEncryptionAlgorithmInterface> $requestObjectEncryptionMethodsSupported the "enc" it may encrypt its payload with, none of them where nothing is wired
+     * @param list<KeyEncryptionAlgorithmInterface> $encryptionAlgorithmsSupported the "alg" the provider encrypts with and is encrypted to with, none of them where nothing is wired
+     * @param list<ContentEncryptionAlgorithmInterface> $encryptionMethodsSupported the "enc" a payload is encrypted with, none of them where nothing is wired
      * @param ProviderEndpoints|null $mutualTlsEndpoints the same endpoints where a client presenting a certificate reaches them (RFC 8705 §5), null when no listener of the deployment asks for one
      * @param bool $requiresPushedAuthorizationRequests whether every client of the tenant only starts an authorization request by pushing it (RFC 9126 §5)
      * @param bool $acceptsUnsignedRequestObjects whether a client of the tenant registered "request_object_signing_alg": "none" (OIDC Registration §2), which is what announces "none" beside the algorithms
@@ -136,8 +136,8 @@ final readonly class ProviderMetadata
         array $acrValuesSupported,
         array $signingAlgorithmsSupported,
         array $logoutChannelsSupported,
-        array $requestObjectEncryptionAlgorithmsSupported,
-        array $requestObjectEncryptionMethodsSupported,
+        array $encryptionAlgorithmsSupported,
+        array $encryptionMethodsSupported,
         public int $maxAge,
     ) {
         if ($maxAge < 0) {
@@ -191,8 +191,8 @@ final readonly class ProviderMetadata
         $this->acrValuesSupported = $acrValues;
         $this->signingAlgorithmsSupported = $algorithms;
         $this->logoutChannelsSupported = array_values(array_unique($logoutChannelsSupported, SORT_REGULAR));
-        $this->requestObjectEncryptionAlgorithmsSupported = array_values(array_unique($requestObjectEncryptionAlgorithmsSupported, SORT_REGULAR));
-        $this->requestObjectEncryptionMethodsSupported = array_values(array_unique($requestObjectEncryptionMethodsSupported, SORT_REGULAR));
+        $this->encryptionAlgorithmsSupported = array_values(array_unique($encryptionAlgorithmsSupported, SORT_REGULAR));
+        $this->encryptionMethodsSupported = array_values(array_unique($encryptionMethodsSupported, SORT_REGULAR));
         $this->headers = [
             'Cache-Control' => sprintf('public, max-age=%d', $maxAge),
         ];
@@ -218,7 +218,8 @@ final readonly class ProviderMetadata
 
     /**
      * In the order of OIDC Discovery §3, then RFC 8414 §2, RFC 9126 §5, RFC 9701 §6, RFC 9207 §3,
-     * RP-Initiated Logout §2.1, RFC 8705 §3.3 and §5, RFC 9449 §5.1, JARM §3.
+     * RP-Initiated Logout §2.1, RFC 8705 §3.3 and §5, RFC 9449 §5.1, JARM §3. The members that say what
+     * is encrypted come in pairs, an "alg" and an "enc", and are named by the document they describe.
      *
      * @return array<string, mixed>
      */
@@ -237,6 +238,11 @@ final readonly class ProviderMetadata
             'acr_values_supported' => $this->acrValuesSupported,
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => $this->algorithmNames(),
+            ...$this->encryptionOf('id_token_encryption'),
+            // OIDC Discovery §3 and OIDC Core §5.3.2: a client may have the UserInfo answer as a JWT
+            // signed by the tenant, encrypted, or both; one that registers none of these keeps the JSON
+            'userinfo_signing_alg_values_supported' => $this->algorithmNames(),
+            ...$this->encryptionOf('userinfo_encryption'),
             'token_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
             'token_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->clientAuthenticationMethodsSupported),
             'claims_supported' => $this->claimsSupported,
@@ -249,7 +255,7 @@ final readonly class ProviderMetadata
             'request_uri_parameter_supported' => true,
             'require_request_uri_registration' => true,
             'request_object_signing_alg_values_supported' => $this->requestObjectSigningAlgorithms(),
-            ...$this->requestObjectEncryption(),
+            ...$this->encryptionOf('request_object_encryption'),
             'code_challenge_methods_supported' => self::values(CodeChallengeMethod::cases()),
             'revocation_endpoint' => $this->endpoints->revocation,
             'revocation_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
@@ -302,8 +308,9 @@ final readonly class ProviderMetadata
 
     /**
      * JARM §3: what a signed authorization response may be signed with, which is what the provider signs
-     * every other JWS with. A deployment that wires no signed mode announces nothing at all here rather
-     * than an empty list.
+     * every other JWS with, and what it may be encrypted to a key of the client with. A deployment that
+     * wires no signed mode announces nothing at all here rather than empty lists: there is no answer to
+     * sign, so there is none to encrypt either.
      *
      * @return array<string, mixed>
      */
@@ -311,6 +318,7 @@ final readonly class ProviderMetadata
     {
         return $this->signsAnswers() ? [
             'authorization_signing_alg_values_supported' => $this->algorithmNames(),
+            ...$this->encryptionOf('authorization_encryption'),
         ] : [];
     }
 
@@ -335,22 +343,27 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * OIDC Discovery §3: what a client may encrypt a request object to this provider with, the key
-     * management algorithms and the content encryption ones the provider is wired with. The two travel
-     * together, an "alg" opening nothing without an "enc" and the other way round, so a deployment that
-     * wires neither announces neither rather than two empty lists.
+     * OIDC Discovery §3: what is encrypted, and with what. The key management algorithms and the content
+     * encryption ones the provider is wired with answer for every kind of document at once, because the
+     * provider opens and mints them all with the same list: a request object a client encrypts to it, and
+     * an ID token, a UserInfo answer and a signed authorization response it encrypts to a key of the
+     * client. The two lists travel together, an "alg" encrypting nothing without an "enc" and the other
+     * way round, so a deployment that wires neither announces none of these members rather than pairs of
+     * empty lists a client would read as a promise.
+     *
+     * @param non-empty-string $member the kind of document, as the registry of OIDC Discovery §3 names it
      *
      * @return array<string, mixed>
      */
-    private function requestObjectEncryption(): array
+    private function encryptionOf(string $member): array
     {
-        if ($this->requestObjectEncryptionAlgorithmsSupported === [] || $this->requestObjectEncryptionMethodsSupported === []) {
+        if ($this->encryptionAlgorithmsSupported === [] || $this->encryptionMethodsSupported === []) {
             return [];
         }
 
         return [
-            'request_object_encryption_alg_values_supported' => array_map(static fn (KeyEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->requestObjectEncryptionAlgorithmsSupported),
-            'request_object_encryption_enc_values_supported' => array_map(static fn (ContentEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->requestObjectEncryptionMethodsSupported),
+            $member . '_alg_values_supported' => array_map(static fn (KeyEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->encryptionAlgorithmsSupported),
+            $member . '_enc_values_supported' => array_map(static fn (ContentEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->encryptionMethodsSupported),
         ];
     }
 

@@ -7,6 +7,8 @@ namespace Heidi\Oidc\Domain\Client;
 use function array_any;
 use function array_find;
 use function hash_equals;
+use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
+use Heidi\Core\Domain\Key\KeyUse;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
@@ -78,6 +80,48 @@ final readonly class ClientJwks
     public function holds(string $keyId): bool
     {
         return array_any($this->keys, static fn (array $key): bool => ($key['kid'] ?? null) === $keyId);
+    }
+
+    /**
+     * The key of this set a JWE under that algorithm is addressed to, or null when the client publishes
+     * none that fits. A key is taken at its word (RFC 7517 §4.2, §4.4): one that says it signs never
+     * receives a JWE, one that names an "alg" receives only what that name says, and the key type has to
+     * be the one the algorithm takes. A key that names the algorithm wins over one that only says it is
+     * for encryption, which wins over one that says neither, and the first published wins inside each of
+     * those three, so a client that publishes several chooses by saying more about the one it wants.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function encryptionKeyFor(KeyEncryptionAlgorithmInterface $algorithm): ?array
+    {
+        $named = null;
+        $forEncryption = null;
+        $unmarked = null;
+        foreach ($this->keys as $key) {
+            if (($key['kty'] ?? null) !== $algorithm->keyType()) {
+                continue;
+            }
+            $use = $key['use'] ?? null;
+            if ($use !== null && $use !== KeyUse::Encryption->value) {
+                continue;
+            }
+            $registered = $key['alg'] ?? null;
+            if ($registered !== null) {
+                if ($registered === $algorithm->name()) {
+                    $named ??= $key;
+                }
+
+                continue;
+            }
+            if ($use === KeyUse::Encryption->value) {
+                $forEncryption ??= $key;
+
+                continue;
+            }
+            $unmarked ??= $key;
+        }
+
+        return $named ?? $forEncryption ?? $unmarked;
     }
 
     /**

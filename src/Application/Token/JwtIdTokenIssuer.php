@@ -6,11 +6,10 @@ namespace Heidi\Oidc\Application\Token;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Port\JwsSignerInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
 use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
-use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Domain\Token\TokenHash;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\IdTokenIssuerInterface;
@@ -22,11 +21,15 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  * always present, "at_hash" of the access token of the same response, the "claims.id_token" of §5.5 added
  * from the claims provider. The protocol claims win over a provider's. No "typ" header: a resource server
  * requiring "at+jwt" refuses it, which is the point.
+ *
+ * A client that registered an encryption receives the signed token inside a JWE addressed to one of its
+ * keys (§3.1.3.7), which is the same two steps as for the UserInfo answer and the signed authorization
+ * response and is written once, in ClientDocumentIssuer.
  */
 final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 {
     public function __construct(
-        private JwsSignerInterface $signer,
+        private ClientDocumentIssuer $documents,
         private SubjectIdentifierResolverInterface $subjects,
         private ClaimsProviderInterface $claims,
         private SignatureAlgorithmsInterface $algorithms,
@@ -36,7 +39,8 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 
     public function issue(GrantedAuthorization $authorization, AccessToken $accessToken, DateTimeImmutable $now): string
     {
-        $algorithm = $authorization->client->idTokenSignedResponseAlg ?? $this->algorithms->defaultAlgorithm();
+        $format = $authorization->client->idToken;
+        $algorithm = $format->signature ?? $this->algorithms->defaultAlgorithm();
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
             'sub' => $this->subjects->resolve($authorization->user, $authorization->client)
@@ -61,6 +65,6 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
             $claims += $this->claims->claims($authorization->user, [], $requested);
         }
 
-        return $this->signer->sign($authorization->tenant, $algorithm, JwtPayload::encode($claims));
+        return $this->documents->issue($authorization->client, $format, $claims);
     }
 }

@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Application\UserInfo;
 use function array_fill_keys;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
 use Heidi\Oidc\Application\Token\AccessTokenInspector;
 use Heidi\Oidc\Domain\Authorization\ClaimRequest;
@@ -36,11 +37,16 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  * it proves another or nothing. A token bound to a key is refused as soon as it is presented as a bearer
  * token, before anything of it is read: the scheme is part of how it is presented (RFC 9449 §7.1).
  * Whoever steals a bound token holds bytes that open nothing.
+ *
+ * The answer is the plain JSON unless the client registered a signature or an encryption for it (§5.3.2),
+ * in which case it is a JWT carrying the same claims plus the "iss" and the "aud" that tell a client who
+ * wrote them and for whom. Signed then encrypted, as an ID token is and in the same place.
  */
 final readonly class UserInfoHandler
 {
     public function __construct(
         private AccessTokenInspector $tokens,
+        private ClientDocumentIssuer $documents,
         private DpopProofVerifier $proofs,
         private EndpointLocatorInterface $endpoints,
         private SubjectIdentifierResolverInterface $subjects,
@@ -80,11 +86,20 @@ final readonly class UserInfoHandler
         $user = $inspected->user;
 
         $requested = array_fill_keys($token->userinfoClaims, new ClaimRequest());
+        $client = $token->client;
+        $subject = $this->subjects->resolve($user, $client)
+            ->value;
+        $claims = UserInfoResponse::claimsOf($subject, $this->claims->claims($user, $token->scopes, $requested));
+        $format = $client->userInfo;
+        if ($format->isPlain()) {
+            return UserInfoResponse::json($subject, $claims);
+        }
+        // OIDC Core §5.3.2: a JWT answer names who wrote it and for whom, which the JSON one has no room to say.
+        $claims += [
+            'iss' => (string) $tenant->issuer,
+            'aud' => $client->clientId,
+        ];
 
-        return new UserInfoResponse(
-            $this->subjects->resolve($user, $token->client)
-                ->value,
-            $this->claims->claims($user, $token->scopes, $requested),
-        );
+        return UserInfoResponse::jwt($subject, $claims, $this->documents->issue($client, $format, $claims));
     }
 }

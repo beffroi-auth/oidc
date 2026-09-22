@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Bridge\Configuration;
 
+use function array_any;
 use function array_column;
 use function array_diff;
 use function array_keys;
 use function array_map;
 use BackedEnum;
+use Heidi\Core\Domain\Key\ContentEncryptionAlgorithmInterface;
+use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\UnsupportedAlgorithmException;
+use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
+use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
@@ -29,6 +34,8 @@ use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Heidi\Oidc\Domain\Client\ResponseEncryption;
+use Heidi\Oidc\Domain\Client\ResponseFormat;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
@@ -64,7 +71,14 @@ final readonly class ClientDefinition
         'token_endpoint_auth_method',
         'requires_consent',
         'id_token_signed_response_alg',
+        'id_token_encrypted_response_alg',
+        'id_token_encrypted_response_enc',
+        'userinfo_signed_response_alg',
+        'userinfo_encrypted_response_alg',
+        'userinfo_encrypted_response_enc',
         'authorization_signed_response_alg',
+        'authorization_encrypted_response_alg',
+        'authorization_encrypted_response_enc',
         'requires_pkce',
         'require_pushed_authorization_requests',
         'access_token_format',
@@ -97,8 +111,9 @@ final readonly class ClientDefinition
         public array $grantTypes,
         public array $allowedScopes,
         public bool $requiresConsent,
-        public SignatureAlgorithmInterface $idTokenSignedResponseAlg,
-        public SignatureAlgorithmInterface $authorizationSignedResponseAlg,
+        public ResponseFormat $idToken,
+        public ResponseFormat $userInfo,
+        public ResponseFormat $authorizationResponse,
         public bool $requiresPkce,
         public bool $requiresPushedAuthorizationRequests,
         public AccessTokenFormat $accessTokenFormat,
@@ -117,10 +132,12 @@ final readonly class ClientDefinition
     /**
      * @param array<string, mixed> $definition the keys of architecture §5.1, in snake_case
      * @param SignatureAlgorithmsInterface $algorithms what the provider signs with: a client registers one of those names, or none and takes the default
+     * @param KeyEncryptionAlgorithmsInterface $keyEncryption what the provider encrypts a document to a client with: a client registers one of those names, or none and receives nothing encrypted
+     * @param ContentEncryptionAlgorithmsInterface $contentEncryption what the payload of such a document is encrypted with
      * @param ClientAuthenticationMethodsInterface $methods what the provider authenticates clients with: a client registers one of those names
      * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
      */
-    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms, ClientAuthenticationMethodsInterface $methods, CertificateReaderInterface $certificates): self
+    public static function fromArray(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms, ClientAuthenticationMethodsInterface $methods, CertificateReaderInterface $certificates, KeyEncryptionAlgorithmsInterface $keyEncryption, ContentEncryptionAlgorithmsInterface $contentEncryption): self
     {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -158,8 +175,19 @@ final readonly class ClientDefinition
         $postLogoutRedirectUris = array_map(static fn (string $uri): RedirectUri => new RedirectUri($uri), self::stringList($clientId, 'post_logout_redirect_uris', $definition['post_logout_redirect_uris'] ?? []));
         $grantTypes = array_map(static fn (string $grant): GrantType => self::enumCase($clientId, 'grant_types', $grant, GrantType::class), self::stringList($clientId, 'grant_types', $definition['grant_types'] ?? [GrantType::AuthorizationCode->value, GrantType::RefreshToken->value]));
         $allowedScopes = array_map(static fn (string $scope): Scope => new Scope($scope), self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']));
-        $algorithm = self::algorithm($clientId, 'id_token_signed_response_alg', $definition, $algorithms);
-        $authorizationResponseAlgorithm = self::algorithm($clientId, 'authorization_signed_response_alg', $definition, $algorithms);
+        $idToken = ResponseFormat::signed(
+            self::algorithm($clientId, 'id_token_signed_response_alg', $definition, $algorithms),
+            self::encryption($clientId, 'id_token', $definition, $keyEncryption, $contentEncryption),
+        );
+        $authorizationResponse = ResponseFormat::signed(
+            self::algorithm($clientId, 'authorization_signed_response_alg', $definition, $algorithms),
+            self::encryption($clientId, 'authorization', $definition, $keyEncryption, $contentEncryption),
+        );
+        $userInfoEncryption = self::encryption($clientId, 'userinfo', $definition, $keyEncryption, $contentEncryption);
+        $userInfoSignature = $definition['userinfo_signed_response_alg'] ?? null;
+        $userInfo = $userInfoSignature === null
+            ? ResponseFormat::unsigned($userInfoEncryption)
+            : ResponseFormat::signed(self::algorithm($clientId, 'userinfo_signed_response_alg', $definition, $algorithms), $userInfoEncryption);
 
         $requiresPushedAuthorizationRequests = self::flag($clientId, 'require_pushed_authorization_requests', $definition);
 
@@ -178,9 +206,13 @@ final readonly class ClientDefinition
         $requestObjectSigning = self::requestObjectSigning($clientId, $definition['request_object_signing_alg'] ?? null, $algorithms);
         $requestUris = array_map(static fn (string $uri): ClientUri => new ClientUri($uri), self::stringList($clientId, 'request_uris', $definition['request_uris'] ?? []));
 
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning);
+        $encrypted = [$idToken, $userInfo, $authorizationResponse];
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning, array_any($encrypted, static fn (ResponseFormat $format): bool => $format->isEncrypted()));
+        foreach ($encrypted as $format) {
+            self::assertAddressable($clientId, $format, $jwks);
+        }
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $authorizationResponseAlgorithm, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity, $requestObjectSigning, $requestUris);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $idToken, $userInfo, $authorizationResponse, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity, $requestObjectSigning, $requestUris);
     }
 
     /**
@@ -204,6 +236,67 @@ final readonly class ClientDefinition
         } catch (UnsupportedAlgorithmException $exception) {
             throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be one of: %s.', $option, $clientId, implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all()))), 0, $exception);
         }
+    }
+
+    /**
+     * The pair a client registers to have one kind of document encrypted for it (OIDC Registration §2,
+     * JARM §3): the "alg" the content encryption key is wrapped under, and the "enc" the payload is
+     * encrypted with. Both or neither, and never one alone: §2 lets an "enc" be left out and defaults it
+     * to "A128CBC-HS256", which this provider is not wired with, so taking that default would accept at
+     * boot a registration that fails on the first document. Written once for the three kinds, so that
+     * they cannot read their names differently.
+     *
+     * @param string $prefix the kind of document, as the registration names it
+     * @param array<string, mixed> $definition
+     */
+    private static function encryption(string $clientId, string $prefix, array $definition, KeyEncryptionAlgorithmsInterface $keyEncryption, ContentEncryptionAlgorithmsInterface $contentEncryption): ?ResponseEncryption
+    {
+        $algorithmOption = $prefix . '_encrypted_response_alg';
+        $methodOption = $prefix . '_encrypted_response_enc';
+        $algorithmName = $definition[$algorithmOption] ?? null;
+        $methodName = $definition[$methodOption] ?? null;
+        if ($algorithmName === null && $methodName === null) {
+            return null;
+        }
+        if ($algorithmName === null || $methodName === null) {
+            throw new InvalidArgumentException(sprintf('The client "%s" registers %s without %s; a document is encrypted to a key under an "alg" and its payload under an "enc", and this provider takes no default for either.', $clientId, $algorithmName === null ? $methodOption : $algorithmOption, $algorithmName === null ? $algorithmOption : $methodOption));
+        }
+        if (! is_string($algorithmName) || ! is_string($methodName)) {
+            throw new InvalidArgumentException(sprintf('The %s and %s options of the client "%s" must be strings.', $algorithmOption, $methodOption, $clientId));
+        }
+
+        try {
+            $algorithm = $keyEncryption->named($algorithmName);
+        } catch (UnsupportedAlgorithmException $exception) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be one of: %s.', $algorithmOption, $clientId, implode(', ', array_map(static fn (KeyEncryptionAlgorithmInterface $wired): string => $wired->name(), $keyEncryption->all()))), 0, $exception);
+        }
+
+        try {
+            $method = $contentEncryption->named($methodName);
+        } catch (UnsupportedAlgorithmException $exception) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be one of: %s.', $methodOption, $clientId, implode(', ', array_map(static fn (ContentEncryptionAlgorithmInterface $wired): string => $wired->name(), $contentEncryption->all()))), 0, $exception);
+        }
+
+        return new ResponseEncryption($algorithm, $method);
+    }
+
+    /**
+     * A client that asks for an encrypted document publishes a key such a document can be addressed to.
+     * A set given inline is read here and must hold one; a set behind a "jwks_uri" is read when a document
+     * is minted, and all a boot can ask of it is that the client publishes one somewhere, which the
+     * consistency rules of the client do.
+     */
+    private static function assertAddressable(string $clientId, ResponseFormat $format, ?ClientJwks $jwks): void
+    {
+        $encryption = $format->encryption;
+        if ($encryption === null || $jwks === null) {
+            return;
+        }
+        if ($jwks->encryptionKeyFor($encryption->algorithm) !== null) {
+            return;
+        }
+
+        throw new InvalidArgumentException(sprintf('The client "%s" registers a response encrypted under "%s" but publishes no key it can be addressed to: its "jwks" holds no %s key that is not reserved for signing.', $clientId, $encryption->algorithm->name(), $encryption->algorithm->keyType()));
     }
 
     public function hasSecret(): bool
@@ -240,7 +333,7 @@ final readonly class ClientDefinition
             $this->grantTypes,
             $this->allowedScopes,
             $this->requiresConsent,
-            $this->idTokenSignedResponseAlg,
+            $this->idToken,
             $this->requiresPkce,
             $this->accessTokenFormat,
             $this->backChannelLogoutUri,
@@ -253,7 +346,8 @@ final readonly class ClientDefinition
             $this->requiresPushedAuthorizationRequests,
             $this->requestObjectSigning,
             $this->requestUris,
-            $this->authorizationSignedResponseAlg,
+            $this->authorizationResponse,
+            $this->userInfo,
         );
     }
 

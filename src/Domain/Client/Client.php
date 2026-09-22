@@ -6,7 +6,6 @@ namespace Heidi\Oidc\Domain\Client;
 
 use function array_any;
 use function array_find;
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
@@ -56,6 +55,12 @@ final readonly class Client
      */
     public array $allowedScopes;
 
+    public ResponseFormat $idToken;
+
+    public ResponseFormat $userInfo;
+
+    public ResponseFormat $authorizationResponse;
+
     /**
      * @param ClientSecretInterface|null $secret the shared secret the registered method needs, in the shape it verifies against; null when the method needs none
      * @param list<RedirectUri> $redirectUris at least one
@@ -69,8 +74,9 @@ final readonly class Client
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
      * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
      * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
-     * @param SignatureAlgorithmInterface|null $idTokenSignedResponseAlg the algorithm the client registered its ID tokens and its logout tokens in (OIDC Registration §2), null for a client that registered none: the provider signs them with its default
-     * @param SignatureAlgorithmInterface|null $authorizationSignedResponseAlg the algorithm the client registered its signed authorization responses in (JARM §3), null for a client that registered none: the provider signs them with its default
+     * @param ResponseFormat|null $idToken the shape the client registered for its ID tokens (OIDC Core §3.1.3.7), which its logout tokens are signed like; null for the ordinary one, signed with what the provider signs with and not encrypted
+     * @param ResponseFormat|null $authorizationResponse the shape the client registered for its signed authorization responses (JARM §3), null for the ordinary one
+     * @param ResponseFormat|null $userInfo the shape the client registered for the UserInfo answer (OIDC Core §5.3.2); null for the plain JSON, which is what a client that registered nothing receives
      * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
      * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
      * @param ClientUri|null $frontChannelLogoutUri null for a client the logout page does not load
@@ -88,7 +94,7 @@ final readonly class Client
         array $grantTypes = [GrantType::AuthorizationCode],
         ?array $allowedScopes = null,
         public bool $requiresConsent = true,
-        public ?SignatureAlgorithmInterface $idTokenSignedResponseAlg = null,
+        ?ResponseFormat $idToken = null,
         public bool $requiresPkce = true,
         public AccessTokenFormat $accessTokenFormat = AccessTokenFormat::Jwt,
         public ?ClientUri $backChannelLogoutUri = null,
@@ -101,10 +107,14 @@ final readonly class Client
         public bool $requiresPushedAuthorizationRequests = false,
         public RequestObjectSigningInterface $requestObjectSigning = new AnyRegisteredAlgorithm(),
         array $requestUris = [],
-        public ?SignatureAlgorithmInterface $authorizationSignedResponseAlg = null,
+        ?ResponseFormat $authorizationResponse = null,
+        ?ResponseFormat $userInfo = null,
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning);
+        $this->idToken = $idToken ?? ResponseFormat::signed();
+        $this->authorizationResponse = $authorizationResponse ?? ResponseFormat::signed();
+        $this->userInfo = $userInfo ?? ResponseFormat::unsigned();
+        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning, $this->idToken->isEncrypted() || $this->authorizationResponse->isEncrypted() || $this->userInfo->isEncrypted());
         if ($secret !== null && $authenticationMethod instanceof SecretBearingMethodInterface && ! $authenticationMethod->accepts($secret)) {
             throw new InvalidArgumentException(sprintf('The secret of the client "%s" is not kept in a shape %s verifies against.', $clientId, $authenticationMethod->name()));
         }
@@ -141,6 +151,7 @@ final readonly class Client
         bool $hasJwksUri = false,
         bool $hasCertificateIdentity = false,
         RequestObjectSigningInterface $requestObjectSigning = new AnyRegisteredAlgorithm(),
+        bool $registersAnEncryption = false,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -162,6 +173,9 @@ final readonly class Client
         }
         if ($requestObjectSigning->needsPublishedKeys() && ! $hasJwks && ! $hasJwksUri) {
             throw new InvalidArgumentException(sprintf('The client "%s" registers a request_object_signing_alg, whose signature is verified against a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId));
+        }
+        if ($registersAnEncryption && ! $hasJwks && ! $hasJwksUri) {
+            throw new InvalidArgumentException(sprintf('The client "%s" registers an encrypted response, which is addressed to a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId));
         }
         if ($authenticationMethod instanceof CertificateIdentityBearingMethodInterface && ! $hasCertificateIdentity) {
             throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which recognises it by what its certificate says about it, and therefore registers one of the values of RFC 8705 section 2.1.2.', $clientId, $authenticationMethod->name()));
