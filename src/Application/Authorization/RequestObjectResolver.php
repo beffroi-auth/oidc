@@ -1,0 +1,177 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Heidi\Oidc\Application\Authorization;
+
+use function array_map;
+use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
+use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Client\ClientKeySetProvider;
+use Heidi\Oidc\Application\Request\RequestParameters;
+use Heidi\Oidc\Domain\Authorization\RequestObject;
+use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Heidi\Oidc\Exception\ClientKeysUnavailableException;
+use Heidi\Oidc\Exception\InvalidJwtException;
+use Heidi\Oidc\Exception\InvalidRequestException;
+use Heidi\Oidc\Exception\InvalidRequestObjectException;
+use Heidi\Oidc\Exception\InvalidRequestUriException;
+use Heidi\Oidc\Exception\OAuth2Exception;
+use Heidi\Oidc\Exception\RequestObjectUnavailableException;
+use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\CompactJwtReaderInterface;
+use Heidi\Oidc\Port\JwtKeyVerifierInterface;
+use Heidi\Oidc\Port\RequestObjectFetcherInterface;
+use Psr\Clock\ClockInterface;
+
+/**
+ * What an endpoint reads when the request came in a JWT (RFC 9101 §6.1, OIDC Core §6): "request" carries
+ * the object, "request_uri" names where it is published, and the two together are no request at all.
+ * The parameters of the object are the request; the ones of the query are dropped, which is §6.1 read as
+ * it is written, so that what the client signed and what the provider reads are the same request. Only
+ * "client_id" stays, because RFC 9101 §5 has it outside the object as well and the two must be one.
+ *
+ * Nothing of the object is trusted before its signature is: the algorithm is the one the client
+ * registered, the key is one the client publishes, and an object signed with nothing is read only from a
+ * client that registered "none" (decision 0006). A "request_uri" is read back only when the client
+ * registered that very URL, which is what "require_request_uri_registration" announces: an unregistered
+ * one is refused before any request leaves the process.
+ */
+final readonly class RequestObjectResolver
+{
+    public function __construct(
+        private ClientRepositoryInterface $clients,
+        private CompactJwtReaderInterface $reader,
+        private JwtKeyVerifierInterface $signatures,
+        private ClientKeySetProvider $keys,
+        private RequestObjectValidator $claims,
+        private RequestObjectFetcherInterface $references,
+        private SignatureAlgorithmsInterface $algorithms,
+        private ClockInterface $clock,
+    ) {
+    }
+
+    /**
+     * @param array<string, mixed> $parameters the parameters of the request as the endpoint received them
+     * @param Client|null $client the client the endpoint has already authenticated (RFC 9126 §2), null
+     *                            at an endpoint that authenticates none and reads "client_id" instead
+     *
+     * @throws OAuth2Exception never redirectable: what names the destination is inside the object, and
+     *                         an object that is refused is an object that was not read
+     *
+     * @return array<string, string>|null the parameters the endpoint reads in place of them, null when
+     *                                    the request carries no object and the ones it carries stand
+     */
+    public function resolve(Tenant $tenant, array $parameters, ?Client $client = null): ?array
+    {
+        $byValue = RequestParameters::single($parameters, 'request', false);
+        $byReference = RequestParameters::single($parameters, 'request_uri', false);
+        if ($byValue === null && $byReference === null) {
+            return null;
+        }
+        if ($byValue !== null && $byReference !== null) {
+            throw new InvalidRequestException('The request and request_uri parameters are never sent together (OIDC Core section 6).');
+        }
+        $client ??= $this->client($tenant, $parameters);
+        $object = $this->read($byReference === null ? $byValue : $this->fetch($client, $byReference));
+        $this->verify($client, $object);
+        $this->claims->validate($object, $client, $tenant, $this->clock->now());
+
+        return [
+            ...$object->parameters(),
+            'client_id' => $client->clientId,
+        ];
+    }
+
+    /**
+     * RFC 9101 §5: "client_id" is a parameter of the request itself and is there whether the object
+     * carries one or not, because the provider has to know whose keys to verify the object with before
+     * it reads anything of it.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @throws OAuth2Exception
+     */
+    private function client(Tenant $tenant, array $parameters): Client
+    {
+        $clientId = RequestParameters::single($parameters, 'client_id', false);
+        if ($clientId === null) {
+            throw new InvalidRequestException('The client_id parameter is missing.');
+        }
+
+        return $this->clients->findByClientId($tenant, $clientId) ?? throw new InvalidRequestException('The client is unknown.');
+    }
+
+    /**
+     * @throws OAuth2Exception
+     */
+    private function read(string $compact): RequestObject
+    {
+        try {
+            return new RequestObject($this->reader->read($compact));
+        } catch (InvalidJwtException $exception) {
+            throw new InvalidRequestObjectException('The request object is not a readable JWT (RFC 9101 section 4).', $exception);
+        }
+    }
+
+    /**
+     * RFC 9101 §6.2: the signature, under the algorithm the client registered and against the keys the
+     * client publishes. An object a client registered "none" for carries no signature, and there is
+     * nothing to verify; every other one is verified under the one algorithm that was accepted, never
+     * under whichever of them the object names.
+     *
+     * @throws OAuth2Exception
+     */
+    private function verify(Client $client, RequestObject $object): void
+    {
+        $algorithm = $object->jwt->algorithm();
+        if ($algorithm === null || ! $client->requestObjectSigning->accepts($algorithm, $this->wiredAlgorithms())) {
+            // The "alg" of the object is not written back: it is a string the sender chose, and an error
+            // description is ASCII the specification bounds (RFC 6749 §5.2)
+            throw new InvalidRequestObjectException('The request object is not signed with the algorithm the client registered in request_object_signing_alg (OIDC Registration section 2).');
+        }
+        if ($algorithm === UnsignedRequestObjects::ALGORITHM) {
+            return;
+        }
+        try {
+            $keys = $this->keys->keysOf($client, $object->jwt->keyId());
+        } catch (ClientKeysUnavailableException $exception) {
+            throw new InvalidRequestObjectException('The keys of the client cannot be read, and its request object cannot be verified.', $exception);
+        }
+        try {
+            $this->signatures->verify($object->jwt, $keys, [$algorithm]);
+        } catch (InvalidJwtException $exception) {
+            throw new InvalidRequestObjectException('The signature of the request object verifies against no key the client publishes.', $exception);
+        }
+    }
+
+    /**
+     * RFC 9101 §5.2, OIDC Core §6.2: read back from the URL the client registered and from no other.
+     * The URL is compared with the registration before anything leaves the process, so an unregistered
+     * one costs the provider one comparison and no request at all (decision 0006).
+     *
+     * @throws OAuth2Exception
+     */
+    private function fetch(Client $client, string $requestUri): string
+    {
+        $registered = $client->registeredRequestUri($requestUri);
+        if ($registered === null) {
+            throw new InvalidRequestUriException('The request_uri parameter names no URL this client registered (OIDC Discovery section 3, require_request_uri_registration).');
+        }
+        try {
+            return $this->references->fetch($registered);
+        } catch (RequestObjectUnavailableException $exception) {
+            throw new InvalidRequestUriException('The request object behind the request_uri parameter cannot be read back.', $exception);
+        }
+    }
+
+    /**
+     * @return list<non-empty-string>
+     */
+    private function wiredAlgorithms(): array
+    {
+        return array_map(static fn (SignatureAlgorithmInterface $algorithm): string => $algorithm->name(), $this->algorithms->all());
+    }
+}

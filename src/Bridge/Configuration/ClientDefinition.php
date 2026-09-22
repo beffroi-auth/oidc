@@ -25,6 +25,10 @@ use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Client\RedirectUri;
+use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
+use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
+use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
+use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
@@ -69,6 +73,8 @@ final readonly class ClientDefinition
         'frontchannel_logout_session_required',
         'jwks',
         'jwks_uri',
+        'request_object_signing_alg',
+        'request_uris',
         ...CertificateIdentities::NAMES,
     ];
 
@@ -77,6 +83,7 @@ final readonly class ClientDefinition
      * @param list<RedirectUri> $postLogoutRedirectUris
      * @param list<GrantType> $grantTypes
      * @param list<Scope> $allowedScopes
+     * @param list<ClientUri> $requestUris
      */
     private function __construct(
         public string $clientId,
@@ -100,6 +107,8 @@ final readonly class ClientDefinition
         public ?ClientJwks $jwks,
         public ?ClientUri $jwksUri,
         public ?CertificateIdentityInterface $certificateIdentity,
+        public RequestObjectSigningInterface $requestObjectSigning,
+        public array $requestUris,
     ) {
     }
 
@@ -171,9 +180,12 @@ final readonly class ClientDefinition
 
         $certificateIdentity = self::certificateIdentity($clientId, $definition, $certificates);
 
-        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null);
+        $requestObjectSigning = self::requestObjectSigning($clientId, $definition['request_object_signing_alg'] ?? null, $algorithms);
+        $requestUris = array_map(static fn (string $uri): ClientUri => new ClientUri($uri), self::stringList($clientId, 'request_uris', $definition['request_uris'] ?? []));
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity);
+        Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning);
+
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity, $requestObjectSigning, $requestUris);
     }
 
     public function hasSecret(): bool
@@ -221,6 +233,8 @@ final readonly class ClientDefinition
             $this->jwksUri,
             $this->certificateIdentity,
             $this->requiresPushedAuthorizationRequests,
+            $this->requestObjectSigning,
+            $this->requestUris,
         );
     }
 
@@ -275,6 +289,31 @@ final readonly class ClientDefinition
         }
 
         return CertificateIdentities::fromRegistration($registration);
+    }
+
+    /**
+     * What the client registered in "request_object_signing_alg" (OIDC Registration §2), among the
+     * algorithms the provider is wired with, plus the one value that is not an algorithm: "none", the
+     * named exception of decision 0006, which is registered here and nowhere else. A client that
+     * registers nothing has its request objects read under any algorithm the provider verifies, and
+     * never unsigned.
+     */
+    private static function requestObjectSigning(string $clientId, mixed $name, SignatureAlgorithmsInterface $algorithms): RequestObjectSigningInterface
+    {
+        if ($name === null) {
+            return new AnyRegisteredAlgorithm();
+        }
+        if (! is_string($name)) {
+            throw new InvalidArgumentException(sprintf('The request_object_signing_alg option of the client "%s" must be a string.', $clientId));
+        }
+        if ($name === UnsignedRequestObjects::ALGORITHM) {
+            return new UnsignedRequestObjects();
+        }
+        try {
+            return new OneRegisteredAlgorithm($algorithms->named($name));
+        } catch (UnsupportedAlgorithmException $exception) {
+            throw new InvalidArgumentException(sprintf('The request_object_signing_alg option of the client "%s" must be "%s" or one of: %s.', $clientId, UnsignedRequestObjects::ALGORITHM, implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all()))), 0, $exception);
+        }
     }
 
     /**

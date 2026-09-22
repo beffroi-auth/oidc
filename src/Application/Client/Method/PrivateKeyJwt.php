@@ -16,9 +16,9 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Exception\ClientKeysUnavailableException;
-use Heidi\Oidc\Exception\InvalidClientAssertionException;
-use Heidi\Oidc\Port\ClientAssertionKeyVerifierInterface;
-use Heidi\Oidc\Port\ClientAssertionReaderInterface;
+use Heidi\Oidc\Exception\InvalidJwtException;
+use Heidi\Oidc\Port\CompactJwtReaderInterface;
+use Heidi\Oidc\Port\JwtKeyVerifierInterface;
 use function in_array;
 
 /**
@@ -33,8 +33,8 @@ use function in_array;
 final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBearingMethodInterface, AuthenticationMethodInterface
 {
     public function __construct(
-        private ClientAssertionReaderInterface $reader,
-        private ClientAssertionKeyVerifierInterface $verifier,
+        private CompactJwtReaderInterface $reader,
+        private JwtKeyVerifierInterface $verifier,
         private ClientKeySetProvider $keys,
         private ClientAssertionValidator $claims,
         private SignatureAlgorithmsInterface $algorithms,
@@ -84,7 +84,7 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
         }
         try {
             $this->verifier->verify($assertion, $keys, $this->assertionSigningAlgorithms());
-        } catch (InvalidClientAssertionException $exception) {
+        } catch (InvalidJwtException $exception) {
             throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidAssertion, $client->clientId, $this->name(), $exception->getMessage(), $exception);
         }
         $this->claims->validate($this, $assertion, $client, $request);

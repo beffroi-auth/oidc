@@ -15,6 +15,7 @@ use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 use WeakMap;
 
 /**
@@ -22,7 +23,7 @@ use WeakMap;
  * on the first lookup. The clients are built per tenant instance, so that a client always points at the
  * tenant of the request that asked for it.
  */
-final class ConfigurationClientRepository implements ClientRepositoryInterface, PushedAuthorizationRequirementInterface
+final class ConfigurationClientRepository implements ClientRepositoryInterface, PushedAuthorizationRequirementInterface, UnsignedRequestObjectsInterface
 {
     /**
      * @var array<string, ClientDefinition>
@@ -94,5 +95,18 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
         }
 
         return array_all($this->definitions, static fn (ClientDefinition $definition): bool => $definition->requiresPushedAuthorizationRequests);
+    }
+
+    /**
+     * OIDC Registration §2: the document announces "none" when a client declared here registered it, so
+     * that what is announced is what a client of this tenant may actually send (issue #98).
+     */
+    public function acceptsUnsignedRequestObjects(Tenant $tenant): bool
+    {
+        if ($tenant->slug !== $this->tenantSlug) {
+            return false;
+        }
+
+        return array_any($this->definitions, static fn (ClientDefinition $definition): bool => $definition->requestObjectSigning->acceptsUnsigned());
     }
 }

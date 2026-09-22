@@ -7,10 +7,10 @@ namespace Heidi\Oidc\Application\Client;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\ClientAssertion;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Exception\InvalidClientAssertionException;
-use Heidi\Oidc\Port\ClientAssertionReaderInterface;
+use Heidi\Oidc\Domain\Token\UnverifiedJwt;
+use Heidi\Oidc\Exception\InvalidJwtException;
+use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use function is_string;
 use function sprintf;
 
@@ -40,6 +40,11 @@ final class ClientAuthenticationRequest
      */
     private const array CREDENTIAL_PARAMETERS = ['client_id', ...self::PROVING_PARAMETERS];
 
+    /**
+     * RFC 7523 §2.2: the one value of "client_assertion_type".
+     */
+    public const string ASSERTION_TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+
     public const string AUTHORIZATION_HEADER = 'the Authorization header';
 
     public const string BODY_SECRET = 'the client_secret parameter';
@@ -52,7 +57,7 @@ final class ClientAuthenticationRequest
 
     private bool $assertionRead = false;
 
-    private ?ClientAssertion $assertion = null;
+    private ?UnverifiedJwt $assertion = null;
 
     /**
      * @param string $endpoint the absolute URL of the endpoint that received the request
@@ -131,7 +136,7 @@ final class ClientAuthenticationRequest
      *                                     two parameters is there without the other, or when the
      *                                     assertion cannot be read
      */
-    public function assertion(ClientAssertionReaderInterface $reader): ?ClientAssertion
+    public function assertion(CompactJwtReaderInterface $reader): ?UnverifiedJwt
     {
         if ($this->assertionRead) {
             return $this->assertion;
@@ -145,12 +150,12 @@ final class ClientAuthenticationRequest
         if ($assertion === null || $type === null) {
             throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, 'The client_assertion and client_assertion_type parameters go together (RFC 7523 section 2.2).');
         }
-        if ($type !== ClientAssertion::TYPE) {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, sprintf('The client_assertion_type parameter must be "%s" (RFC 7523 section 2.2).', ClientAssertion::TYPE));
+        if ($type !== self::ASSERTION_TYPE) {
+            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, sprintf('The client_assertion_type parameter must be "%s" (RFC 7523 section 2.2).', self::ASSERTION_TYPE));
         }
         try {
             return $this->assertion = $reader->read($assertion);
-        } catch (InvalidClientAssertionException $exception) {
+        } catch (InvalidJwtException $exception) {
             throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, 'The client assertion is not a readable JWT (RFC 7523 section 2.2).', $exception);
         }
     }
@@ -162,7 +167,7 @@ final class ClientAuthenticationRequest
      *
      * @throws ClientAuthenticationFailure when neither names a client, and there is nothing to look up
      */
-    public function assertedClientId(ClientAssertion $assertion): string
+    public function assertedClientId(UnverifiedJwt $assertion): string
     {
         $clientId = $assertion->claim('sub') ?? $this->clientId();
         if ($clientId === null) {

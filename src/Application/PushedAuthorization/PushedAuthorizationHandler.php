@@ -8,6 +8,7 @@ use DateInterval;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Authorization\AuthorizationRequestParser;
+use Heidi\Oidc\Application\Authorization\RequestObjectResolver;
 use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Request\RequestParameters;
@@ -31,7 +32,8 @@ use Psr\Clock\ClockInterface;
  *
  * What comes back is a reference and its lifetime. The parameters kept are the ones the client wrote,
  * credentials taken out: they authenticate the request that carried them and have no business in a store
- * that outlives it.
+ * that outlives it. A request the client signed is read here too (RFC 9101 §6.1) and what is kept is
+ * what it carried, so that an object is verified by the endpoint it was sent to and once.
  */
 final readonly class PushedAuthorizationHandler
 {
@@ -39,6 +41,7 @@ final readonly class PushedAuthorizationHandler
         private ClientAuthenticator $clients,
         private EndpointLocatorInterface $endpoints,
         private AuthorizationRequestParser $parser,
+        private RequestObjectResolver $requestObjects,
         private PushedAuthorizationRequestRepositoryInterface $requests,
         private ClockInterface $clock,
         private DateInterval $lifetime = new DateInterval('PT60S'),
@@ -64,6 +67,11 @@ final readonly class PushedAuthorizationHandler
         // authenticated through the Authorization header carries none, so the authenticated client is
         // what the parser is given to read.
         $parameters['client_id'] = $client->clientId;
+        // RFC 9101 §6.1: a pushed request may itself be a request object, which FAPI 2.0 Message
+        // Signing asks of one. It is read here, against the client that has just authenticated, and
+        // what the store keeps is the request it carried: the object is verified once, by the endpoint
+        // the client sent it to, and the authorization endpoint reads parameters like any other.
+        $parameters = $this->requestObjects->resolve($tenant, $parameters, $client) ?? $parameters;
         $target = $this->parser->redirectTarget($tenant, $parameters, true);
         $this->parser->parse($target, $parameters);
 

@@ -13,10 +13,10 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\SharedClientSecret;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Exception\InvalidClientAssertionException;
+use Heidi\Oidc\Exception\InvalidJwtException;
 use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\ClientAssertionReaderInterface;
 use Heidi\Oidc\Port\ClientAssertionSecretVerifierInterface;
+use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use function in_array;
 use SensitiveParameter;
 use function sprintf;
@@ -37,7 +37,7 @@ final readonly class ClientSecretJwt implements AssertionMethodInterface, Secret
     private const string ALGORITHM = 'HS256';
 
     public function __construct(
-        private ClientAssertionReaderInterface $reader,
+        private CompactJwtReaderInterface $reader,
         private ClientAssertionSecretVerifierInterface $verifier,
         private ClientAssertionValidator $claims,
     ) {
@@ -92,7 +92,7 @@ final readonly class ClientSecretJwt implements AssertionMethodInterface, Secret
         }
         try {
             $this->verifier->verify($assertion, $secret, $this->assertionSigningAlgorithms());
-        } catch (InvalidClientAssertionException $exception) {
+        } catch (InvalidJwtException $exception) {
             throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidAssertion, $client->clientId, $this->name(), $exception->getMessage(), $exception);
         }
         $this->claims->validate($this, $assertion, $client, $request);

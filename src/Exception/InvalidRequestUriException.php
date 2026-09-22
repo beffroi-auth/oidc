@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Exception;
 
+use Throwable;
+
 /**
  * OIDC Core §3.1.2.6 and RFC 9101 §6.3 "invalid_request_uri": the "request_uri" of the authorization
  * request names nothing this provider still holds. A reference nobody ever issued, one that has expired,
@@ -12,8 +14,8 @@ namespace Heidi\Oidc\Exception;
  */
 final class InvalidRequestUriException extends OAuth2Exception
 {
-    public function __construct(string $description)
+    public function __construct(string $description, ?Throwable $previous = null)
     {
-        parent::__construct('invalid_request_uri', $description, 400, false);
+        parent::__construct('invalid_request_uri', $description, 400, false, $previous);
     }
 }

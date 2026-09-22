@@ -2,25 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Heidi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
 use function is_int;
 use function is_string;
 
 /**
- * A client assertion as it arrived (RFC 7523 §2.2, OIDC Core §9): the compact JWS, its protected header
- * and its claims, read before anything is verified. Nothing it says is trusted at this point; it is read
- * to know which client claims to send it and which key is supposed to have signed it, and the claims are
- * judged only once the signature has been.
+ * A compact JWT a third party sent, read and not verified (RFC 7519 §7.2): the serialization it arrived
+ * in, its protected header and its claims. Nothing it says is trusted at this point; it is read to know
+ * who claims to send it and which key is supposed to have signed it, and what it says is judged only
+ * once a verifier has spoken.
+ *
+ * Both tokens a client signs are read this way: the assertion that authenticates it (RFC 7523 §2.2, OIDC
+ * Core §9) and the request object that carries its authorization request (RFC 9101 §4). What each of
+ * them has to say afterwards is its own validator's.
  */
-final readonly class ClientAssertion
+final readonly class UnverifiedJwt
 {
-    /**
-     * RFC 7523 §2.2: the one value of "client_assertion_type".
-     */
-    public const string TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-
     /**
      * @param array<string, mixed> $protectedHeader
      * @param array<string, mixed> $claims
@@ -34,6 +33,8 @@ final readonly class ClientAssertion
 
     /**
      * RFC 7515 §4.1.1.
+     *
+     * @return non-empty-string|null
      */
     public function algorithm(): ?string
     {
@@ -43,7 +44,9 @@ final readonly class ClientAssertion
     }
 
     /**
-     * RFC 7515 §4.1.4; a client that publishes one key alone may send none.
+     * RFC 7515 §4.1.4; a sender that publishes one key alone may send none.
+     *
+     * @return non-empty-string|null
      */
     public function keyId(): ?string
     {

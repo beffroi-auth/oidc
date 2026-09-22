@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Bridge\JwtLibrary;
 
 use function base64_encode;
-use Heidi\Oidc\Domain\Client\ClientAssertion;
 use Heidi\Oidc\Domain\Client\SharedClientSecret;
-use Heidi\Oidc\Exception\InvalidClientAssertionException;
+use Heidi\Oidc\Domain\Token\UnverifiedJwt;
+use Heidi\Oidc\Exception\InvalidJwtException;
 use Heidi\Oidc\Port\ClientAssertionSecretVerifierInterface;
 use function in_array;
 use Jose\Component\Core\AlgorithmManager;
@@ -38,23 +38,23 @@ final readonly class JwtLibraryClientAssertionSecretVerifier implements ClientAs
         $this->serializer = new CompactSerializer();
     }
 
-    public function verify(ClientAssertion $assertion, SharedClientSecret $secret, array $algorithms): void
+    public function verify(UnverifiedJwt $assertion, SharedClientSecret $secret, array $algorithms): void
     {
         $alg = $assertion->algorithm();
         if ($alg === null || ! in_array($alg, $algorithms, true)) {
-            throw new InvalidClientAssertionException(sprintf('The client assertion is signed with "%s", which this method does not take.', $alg ?? '?'));
+            throw new InvalidJwtException(sprintf('The client assertion is signed with "%s", which this method does not take.', $alg ?? '?'));
         }
         try {
             $jws = $this->serializer->unserialize($assertion->compact);
         } catch (Throwable $exception) {
-            throw new InvalidClientAssertionException('The client assertion is not a compact JWS.', 0, $exception);
+            throw new InvalidJwtException('The client assertion is not a compact JWS.', 0, $exception);
         }
         $key = new JWK([
             'kty' => 'oct',
             'k' => rtrim(strtr(base64_encode($secret->value), '+/', '-_'), '='),
         ]);
         if (! $this->verifier->verifyWithKey($jws, $key, 0)) {
-            throw new InvalidClientAssertionException('The MAC of the client assertion does not verify against the secret of the client.');
+            throw new InvalidJwtException('The MAC of the client assertion does not verify against the secret of the client.');
         }
     }
 }

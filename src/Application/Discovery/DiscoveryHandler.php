@@ -21,6 +21,7 @@ use Heidi\Oidc\Port\ProvableMethodsInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 use Heidi\Oidc\Port\ServedLogoutChannelsInterface;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
+use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 use function in_array;
 
 /**
@@ -29,8 +30,9 @@ use function in_array;
  * serves), the response modes the authorization endpoint answers in (the same ways of answering the
  * parser accepts), the client authentication methods it is wired with and the classes of
  * the policy of the tenant the wired logins can prove (decision 0010), the ways of telling a client that
- * a session ended the integration wires, the algorithms it signs its JWS with, and whether every client
- * of the tenant only starts an authorization request by pushing it (RFC 9126 §5); "offline_access" when
+ * a session ended the integration wires, the algorithms it signs its JWS with, whether every client
+ * of the tenant only starts an authorization request by pushing it (RFC 9126 §5) and whether one of them
+ * registered a request object it does not sign (OIDC Registration §2); "offline_access" when
  * the refresh token grant is served.
  * Everything else is fixed by the module.
  */
@@ -53,6 +55,7 @@ final readonly class DiscoveryHandler
         private ServedResponseModesInterface $responseModes,
         private ClientAuthenticationMethodsInterface $clientAuthenticationMethods,
         private PushedAuthorizationRequirementInterface $pushedAuthorizationRequests,
+        private UnsignedRequestObjectsInterface $unsignedRequestObjects,
         private ServedLogoutChannelsInterface $logoutChannels,
         private SignatureAlgorithmsInterface $algorithms,
         iterable $grants,
@@ -83,6 +86,7 @@ final readonly class DiscoveryHandler
             $this->endpoints->locate($tenant),
             $this->mutualTlsEndpoints->locateMutualTls($tenant),
             $this->pushedAuthorizationRequests->requiresPushedAuthorizationRequests($tenant),
+            $this->unsignedRequestObjects->acceptsUnsignedRequestObjects($tenant),
             $scopes,
             $this->claims->supportedClaims(),
             $this->responseModes->servedResponseModes(),

@@ -23,9 +23,8 @@ use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\InvalidScopeException;
+use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\RequestNotSupportedException;
-use Heidi\Oidc\Exception\RequestUriNotSupportedException;
 use Heidi\Oidc\Exception\UnsupportedResponseModeException;
 use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
@@ -33,11 +32,16 @@ use Heidi\Oidc\Port\ServedResponseModesInterface;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function sprintf;
 
 /**
  * Reads an authorization request (RFC 6749 §4.1.1, OIDC Core §3.1.2.1) in the two stages of RFC 6749
  * §4.1.2.1: the client and the redirect URI first, whose failures are never redirected; everything else
  * then, whose failures go back to the client with "state" and "iss".
+ *
+ * It reads parameters and nothing else. A request the client pushed (RFC 9126 §4) and one it carried in
+ * a JWT (RFC 9101 §6.1) are both resolved into parameters before they reach it, by the resolver of each,
+ * so that the rules of a request are written once and judged once whichever way the request came in.
  */
 final readonly class AuthorizationRequestParser
 {
@@ -69,6 +73,7 @@ final readonly class AuthorizationRequestParser
      */
     public function redirectTarget(Tenant $tenant, array $parameters, bool $pushed = false): RedirectTarget
     {
+        self::assertResolved($parameters);
         $clientId = RequestParameters::single($parameters, 'client_id', false);
         if ($clientId === null) {
             throw new InvalidRequestException('The client_id parameter is missing.');
@@ -93,6 +98,23 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
+     * A request object is read before a request is parsed, by the resolver an endpoint calls first
+     * (RFC 9101 §6.1): what the parser is given is the parameters of the object, never the object.
+     * Finding one here is an endpoint wired without that resolver, which is a fault of the integration
+     * and not of the request.
+     *
+     * @param array<string, mixed> $parameters
+     */
+    private static function assertResolved(array $parameters): void
+    {
+        foreach (['request', 'request_uri'] as $name) {
+            if (RequestParameters::isPresent($parameters, $name)) {
+                throw new LogicException(sprintf('The %s parameter reaches the parser, which means the endpoint was wired without the resolver that reads a request object (RFC 9101 section 6.1).', $name));
+            }
+        }
+    }
+
+    /**
      * The mode the answer will use (OAuth 2.0 Multiple Response Type Encoding Practices §2.1), read with
      * the redirect URI because it says how anything reaches the client, a refusal of the second stage as
      * well as a code (OIDC Core §3.1.2.6). It refuses nothing, the failures of this stage being pages:
@@ -113,8 +135,7 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): everything else. Neither form
-     * of request object is served (OIDC Core §6).
+     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): everything else.
      *
      * @param array<string, mixed> $parameters
      *
@@ -122,13 +143,6 @@ final readonly class AuthorizationRequestParser
      */
     public function parse(RedirectTarget $target, array $parameters): AuthorizationRequest
     {
-        if (RequestParameters::isPresent($parameters, 'request')) {
-            throw new RequestNotSupportedException('Request objects are not supported.');
-        }
-        if (RequestParameters::isPresent($parameters, 'request_uri')) {
-            throw new RequestUriNotSupportedException('Request URIs are not supported.');
-        }
-
         $responseType = RequestParameters::single($parameters, 'response_type', true);
         if ($responseType === null) {
             throw new InvalidRequestException('The response_type parameter is missing.', true);

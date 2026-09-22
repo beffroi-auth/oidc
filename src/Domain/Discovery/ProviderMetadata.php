@@ -18,6 +18,7 @@ use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
 use Heidi\Oidc\Domain\Client\CertificateBindingMethodInterface;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
+use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Heidi\Oidc\Domain\EndSession\LogoutChannel;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\JwtPayload;
@@ -37,7 +38,8 @@ use function substr;
  * provider is wired with and the logout channels the ways of telling a client a session ended that are
  * wired, given by the discovery handler, never read from an enumeration, so that the document and the
  * endpoints cannot disagree; whether a request must be pushed is what every registered client requires
- * (RFC 9126 §5), read the same way; the rest is fixed by the module.
+ * (RFC 9126 §5) and whether an unsigned request object is read what one of them registered (OIDC
+ * Registration §2), read the same way; the rest is fixed by the module.
  */
 final readonly class ProviderMetadata
 {
@@ -103,6 +105,7 @@ final readonly class ProviderMetadata
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
      * @param ProviderEndpoints|null $mutualTlsEndpoints the same endpoints where a client presenting a certificate reaches them (RFC 8705 §5), null when no listener of the deployment asks for one
      * @param bool $requiresPushedAuthorizationRequests whether every client of the tenant only starts an authorization request by pushing it (RFC 9126 §5)
+     * @param bool $acceptsUnsignedRequestObjects whether a client of the tenant registered "request_object_signing_alg": "none" (OIDC Registration §2), which is what announces "none" beside the algorithms
      * @param int $maxAge how long a client may cache the document, in seconds
      */
     public function __construct(
@@ -110,6 +113,7 @@ final readonly class ProviderMetadata
         public ProviderEndpoints $endpoints,
         public ?ProviderEndpoints $mutualTlsEndpoints,
         public bool $requiresPushedAuthorizationRequests,
+        public bool $acceptsUnsignedRequestObjects,
         array $scopesSupported,
         array $claimsSupported,
         array $responseModesSupported,
@@ -219,8 +223,14 @@ final readonly class ProviderMetadata
             'token_endpoint_auth_signing_alg_values_supported' => $this->assertionSigningAlgorithms($this->clientAuthenticationMethodsSupported),
             'claims_supported' => $this->claimsSupported,
             'claims_parameter_supported' => true,
-            'request_parameter_supported' => false,
-            'request_uri_parameter_supported' => false,
+            // OIDC Discovery §3, RFC 9101 §10.5: both ways in are served, and a "request_uri" is read
+            // back only from a URL its client registered, which decision 0006 makes a rule and not an
+            // option. The algorithms are the ones the provider verifies signatures with; "none" is
+            // beside them only when a client of the tenant registered it (issue #98).
+            'request_parameter_supported' => true,
+            'request_uri_parameter_supported' => true,
+            'require_request_uri_registration' => true,
+            'request_object_signing_alg_values_supported' => $this->requestObjectSigningAlgorithms(),
             'code_challenge_methods_supported' => self::values(CodeChallengeMethod::cases()),
             'revocation_endpoint' => $this->endpoints->revocation,
             'revocation_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
@@ -251,6 +261,21 @@ final readonly class ProviderMetadata
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
+    }
+
+    /**
+     * OIDC Discovery §3: what a request object of this provider may be signed with. The algorithms are
+     * the ones the provider is wired with, and "none" is announced when a client of the tenant
+     * registered it and never otherwise: a deployment whose clients all sign their objects does not
+     * announce that it would read an unsigned one.
+     *
+     * @return non-empty-list<string>
+     */
+    private function requestObjectSigningAlgorithms(): array
+    {
+        $algorithms = $this->algorithmNames();
+
+        return $this->acceptsUnsignedRequestObjects ? [...$algorithms, UnsignedRequestObjects::ALGORITHM] : $algorithms;
     }
 
     /**

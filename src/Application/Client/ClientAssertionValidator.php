@@ -8,8 +8,8 @@ use DateInterval;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
 use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientAssertion;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Heidi\Oidc\Domain\Token\UnverifiedJwt;
 use Heidi\Oidc\Port\ClientAssertionReplayGuardInterface;
 use function in_array;
 
@@ -41,7 +41,7 @@ final readonly class ClientAssertionValidator
      *
      * @throws ClientAuthenticationFailure
      */
-    public function validate(AssertionMethodInterface $method, ClientAssertion $assertion, Client $client, ClientAuthenticationRequest $request): void
+    public function validate(AssertionMethodInterface $method, UnverifiedJwt $assertion, Client $client, ClientAuthenticationRequest $request): void
     {
         $clientId = $client->clientId;
         if ($assertion->claim('iss') !== $clientId || $assertion->claim('sub') !== $clientId) {
@@ -75,7 +75,7 @@ final readonly class ClientAssertionValidator
     /**
      * @throws ClientAuthenticationFailure
      */
-    private function rememberOnce(AssertionMethodInterface $method, ClientAssertion $assertion, Client $client, DateTimeImmutable $expiresAt): void
+    private function rememberOnce(AssertionMethodInterface $method, UnverifiedJwt $assertion, Client $client, DateTimeImmutable $expiresAt): void
     {
         $jti = $assertion->claim('jti');
         if ($jti === null) {

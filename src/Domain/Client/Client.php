@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Domain\Client;
 
 use function array_any;
+use function array_find;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
+use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
+use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
@@ -44,6 +47,11 @@ final readonly class Client
     public array $grantTypes;
 
     /**
+     * @var list<ClientUri>
+     */
+    public array $requestUris;
+
+    /**
      * @var list<Scope>
      */
     public array $allowedScopes;
@@ -56,6 +64,8 @@ final readonly class Client
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
+     * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
+     * @param list<ClientUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
      * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
      * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
@@ -88,9 +98,11 @@ final readonly class Client
         public ?ClientUri $jwksUri = null,
         public ?CertificateIdentityInterface $certificateIdentity = null,
         public bool $requiresPushedAuthorizationRequests = false,
+        public RequestObjectSigningInterface $requestObjectSigning = new AnyRegisteredAlgorithm(),
+        array $requestUris = [],
     ) {
         $allowedScopes ??= [Scope::openid()];
-        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null);
+        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning);
         if ($secret !== null && $authenticationMethod instanceof SecretBearingMethodInterface && ! $authenticationMethod->accepts($secret)) {
             throw new InvalidArgumentException(sprintf('The secret of the client "%s" is not kept in a shape %s verifies against.', $clientId, $authenticationMethod->name()));
         }
@@ -99,6 +111,7 @@ final readonly class Client
         $this->redirectUris = self::unique($redirectUris, $sameUri);
         $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris, $sameUri);
         $this->grantTypes = self::unique($grantTypes, static fn (GrantType $a, GrantType $b): bool => $a === $b);
+        $this->requestUris = self::unique($requestUris, static fn (ClientUri $a, ClientUri $b): bool => $a->equals($b));
         $this->allowedScopes = self::unique($allowedScopes, static fn (Scope $a, Scope $b): bool => $a->equals($b));
     }
 
@@ -125,6 +138,7 @@ final readonly class Client
         bool $hasJwks = false,
         bool $hasJwksUri = false,
         bool $hasCertificateIdentity = false,
+        RequestObjectSigningInterface $requestObjectSigning = new AnyRegisteredAlgorithm(),
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
             throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
@@ -143,6 +157,9 @@ final readonly class Client
         }
         if ($authenticationMethod instanceof KeyBearingMethodInterface && ! $hasJwks && ! $hasJwksUri) {
             throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which verifies a signature of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId, $authenticationMethod->name()));
+        }
+        if ($requestObjectSigning->needsPublishedKeys() && ! $hasJwks && ! $hasJwksUri) {
+            throw new InvalidArgumentException(sprintf('The client "%s" registers a request_object_signing_alg, whose signature is verified against a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId));
         }
         if ($authenticationMethod instanceof CertificateIdentityBearingMethodInterface && ! $hasCertificateIdentity) {
             throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which recognises it by what its certificate says about it, and therefore registers one of the values of RFC 8705 section 2.1.2.', $clientId, $authenticationMethod->name()));
@@ -197,6 +214,17 @@ final readonly class Client
     public function hasRedirectUri(string $redirectUri): bool
     {
         return array_any($this->redirectUris, static fn (RedirectUri $registered): bool => $registered->matches($redirectUri));
+    }
+
+    /**
+     * OIDC Core §6.2, OIDC Registration §2 "request_uris": byte for byte, as every other URL a client
+     * registers. The provider reads a request object back from a URL the client registered and from no
+     * other, which is what "require_request_uri_registration" announces. What comes back is the
+     * registration itself, validated at boot, so that nothing reads a URL a request wrote.
+     */
+    public function registeredRequestUri(string $requestUri): ?ClientUri
+    {
+        return array_find($this->requestUris, static fn (ClientUri $registered): bool => $registered->value === $requestUri);
     }
 
     /**

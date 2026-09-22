@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Bridge\JwtLibrary;
 
-use Heidi\Oidc\Domain\Client\ClientAssertion;
 use Heidi\Oidc\Domain\Client\ClientJwks;
-use Heidi\Oidc\Exception\InvalidClientAssertionException;
-use Heidi\Oidc\Port\ClientAssertionKeyVerifierInterface;
+use Heidi\Oidc\Domain\Token\UnverifiedJwt;
+use Heidi\Oidc\Exception\InvalidJwtException;
+use Heidi\Oidc\Port\JwtKeyVerifierInterface;
 use function in_array;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
@@ -17,12 +17,13 @@ use function sprintf;
 use Throwable;
 
 /**
- * "private_key_jwt" on web-token/jwt-library (OIDC Core §9). The key is looked for among the keys the
+ * The signature of a JWT a client signed, on web-token/jwt-library: the assertion of "private_key_jwt"
+ * (OIDC Core §9) and the request object of RFC 9101 §6.2. The key is looked for among the keys the
  * client publishes and nowhere else: a "kid" in the header names one of them, a header without one is
  * tried against all of them, and "jwk", "jku" and "x5c" are ignored (RFC 8725 §3.10). A key that names
  * another algorithm than the signature, or another use than signing, is not tried (RFC 7517 §4.2, §4.4).
  */
-final readonly class JwtLibraryClientAssertionKeyVerifier implements ClientAssertionKeyVerifierInterface
+final readonly class JwtLibraryJwtKeyVerifier implements JwtKeyVerifierInterface
 {
     private JWSVerifier $verifier;
 
@@ -38,18 +39,18 @@ final readonly class JwtLibraryClientAssertionKeyVerifier implements ClientAsser
         $this->serializer = new CompactSerializer();
     }
 
-    public function verify(ClientAssertion $assertion, ClientJwks $keys, array $algorithms): void
+    public function verify(UnverifiedJwt $jwt, ClientJwks $keys, array $algorithms): void
     {
-        $alg = $assertion->algorithm();
+        $alg = $jwt->algorithm();
         if ($alg === null || ! in_array($alg, $algorithms, true)) {
-            throw new InvalidClientAssertionException(sprintf('The client assertion is signed with "%s", which this provider does not take.', $alg ?? '?'));
+            throw new InvalidJwtException(sprintf('The token is signed with "%s", which this provider does not take.', $alg ?? '?'));
         }
-        $keyId = $assertion->keyId();
+        $keyId = $jwt->keyId();
         $candidates = $keyId === null ? $keys->keys : [$keys->find($keyId)];
         try {
-            $jws = $this->serializer->unserialize($assertion->compact);
+            $jws = $this->serializer->unserialize($jwt->compact);
         } catch (Throwable $exception) {
-            throw new InvalidClientAssertionException('The client assertion is not a compact JWS.', 0, $exception);
+            throw new InvalidJwtException('The token is not a compact JWS.', 0, $exception);
         }
         foreach ($candidates as $candidate) {
             if ($candidate === null || ($candidate['alg'] ?? $alg) !== $alg || ($candidate['use'] ?? 'sig') !== 'sig') {
@@ -60,6 +61,6 @@ final readonly class JwtLibraryClientAssertionKeyVerifier implements ClientAsser
             }
         }
 
-        throw new InvalidClientAssertionException('The signature of the client assertion verifies against no key the client publishes.');
+        throw new InvalidJwtException('The signature verifies against no key the client publishes.');
     }
 }
