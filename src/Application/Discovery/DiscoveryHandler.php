@@ -7,6 +7,8 @@ namespace Heidi\Oidc\Application\Discovery;
 use function array_map;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
+use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Token\GrantInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
@@ -30,7 +32,8 @@ use function in_array;
  * serves), the response modes the authorization endpoint answers in (the same ways of answering the
  * parser accepts), the client authentication methods it is wired with and the classes of
  * the policy of the tenant the wired logins can prove (decision 0010), the ways of telling a client that
- * a session ended the integration wires, the algorithms it signs its JWS with, whether every client
+ * a session ended the integration wires, the algorithms it signs its JWS with and those a client may
+ * encrypt a request object to it with, whether every client
  * of the tenant only starts an authorization request by pushing it (RFC 9126 §5) and whether one of them
  * registered a request object it does not sign (OIDC Registration §2); "offline_access" when
  * the refresh token grant is served.
@@ -58,6 +61,8 @@ final readonly class DiscoveryHandler
         private UnsignedRequestObjectsInterface $unsignedRequestObjects,
         private ServedLogoutChannelsInterface $logoutChannels,
         private SignatureAlgorithmsInterface $algorithms,
+        private KeyEncryptionAlgorithmsInterface $keyEncryptionAlgorithms,
+        private ContentEncryptionAlgorithmsInterface $contentEncryptionAlgorithms,
         iterable $grants,
         private int $maxAge = 3600,
     ) {
@@ -98,6 +103,8 @@ final readonly class DiscoveryHandler
             ),
             $this->algorithms->all(),
             $this->logoutChannels->servedLogoutChannels(),
+            $this->keyEncryptionAlgorithms->all(),
+            $this->contentEncryptionAlgorithms->all(),
             $this->maxAge,
         );
     }

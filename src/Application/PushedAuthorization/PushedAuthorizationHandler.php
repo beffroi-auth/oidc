@@ -52,7 +52,7 @@ final readonly class PushedAuthorizationHandler
         private RequestObjectResolver $requestObjects,
         private PushedAuthorizationRequestRepositoryInterface $requests,
         private ClockInterface $clock,
-        private DateInterval $lifetime = new DateInterval('PT60S'),
+        public DateInterval $lifetime = new DateInterval('PT60S'),
     ) {
     }
 

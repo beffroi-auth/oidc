@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Discovery;
 
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\SigningKeyProviderInterface;
+use Heidi\Core\Port\PublicKeySetProviderInterface;
 use Heidi\Oidc\Domain\Discovery\JwkSetResponse;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * The JWK Set endpoint (RFC 7517 §5, architecture §4.8): the published keys of a tenant.
+ * The JWK Set endpoint (RFC 7517 §5, architecture §4.8): the published keys of a tenant, those that
+ * sign and those a client encrypts to, each saying which it is.
  */
 final readonly class JwksHandler
 {
@@ -23,7 +24,7 @@ final readonly class JwksHandler
      * @param int $maxAge how long a client may cache the set, in seconds
      */
     public function __construct(
-        private SigningKeyProviderInterface $keys,
+        private PublicKeySetProviderInterface $keys,
         private int $maxAge = self::DEFAULT_MAX_AGE,
     ) {
         if ($maxAge < 0) {

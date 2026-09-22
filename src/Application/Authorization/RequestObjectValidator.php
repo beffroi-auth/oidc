@@ -34,7 +34,7 @@ final readonly class RequestObjectValidator
      * @param DateInterval $leeway what is allowed of the clock of the client, both ways
      */
     public function __construct(
-        private DateInterval $maximumLifetime,
+        public DateInterval $maximumLifetime,
         private DateInterval $leeway,
     ) {
     }

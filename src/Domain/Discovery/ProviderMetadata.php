@@ -10,6 +10,8 @@ use function array_map;
 use function array_merge;
 use function array_unique;
 use function array_values;
+use Heidi\Core\Domain\Key\ContentEncryptionAlgorithmInterface;
+use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Issuer;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
@@ -90,6 +92,16 @@ final readonly class ProviderMetadata
     public array $logoutChannelsSupported;
 
     /**
+     * @var list<KeyEncryptionAlgorithmInterface> no duplicate
+     */
+    public array $requestObjectEncryptionAlgorithmsSupported;
+
+    /**
+     * @var list<ContentEncryptionAlgorithmInterface> no duplicate
+     */
+    public array $requestObjectEncryptionMethodsSupported;
+
+    /**
      * @var array<string, string>
      */
     public array $headers;
@@ -103,6 +115,8 @@ final readonly class ProviderMetadata
      * @param list<string> $acrValuesSupported the classes of the policy of the tenant a login can prove, at least one
      * @param list<SignatureAlgorithmInterface> $signingAlgorithmsSupported the algorithms the provider signs its JWS with, at least one
      * @param list<LogoutChannel> $logoutChannelsSupported the ways of telling a client a session ended the integration serves, none of them if it serves none
+     * @param list<KeyEncryptionAlgorithmInterface> $requestObjectEncryptionAlgorithmsSupported the "alg" a client may encrypt a request object to this provider with, none of them where nothing is wired
+     * @param list<ContentEncryptionAlgorithmInterface> $requestObjectEncryptionMethodsSupported the "enc" it may encrypt its payload with, none of them where nothing is wired
      * @param ProviderEndpoints|null $mutualTlsEndpoints the same endpoints where a client presenting a certificate reaches them (RFC 8705 §5), null when no listener of the deployment asks for one
      * @param bool $requiresPushedAuthorizationRequests whether every client of the tenant only starts an authorization request by pushing it (RFC 9126 §5)
      * @param bool $acceptsUnsignedRequestObjects whether a client of the tenant registered "request_object_signing_alg": "none" (OIDC Registration §2), which is what announces "none" beside the algorithms
@@ -122,6 +136,8 @@ final readonly class ProviderMetadata
         array $acrValuesSupported,
         array $signingAlgorithmsSupported,
         array $logoutChannelsSupported,
+        array $requestObjectEncryptionAlgorithmsSupported,
+        array $requestObjectEncryptionMethodsSupported,
         public int $maxAge,
     ) {
         if ($maxAge < 0) {
@@ -175,6 +191,8 @@ final readonly class ProviderMetadata
         $this->acrValuesSupported = $acrValues;
         $this->signingAlgorithmsSupported = $algorithms;
         $this->logoutChannelsSupported = array_values(array_unique($logoutChannelsSupported, SORT_REGULAR));
+        $this->requestObjectEncryptionAlgorithmsSupported = array_values(array_unique($requestObjectEncryptionAlgorithmsSupported, SORT_REGULAR));
+        $this->requestObjectEncryptionMethodsSupported = array_values(array_unique($requestObjectEncryptionMethodsSupported, SORT_REGULAR));
         $this->headers = [
             'Cache-Control' => sprintf('public, max-age=%d', $maxAge),
         ];
@@ -231,6 +249,7 @@ final readonly class ProviderMetadata
             'request_uri_parameter_supported' => true,
             'require_request_uri_registration' => true,
             'request_object_signing_alg_values_supported' => $this->requestObjectSigningAlgorithms(),
+            ...$this->requestObjectEncryption(),
             'code_challenge_methods_supported' => self::values(CodeChallengeMethod::cases()),
             'revocation_endpoint' => $this->endpoints->revocation,
             'revocation_endpoint_auth_methods_supported' => $this->methodNames($this->clientAuthenticationMethodsSupported),
@@ -313,6 +332,26 @@ final readonly class ProviderMetadata
         $algorithms = $this->algorithmNames();
 
         return $this->acceptsUnsignedRequestObjects ? [...$algorithms, UnsignedRequestObjects::ALGORITHM] : $algorithms;
+    }
+
+    /**
+     * OIDC Discovery §3: what a client may encrypt a request object to this provider with, the key
+     * management algorithms and the content encryption ones the provider is wired with. The two travel
+     * together, an "alg" opening nothing without an "enc" and the other way round, so a deployment that
+     * wires neither announces neither rather than two empty lists.
+     *
+     * @return array<string, mixed>
+     */
+    private function requestObjectEncryption(): array
+    {
+        if ($this->requestObjectEncryptionAlgorithmsSupported === [] || $this->requestObjectEncryptionMethodsSupported === []) {
+            return [];
+        }
+
+        return [
+            'request_object_encryption_alg_values_supported' => array_map(static fn (KeyEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->requestObjectEncryptionAlgorithmsSupported),
+            'request_object_encryption_enc_values_supported' => array_map(static fn (ContentEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->requestObjectEncryptionMethodsSupported),
+        ];
     }
 
     /**
