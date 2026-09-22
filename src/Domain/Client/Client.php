@@ -70,6 +70,7 @@ final readonly class Client
      * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
      * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
      * @param SignatureAlgorithmInterface|null $idTokenSignedResponseAlg the algorithm the client registered its ID tokens and its logout tokens in (OIDC Registration §2), null for a client that registered none: the provider signs them with its default
+     * @param SignatureAlgorithmInterface|null $authorizationSignedResponseAlg the algorithm the client registered its signed authorization responses in (JARM §3), null for a client that registered none: the provider signs them with its default
      * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
      * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
      * @param ClientUri|null $frontChannelLogoutUri null for a client the logout page does not load
@@ -100,6 +101,7 @@ final readonly class Client
         public bool $requiresPushedAuthorizationRequests = false,
         public RequestObjectSigningInterface $requestObjectSigning = new AnyRegisteredAlgorithm(),
         array $requestUris = [],
+        public ?SignatureAlgorithmInterface $authorizationSignedResponseAlg = null,
     ) {
         $allowedScopes ??= [Scope::openid()];
         self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning);

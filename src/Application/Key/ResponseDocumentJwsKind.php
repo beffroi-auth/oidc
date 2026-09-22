@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Heidi\Oidc\Application\Key;
+
+use function array_any;
+use DateInterval;
+use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Port\IssuedJwsKindInterface;
+use Heidi\Oidc\Application\Authorization\ResponseDocumentIssuer;
+use Heidi\Oidc\Domain\Authorization\ResponseMode;
+use Heidi\Oidc\Port\ServedResponseModesInterface;
+
+/**
+ * The signed authorization response (JARM §2.1, issue #163), issued only where the integration wires a
+ * way of delivering one: a deployment that answers in "query" and "form_post" alone signs no such
+ * document, and its keys retire on the lifetimes of the tokens. The lifetime is read from the issuer so
+ * that the two cannot disagree, which is the rule issue #155 asks of every kind.
+ */
+final readonly class ResponseDocumentJwsKind implements IssuedJwsKindInterface
+{
+    public function __construct(
+        private ResponseDocumentIssuer $issuer,
+        private ServedResponseModesInterface $responseModes,
+    ) {
+    }
+
+    public function longestLifetime(Tenant $tenant): ?DateInterval
+    {
+        return array_any($this->responseModes->servedResponseModes(), static fn (ResponseMode $mode): bool => $mode->signsTheAnswer()) ? $this->issuer->lifetime : null;
+    }
+}

@@ -200,7 +200,7 @@ final readonly class ProviderMetadata
 
     /**
      * In the order of OIDC Discovery §3, then RFC 8414 §2, RFC 9126 §5, RFC 9701 §6, RFC 9207 §3,
-     * RP-Initiated Logout §2.1, RFC 8705 §3.3 and §5, RFC 9449 §5.1.
+     * RP-Initiated Logout §2.1, RFC 8705 §3.3 and §5, RFC 9449 §5.1, JARM §3.
      *
      * @return array<string, mixed>
      */
@@ -214,7 +214,7 @@ final readonly class ProviderMetadata
             'jwks_uri' => $this->endpoints->jwks,
             'scopes_supported' => array_map(static fn (Scope $scope): string => $scope->value, $this->scopesSupported),
             'response_types_supported' => ['code'],
-            'response_modes_supported' => self::values($this->responseModesSupported),
+            'response_modes_supported' => self::values($this->announcedResponseModes()),
             'grant_types_supported' => self::values($this->grantTypesSupported),
             'acr_values_supported' => $this->acrValuesSupported,
             'subject_types_supported' => ['public'],
@@ -258,6 +258,7 @@ final readonly class ProviderMetadata
             // is wired with and verifies every other signature with; a client binding its tokens to a
             // key signs with one of these and with nothing else
             'dpop_signing_alg_values_supported' => $this->algorithmNames(),
+            ...$this->authorizationResponseSigning(),
             ...$this->mutualTlsEndpointAliases(),
         ];
     }
@@ -265,6 +266,38 @@ final readonly class ProviderMetadata
     public function toJson(): string
     {
         return JwtPayload::encode($this->toArray());
+    }
+
+    /**
+     * Multiple Response Type Encoding Practices §2.1 and JARM §2.1: the modes the integration wired,
+     * plus "jwt" when one of them signs the answer. "jwt" delivers nothing of its own, it names the
+     * signed mode the response type defaults to, so it is announced because a signed mode is wired and
+     * never because it is listed somewhere (issue #98).
+     *
+     * @return non-empty-list<ResponseMode>
+     */
+    private function announcedResponseModes(): array
+    {
+        return $this->signsAnswers() ? [...$this->responseModesSupported, ResponseMode::Jwt] : $this->responseModesSupported;
+    }
+
+    /**
+     * JARM §3: what a signed authorization response may be signed with, which is what the provider signs
+     * every other JWS with. A deployment that wires no signed mode announces nothing at all here rather
+     * than an empty list.
+     *
+     * @return array<string, mixed>
+     */
+    private function authorizationResponseSigning(): array
+    {
+        return $this->signsAnswers() ? [
+            'authorization_signing_alg_values_supported' => $this->algorithmNames(),
+        ] : [];
+    }
+
+    private function signsAnswers(): bool
+    {
+        return array_any($this->responseModesSupported, static fn (ResponseMode $mode): bool => $mode->signsTheAnswer());
     }
 
     /**

@@ -120,7 +120,8 @@ final readonly class AuthorizationRequestParser
      * the redirect URI because it says how anything reaches the client, a refusal of the second stage as
      * well as a code (OIDC Core §3.1.2.6). It refuses nothing, the failures of this stage being pages:
      * anything but a mode the integration wired falls back to the default, so that the refusal the
-     * second stage throws reaches the client in the one mode it is sure to read.
+     * second stage throws reaches the client in the one mode it is sure to read. "jwt" is resolved
+     * before anything is asked of it (JARM §2.1), so that what is kept is the mode that delivers.
      *
      * @param array<string, mixed> $parameters
      */
@@ -130,9 +131,17 @@ final readonly class AuthorizationRequestParser
         if (! is_string($requested)) {
             return ResponseMode::Query;
         }
-        $mode = ResponseMode::tryFrom($requested);
+        $mode = self::requestedMode($requested);
 
         return $mode !== null && in_array($mode, $this->responseModes->servedResponseModes(), true) ? $mode : ResponseMode::Query;
+    }
+
+    /**
+     * What a named mode delivers, or nothing when it names no mode of the specification.
+     */
+    private static function requestedMode(string $requested): ?ResponseMode
+    {
+        return ResponseMode::tryFrom($requested)?->resolved();
     }
 
     /**
@@ -153,7 +162,7 @@ final readonly class AuthorizationRequestParser
         }
 
         $responseMode = RequestParameters::single($parameters, 'response_mode', true);
-        if ($responseMode !== null && $responseMode !== $target->responseMode->value) {
+        if ($responseMode !== null && self::requestedMode($responseMode) !== $target->responseMode) {
             throw new UnsupportedResponseModeException('The requested response mode is not supported.');
         }
 

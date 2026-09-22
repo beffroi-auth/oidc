@@ -64,6 +64,7 @@ final readonly class ClientDefinition
         'token_endpoint_auth_method',
         'requires_consent',
         'id_token_signed_response_alg',
+        'authorization_signed_response_alg',
         'requires_pkce',
         'require_pushed_authorization_requests',
         'access_token_format',
@@ -97,6 +98,7 @@ final readonly class ClientDefinition
         public array $allowedScopes,
         public bool $requiresConsent,
         public SignatureAlgorithmInterface $idTokenSignedResponseAlg,
+        public SignatureAlgorithmInterface $authorizationSignedResponseAlg,
         public bool $requiresPkce,
         public bool $requiresPushedAuthorizationRequests,
         public AccessTokenFormat $accessTokenFormat,
@@ -156,15 +158,8 @@ final readonly class ClientDefinition
         $postLogoutRedirectUris = array_map(static fn (string $uri): RedirectUri => new RedirectUri($uri), self::stringList($clientId, 'post_logout_redirect_uris', $definition['post_logout_redirect_uris'] ?? []));
         $grantTypes = array_map(static fn (string $grant): GrantType => self::enumCase($clientId, 'grant_types', $grant, GrantType::class), self::stringList($clientId, 'grant_types', $definition['grant_types'] ?? [GrantType::AuthorizationCode->value, GrantType::RefreshToken->value]));
         $allowedScopes = array_map(static fn (string $scope): Scope => new Scope($scope), self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']));
-        $signedResponseAlg = $definition['id_token_signed_response_alg'] ?? null;
-        if ($signedResponseAlg !== null && ! is_string($signedResponseAlg)) {
-            throw new InvalidArgumentException(sprintf('The id_token_signed_response_alg option of the client "%s" must be a string.', $clientId));
-        }
-        try {
-            $algorithm = $signedResponseAlg === null ? $algorithms->defaultAlgorithm() : $algorithms->named($signedResponseAlg);
-        } catch (UnsupportedAlgorithmException $exception) {
-            throw new InvalidArgumentException(sprintf('The id_token_signed_response_alg option of the client "%s" must be one of: %s.', $clientId, implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all()))), 0, $exception);
-        }
+        $algorithm = self::algorithm($clientId, 'id_token_signed_response_alg', $definition, $algorithms);
+        $authorizationResponseAlgorithm = self::algorithm($clientId, 'authorization_signed_response_alg', $definition, $algorithms);
 
         $requiresPushedAuthorizationRequests = self::flag($clientId, 'require_pushed_authorization_requests', $definition);
 
@@ -185,7 +180,30 @@ final readonly class ClientDefinition
 
         Client::assertConsistent($clientId, $name, $method, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning);
 
-        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity, $requestObjectSigning, $requestUris);
+        return new self($clientId, $name, $secret, $method, $redirectUris, $postLogoutRedirectUris, $grantTypes, $allowedScopes, $requiresConsent, $algorithm, $authorizationResponseAlgorithm, $requiresPkce, $requiresPushedAuthorizationRequests, $accessTokenFormat, $backChannelLogoutUri, $backChannelLogoutSessionRequired, $frontChannelLogoutUri, $frontChannelLogoutSessionRequired, $jwks, $jwksUri, $certificateIdentity, $requestObjectSigning, $requestUris);
+    }
+
+    /**
+     * A JWS algorithm a client registers for a kind of thing the provider signs for it (OIDC
+     * Registration §2, JARM §3): one of the names the provider is wired with, or none and the default it
+     * signs with. Written once for the two options, so that they cannot read their names differently.
+     *
+     * @param array<string, mixed> $definition
+     */
+    private static function algorithm(string $clientId, string $option, array $definition, SignatureAlgorithmsInterface $algorithms): SignatureAlgorithmInterface
+    {
+        $name = $definition[$option] ?? null;
+        if ($name === null) {
+            return $algorithms->defaultAlgorithm();
+        }
+        if (! is_string($name)) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $option, $clientId));
+        }
+        try {
+            return $algorithms->named($name);
+        } catch (UnsupportedAlgorithmException $exception) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be one of: %s.', $option, $clientId, implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all()))), 0, $exception);
+        }
     }
 
     public function hasSecret(): bool
@@ -235,6 +253,7 @@ final readonly class ClientDefinition
             $this->requiresPushedAuthorizationRequests,
             $this->requestObjectSigning,
             $this->requestUris,
+            $this->authorizationSignedResponseAlg,
         );
     }
 
