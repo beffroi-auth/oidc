@@ -42,4 +42,14 @@ final readonly class AuthenticatedClient
 
         return new self($this->client, $confirmation);
     }
+
+    /**
+     * FAPI 2.0 Security Profile §5.3.1: a client registered for sender-constrained tokens gets them or
+     * gets nothing. What the request proved is one confirmation or none, whichever kind it is, so the
+     * question is asked of the confirmation being there and never of what it is made of.
+     */
+    public function provesWhatItsClientRequires(): bool
+    {
+        return ! $this->client->requiresSenderConstrainedTokens || $this->confirmation !== null;
+    }
 }

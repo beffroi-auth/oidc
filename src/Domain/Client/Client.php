@@ -69,6 +69,8 @@ final readonly class Client
      * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
+     * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
+     * @param bool $requiresSignedRequestObject true when an authorization request of this client is only read from a request object it signed (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1)
      * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
      * @param list<ClientUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
@@ -109,6 +111,8 @@ final readonly class Client
         array $requestUris = [],
         ?ResponseFormat $authorizationResponse = null,
         ?ResponseFormat $userInfo = null,
+        public bool $requiresSenderConstrainedTokens = false,
+        public bool $requiresSignedRequestObject = false,
     ) {
         $allowedScopes ??= [Scope::openid()];
         $this->idToken = $idToken ?? ResponseFormat::signed();

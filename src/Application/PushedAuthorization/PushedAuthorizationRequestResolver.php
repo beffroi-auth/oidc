@@ -24,8 +24,13 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * is dropped, as it is for a request object (OIDC Core §6.1), so that what the client pushed and what
  * the provider reads are the same request.
  *
- * A reference is read once and read by the client it was issued to. What is not a reference of this
- * provider is left alone: the authorization endpoint answers for it, and nothing here ever fetches a URL.
+ * A reference is spent once and read by the client it was issued to, and it is spent when the request
+ * it carries is granted and not when it is read (FAPI 2.0 Security Profile §5.3.1): a user who reloads
+ * the page they were sent to, or a browser that repeats the request, is still holding a request nobody
+ * has answered yet. The authorization endpoint consumes the record with the code it issues.
+ *
+ * What is not a reference of this provider is left alone: the authorization endpoint answers for it, and
+ * nothing here ever fetches a URL.
  */
 final readonly class PushedAuthorizationRequestResolver
 {
@@ -43,10 +48,10 @@ final readonly class PushedAuthorizationRequestResolver
      *
      * @throws OAuth2Exception never redirectable: a pushed request that grants nothing names no redirect
      *                         URI this provider would send anything to
-     * @return array<string, string>|null the parameters the endpoint reads in place of them, null when
-     *                                    the request was not pushed and the ones it carries stand
+     * @return PushedAuthorizationRequest|null the record the endpoint reads in place of the query, null
+     *                                         when the request was not pushed and the query stands
      */
-    public function resolve(Tenant $tenant, array $parameters, RequestContext $context): ?array
+    public function resolve(Tenant $tenant, array $parameters, RequestContext $context): ?PushedAuthorizationRequest
     {
         $requestUri = RequestParameters::single($parameters, 'request_uri', false);
         if ($requestUri === null || ! RequestUri::isOurs($requestUri)) {
@@ -63,11 +68,11 @@ final readonly class PushedAuthorizationRequestResolver
         if ($request->isExpired($this->clock->now())) {
             throw $this->refuse($tenant, $context, PushedRequestRefusalReason::Expired, $clientId, $request->clientId);
         }
-        if (! $this->requests->consume($request, $this->clock->now())) {
+        if ($request->isUsed()) {
             throw $this->refuse($tenant, $context, PushedRequestRefusalReason::AlreadyUsed, $clientId, $request->clientId);
         }
 
-        return self::parametersOf($request);
+        return $request;
     }
 
     /**
@@ -76,7 +81,7 @@ final readonly class PushedAuthorizationRequestResolver
      *
      * @return array<string, string>
      */
-    private static function parametersOf(PushedAuthorizationRequest $request): array
+    public static function parametersOf(PushedAuthorizationRequest $request): array
     {
         return [
             ...$request->parameters,

@@ -81,6 +81,8 @@ final readonly class ClientDefinition
         'authorization_encrypted_response_enc',
         'requires_pkce',
         'require_pushed_authorization_requests',
+        'require_sender_constrained_tokens',
+        'require_signed_request_object',
         'access_token_format',
         'backchannel_logout_uri',
         'backchannel_logout_session_required',
@@ -116,6 +118,8 @@ final readonly class ClientDefinition
         public ResponseFormat $authorizationResponse,
         public bool $requiresPkce,
         public bool $requiresPushedAuthorizationRequests,
+        public bool $requiresSenderConstrainedTokens,
+        public bool $requiresSignedRequestObject,
         public AccessTokenFormat $accessTokenFormat,
         public ?ClientUri $backChannelLogoutUri,
         public bool $backChannelLogoutSessionRequired,
@@ -212,6 +216,8 @@ final readonly class ClientDefinition
             : ResponseFormat::signed(self::algorithm($clientId, 'userinfo_signed_response_alg', $definition, $algorithms), $userInfoEncryption);
 
         $requiresPushedAuthorizationRequests = self::flag($clientId, 'require_pushed_authorization_requests', $definition);
+        $requiresSenderConstrainedTokens = self::flag($clientId, 'require_sender_constrained_tokens', $definition);
+        $requiresSignedRequestObject = self::flag($clientId, 'require_signed_request_object', $definition);
 
         $accessTokenFormat = self::enumCase(
             $clientId,
@@ -275,6 +281,8 @@ final readonly class ClientDefinition
             $authorizationResponse,
             $requiresPkce,
             $requiresPushedAuthorizationRequests,
+            $requiresSenderConstrainedTokens,
+            $requiresSignedRequestObject,
             $accessTokenFormat,
             $backChannelLogoutUri,
             $backChannelLogoutSessionRequired,
@@ -472,6 +480,8 @@ final readonly class ClientDefinition
             $this->requestUris,
             $this->authorizationResponse,
             $this->userInfo,
+            $this->requiresSenderConstrainedTokens,
+            $this->requiresSignedRequestObject,
         );
     }
 

@@ -43,6 +43,10 @@ final class Interaction
 
     /**
      * @param string|null $locale the language of the pages of this interaction (architecture §5.7)
+     * @param string|null $requestUriHash the pushed authorization request this one was started from
+     *                                    (RFC 9126 §4), null when the request was not pushed; the
+     *                                    reference is spent when this interaction grants, so that a
+     *                                    request nobody has answered yet can be visited again
      */
     public function __construct(
         public readonly string $id,
@@ -51,6 +55,7 @@ final class Interaction
         public readonly ?string $locale,
         public readonly DateTimeImmutable $createdAt,
         public readonly DateTimeImmutable $expiresAt,
+        public readonly ?string $requestUriHash = null,
     ) {
         if (preg_match(self::ID_PATTERN, $id) !== 1) {
             throw new InvalidArgumentException('An interaction identifier is 256 bits in base64url, see generateId().');

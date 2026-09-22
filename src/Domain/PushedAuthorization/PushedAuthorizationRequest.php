@@ -39,6 +39,9 @@ final class PushedAuthorizationRequest
     /**
      * @param string $requestUriHash see RequestUri::hashOf()
      * @param array<string, string> $parameters the form parameters the client pushed, credentials taken out
+     * @param bool $carriedBySignedObject whether the push carried a request object the client signed
+     *                                    (RFC 9101 §6.1), which the authorization endpoint can no longer
+     *                                    see once the record answers for the request
      */
     public function __construct(
         public readonly string $requestUriHash,
@@ -46,6 +49,7 @@ final class PushedAuthorizationRequest
         public readonly array $parameters,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
+        public readonly bool $carriedBySignedObject = false,
     ) {
         if (preg_match(self::HASH_PATTERN, $requestUriHash) !== 1) {
             throw new InvalidArgumentException('A pushed authorization request is stored as the hex SHA-256 of its request URI.');

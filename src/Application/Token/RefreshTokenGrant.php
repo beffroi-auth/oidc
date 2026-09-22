@@ -22,8 +22,12 @@ use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * RFC 6749 §6, RFC 9700 §4.13 (architecture §4.5): the token is rotated on every use, its successor in
- * the same family with the same scopes; a rotated token presented again revokes the family (§4.13.2).
+ * RFC 6749 §6, RFC 9700 §4.13 (architecture §4.5): what tells a refresh token from a copy of itself is
+ * the authentication of a confidential client, the key or the certificate it is bound to, or rotation,
+ * and one of the three is enough (§4.13.2). A token that is protected by neither of the first two is
+ * rotated on every use, its successor in the same family with the same scopes, and presented again it
+ * revokes the family; a token that is protected otherwise stands, because replacing it would add
+ * nothing and would lock out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9).
  * The session may have expired, not have been ended (architecture §4.9).
  *
  * A token bound to a key (RFC 9449 §5) is refreshed by a request that proves that key again, and by
@@ -70,9 +74,12 @@ final readonly class RefreshTokenGrant implements GrantInterface
             throw new InvalidScopeException('The requested scope exceeds the scope granted to the refresh token (RFC 6749 section 6).');
         }
 
+        $authorization = GrantedAuthorization::fromRefreshToken($token, $scopes, $client->confirmation);
+        if (! $token->rotatesOnUse()) {
+            return $this->issuer->issue($authorization, null, $context, $now);
+        }
         $token->rotate($now);
         $this->refreshTokens->save($token);
-        $authorization = GrantedAuthorization::fromRefreshToken($token, $scopes, $client->confirmation);
         $successor = $this->issuer->refreshToken($token->family, $authorization, $now);
         $this->events->dispatch(RefreshTokenRotated::of($token, $successor->token, $context));
 

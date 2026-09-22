@@ -17,7 +17,12 @@ use Heidi\Oidc\Port\DpopNonceInterface;
 use Heidi\Oidc\Port\DpopProofReplayGuardInterface;
 use SensitiveParameter;
 use function sprintf;
+use function str_ends_with;
+use function strlen;
+use function strpos;
 use function strstr;
+use function strtolower;
+use function substr;
 
 /**
  * What a proof has to say once the key it carries has been shown to have signed it (RFC 9449 §4.3).
@@ -32,6 +37,16 @@ use function strstr;
  */
 final readonly class DpopProofValidator
 {
+    /**
+     * RFC 3986 §6.2.3: the port a scheme defaults to, which a URL carrying it is the same URL without.
+     *
+     * @var array<string, string>
+     */
+    private const array DEFAULT_PORTS = [
+        'https' => '443',
+        'http' => '80',
+    ];
+
     /**
      * @param DateInterval $maximumAge how long a proof stands, from its "iat"
      * @param DateInterval $leeway what is allowed of the clock of the client, both ways
@@ -67,7 +82,7 @@ final readonly class DpopProofValidator
         if ($proof->method() !== $method) {
             throw new InvalidDpopProofException('The htm of the DPoP proof is not the method of this request (RFC 9449 section 4.3).');
         }
-        if (self::withoutQuery($proof->url()) !== $url) {
+        if (self::comparable($proof->url()) !== self::comparable($url)) {
             throw new InvalidDpopProofException('The htu of the DPoP proof is not the endpoint this provider publishes for this request (RFC 9449 section 4.3).');
         }
         $this->nonces->verify($proof->nonce(), $now);
@@ -114,12 +129,35 @@ final readonly class DpopProofValidator
      * RFC 9449 §4.3: the query and the fragment are no part of what a proof names, an endpoint being one
      * whatever a client appends to it.
      */
-    private static function withoutQuery(string $url): string
+    /**
+     * The shape two URLs are compared in (RFC 9449 §4.3): the query and the fragment are dropped, and
+     * what is left is normalised as RFC 3986 §6.2.2 and §6.2.3 say a URL is. The scheme and the host are
+     * case insensitive, and a port that is the default of its scheme is the same URL as no port at all;
+     * a client that writes "HTTPS://OP.EXAMPLE:443/token" wrote the endpoint this provider publishes,
+     * and refusing its proof would be this provider comparing bytes where the specification compares
+     * URLs. The path is left alone: RFC 3986 §6.2.2.1 makes it case sensitive.
+     */
+    private static function comparable(string $url): string
     {
         $withoutFragment = strstr($url, '#', true);
         $url = $withoutFragment === false ? $url : $withoutFragment;
         $withoutQuery = strstr($url, '?', true);
+        $url = $withoutQuery === false ? $url : $withoutQuery;
+        $separator = strpos($url, '://');
+        if ($separator === false) {
+            return $url;
+        }
+        $scheme = strtolower(substr($url, 0, $separator));
+        $rest = substr($url, $separator + 3);
+        $slash = strpos($rest, '/');
+        $authority = $slash === false ? $rest : substr($rest, 0, $slash);
+        $path = $slash === false ? '' : substr($rest, $slash);
+        $authority = strtolower($authority);
+        $default = self::DEFAULT_PORTS[$scheme] ?? null;
+        if ($default !== null && str_ends_with($authority, ':' . $default)) {
+            $authority = substr($authority, 0, -strlen(':' . $default));
+        }
 
-        return $withoutQuery === false ? $url : $withoutQuery;
+        return $scheme . '://' . $authority . $path;
     }
 }

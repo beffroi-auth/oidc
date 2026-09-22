@@ -88,14 +88,15 @@ final readonly class PushedAuthorizationHandler
         // Signing asks of one. It is read here, against the client that has just authenticated, and
         // what the store keeps is the request it carried: the object is verified once, by the endpoint
         // the client sent it to, and the authorization endpoint reads parameters like any other.
-        $parameters = $this->requestObjects->resolve($tenant, $parameters, $client) ?? $parameters;
+        $object = $this->requestObjects->resolve($tenant, $parameters, $client);
+        $parameters = $object ?? $parameters;
         $parameters = self::reservedFor($parameters, $provenKey);
-        $target = $this->parser->redirectTarget($tenant, $parameters, true);
+        $target = $this->parser->redirectTarget($tenant, $parameters, true, $object !== null);
         $this->parser->parse($target, $parameters);
 
         $now = $this->clock->now();
         $requestUri = RequestUri::generate();
-        $request = new PushedAuthorizationRequest($requestUri->hash(), $client, self::kept($parameters), $now, $now->add($this->lifetime));
+        $request = new PushedAuthorizationRequest($requestUri->hash(), $client, self::kept($parameters), $now, $now->add($this->lifetime), $object !== null);
         $this->requests->save($request);
 
         return new PushedAuthorizationResponse($requestUri, $request->expiresIn($now));

@@ -32,10 +32,12 @@ use Heidi\Oidc\Exception\AccessDeniedException;
 use Heidi\Oidc\Exception\ConsentRequiredException;
 use Heidi\Oidc\Exception\InteractionCompletedException;
 use Heidi\Oidc\Exception\InteractionExpiredException;
+use Heidi\Oidc\Exception\InvalidRequestUriException;
 use Heidi\Oidc\Exception\LoginRequiredException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
+use Heidi\Oidc\Port\PushedAuthorizationRequestRepositoryInterface;
 use Heidi\Oidc\Port\ConsentRepositoryInterface;
 use Heidi\Oidc\Port\InteractionRepositoryInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
@@ -72,6 +74,7 @@ final readonly class AuthorizationHandler
         private InteractionRepositoryInterface $interactions,
         private ConsentRepositoryInterface $consents,
         private AuthorizationCodeRepositoryInterface $codes,
+        private PushedAuthorizationRequestRepositoryInterface $pushedRequests,
         private IdTokenHintVerifier $idTokenHints,
         private ProvableMethodsInterface $provable,
         private CredentialRepositoryInterface $credentials,
@@ -92,9 +95,18 @@ final readonly class AuthorizationHandler
         ?AuthenticationSession $session,
         RequestContext $context,
         ?string $locale = null,
+        ?string $requestUriHash = null,
     ): AuthorizationDecision {
         $now = $this->clock->now();
-        $interaction = new Interaction(Interaction::generateId(), $request->client->tenant, $request, $locale, $now, $now->add($this->interactionLifetime));
+        $interaction = new Interaction(
+            Interaction::generateId(),
+            $request->client->tenant,
+            $request,
+            $locale,
+            $now,
+            $now->add($this->interactionLifetime),
+            $requestUriHash,
+        );
 
         return $this->decide($interaction, $session, $context, $now);
     }
@@ -152,6 +164,21 @@ final readonly class AuthorizationHandler
      * @throws InteractionExpiredException
      * @throws AccessDeniedException always
      */
+    /**
+     * The record an interaction was started from, claimed atomically: of any number of interactions that
+     * reached this point on one reference, exactly one is told true (RFC 9126 §4). An interaction that
+     * was not started from a record has nothing to spend and is told true.
+     */
+    private function spend(Interaction $interaction, DateTimeImmutable $now): bool
+    {
+        if ($interaction->requestUriHash === null) {
+            return true;
+        }
+        $record = $this->pushedRequests->findByRequestUriHash($interaction->requestUriHash);
+
+        return $record !== null && $this->pushedRequests->consume($record, $now);
+    }
+
     public function deny(Interaction $interaction): never
     {
         $interaction->complete($this->clock->now());
@@ -217,6 +244,12 @@ final readonly class AuthorizationHandler
             $now->add($this->codeLifetime),
         );
         $this->codes->save($record);
+        // RFC 9126 §4, FAPI 2.0 Security Profile §5.3.1: the reference is spent here, with the code it
+        // bought, and not when the endpoint read it. A record the winner of the claim did not get is one
+        // another request granted first, and this one grants nothing.
+        if (! $this->spend($interaction, $now)) {
+            throw new InvalidRequestUriException('The request_uri parameter names a request this provider has already granted (RFC 9126 section 4).');
+        }
         $interaction->complete($now);
         $this->interactions->save($interaction);
         $this->events->dispatch(AuthorizationCodeIssued::of($record, $context));

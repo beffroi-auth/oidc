@@ -12,6 +12,7 @@ use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Token\TokenResponse;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnauthorizedClientException;
 use Heidi\Oidc\Exception\UnsupportedGrantTypeException;
@@ -73,6 +74,12 @@ final readonly class TokenHandler
         $client = $this->clients
             ->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)
             ->alsoProving($this->proofs->verify($dpopProof, 'POST', $endpoint, $context->receivedAt));
+        // FAPI 2.0 Security Profile §5.3.1: bearer tokens are not what this client registered for, and a
+        // request that proved nothing is refused here rather than answered with them (RFC 9449 §5,
+        // RFC 8705 §3). The error is the one of RFC 6749 §5.2 that says the request is the problem.
+        if (! $client->provesWhatItsClientRequires()) {
+            throw new InvalidRequestException('The tokens of this client are bound to what the request proves it holds, and this request proves neither a certificate nor a key (FAPI 2.0 Security Profile section 5.3.1).');
+        }
         $request = new TokenRequest($parameters);
 
         $grantType = GrantType::tryFrom($request->required('grant_type'));

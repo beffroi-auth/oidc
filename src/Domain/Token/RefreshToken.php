@@ -133,6 +133,19 @@ final class RefreshToken
      * to nothing is refreshed by the client it was issued to, which the endpoint authenticated before
      * the grant was even reached.
      */
+    /**
+     * Whether this token is protected by being replaced at every use (RFC 9700 §4.13.2), which is the
+     * last term of a disjunction and not a rule of its own. A refresh token is told from a copy of
+     * itself by one of three things: the authentication of a confidential client, the key or the
+     * certificate it is bound to, or rotation. Where one of the first two holds, rotation adds nothing,
+     * and FAPI 2.0 Security Profile §5.3.2.1-9 forbids it for that very reason: a client that loses the
+     * answer to a refresh would be locked out of a grant it still holds.
+     */
+    public function rotatesOnUse(): bool
+    {
+        return $this->client->isPublic() && $this->confirmation === null;
+    }
+
     public function isRefreshedBy(?ConfirmationInterface $confirmation): bool
     {
         return $this->confirmation === null || $confirmation !== null && $confirmation->matches($this->confirmation);

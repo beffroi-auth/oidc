@@ -69,10 +69,13 @@ final readonly class AuthorizationRequestParser
      * @param array<string, mixed> $parameters
      * @param bool $pushed whether the parameters are the ones of a request the client pushed (RFC 9126
      *                     §2), which is the only way a client that requires it may start one
+     * @param bool $signed whether they are the ones of a request object the client signed (RFC 9101
+     *                     §6.1), directly or inside the record it pushed, which is the only way a client
+     *                     that requires it may start one
      *
      * @throws OAuth2Exception never redirectable
      */
-    public function redirectTarget(Tenant $tenant, array $parameters, bool $pushed = false): RedirectTarget
+    public function redirectTarget(Tenant $tenant, array $parameters, bool $pushed = false, bool $signed = false): RedirectTarget
     {
         self::assertResolved($parameters);
         $clientId = RequestParameters::single($parameters, 'client_id', false);
@@ -87,6 +90,12 @@ final readonly class AuthorizationRequestParser
         // requests is told so on a page and nothing of the request reaches the browser it came from
         if (! $pushed && $client->requiresPushedAuthorizationRequests) {
             throw new InvalidRequestException('The client only starts an authorization request by pushing it (RFC 9126 section 6).');
+        }
+        // OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1: read here
+        // for the same reason, so that a client held to signing its requests is told so on a page and
+        // nothing of the request reaches the browser it came from
+        if (! $signed && $client->requiresSignedRequestObject) {
+            throw new InvalidRequestException('The client only starts an authorization request with a request object it signed (OIDC Registration, require_signed_request_object).');
         }
         $redirectUri = RequestParameters::single($parameters, 'redirect_uri', false);
         if ($redirectUri === null) {
