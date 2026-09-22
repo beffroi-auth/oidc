@@ -20,6 +20,7 @@ use Heidi\Oidc\Domain\Authorization\ResponseMode;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\InvalidScopeException;
@@ -171,6 +172,7 @@ final readonly class AuthorizationRequestParser
         $display = self::display(RequestParameters::single($parameters, 'display', true));
         $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', true);
         $claims = self::claims(RequestParameters::single($parameters, 'claims', true));
+        $dpopKey = self::dpopKey(RequestParameters::single($parameters, 'dpop_jkt', true));
 
         return new AuthorizationRequest(
             $target->client,
@@ -188,7 +190,26 @@ final readonly class AuthorizationRequestParser
             $idTokenHint,
             $claims,
             $target->responseMode,
+            $dpopKey,
         );
+    }
+
+    /**
+     * RFC 9449 §10: the key the client will exchange the code with, named by its JWK thumbprint, so that
+     * a code stolen on its way back is worth nothing to whoever does not hold that key. A request that
+     * names one is a request whose token exchange must prove it, whether the client pushed the request
+     * or signed it.
+     */
+    private static function dpopKey(?string $thumbprint): ?KeyConfirmation
+    {
+        if ($thumbprint === null) {
+            return null;
+        }
+        try {
+            return new KeyConfirmation($thumbprint);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidRequestException('The dpop_jkt parameter is the JWK thumbprint of a key, the base64url of a SHA-256 (RFC 9449 section 10).', true, $exception);
+        }
     }
 
     /**

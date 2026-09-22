@@ -26,6 +26,11 @@ use SensitiveParameter;
  * A refresh token (RFC 6749 §6, architecture §4.6) as the provider keeps it: the SHA-256 of the value,
  * its family, the authentication of the original authorization carried along the rotations (OIDC Core
  * §12.2). Presented once; a second presentation is a reuse (RFC 9700 §4.13.2).
+ *
+ * One issued to a public client keeps what the request that got it proved (RFC 8705 §4, RFC 9449 §5):
+ * such a client has no credentials, so the binding is the only thing that tells its holder from
+ * whoever took a copy. One issued to a confidential client keeps none: what it authenticates with is
+ * what it is asked for again, at every refresh.
  */
 final class RefreshToken
 {
@@ -49,6 +54,7 @@ final class RefreshToken
      * @param string $tokenHash see hash()
      * @param list<Scope> $scopes at least one
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
+     * @param ConfirmationInterface|null $confirmation what a refresh of this token has to prove again (RFC 9449 §5), null when the client proves itself another way
      * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
      */
     public function __construct(
@@ -61,6 +67,7 @@ final class RefreshToken
         public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
+        public readonly ?ConfirmationInterface $confirmation = null,
     ) {
         if (preg_match(AuthorizationCode::HASH_PATTERN, $tokenHash) !== 1) {
             throw new InvalidArgumentException('A refresh token is stored as its hex SHA-256.');
@@ -97,6 +104,9 @@ final class RefreshToken
             $authorization->authentication,
             $now,
             min($expiresAt, $family->expiresAt),
+            // RFC 8705 §4, RFC 9449 §5: a public client is bound by what it proved, a confidential one
+            // by what it authenticates with, which the endpoint asks of it again anyway
+            $authorization->client->isPublic() ? $authorization->confirmation : null,
         );
     }
 
@@ -111,6 +121,16 @@ final class RefreshToken
     public static function hash(#[SensitiveParameter] string $token): string
     {
         return hash('sha256', $token);
+    }
+
+    /**
+     * RFC 9449 §5: whether the request refreshing this token proved what it is bound to. A token bound
+     * to nothing is refreshed by the client it was issued to, which the endpoint authenticated before
+     * the grant was even reached.
+     */
+    public function isRefreshedBy(?ConfirmationInterface $confirmation): bool
+    {
+        return $this->confirmation === null || ($confirmation !== null && $confirmation->matches($this->confirmation));
     }
 
     /**

@@ -8,6 +8,7 @@ use function array_any;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use function in_array;
 
 /**
@@ -23,6 +24,7 @@ final readonly class AuthorizationRequest
      * @param list<string> $uiLocales most preferred first
      * @param list<string> $acrValues in order of preference
      * @param string|null $idTokenHint a compact JWS, verified by the interaction
+     * @param KeyConfirmation|null $dpopKey the key the client asks the code to be reserved for ("dpop_jkt", RFC 9449 §10), null when it asks for none
      */
     public function __construct(
         public Client $client,
@@ -40,6 +42,7 @@ final readonly class AuthorizationRequest
         public ?string $idTokenHint = null,
         public ?ClaimsRequest $claims = null,
         public ResponseMode $responseMode = ResponseMode::Query,
+        public ?KeyConfirmation $dpopKey = null,
     ) {
     }
 

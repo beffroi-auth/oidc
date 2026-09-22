@@ -25,6 +25,10 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * RFC 6749 §6, RFC 9700 §4.13 (architecture §4.5): the token is rotated on every use, its successor in
  * the same family with the same scopes; a rotated token presented again revokes the family (§4.13.2).
  * The session may have expired, not have been ended (architecture §4.9).
+ *
+ * A token bound to a key (RFC 9449 §5) is refreshed by a request that proves that key again, and by
+ * nobody else: the client that holds it is a public client, and the binding is the whole of what tells
+ * it from whoever took a copy of the token.
  */
 final readonly class RefreshTokenGrant implements GrantInterface
 {
@@ -59,7 +63,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
 
             throw new InvalidGrantException(self::INVALID);
         }
-        if ($token->isExpired($now) || $token->session->hasEnded()) {
+        if ($token->isExpired($now) || $token->session->hasEnded() || ! $token->isRefreshedBy($client->confirmation)) {
             throw new InvalidGrantException(self::INVALID);
         }
         if ($scopes !== null && ! $token->covers($scopes)) {

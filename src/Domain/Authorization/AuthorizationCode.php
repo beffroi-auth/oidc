@@ -12,6 +12,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
 use function preg_match;
@@ -50,6 +51,7 @@ final class AuthorizationCode
      * @param string $codeHash see hash()
      * @param list<Scope> $scopes at least one
      * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE (decision 0008)
+     * @param KeyConfirmation|null $dpopKey the key the request reserved the code for (RFC 9449 §10), null when it reserved it for none
      * @param AuthenticationSnapshot $authentication what the session had proven, frozen for every token of the grant
      */
     public function __construct(
@@ -61,6 +63,7 @@ final class AuthorizationCode
         array $scopes,
         public readonly ?string $nonce,
         public readonly ?CodeChallenge $codeChallenge,
+        public readonly ?KeyConfirmation $dpopKey,
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,

@@ -43,7 +43,7 @@ final readonly class GrantedAuthorization
      * @param list<Scope> $grantedScopes
      * @param string|null $nonce only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, written in every token
-     * @param Confirmation|null $confirmation what the tokens of this response are bound to (RFC 8705 §3), null when they are bearer tokens
+     * @param ConfirmationInterface|null $confirmation what the tokens of this response are bound to (RFC 8705 §3, RFC 9449 §6.1), null when they are bearer tokens
      */
     public function __construct(
         public GrantType $grantType,
@@ -55,7 +55,7 @@ final readonly class GrantedAuthorization
         public ?string $nonce,
         public ?ClaimsRequest $claimsRequest,
         public AuthenticationSnapshot $authentication,
-        public ?Confirmation $confirmation = null,
+        public ?ConfirmationInterface $confirmation = null,
     ) {
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An authorization binds a session and a client of the same tenant.');
@@ -78,7 +78,7 @@ final readonly class GrantedAuthorization
     /**
      * RFC 6749 §4.1.3, OIDC Core §3.1.3.
      */
-    public static function fromAuthorizationCode(AuthorizationCode $code, ?Confirmation $confirmation = null): self
+    public static function fromAuthorizationCode(AuthorizationCode $code, ?ConfirmationInterface $confirmation = null): self
     {
         return new self(
             GrantType::AuthorizationCode,
@@ -102,7 +102,7 @@ final readonly class GrantedAuthorization
      *
      * @param list<Scope>|null $scopes null for the ones of the token
      */
-    public static function fromRefreshToken(RefreshToken $token, ?array $scopes, ?Confirmation $confirmation = null): self
+    public static function fromRefreshToken(RefreshToken $token, ?array $scopes, ?ConfirmationInterface $confirmation = null): self
     {
         return new self(
             GrantType::RefreshToken,

@@ -14,7 +14,11 @@ use SensitiveParameter;
  */
 final readonly class TokenResponse
 {
-    public const string TOKEN_TYPE = 'Bearer';
+    /**
+     * RFC 6749 §5.1, RFC 6750 §6.1: the type of a token whose holder is whoever presents it, and of one
+     * the transport binds (RFC 8705 §3, which changes nothing to the way a client sends it).
+     */
+    public const string BEARER = 'Bearer';
 
     public const string CONTENT_TYPE = 'application/json';
 
@@ -34,6 +38,8 @@ final readonly class TokenResponse
     /**
      * @param positive-int $expiresIn
      * @param list<Scope> $scopes at least one
+     * @param string $tokenType how the client presents the token it is handed (RFC 6749 §5.1), which is
+     *                          what the binding of the token says and "Bearer" when it has none
      */
     public function __construct(
         #[SensitiveParameter]
@@ -44,6 +50,7 @@ final readonly class TokenResponse
         #[SensitiveParameter]
         public ?string $idToken,
         array $scopes,
+        public string $tokenType = self::BEARER,
     ) {
         if ($accessToken === '') {
             throw new InvalidArgumentException('A token response carries an access token.');
@@ -64,7 +71,7 @@ final readonly class TokenResponse
     {
         $parameters = [
             'access_token' => $this->accessToken,
-            'token_type' => self::TOKEN_TYPE,
+            'token_type' => $this->tokenType,
             'expires_in' => $this->expiresIn,
         ];
         if ($this->refreshToken !== null) {

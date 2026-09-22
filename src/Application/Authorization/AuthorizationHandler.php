@@ -206,6 +206,7 @@ final readonly class AuthorizationHandler
             $request->scopes,
             $request->nonce,
             $request->codeChallenge,
+            $request->dpopKey,
             $request->claims,
             AuthenticationSnapshot::ofSession($session, $requestedClasses->firstSatisfiedBy($session) ?? $session->authenticationContextClass()),
             $now,

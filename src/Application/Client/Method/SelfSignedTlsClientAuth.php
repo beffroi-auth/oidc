@@ -10,7 +10,7 @@ use Heidi\Oidc\Application\Client\ClientKeySetProvider;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\Confirmation;
+use Heidi\Oidc\Domain\Token\CertificateConfirmation;
 use Heidi\Oidc\Exception\ClientKeysUnavailableException;
 use Heidi\Oidc\Exception\LogicException;
 use function sprintf;
@@ -80,13 +80,13 @@ final readonly class SelfSignedTlsClientAuth implements KeyBearingMethodInterfac
     {
     }
 
-    public function confirmationOf(ClientAuthenticationRequest $request): Confirmation
+    public function confirmationOf(ClientAuthenticationRequest $request): CertificateConfirmation
     {
         $certificate = $request->certificate;
         if ($certificate === null) {
             throw new LogicException(sprintf('A request that authenticated a client with %s carries a certificate.', $this->name()));
         }
 
-        return Confirmation::ofCertificate($certificate);
+        return CertificateConfirmation::ofCertificate($certificate);
     }
 }

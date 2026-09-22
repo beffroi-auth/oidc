@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
+use Heidi\Oidc\Exception\ChallengeInterface;
 use Heidi\Oidc\Exception\InvalidClientException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 
@@ -17,18 +18,27 @@ final readonly class TokenErrorResponse
 
     /**
      * @param string|null $challenge the WWW-Authenticate header, when one is due
+     * @param array<string, string> $carried what the refusal carries beside its body, the nonce of
+     *                                       RFC 9449 §8.1 and nothing else today
      */
     public function __construct(
         public int $statusCode,
         public string $error,
         public string $errorDescription,
         public ?string $challenge = null,
+        public array $carried = [],
     ) {
     }
 
     public static function fromException(OAuth2Exception $exception): self
     {
-        return new self($exception->statusCode, $exception->error, $exception->errorDescription, $exception instanceof InvalidClientException ? $exception->challenge : null);
+        return new self(
+            $exception->statusCode,
+            $exception->error,
+            $exception->errorDescription,
+            $exception instanceof InvalidClientException ? $exception->challenge : null,
+            $exception instanceof ChallengeInterface ? $exception->challengeHeaders() : [],
+        );
     }
 
     /**
@@ -47,7 +57,7 @@ final readonly class TokenErrorResponse
      */
     public function headers(): array
     {
-        $headers = TokenResponse::HEADERS;
+        $headers = TokenResponse::HEADERS + $this->carried;
         if ($this->challenge !== null) {
             $headers['WWW-Authenticate'] = $this->challenge;
         }

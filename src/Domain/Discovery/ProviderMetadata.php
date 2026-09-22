@@ -200,7 +200,7 @@ final readonly class ProviderMetadata
 
     /**
      * In the order of OIDC Discovery §3, then RFC 8414 §2, RFC 9126 §5, RFC 9701 §6, RFC 9207 §3,
-     * RP-Initiated Logout §2.1.
+     * RP-Initiated Logout §2.1, RFC 8705 §3.3 and §5, RFC 9449 §5.1.
      *
      * @return array<string, mixed>
      */
@@ -254,6 +254,10 @@ final readonly class ProviderMetadata
             // RFC 8705 §3.3: whether the provider binds an access token to the certificate its client
             // presented, which is whether a method that proves one is wired and nothing else
             'tls_client_certificate_bound_access_tokens' => $this->bindsAccessTokensToCertificates(),
+            // RFC 9449 §5.1: what a proof of possession may be signed with, which is what the provider
+            // is wired with and verifies every other signature with; a client binding its tokens to a
+            // key signs with one of these and with nothing else
+            'dpop_signing_alg_values_supported' => $this->algorithmNames(),
             ...$this->mutualTlsEndpointAliases(),
         ];
     }

@@ -40,7 +40,7 @@ final readonly class StoredAccessToken
      * @param string $tokenHash see OpaqueTokenValue::hash()
      * @param list<Scope> $scopes at least one
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant
-     * @param Confirmation|null $confirmation what the token is bound to (RFC 8705 §3), null for a bearer token
+     * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      */
     public function __construct(
         public string $tokenHash,
@@ -52,7 +52,7 @@ final readonly class StoredAccessToken
         public AuthenticationSnapshot $authentication,
         public DateTimeImmutable $issuedAt,
         public DateTimeImmutable $expiresAt,
-        public ?Confirmation $confirmation = null,
+        public ?ConfirmationInterface $confirmation = null,
     ) {
         if (preg_match(AuthorizationCode::HASH_PATTERN, $tokenHash) !== 1) {
             throw new InvalidArgumentException('An opaque access token is stored as its hex SHA-256.');

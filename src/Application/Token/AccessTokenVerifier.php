@@ -14,7 +14,7 @@ use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Token\Confirmation;
+use Heidi\Oidc\Domain\Token\Confirmations;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTokenException;
@@ -140,7 +140,7 @@ final readonly class AccessTokenVerifier
             $subject = new Subject($sub);
             $scopes = self::scopes($claims['scope'] ?? null);
             $authentication = AuthenticationSnapshot::fromClaims($claims);
-            $confirmation = Confirmation::fromClaims($claims);
+            $confirmation = Confirmations::fromClaims($claims);
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE, $exception);
         }

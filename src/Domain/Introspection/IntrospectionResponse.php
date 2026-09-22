@@ -65,7 +65,7 @@ final readonly class IntrospectionResponse
             'active' => true,
             'scope' => implode(' ', array_map(static fn (Scope $scope): string => $scope->value, $token->scopes)),
             'client_id' => $token->client->clientId,
-            'token_type' => TokenResponse::TOKEN_TYPE,
+            'token_type' => $token->confirmation?->scheme() ?? TokenResponse::BEARER,
             'exp' => $token->expiresAt->getTimestamp(),
             'iat' => $token->issuedAt->getTimestamp(),
             'sub' => $token->subject->value,

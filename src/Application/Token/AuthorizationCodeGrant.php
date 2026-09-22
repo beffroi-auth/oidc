@@ -31,6 +31,10 @@ use Symfony\Component\Uid\Uuid;
  * RFC 6749 §4.1.3, RFC 7636 §4.6, OIDC Core §3.1.3 (architecture §4.5). Every failure is "invalid_grant"
  * with one description. The code is consumed by its first presentation (RFC 9700 §4.5); presented again,
  * the grant and every token descending from it are revoked (RFC 6749 §4.1.2).
+ *
+ * A code reserved for a key (RFC 9449 §10) is exchanged by a request that proves that key and by no
+ * other: the authorization request said which key would come and collect it, and a code intercepted on
+ * its way back through the browser is worth nothing to whoever does not hold it.
  */
 final readonly class AuthorizationCodeGrant implements GrantInterface
 {
@@ -86,6 +90,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
             || $record->isExpired($now)
             || ! $record->redirectUri->matches($redirectUri)
             || ! self::pkceSatisfied($record, $codeVerifier)
+            || ! self::reservationSatisfied($record, $client)
             || ! $record->session->isActive($now)) {
             throw new InvalidGrantException(self::INVALID);
         }
@@ -110,6 +115,16 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         }
 
         return $codeVerifier !== null && $record->codeChallenge->verifies($codeVerifier);
+    }
+
+    /**
+     * RFC 9449 §10.1: a code the authorization request reserved for a key is exchanged by a request that
+     * proved that key. A code reserved for none is exchanged by whichever request the rest of this
+     * grant accepts, a client that binds no token being a client that reserves nothing.
+     */
+    private static function reservationSatisfied(AuthorizationCode $record, AuthenticatedClient $client): bool
+    {
+        return $record->dpopKey === null || ($client->confirmation !== null && $client->confirmation->matches($record->dpopKey));
     }
 
     private function refreshTokenDue(GrantedAuthorization $authorization): bool
