@@ -11,16 +11,16 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
 use Heidi\Oidc\Port\ClientAssertionReplayGuardInterface;
-use function in_array;
 
 /**
  * What a client assertion has to say once its signature has been verified (RFC 7523 §3, OIDC Core §9),
  * the same for every method that carries one. "iss" and "sub" both name the client, so an assertion
- * cannot be presented for another one. "aud" names the endpoint that received the request, or the issuer
- * of the tenant: OIDC Core §9 says the token endpoint URL and RFC 7523 §3 says an identifier of the
- * authorization server, and both are in use in the field. "exp" is there and is bounded, so that an
- * assertion is not a bearer token for a year. "jti" is there and is remembered until "exp", so that an
- * assertion authenticates once.
+ * cannot be presented for another one. "aud" names the issuer of the tenant and nothing else: RFC 7523
+ * §3 and OIDC Core §9 also let it name the endpoint the request was sent to, and FAPI 2.0 Security
+ * Profile §5.2.2 does not, because an assertion made for one endpoint is then an assertion for every
+ * other one of the same provider. "exp" is there and is bounded, so that an assertion is not a bearer
+ * token for a year. "jti" is there and is remembered until "exp", so that an assertion authenticates
+ * once.
  */
 final readonly class ClientAssertionValidator
 {
@@ -47,12 +47,11 @@ final readonly class ClientAssertionValidator
         if ($assertion->claim('iss') !== $clientId || $assertion->claim('sub') !== $clientId) {
             throw $this->refuse($method, $clientId, 'the "iss" and the "sub" of a client assertion both name the client (RFC 7523 section 3)');
         }
-        $audiences = $assertion->audiences();
-        if (! in_array($request->endpoint, $audiences, true) && ! in_array($request->tenant->issuer->value, $audiences, true)) {
+        if ($assertion->audiences() !== [$request->tenant->issuer->value]) {
             throw $this->refuse(
                 $method,
                 $clientId,
-                'the "aud" of a client assertion names the endpoint it is sent to or the issuer of the provider (RFC 7523 section 3)',
+                'the "aud" of a client assertion names the issuer of the provider and nothing else (RFC 7523 section 3, FAPI 2.0 Security Profile section 5.2.2)',
             );
         }
         $now = $request->context->receivedAt;
