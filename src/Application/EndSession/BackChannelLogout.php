@@ -36,7 +36,7 @@ final readonly class BackChannelLogout
             if ($logoutUri === null) {
                 continue;
             }
-            $this->events->dispatch(new LogoutTokenIssued($client, $logoutUri, $session, $this->tokens->issue($client, $session, $now), $now, $context));
+            $this->events->dispatch(LogoutTokenIssued::of($client, $logoutUri, $session, $this->tokens->issue($client, $session, $now), $now, $context));
         }
     }
 }

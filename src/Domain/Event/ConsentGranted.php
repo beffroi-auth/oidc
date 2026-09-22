@@ -9,22 +9,41 @@ use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Consent\Consent;
+use Heidi\Oidc\Domain\Scope\Scope;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * A user agreed, on the consent page, to let a client obtain the scopes of a request.
  */
 final readonly class ConsentGranted implements DomainEventInterface
 {
-    public DateTimeImmutable $occurredAt;
-
-    public Tenant $tenant;
-
+    /**
+     * @param list<Scope> $scopes
+     * @param Uuid|null $supersedes the consent this one takes over from, null when the user had granted nothing yet
+     */
     public function __construct(
-        public Consent $consent,
-        public ?Consent $supersedes,
+        public DateTimeImmutable $occurredAt,
+        public Tenant $tenant,
+        public Uuid $consentId,
+        public string $clientId,
+        public Uuid $userId,
+        public array $scopes,
+        public ?Uuid $supersedes,
         public RequestContext $context,
     ) {
-        $this->occurredAt = $consent->grantedAt;
-        $this->tenant = $consent->tenant;
+    }
+
+    public static function of(Consent $consent, ?Consent $supersedes, RequestContext $context): self
+    {
+        return new self(
+            $consent->grantedAt,
+            $consent->tenant,
+            $consent->id,
+            $consent->clientId,
+            $consent->user->id,
+            $consent->scopes,
+            $supersedes?->id,
+            $context,
+        );
     }
 }

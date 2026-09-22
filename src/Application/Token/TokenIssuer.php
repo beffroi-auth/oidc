@@ -50,7 +50,7 @@ final readonly class TokenIssuer
     {
         $accessToken = $this->accessTokens->issue($authorization, $now);
         $idToken = $authorization->hasScope(Scope::openid()) ? $this->idTokens->issue($authorization, $accessToken, $now) : null;
-        $this->events->dispatch(new TokensIssued($now, $authorization, $accessToken->expiresAt, $idToken !== null, $refreshToken?->token, $context));
+        $this->events->dispatch(TokensIssued::of($now, $authorization, $accessToken->expiresAt, $idToken !== null, $refreshToken?->token, $context));
 
         return new IssuedTokens($authorization, $accessToken, $idToken, $refreshToken);
     }

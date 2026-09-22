@@ -74,7 +74,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
         $this->refreshTokens->save($token);
         $authorization = GrantedAuthorization::fromRefreshToken($token, $scopes, $client->confirmation);
         $successor = $this->issuer->refreshToken($token->family, $authorization, $now);
-        $this->events->dispatch(new RefreshTokenRotated($token, $successor->token, $context));
+        $this->events->dispatch(RefreshTokenRotated::of($token, $successor->token, $context));
 
         return $this->issuer->issue($authorization, $successor, $context, $now);
     }
@@ -102,6 +102,6 @@ final readonly class RefreshTokenGrant implements GrantInterface
     private function reused(RefreshToken $presented, RequestContext $context, DateTimeImmutable $now): void
     {
         $revoked = $this->revocation->revokeFamily($presented->family->id, $now);
-        $this->events->dispatch(new RefreshTokenReuseDetected($now, $presented, $revoked, $context));
+        $this->events->dispatch(RefreshTokenReuseDetected::of($now, $presented, $revoked, $context));
     }
 }

@@ -109,7 +109,7 @@ final readonly class RevocationHandler
             throw new UnsupportedTokenTypeException('This provider does not take access tokens back; they expire on their own (RFC 7009 section 2.2.1).');
         }
         $this->accessTokens->revoke($token);
-        $this->events->dispatch(new TokenRevoked($now, $token, $caller, [], $context));
+        $this->events->dispatch(TokenRevoked::ofAccessToken($now, $token, $caller, $context));
     }
 
     private function revokeRefreshToken(RefreshToken $token, Client $caller, RequestContext $context, DateTimeImmutable $now): void
@@ -120,6 +120,6 @@ final readonly class RevocationHandler
         $token->revoke($now);
         $this->refreshTokens->save($token);
         $accessTokens = $this->accessTokens instanceof CanRevokeAccessTokensByGrantInterface ? $this->accessTokens->revokeByGrant($token->family->grantId) : [];
-        $this->events->dispatch(new TokenRevoked($now, $token, $caller, $accessTokens, $context));
+        $this->events->dispatch(TokenRevoked::ofRefreshToken($now, $token, $caller, $accessTokens, $context));
     }
 }

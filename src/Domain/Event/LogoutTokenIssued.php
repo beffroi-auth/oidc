@@ -11,6 +11,7 @@ use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientUri;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * A logout token was minted for one client of a session that ended (Back-Channel Logout 1.0 §2.6).
@@ -19,20 +20,29 @@ use Heidi\Oidc\Domain\Client\ClientUri;
  */
 final readonly class LogoutTokenIssued implements DomainEventInterface
 {
-    public Tenant $tenant;
-
     /**
      * @param ClientUri $logoutUri the back-channel logout URI of the client, named here so that the sender has nothing to decide
      * @param string $token the compact JWS, the one parameter of the request to come
      */
     public function __construct(
-        public Client $client,
-        public ClientUri $logoutUri,
-        public AuthenticationSession $session,
-        public string $token,
         public DateTimeImmutable $occurredAt,
+        public Tenant $tenant,
+        public string $clientId,
+        public ClientUri $logoutUri,
+        public Uuid $sessionId,
+        public string $token,
         public RequestContext $context,
     ) {
-        $this->tenant = $client->tenant;
+    }
+
+    public static function of(
+        Client $client,
+        ClientUri $logoutUri,
+        AuthenticationSession $session,
+        string $token,
+        DateTimeImmutable $occurredAt,
+        RequestContext $context,
+    ): self {
+        return new self($occurredAt, $client->tenant, $client->clientId, $logoutUri, $session->id, $token, $context);
     }
 }

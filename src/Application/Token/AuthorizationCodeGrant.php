@@ -152,6 +152,6 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         if ($this->accessTokens instanceof CanRevokeAccessTokensByGrantInterface) {
             $this->accessTokens->revokeByGrant($code->grantId);
         }
-        $this->events->dispatch(new AuthorizationCodeReplayed($now, $code, $presentedBy, $revoked, $context));
+        $this->events->dispatch(AuthorizationCodeReplayed::of($now, $code, $presentedBy, $revoked, $context));
     }
 }

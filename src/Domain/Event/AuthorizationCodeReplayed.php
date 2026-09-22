@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Event;
 
+use function array_map;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
@@ -17,19 +18,34 @@ use Heidi\Oidc\Domain\Token\RefreshToken;
  */
 final readonly class AuthorizationCodeReplayed implements DomainEventInterface
 {
-    public Tenant $tenant;
-
     /**
-     * @param Client $presentedBy not necessarily the one the code was issued to
-     * @param list<RefreshToken> $revoked
+     * @param string $presentedBy not necessarily the client the code was issued to
+     * @param list<string> $revokedTokenHashes
      */
     public function __construct(
         public DateTimeImmutable $occurredAt,
-        public AuthorizationCode $code,
-        public Client $presentedBy,
-        public array $revoked,
+        public Tenant $tenant,
+        public string $codeHash,
+        public string $issuedTo,
+        public string $presentedBy,
+        public array $revokedTokenHashes,
         public RequestContext $context,
     ) {
-        $this->tenant = $code->client->tenant;
+    }
+
+    /**
+     * @param list<RefreshToken> $revoked
+     */
+    public static function of(DateTimeImmutable $occurredAt, AuthorizationCode $code, Client $presentedBy, array $revoked, RequestContext $context): self
+    {
+        return new self(
+            $occurredAt,
+            $code->tenant,
+            $code->codeHash,
+            $code->clientId,
+            $presentedBy->clientId,
+            array_map(static fn (RefreshToken $token): string => $token->tokenHash, $revoked),
+            $context,
+        );
     }
 }
