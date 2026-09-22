@@ -61,22 +61,25 @@ final readonly class IntrospectionResponse
      */
     public static function active(VerifiedAccessToken $token, Issuer $issuer): self
     {
-        return new self([
-            'active' => true,
-            'scope' => implode(' ', array_map(static fn (Scope $scope): string => $scope->value, $token->scopes)),
-            'client_id' => $token->client->clientId,
-            'token_type' => $token->confirmation?->scheme() ?? TokenResponse::BEARER,
-            'exp' => $token->expiresAt->getTimestamp(),
-            'iat' => $token->issuedAt->getTimestamp(),
-            'sub' => $token->subject->value,
-            'aud' => $token->client->clientId,
-            'iss' => $issuer->value,
-            ...$token->authentication->toClaims(),
-            'sid' => $token->sessionId->toRfc4122(),
-            'grant_id' => $token->grantId->toRfc4122(),
-            // RFC 8705 §3.2: a resource server reads here what it must ask the caller to present again
-            ...($token->confirmation?->toClaims() ?? []),
-        ], null);
+        return new self(
+            [
+                'active' => true,
+                'scope' => implode(' ', array_map(static fn (Scope $scope): string => $scope->value, $token->scopes)),
+                'client_id' => $token->client->clientId,
+                'token_type' => $token->confirmation?->scheme() ?? TokenResponse::BEARER,
+                'exp' => $token->expiresAt->getTimestamp(),
+                'iat' => $token->issuedAt->getTimestamp(),
+                'sub' => $token->subject->value,
+                'aud' => $token->client->clientId,
+                'iss' => $issuer->value,
+                ...$token->authentication->toClaims(),
+                'sid' => $token->sessionId->toRfc4122(),
+                'grant_id' => $token->grantId->toRfc4122(),
+                // RFC 8705 §3.2: a resource server reads here what it must ask the caller to present again
+                ...($token->confirmation?->toClaims() ?? []),
+            ],
+            null,
+        );
     }
 
     /**

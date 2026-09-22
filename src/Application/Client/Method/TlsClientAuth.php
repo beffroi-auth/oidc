@@ -68,10 +68,21 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
         try {
             $subject = $this->certificates->subjectOf($certificate);
         } catch (UnreadableCertificateException $exception) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnreadableCertificate, $client->clientId, $this->name(), $exception->getMessage(), $exception);
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UnreadableCertificate,
+                $client->clientId,
+                $this->name(),
+                $exception->getMessage(),
+                $exception,
+            );
         }
         if (! $identity->matches($subject)) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnexpectedCertificate, $client->clientId, $this->name(), sprintf('the certificate presented does not carry the %s of the client', $identity->name()));
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UnexpectedCertificate,
+                $client->clientId,
+                $this->name(),
+                sprintf('the certificate presented does not carry the %s of the client', $identity->name()),
+            );
         }
     }
 

@@ -38,12 +38,12 @@ final readonly class PkiFrameworkCertificateReader implements CertificateReaderI
         }
         $tbs = $read->tbsCertificate();
         $extensions = $tbs->extensions();
-        $names = $extensions->hasSubjectAlternativeName() ? $extensions->subjectAlternativeName()
-            ->names() : null;
+        $names = $extensions->hasSubjectAlternativeName()
+            ? $extensions->subjectAlternativeName()->names()
+            : null;
 
         return new CertificateSubject(
-            $tbs->subject()
-                ->toString(),
+            $tbs->subject()->toString(),
             self::entriesOf($names, GeneralName::TAG_DNS_NAME),
             self::entriesOf($names, GeneralName::TAG_URI),
             self::addressesOf($names),

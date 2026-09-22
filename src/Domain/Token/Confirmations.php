@@ -64,14 +64,24 @@ final readonly class Confirmations
         foreach (self::MEMBERS as $member) {
             $value = $members[$member] ?? null;
             if ($value !== null) {
-                $read[$member] = is_string($value) ? self::named($member, $value) : throw new InvalidArgumentException(sprintf('The "%s" member of a "cnf" carries a thumbprint (RFC 7800 section 3.1).', $member));
+                $read[$member] = is_string($value)
+                    ? self::named($member, $value)
+                    : throw new InvalidArgumentException(sprintf('The "%s" member of a "cnf" carries a thumbprint (RFC 7800 section 3.1).', $member));
             }
         }
         if (count($read) > 1) {
-            throw new InvalidArgumentException(sprintf('A token of this provider is bound to one thing, not to %s (RFC 7800 section 3.1).', implode(' and ', array_keys($read))));
+            throw new InvalidArgumentException(sprintf('A token of this provider is bound to one thing, not to %s (RFC 7800 section 3.1).', implode(
+                ' and ',
+                array_keys($read),
+            )));
         }
 
-        return array_values($read)[0] ?? throw new InvalidArgumentException(sprintf('The "cnf" of a token of this provider names one of %s (RFC 7800 section 3.1).', implode(', ', self::MEMBERS)));
+        return (
+            array_values($read)[0] ?? throw new InvalidArgumentException(sprintf('The "cnf" of a token of this provider names one of %s (RFC 7800 section 3.1).', implode(
+                ', ',
+                self::MEMBERS,
+            )))
+        );
     }
 
     private static function named(string $member, string $value): ConfirmationInterface

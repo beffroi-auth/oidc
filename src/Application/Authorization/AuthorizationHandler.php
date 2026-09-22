@@ -87,8 +87,12 @@ final readonly class AuthorizationHandler
      *
      * @throws OAuth2Exception redirectable, the interaction being completed
      */
-    public function begin(AuthorizationRequest $request, ?AuthenticationSession $session, RequestContext $context, ?string $locale = null): AuthorizationDecision
-    {
+    public function begin(
+        AuthorizationRequest $request,
+        ?AuthenticationSession $session,
+        RequestContext $context,
+        ?string $locale = null,
+    ): AuthorizationDecision {
         $now = $this->clock->now();
         $interaction = new Interaction(Interaction::generateId(), $request->client->tenant, $request, $locale, $now, $now->add($this->interactionLifetime));
 
@@ -296,8 +300,13 @@ final readonly class AuthorizationHandler
      * step-up, whatever it proved; the step-up comes before prompt=login so that the page names what is
      * missing when a client sends both, as Symfony's re-authentication does.
      */
-    private function loginRequirement(Interaction $interaction, AuthenticationSession $session, ?Subject $hinted, ?StepUp $stepUp, DateTimeImmutable $now): ?LoginRequirement
-    {
+    private function loginRequirement(
+        Interaction $interaction,
+        AuthenticationSession $session,
+        ?Subject $hinted,
+        ?StepUp $stepUp,
+        DateTimeImmutable $now,
+    ): ?LoginRequirement {
         $request = $interaction->request;
         if ($hinted !== null && ! $session->user->subject->equals($hinted)) {
             return LoginRequirement::DifferentUser;

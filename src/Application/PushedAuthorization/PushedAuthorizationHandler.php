@@ -63,13 +63,17 @@ final readonly class PushedAuthorizationHandler
      *
      * @throws OAuth2Exception
      */
-    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null, ?string $dpopProof = null): PushedAuthorizationResponse
-    {
+    public function handle(
+        Tenant $tenant,
+        ?string $authorizationHeader,
+        array $parameters,
+        RequestContext $context,
+        ?ClientCertificate $certificate = null,
+        ?string $dpopProof = null,
+    ): PushedAuthorizationResponse {
         // RFC 9126 §2: a request is pushed with a POST, which is what a proof made for it names
-        $endpoint = $this->endpoints->locate($tenant)
-            ->pushedAuthorizationRequest;
-        $client = $this->clients->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)
-            ->client;
+        $endpoint = $this->endpoints->locate($tenant)->pushedAuthorizationRequest;
+        $client = $this->clients->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)->client;
         $provenKey = $this->proofs->verify($dpopProof, 'POST', $endpoint, $context->receivedAt);
         if (RequestParameters::isPresent($parameters, 'request_uri')) {
             throw new InvalidRequestException('The request_uri parameter is not one of those a pushed authorization request carries (RFC 9126 section 2.1).');

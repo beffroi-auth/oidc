@@ -90,6 +90,9 @@ final readonly class RequestObject
             return JwtPayload::encode($value);
         }
 
-        throw new InvalidRequestObjectException(sprintf('The %s claim of a request object is not a value an authorization request carries (OIDC Core section 6.1).', $name));
+        throw new InvalidRequestObjectException(sprintf(
+            'The %s claim of a request object is not a value an authorization request carries (OIDC Core section 6.1).',
+            $name,
+        ));
     }
 }

@@ -75,17 +75,34 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
     {
         $assertion = $request->assertion($this->reader);
         if ($assertion === null) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidAssertion, $client->clientId, $this->name(), 'the request carries no client assertion');
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::InvalidAssertion,
+                $client->clientId,
+                $this->name(),
+                'the request carries no client assertion',
+            );
         }
         try {
             $keys = $this->keys->keysOf($client, $assertion->keyId());
         } catch (ClientKeysUnavailableException $exception) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnreadableClientKeys, $client->clientId, $this->name(), $exception->getMessage(), $exception);
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UnreadableClientKeys,
+                $client->clientId,
+                $this->name(),
+                $exception->getMessage(),
+                $exception,
+            );
         }
         try {
             $this->verifier->verify($assertion, $keys, $this->assertionSigningAlgorithms());
         } catch (InvalidJwtException $exception) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidAssertion, $client->clientId, $this->name(), $exception->getMessage(), $exception);
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::InvalidAssertion,
+                $client->clientId,
+                $this->name(),
+                $exception->getMessage(),
+                $exception,
+            );
         }
         $this->claims->validate($this, $assertion, $client, $request);
     }

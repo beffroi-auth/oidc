@@ -65,10 +65,21 @@ final readonly class SelfSignedTlsClientAuth implements KeyBearingMethodInterfac
         try {
             $published = $this->keys->keysOf($client, null);
         } catch (ClientKeysUnavailableException $exception) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnreadableClientKeys, $client->clientId, $this->name(), $exception->getMessage(), $exception);
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UnreadableClientKeys,
+                $client->clientId,
+                $this->name(),
+                $exception->getMessage(),
+                $exception,
+            );
         }
         if (! $published->publishes($certificate)) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnexpectedCertificate, $client->clientId, $this->name(), 'the certificate presented is not one the client publishes');
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UnexpectedCertificate,
+                $client->clientId,
+                $this->name(),
+                'the certificate presented is not one the client publishes',
+            );
         }
     }
 

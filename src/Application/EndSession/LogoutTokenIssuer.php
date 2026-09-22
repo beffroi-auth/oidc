@@ -43,8 +43,13 @@ final readonly class LogoutTokenIssuer
             $now,
         );
 
-        return $this->signer->sign($session->tenant, $client->idToken->signature ?? $this->algorithms->defaultAlgorithm(), JwtPayload::encode($token->claims()), [
-            'typ' => LogoutToken::TYPE,
-        ]);
+        return $this->signer->sign(
+            $session->tenant,
+            $client->idToken->signature ?? $this->algorithms->defaultAlgorithm(),
+            JwtPayload::encode($token->claims()),
+            [
+                'typ' => LogoutToken::TYPE,
+            ],
+        );
     }
 }

@@ -33,7 +33,11 @@ final readonly class AccessTokenIssuer implements AccessTokenIssuerInterface
     {
         foreach (array_keys($issuers) as $format) {
             if (AccessTokenFormat::tryFrom($format) === null) {
-                throw new InvalidArgumentException(sprintf('"%s" is not an access token format; the formats are %s.', $format, implode(', ', array_map(static fn (AccessTokenFormat $known): string => $known->value, AccessTokenFormat::cases()))));
+                throw new InvalidArgumentException(sprintf(
+                    '"%s" is not an access token format; the formats are %s.',
+                    $format,
+                    implode(', ', array_map(static fn (AccessTokenFormat $known): string => $known->value, AccessTokenFormat::cases())),
+                ));
             }
         }
         foreach (AccessTokenFormat::cases() as $format) {

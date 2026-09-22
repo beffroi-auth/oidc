@@ -63,8 +63,15 @@ final readonly class UserInfoHandler
      * @throws MissingBearerTokenException 401 with a bare challenge
      * @throws OAuth2Exception invalid_request, invalid_token, invalid_dpop_proof or insufficient_scope
      */
-    public function handle(Tenant $tenant, string $method, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null, ?string $dpopProof = null): UserInfoResponse
-    {
+    public function handle(
+        Tenant $tenant,
+        string $method,
+        ?string $authorizationHeader,
+        array $parameters,
+        RequestContext $context,
+        ?ClientCertificate $certificate = null,
+        ?string $dpopProof = null,
+    ): UserInfoResponse {
         $presented = PresentedAccessToken::fromRequest($authorizationHeader, $parameters);
         if ($presented === null) {
             throw new MissingBearerTokenException();
@@ -74,11 +81,17 @@ final readonly class UserInfoHandler
         $token = $inspected->token;
         $confirmation = $token->confirmation;
         if ($confirmation !== null && ! $presented->isPresentedAs($confirmation)) {
-            throw new TokenBindingNotProvenException('The access token is bound to a key and was presented as a bearer token (RFC 9449 section 7.1).', $confirmation);
+            throw new TokenBindingNotProvenException(
+                'The access token is bound to a key and was presented as a bearer token (RFC 9449 section 7.1).',
+                $confirmation,
+            );
         }
         $proven = ProvenPossession::of([$certificate === null ? null : CertificateConfirmation::ofCertificate($certificate), $provenKey]);
         if ($confirmation !== null && ! $proven->proves($confirmation)) {
-            throw new TokenBindingNotProvenException('The access token is bound to something this request did not present again (RFC 8705 section 3, RFC 9449 section 7.1).', $confirmation);
+            throw new TokenBindingNotProvenException(
+                'The access token is bound to something this request did not present again (RFC 8705 section 3, RFC 9449 section 7.1).',
+                $confirmation,
+            );
         }
         if (! $token->hasScope(Scope::openid())) {
             throw new InsufficientScopeException('The access token was not obtained through an OpenID Connect authentication request.', [Scope::openid()]);
@@ -87,8 +100,7 @@ final readonly class UserInfoHandler
 
         $requested = array_fill_keys($token->userinfoClaims, new ClaimRequest());
         $client = $token->client;
-        $subject = $this->subjects->resolve($user, $client)
-            ->value;
+        $subject = $this->subjects->resolve($user, $client)->value;
         $claims = UserInfoResponse::claimsOf($subject, $this->claims->claims($user, $token->scopes, $requested));
         $format = $client->userInfo;
         if ($format->isPlain()) {

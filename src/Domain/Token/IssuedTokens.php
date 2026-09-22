@@ -29,6 +29,13 @@ final readonly class IssuedTokens
      */
     public function toResponse(): TokenResponse
     {
-        return new TokenResponse($this->accessToken->value, $this->accessToken->expiresIn(), $this->refreshToken?->value, $this->idToken, $this->authorization->scopes, $this->authorization->confirmation?->scheme() ?? TokenResponse::BEARER);
+        return new TokenResponse(
+            $this->accessToken->value,
+            $this->accessToken->expiresIn(),
+            $this->refreshToken?->value,
+            $this->idToken,
+            $this->authorization->scopes,
+            $this->authorization->confirmation?->scheme() ?? TokenResponse::BEARER,
+        );
     }
 }

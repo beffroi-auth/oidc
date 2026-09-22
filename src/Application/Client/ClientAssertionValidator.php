@@ -49,7 +49,11 @@ final readonly class ClientAssertionValidator
         }
         $audiences = $assertion->audiences();
         if (! in_array($request->endpoint, $audiences, true) && ! in_array($request->tenant->issuer->value, $audiences, true)) {
-            throw $this->refuse($method, $clientId, 'the "aud" of a client assertion names the endpoint it is sent to or the issuer of the provider (RFC 7523 section 3)');
+            throw $this->refuse(
+                $method,
+                $clientId,
+                'the "aud" of a client assertion names the endpoint it is sent to or the issuer of the provider (RFC 7523 section 3)',
+            );
         }
         $now = $request->context->receivedAt;
         $expiresAt = $assertion->time('exp');

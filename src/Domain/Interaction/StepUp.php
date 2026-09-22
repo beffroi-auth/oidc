@@ -89,7 +89,11 @@ final readonly class StepUp
             return null;
         }
 
-        return new self($proofs, array_values(array_filter($classes, static fn (AuthenticationContextClass $class): bool => array_any($reachable, static fn (AuthenticationContextClass $reached): bool => $reached->equals($class)))), $able);
+        return new self(
+            $proofs,
+            array_values(array_filter($classes, static fn (AuthenticationContextClass $class): bool => array_any($reachable, static fn (AuthenticationContextClass $reached): bool => $reached->equals($class)))),
+            $able,
+        );
     }
 
     /**

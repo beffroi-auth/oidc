@@ -110,7 +110,10 @@ final readonly class AuthorizationRequestParser
     {
         foreach (['request', 'request_uri'] as $name) {
             if (RequestParameters::isPresent($parameters, $name)) {
-                throw new LogicException(sprintf('The %s parameter reaches the parser, which means the endpoint was wired without the resolver that reads a request object (RFC 9101 section 6.1).', $name));
+                throw new LogicException(sprintf(
+                    'The %s parameter reaches the parser, which means the endpoint was wired without the resolver that reads a request object (RFC 9101 section 6.1).',
+                    $name,
+                ));
             }
         }
     }
@@ -167,7 +170,11 @@ final readonly class AuthorizationRequestParser
         }
 
         $scopes = $this->scopes($target, RequestParameters::single($parameters, 'scope', true));
-        $codeChallenge = self::codeChallenge($target->client, RequestParameters::single($parameters, 'code_challenge', true), RequestParameters::single($parameters, 'code_challenge_method', true));
+        $codeChallenge = self::codeChallenge(
+            $target->client,
+            RequestParameters::single($parameters, 'code_challenge', true),
+            RequestParameters::single($parameters, 'code_challenge_method', true),
+        );
 
         $nonce = RequestParameters::text($parameters, 'nonce', true);
         $prompts = self::prompts(RequestParameters::single($parameters, 'prompt', true));
@@ -177,7 +184,13 @@ final readonly class AuthorizationRequestParser
         }
         $loginHint = RequestParameters::text($parameters, 'login_hint', true);
         $uiLocales = RequestParameters::uiLocales($parameters, true);
-        $acrValues = RequestParameters::list($parameters, 'acr_values', self::ACR_VALUE_PATTERN, 'The acr_values parameter must be a space-separated list of printable ASCII values.', true);
+        $acrValues = RequestParameters::list(
+            $parameters,
+            'acr_values',
+            self::ACR_VALUE_PATTERN,
+            'The acr_values parameter must be a space-separated list of printable ASCII values.',
+            true,
+        );
         $display = self::display(RequestParameters::single($parameters, 'display', true));
         $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', true);
         $claims = self::claims(RequestParameters::single($parameters, 'claims', true));
@@ -217,7 +230,11 @@ final readonly class AuthorizationRequestParser
         try {
             return new KeyConfirmation($thumbprint);
         } catch (InvalidArgumentException $exception) {
-            throw new InvalidRequestException('The dpop_jkt parameter is the JWK thumbprint of a key, the base64url of a SHA-256 (RFC 9449 section 10).', true, $exception);
+            throw new InvalidRequestException(
+                'The dpop_jkt parameter is the JWK thumbprint of a key, the base64url of a SHA-256 (RFC 9449 section 10).',
+                true,
+                $exception,
+            );
         }
     }
 

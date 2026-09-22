@@ -47,10 +47,22 @@ final readonly class IntrospectionHandler
      *
      * @throws OAuth2Exception invalid_client or invalid_request; never for a token that is not active
      */
-    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context, bool $signed, ?ClientCertificate $certificate = null): IntrospectionResponse
-    {
-        $caller = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->introspection, $authorizationHeader, $parameters, $context, $certificate)
-            ->client;
+    public function handle(
+        Tenant $tenant,
+        ?string $authorizationHeader,
+        array $parameters,
+        RequestContext $context,
+        bool $signed,
+        ?ClientCertificate $certificate = null,
+    ): IntrospectionResponse {
+        $caller = $this->clients->authenticate(
+            $tenant,
+            $this->endpoints->locate($tenant)->introspection,
+            $authorizationHeader,
+            $parameters,
+            $context,
+            $certificate,
+        )->client;
         if ($caller->isPublic()) {
             throw new InvalidClientException('The introspection endpoint requires client authentication (RFC 7662 section 2.1); a public client has none.');
         }

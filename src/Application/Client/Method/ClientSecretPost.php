@@ -61,7 +61,12 @@ final readonly class ClientSecretPost implements SecretKeepingMethodInterface, A
         }
         $clientId = $request->clientId();
         if ($clientId === null) {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, null, $this->name(), 'The client_secret parameter requires a client_id parameter.');
+            throw ClientAuthenticationFailure::malformedRequest(
+                ClientAuthenticationFailureReason::MalformedCredentials,
+                null,
+                $this->name(),
+                'The client_secret parameter requires a client_id parameter.',
+            );
         }
 
         return $clientId;

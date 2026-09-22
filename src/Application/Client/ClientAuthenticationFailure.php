@@ -43,8 +43,13 @@ final class ClientAuthenticationFailure extends RuntimeException
      * RFC 6749 §5.2 "invalid_request": the request cannot be read as a client authentication at all, and
      * saying so tells nothing about any client.
      */
-    public static function malformedRequest(ClientAuthenticationFailureReason $reason, ?string $clientId, ?string $method, string $description, ?Throwable $previous = null): self
-    {
+    public static function malformedRequest(
+        ClientAuthenticationFailureReason $reason,
+        ?string $clientId,
+        ?string $method,
+        string $description,
+        ?Throwable $previous = null,
+    ): self {
         return new self($reason, $clientId, $method, $description, true, null, $previous);
     }
 
@@ -61,8 +66,13 @@ final class ClientAuthenticationFailure extends RuntimeException
      * RFC 6749 §5.2 "invalid_client": the request names a client and does not prove it. Every such
      * refusal reads the same and costs the same.
      */
-    public static function refused(ClientAuthenticationFailureReason $reason, ?string $clientId, ?string $method, ?string $detail = null, ?Throwable $previous = null): self
-    {
+    public static function refused(
+        ClientAuthenticationFailureReason $reason,
+        ?string $clientId,
+        ?string $method,
+        ?string $detail = null,
+        ?Throwable $previous = null,
+    ): self {
         return new self($reason, $clientId, $method, self::REFUSED, false, $detail, $previous);
     }
 }

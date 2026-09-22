@@ -19,7 +19,11 @@ use Symfony\Component\Uid\Uuid;
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryAccessTokenRepository implements AccessTokenRepositoryInterface, CanRevokeAccessTokenInterface, CanRevokeAccessTokensByGrantInterface, CanRevokeAccessTokensBySessionInterface
+final class InMemoryAccessTokenRepository implements
+    AccessTokenRepositoryInterface,
+    CanRevokeAccessTokenInterface,
+    CanRevokeAccessTokensByGrantInterface,
+    CanRevokeAccessTokensBySessionInterface
 {
     /**
      * @var array<string, StoredAccessToken> by token hash

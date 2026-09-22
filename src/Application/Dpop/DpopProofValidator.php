@@ -52,8 +52,15 @@ final readonly class DpopProofValidator
      * @throws InvalidDpopProofException
      * @throws UseDpopNonceException when this provider asks the client to make the proof again
      */
-    public function validate(DpopProof $proof, KeyConfirmation $key, string $method, string $url, #[SensitiveParameter] ?string $accessToken, DateTimeImmutable $now): void
-    {
+    public function validate(
+        DpopProof $proof,
+        KeyConfirmation $key,
+        string $method,
+        string $url,
+        #[SensitiveParameter]
+        ?string $accessToken,
+        DateTimeImmutable $now,
+    ): void {
         if (($proof->jwt->protectedHeader['typ'] ?? null) !== DpopProof::TYPE) {
             throw new InvalidDpopProofException(sprintf('A DPoP proof is a JWT of type %s, and this one is not (RFC 9449 section 4.2).', DpopProof::TYPE));
         }
@@ -68,8 +75,7 @@ final readonly class DpopProofValidator
         if ($issuedAt > $now->add($this->leeway)) {
             throw new InvalidDpopProofException('The DPoP proof was made later than the request that carries it (RFC 9449 section 4.3).');
         }
-        $expiresAt = $issuedAt->add($this->maximumAge)
-            ->add($this->leeway);
+        $expiresAt = $issuedAt->add($this->maximumAge)->add($this->leeway);
         if ($expiresAt <= $now) {
             throw new InvalidDpopProofException('The DPoP proof is older than this provider accepts (RFC 9449 section 4.3).');
         }

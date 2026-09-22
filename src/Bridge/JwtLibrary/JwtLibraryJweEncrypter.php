@@ -50,7 +50,8 @@ final readonly class JwtLibraryJweEncrypter implements JweEncrypterInterface
         }
 
         try {
-            $jwe = $this->builder->create()
+            $jwe = $this->builder
+                ->create()
                 ->withPayload($payload)
                 ->withSharedProtectedHeader($header)
                 ->addRecipient(new JWK($recipient))
@@ -58,7 +59,11 @@ final readonly class JwtLibraryJweEncrypter implements JweEncrypterInterface
 
             return $this->serializer->serialize($jwe, 0);
         } catch (Throwable $exception) {
-            throw new RuntimeException(sprintf('The document could not be encrypted under "%s": the key it is addressed to does not receive one.', $encryption->algorithm->name()), 0, $exception);
+            throw new RuntimeException(
+                sprintf('The document could not be encrypted under "%s": the key it is addressed to does not receive one.', $encryption->algorithm->name()),
+                0,
+                $exception,
+            );
         }
     }
 }

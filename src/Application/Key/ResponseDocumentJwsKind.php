@@ -34,6 +34,8 @@ final readonly class ResponseDocumentJwsKind implements KeyBoundArtifactInterfac
 
     public function longestLifetime(Tenant $tenant): ?DateInterval
     {
-        return array_any($this->responseModes->servedResponseModes(), static fn (ResponseMode $mode): bool => $mode->signsTheAnswer()) ? $this->issuer->lifetime : null;
+        return array_any($this->responseModes->servedResponseModes(), static fn (ResponseMode $mode): bool => $mode->signsTheAnswer())
+            ? $this->issuer->lifetime
+            : null;
     }
 }

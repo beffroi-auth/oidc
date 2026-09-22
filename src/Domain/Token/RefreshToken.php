@@ -92,8 +92,13 @@ final class RefreshToken
         $this->scopes = $scopes;
     }
 
-    public static function fromAuthorization(string $tokenHash, RefreshTokenFamily $family, GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self
-    {
+    public static function fromAuthorization(
+        string $tokenHash,
+        RefreshTokenFamily $family,
+        GrantedAuthorization $authorization,
+        DateTimeImmutable $now,
+        DateTimeImmutable $expiresAt,
+    ): self {
         return new self(
             $tokenHash,
             $family,
@@ -130,7 +135,7 @@ final class RefreshToken
      */
     public function isRefreshedBy(?ConfirmationInterface $confirmation): bool
     {
-        return $this->confirmation === null || ($confirmation !== null && $confirmation->matches($this->confirmation));
+        return $this->confirmation === null || $confirmation !== null && $confirmation->matches($this->confirmation);
     }
 
     /**

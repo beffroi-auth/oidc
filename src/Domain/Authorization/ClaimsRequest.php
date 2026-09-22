@@ -50,7 +50,7 @@ final readonly class ClaimsRequest
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('The claims request is not valid JSON.', previous: $exception);
         }
-        if (! is_array($decoded) || ($decoded !== [] && array_is_list($decoded))) {
+        if (! is_array($decoded) || $decoded !== [] && array_is_list($decoded)) {
             throw new InvalidArgumentException('The claims request must be a JSON object (OIDC Core §5.5).');
         }
 
@@ -75,7 +75,7 @@ final readonly class ClaimsRequest
             return [];
         }
         $member = $decoded[$name];
-        if (! is_array($member) || ($member !== [] && array_is_list($member))) {
+        if (! is_array($member) || $member !== [] && array_is_list($member)) {
             throw new InvalidArgumentException(sprintf('The "%s" member of a claims request must be a JSON object (OIDC Core §5.5).', $name));
         }
         $claims = [];
@@ -94,26 +94,42 @@ final readonly class ClaimsRequest
         if ($request === null) {
             return new ClaimRequest();
         }
-        if (! is_array($request) || ($request !== [] && array_is_list($request))) {
+        if (! is_array($request) || $request !== [] && array_is_list($request)) {
             throw new InvalidArgumentException(sprintf('The claim "%s" in "%s" must be null or a JSON object (OIDC Core §5.5.1).', $claim, $member));
         }
         $essential = $request['essential'] ?? false;
         if (! is_bool($essential)) {
-            throw new InvalidArgumentException(sprintf('The "essential" member of the claim "%s" in "%s" must be a JSON boolean (OIDC Core §5.5.1).', $claim, $member));
+            throw new InvalidArgumentException(sprintf(
+                'The "essential" member of the claim "%s" in "%s" must be a JSON boolean (OIDC Core §5.5.1).',
+                $claim,
+                $member,
+            ));
         }
         $value = $request['value'] ?? null;
         if ($value !== null && ! self::isScalar($value)) {
-            throw new InvalidArgumentException(sprintf('The "value" member of the claim "%s" in "%s" must be a JSON string, number or boolean (OIDC Core §5.5.1).', $claim, $member));
+            throw new InvalidArgumentException(sprintf(
+                'The "value" member of the claim "%s" in "%s" must be a JSON string, number or boolean (OIDC Core §5.5.1).',
+                $claim,
+                $member,
+            ));
         }
         $values = null;
         if (($request['values'] ?? null) !== null) {
             if (! is_array($request['values']) || ! array_is_list($request['values']) || count($request['values']) === 0) {
-                throw new InvalidArgumentException(sprintf('The "values" member of the claim "%s" in "%s" must be a non-empty JSON array (OIDC Core §5.5.1).', $claim, $member));
+                throw new InvalidArgumentException(sprintf(
+                    'The "values" member of the claim "%s" in "%s" must be a non-empty JSON array (OIDC Core §5.5.1).',
+                    $claim,
+                    $member,
+                ));
             }
             $values = [];
             foreach ($request['values'] as $candidate) {
                 if (! self::isScalar($candidate)) {
-                    throw new InvalidArgumentException(sprintf('The "values" member of the claim "%s" in "%s" must list JSON strings, numbers or booleans (OIDC Core §5.5.1).', $claim, $member));
+                    throw new InvalidArgumentException(sprintf(
+                        'The "values" member of the claim "%s" in "%s" must list JSON strings, numbers or booleans (OIDC Core §5.5.1).',
+                        $claim,
+                        $member,
+                    ));
                 }
                 $values[] = $candidate;
             }

@@ -30,11 +30,15 @@ final readonly class FrontChannelLogoutFrame
      */
     public static function ofSession(Client $client, AuthenticationSession $session): self
     {
-        $registered = $client->frontChannelLogoutUri ?? throw new LogicException(sprintf('The client "%s" registered no front-channel logout URI and is not loaded by the logout page.', $client->clientId));
-        $uri = $client->frontChannelLogoutSessionRequired ? $registered->withParameters([
-            'iss' => (string) $session->tenant->issuer,
-            'sid' => $session->id->toRfc4122(),
-        ]) : $registered->value;
+        $registered = $client->frontChannelLogoutUri ?? throw new LogicException(sprintf(
+            'The client "%s" registered no front-channel logout URI and is not loaded by the logout page.',
+            $client->clientId,
+        ));
+        $uri = $client->frontChannelLogoutSessionRequired
+            ? $registered->withParameters([
+                'iss' => (string) $session->tenant->issuer,
+                'sid' => $session->id->toRfc4122(),
+            ]) : $registered->value;
 
         return new self($client->clientId, $uri, $registered->origin);
     }

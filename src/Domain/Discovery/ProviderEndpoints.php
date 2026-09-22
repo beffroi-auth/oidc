@@ -35,8 +35,16 @@ final readonly class ProviderEndpoints
 
     public string $pushedAuthorizationRequest;
 
-    public function __construct(string $authorization, string $token, string $userinfo, string $jwks, string $endSession, string $introspection, string $revocation, string $pushedAuthorizationRequest)
-    {
+    public function __construct(
+        string $authorization,
+        string $token,
+        string $userinfo,
+        string $jwks,
+        string $endSession,
+        string $introspection,
+        string $revocation,
+        string $pushedAuthorizationRequest,
+    ) {
         $this->authorization = self::secureUrl('authorization', $authorization, true);
         $this->token = self::secureUrl('token', $token, false);
         $this->userinfo = self::secureUrl('userinfo', $userinfo, true);
@@ -67,8 +75,10 @@ final readonly class ProviderEndpoints
             return $url;
         }
 
-        throw new InvalidArgumentException($loopbackInClear
-            ? sprintf('The %s endpoint "%s" must use HTTPS; plain HTTP is only accepted on a loopback host.', $name, $url)
-            : sprintf('The %s endpoint "%s" must use HTTPS (RFC 6749 section 3.2, RFC 9126 section 2), on a loopback host too.', $name, $url));
+        throw new InvalidArgumentException(
+            $loopbackInClear
+                ? sprintf('The %s endpoint "%s" must use HTTPS; plain HTTP is only accepted on a loopback host.', $name, $url)
+                : sprintf('The %s endpoint "%s" must use HTTPS (RFC 6749 section 3.2, RFC 9126 section 2), on a loopback host too.', $name, $url),
+        );
     }
 }

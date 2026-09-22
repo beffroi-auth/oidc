@@ -56,7 +56,15 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
         ContentEncryptionAlgorithmsInterface $contentEncryption,
     ) {
         foreach ($definitions as $clientId => $definition) {
-            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $algorithms, $methods, $certificates, $keyEncryption, $contentEncryption);
+            $this->definitions[$clientId] = ClientDefinition::fromArray(
+                (string) $clientId,
+                $definition,
+                $algorithms,
+                $methods,
+                $certificates,
+                $keyEncryption,
+                $contentEncryption,
+            );
         }
         $this->clients = new WeakMap();
     }

@@ -43,11 +43,9 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
         $algorithm = $format->signature ?? $this->algorithms->defaultAlgorithm();
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
-            'sub' => $this->subjects->resolve($authorization->user, $authorization->client)
-                ->value,
+            'sub' => $this->subjects->resolve($authorization->user, $authorization->client)->value,
             'aud' => $authorization->client->clientId,
-            'exp' => $now->add($this->lifetime)
-                ->getTimestamp(),
+            'exp' => $now->add($this->lifetime)->getTimestamp(),
             'iat' => $now->getTimestamp(),
             'auth_time' => $authorization->authentication->authenticatedAt->getTimestamp(),
         ];

@@ -49,8 +49,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
             'iss' => (string) $authorization->tenant->issuer,
             'exp' => $expiresAt->getTimestamp(),
             'aud' => $authorization->client->clientId,
-            'sub' => $this->subjects->resolve($authorization->user, $authorization->client)
-                ->value,
+            'sub' => $this->subjects->resolve($authorization->user, $authorization->client)->value,
             'client_id' => $authorization->client->clientId,
             'iat' => $now->getTimestamp(),
             'jti' => Uuid::v4()->toRfc4122(),

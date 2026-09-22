@@ -316,10 +316,13 @@ final readonly class ProviderMetadata
      */
     private function authorizationResponseSigning(): array
     {
-        return $this->signsAnswers() ? [
-            'authorization_signing_alg_values_supported' => $this->algorithmNames(),
-            ...$this->encryptionOf('authorization_encryption'),
-        ] : [];
+        return (
+            $this->signsAnswers()
+                ? [
+                    'authorization_signing_alg_values_supported' => $this->algorithmNames(),
+                    ...$this->encryptionOf('authorization_encryption'),
+                ] : []
+        );
     }
 
     private function signsAnswers(): bool
@@ -362,8 +365,14 @@ final readonly class ProviderMetadata
         }
 
         return [
-            $member . '_alg_values_supported' => array_map(static fn (KeyEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->encryptionAlgorithmsSupported),
-            $member . '_enc_values_supported' => array_map(static fn (ContentEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(), $this->encryptionMethodsSupported),
+            $member . '_alg_values_supported' => array_map(
+                static fn (KeyEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(),
+                $this->encryptionAlgorithmsSupported,
+            ),
+            $member . '_enc_values_supported' => array_map(
+                static fn (ContentEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(),
+                $this->encryptionMethodsSupported,
+            ),
         ];
     }
 
@@ -373,7 +382,10 @@ final readonly class ProviderMetadata
      */
     private function bindsAccessTokensToCertificates(): bool
     {
-        return array_any($this->clientAuthenticationMethodsSupported, static fn (ClientAuthenticationMethodInterface $method): bool => $method instanceof CertificateBindingMethodInterface);
+        return array_any(
+            $this->clientAuthenticationMethodsSupported,
+            static fn (ClientAuthenticationMethodInterface $method): bool => $method instanceof CertificateBindingMethodInterface,
+        );
     }
 
     /**
@@ -431,7 +443,10 @@ final readonly class ProviderMetadata
      */
     private function authenticatingMethods(): array
     {
-        return array_values(array_filter($this->clientAuthenticationMethodsSupported, static fn (ClientAuthenticationMethodInterface $method): bool => $method->authenticatesClient()));
+        return array_values(array_filter(
+            $this->clientAuthenticationMethodsSupported,
+            static fn (ClientAuthenticationMethodInterface $method): bool => $method->authenticatesClient(),
+        ));
     }
 
     /**

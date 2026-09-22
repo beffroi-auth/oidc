@@ -114,9 +114,31 @@ final readonly class Client
         $this->idToken = $idToken ?? ResponseFormat::signed();
         $this->authorizationResponse = $authorizationResponse ?? ResponseFormat::signed();
         $this->userInfo = $userInfo ?? ResponseFormat::unsigned();
-        self::assertConsistent($clientId, $name, $authenticationMethod, $secret !== null, $redirectUris, $grantTypes, $allowedScopes, $requiresPkce, $backChannelLogoutUri !== null, $backChannelLogoutSessionRequired, $frontChannelLogoutUri !== null, $frontChannelLogoutSessionRequired, $jwks !== null, $jwksUri !== null, $certificateIdentity !== null, $requestObjectSigning, $this->idToken->isEncrypted() || $this->authorizationResponse->isEncrypted() || $this->userInfo->isEncrypted());
+        self::assertConsistent(
+            $clientId,
+            $name,
+            $authenticationMethod,
+            $secret !== null,
+            $redirectUris,
+            $grantTypes,
+            $allowedScopes,
+            $requiresPkce,
+            $backChannelLogoutUri !== null,
+            $backChannelLogoutSessionRequired,
+            $frontChannelLogoutUri !== null,
+            $frontChannelLogoutSessionRequired,
+            $jwks !== null,
+            $jwksUri !== null,
+            $certificateIdentity !== null,
+            $requestObjectSigning,
+            $this->idToken->isEncrypted() || $this->authorizationResponse->isEncrypted() || $this->userInfo->isEncrypted(),
+        );
         if ($secret !== null && $authenticationMethod instanceof SecretBearingMethodInterface && ! $authenticationMethod->accepts($secret)) {
-            throw new InvalidArgumentException(sprintf('The secret of the client "%s" is not kept in a shape %s verifies against.', $clientId, $authenticationMethod->name()));
+            throw new InvalidArgumentException(sprintf(
+                'The secret of the client "%s" is not kept in a shape %s verifies against.',
+                $clientId,
+                $authenticationMethod->name(),
+            ));
         }
 
         $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
@@ -154,34 +176,66 @@ final readonly class Client
         bool $registersAnEncryption = false,
     ): void {
         if (preg_match(self::CLIENT_ID_PATTERN, $clientId) !== 1) {
-            throw new InvalidArgumentException(sprintf('The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).',
+                $clientId,
+            ));
         }
         if ($name === '') {
             throw new InvalidArgumentException(sprintf('The client "%s" has a name.', $clientId));
         }
         if ($authenticationMethod instanceof SecretBearingMethodInterface && ! $hasSecret) {
-            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s and therefore needs a secret.', $clientId, $authenticationMethod->name()));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" authenticates with %s and therefore needs a secret.',
+                $clientId,
+                $authenticationMethod->name(),
+            ));
         }
         if (! $authenticationMethod instanceof SecretBearingMethodInterface && $hasSecret) {
-            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which proves no shared secret, and therefore cannot hold a secret.', $clientId, $authenticationMethod->name()));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" authenticates with %s, which proves no shared secret, and therefore cannot hold a secret.',
+                $clientId,
+                $authenticationMethod->name(),
+            ));
         }
         if ($hasJwks && $hasJwksUri) {
-            throw new InvalidArgumentException(sprintf('The client "%s" publishes its keys either inline in "jwks" or behind a "jwks_uri", never both (RFC 7591 section 2).', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" publishes its keys either inline in "jwks" or behind a "jwks_uri", never both (RFC 7591 section 2).',
+                $clientId,
+            ));
         }
         if ($authenticationMethod instanceof KeyBearingMethodInterface && ! $hasJwks && ! $hasJwksUri) {
-            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which verifies a signature of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId, $authenticationMethod->name()));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" authenticates with %s, which verifies a signature of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).',
+                $clientId,
+                $authenticationMethod->name(),
+            ));
         }
         if ($requestObjectSigning->needsPublishedKeys() && ! $hasJwks && ! $hasJwksUri) {
-            throw new InvalidArgumentException(sprintf('The client "%s" registers a request_object_signing_alg, whose signature is verified against a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers a request_object_signing_alg, whose signature is verified against a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).',
+                $clientId,
+            ));
         }
         if ($registersAnEncryption && ! $hasJwks && ! $hasJwksUri) {
-            throw new InvalidArgumentException(sprintf('The client "%s" registers an encrypted response, which is addressed to a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers an encrypted response, which is addressed to a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).',
+                $clientId,
+            ));
         }
         if ($authenticationMethod instanceof CertificateIdentityBearingMethodInterface && ! $hasCertificateIdentity) {
-            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which recognises it by what its certificate says about it, and therefore registers one of the values of RFC 8705 section 2.1.2.', $clientId, $authenticationMethod->name()));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" authenticates with %s, which recognises it by what its certificate says about it, and therefore registers one of the values of RFC 8705 section 2.1.2.',
+                $clientId,
+                $authenticationMethod->name(),
+            ));
         }
         if (! $authenticationMethod instanceof CertificateIdentityBearingMethodInterface && $hasCertificateIdentity) {
-            throw new InvalidArgumentException(sprintf('The client "%s" authenticates with %s, which reads nothing of a certificate, and therefore registers none of the values of RFC 8705 section 2.1.2.', $clientId, $authenticationMethod->name()));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" authenticates with %s, which reads nothing of a certificate, and therefore registers none of the values of RFC 8705 section 2.1.2.',
+                $clientId,
+                $authenticationMethod->name(),
+            ));
         }
         if ($redirectUris === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" registers at least one redirect URI (RFC 6749 §3.1.2.2).', $clientId));
@@ -190,19 +244,31 @@ final readonly class Client
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one grant type.', $clientId));
         }
         if (in_array(GrantType::RefreshToken, $grantTypes, true) && ! in_array(GrantType::AuthorizationCode, $grantTypes, true)) {
-            throw new InvalidArgumentException(sprintf('The client "%s" cannot refresh tokens it has no way to obtain: refresh_token requires authorization_code.', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" cannot refresh tokens it has no way to obtain: refresh_token requires authorization_code.',
+                $clientId,
+            ));
         }
         if ($allowedScopes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one scope.', $clientId));
         }
         if (! $requiresPkce && ! $authenticationMethod->authenticatesClient()) {
-            throw new InvalidArgumentException(sprintf('The client "%s" is public and must use PKCE (RFC 9700 section 2.1.1): requires_pkce cannot be false.', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" is public and must use PKCE (RFC 9700 section 2.1.1): requires_pkce cannot be false.',
+                $clientId,
+            ));
         }
         if ($backChannelLogoutSessionRequired && ! $hasBackChannelLogoutUri) {
-            throw new InvalidArgumentException(sprintf('The client "%s" requires a "sid" in its logout token but registers no backchannel_logout_uri to receive one (Back-Channel Logout 1.0 §2.2).', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" requires a "sid" in its logout token but registers no backchannel_logout_uri to receive one (Back-Channel Logout 1.0 §2.2).',
+                $clientId,
+            ));
         }
         if ($frontChannelLogoutSessionRequired && ! $hasFrontChannelLogoutUri) {
-            throw new InvalidArgumentException(sprintf('The client "%s" requires an "iss" and a "sid" on its logout URI but registers no frontchannel_logout_uri to carry them (Front-Channel Logout 1.0 §3).', $clientId));
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" requires an "iss" and a "sid" on its logout URI but registers no frontchannel_logout_uri to carry them (Front-Channel Logout 1.0 §3).',
+                $clientId,
+            ));
         }
     }
 

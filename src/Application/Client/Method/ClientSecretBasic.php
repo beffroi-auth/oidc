@@ -101,12 +101,22 @@ final readonly class ClientSecretBasic implements SecretKeepingMethodInterface, 
         }
         $decoded = base64_decode($matches[1], true);
         if ($decoded === false || ! str_contains($decoded, ':')) {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, null, $this->name(), 'The Basic credentials are malformed.');
+            throw ClientAuthenticationFailure::malformedRequest(
+                ClientAuthenticationFailureReason::MalformedCredentials,
+                null,
+                $this->name(),
+                'The Basic credentials are malformed.',
+            );
         }
         [$clientId, $secret] = explode(':', $decoded, 2);
         $clientId = urldecode($clientId);
         if ($clientId === '') {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, null, $this->name(), 'The Basic credentials are malformed.');
+            throw ClientAuthenticationFailure::malformedRequest(
+                ClientAuthenticationFailureReason::MalformedCredentials,
+                null,
+                $this->name(),
+                'The Basic credentials are malformed.',
+            );
         }
 
         return [$clientId, urldecode($secret)];

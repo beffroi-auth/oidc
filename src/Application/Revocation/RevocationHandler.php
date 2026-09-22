@@ -51,10 +51,21 @@ final readonly class RevocationHandler
      *
      * @throws OAuth2Exception invalid_client, invalid_request or unsupported_token_type
      */
-    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null): void
-    {
-        $caller = $this->clients->authenticate($tenant, $this->endpoints->locate($tenant)->revocation, $authorizationHeader, $parameters, $context, $certificate)
-            ->client;
+    public function handle(
+        Tenant $tenant,
+        ?string $authorizationHeader,
+        array $parameters,
+        RequestContext $context,
+        ?ClientCertificate $certificate = null,
+    ): void {
+        $caller = $this->clients->authenticate(
+            $tenant,
+            $this->endpoints->locate($tenant)->revocation,
+            $authorizationHeader,
+            $parameters,
+            $context,
+            $certificate,
+        )->client;
         $request = new TokenRequest($parameters);
         $token = $request->required('token');
         $request->optional('token_type_hint');

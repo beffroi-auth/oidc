@@ -69,7 +69,7 @@ final readonly class UnverifiedJwt
     {
         $value = $this->claims[$name] ?? null;
 
-        return is_int($value) ? (new DateTimeImmutable('@' . $value)) : null;
+        return is_int($value) ? new DateTimeImmutable('@' . $value) : null;
     }
 
     /**

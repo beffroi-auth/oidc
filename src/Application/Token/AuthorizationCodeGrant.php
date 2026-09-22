@@ -86,12 +86,14 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
             throw new InvalidGrantException(self::INVALID);
         }
 
-        if (! $record->client->equals($client->client)
+        if (
+            ! $record->client->equals($client->client)
             || $record->isExpired($now)
             || ! $record->redirectUri->matches($redirectUri)
             || ! self::pkceSatisfied($record, $codeVerifier)
             || ! self::reservationSatisfied($record, $client)
-            || ! $record->session->isActive($now)) {
+            || ! $record->session->isActive($now)
+        ) {
             throw new InvalidGrantException(self::INVALID);
         }
 
@@ -124,7 +126,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
      */
     private static function reservationSatisfied(AuthorizationCode $record, AuthenticatedClient $client): bool
     {
-        return $record->dpopKey === null || ($client->confirmation !== null && $client->confirmation->matches($record->dpopKey));
+        return $record->dpopKey === null || $client->confirmation !== null && $client->confirmation->matches($record->dpopKey);
     }
 
     private function refreshTokenDue(GrantedAuthorization $authorization): bool

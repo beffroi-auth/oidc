@@ -88,8 +88,13 @@ final readonly class PushedAuthorizationRequestResolver
      * The audit trail gets the reason and the two clients; the one that presented the reference reads
      * one error whichever of the four it ran into.
      */
-    private function refuse(Tenant $tenant, RequestContext $context, PushedRequestRefusalReason $reason, ?string $presentedBy, ?string $pushedBy): OAuth2Exception
-    {
+    private function refuse(
+        Tenant $tenant,
+        RequestContext $context,
+        PushedRequestRefusalReason $reason,
+        ?string $presentedBy,
+        ?string $pushedBy,
+    ): OAuth2Exception {
         $this->events->dispatch(new PushedRequestRefused($this->clock->now(), $tenant, $reason, $presentedBy, $pushedBy, $context));
 
         return new InvalidRequestUriException(self::REFUSED);

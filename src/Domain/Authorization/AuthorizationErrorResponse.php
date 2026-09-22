@@ -31,7 +31,10 @@ final readonly class AuthorizationErrorResponse
     public static function fromException(RedirectTarget $target, OAuth2Exception $exception): self
     {
         if (! $exception->redirectable) {
-            throw new LogicException(sprintf('The error "%s" is not redirectable: it is shown to the user, never sent to the client (RFC 6749 §4.1.2.1).', $exception->error));
+            throw new LogicException(sprintf(
+                'The error "%s" is not redirectable: it is shown to the user, never sent to the client (RFC 6749 §4.1.2.1).',
+                $exception->error,
+            ));
         }
 
         return new self($target->client->tenant->issuer, $target->redirectUri, $target->state, $exception->error, $exception->errorDescription);

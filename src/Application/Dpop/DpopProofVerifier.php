@@ -50,8 +50,14 @@ final readonly class DpopProofVerifier
      * @throws InvalidDpopProofException
      * @throws UseDpopNonceException when this provider asks the client to make the proof again
      */
-    public function verify(?string $proof, string $method, string $url, DateTimeImmutable $now, #[SensitiveParameter] ?string $accessToken = null): ?KeyConfirmation
-    {
+    public function verify(
+        ?string $proof,
+        string $method,
+        string $url,
+        DateTimeImmutable $now,
+        #[SensitiveParameter]
+        ?string $accessToken = null,
+    ): ?KeyConfirmation {
         if ($proof === null || $proof === '') {
             return null;
         }

@@ -60,15 +60,26 @@ final readonly class ClientAuthenticator
      *
      * @throws OAuth2Exception
      */
-    public function authenticate(Tenant $tenant, string $endpoint, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null): AuthenticatedClient
-    {
+    public function authenticate(
+        Tenant $tenant,
+        string $endpoint,
+        ?string $authorizationHeader,
+        array $parameters,
+        RequestContext $context,
+        ?ClientCertificate $certificate = null,
+    ): AuthenticatedClient {
         try {
             $request = new ClientAuthenticationRequest($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate);
             [$candidates, $clientId] = $this->presentedIn($request);
             $method = $candidates[0];
             $named = $request->clientId();
             if ($named !== null && $named !== $clientId) {
-                throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MismatchedClientId, $clientId, $method->name(), 'The client_id parameter does not match the credentials presented.');
+                throw ClientAuthenticationFailure::malformedRequest(
+                    ClientAuthenticationFailureReason::MismatchedClientId,
+                    $clientId,
+                    $method->name(),
+                    'The client_id parameter does not match the credentials presented.',
+                );
             }
             $client = $this->clients->findByClientId($tenant, $clientId);
             if ($client === null) {
@@ -76,7 +87,10 @@ final readonly class ClientAuthenticator
 
                 throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnknownClient, $clientId, $method->name());
             }
-            $registered = array_find($candidates, static fn (AuthenticationMethodInterface $candidate): bool => $candidate->name() === $client->authenticationMethod->name());
+            $registered = array_find(
+                $candidates,
+                static fn (AuthenticationMethodInterface $candidate): bool => $candidate->name() === $client->authenticationMethod->name(),
+            );
             if ($registered === null) {
                 $method->payRefusal($request);
 
@@ -127,13 +141,24 @@ final readonly class ClientAuthenticator
         if ($proving !== []) {
             $mechanisms = array_unique(array_map(static fn (array $claim): string => $claim[0]->mechanism(), $proving));
             if (count($mechanisms) > 1) {
-                throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MultipleMechanisms, $proving[0][1], null, sprintf('The client must not use more than one authentication method in a request (RFC 6749 section 2.3); this one uses %s.', implode(' and ', array_map(static fn (array $claim): string => $claim[0]->name(), $proving))));
+                throw ClientAuthenticationFailure::malformedRequest(
+                    ClientAuthenticationFailureReason::MultipleMechanisms,
+                    $proving[0][1],
+                    null,
+                    sprintf('The client must not use more than one authentication method in a request (RFC 6749 section 2.3); this one uses %s.', implode(' and ', array_map(
+                        static fn (array $claim): string => $claim[0]->name(),
+                        $proving,
+                    ))),
+                );
             }
 
             return [array_map(static fn (array $claim): AuthenticationMethodInterface => $claim[0], $proving), $proving[0][1]];
         }
         if ($request->authorizationHeader !== null) {
-            throw ClientAuthenticationFailure::unauthenticated(ClientAuthenticationFailureReason::UnsupportedScheme, 'The Authorization header carries no authentication scheme this provider takes.');
+            throw ClientAuthenticationFailure::unauthenticated(
+                ClientAuthenticationFailureReason::UnsupportedScheme,
+                'The Authorization header carries no authentication scheme this provider takes.',
+            );
         }
         if ($presented !== []) {
             return [[$presented[0][0]], $presented[0][1]];

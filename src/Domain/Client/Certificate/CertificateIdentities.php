@@ -52,7 +52,10 @@ final readonly class CertificateIdentities
             }
         }
         if (count($registered) > 1) {
-            throw new InvalidArgumentException(sprintf('A client registers exactly one of the values of RFC 8705 section 2.1.2, not %s.', implode(' and ', array_keys($registered))));
+            throw new InvalidArgumentException(sprintf('A client registers exactly one of the values of RFC 8705 section 2.1.2, not %s.', implode(
+                ' and ',
+                array_keys($registered),
+            )));
         }
 
         return array_values($registered)[0] ?? null;

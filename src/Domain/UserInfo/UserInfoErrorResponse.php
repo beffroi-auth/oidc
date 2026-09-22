@@ -52,10 +52,23 @@ final readonly class UserInfoErrorResponse
             return new self(MissingBearerTokenException::STATUS_CODE, null, null, PresentedAccessToken::SCHEMES);
         }
         if ($exception instanceof ChallengeInterface) {
-            return new self(self::CHALLENGED, $exception->error, $exception->errorDescription, [$exception->challengeScheme()], null, $exception->challengeHeaders());
+            return new self(
+                self::CHALLENGED,
+                $exception->error,
+                $exception->errorDescription,
+                [$exception->challengeScheme()],
+                null,
+                $exception->challengeHeaders(),
+            );
         }
 
-        return new self($exception->statusCode, $exception->error, $exception->errorDescription, [TokenResponse::BEARER], $exception instanceof InsufficientScopeException ? implode(' ', $exception->scopes) : null);
+        return new self(
+            $exception->statusCode,
+            $exception->error,
+            $exception->errorDescription,
+            [TokenResponse::BEARER],
+            $exception instanceof InsufficientScopeException ? implode(' ', $exception->scopes) : null,
+        );
     }
 
     /**
@@ -84,9 +97,13 @@ final readonly class UserInfoErrorResponse
      */
     public function headers(): array
     {
-        return [
-            'WWW-Authenticate' => $this->challenge(),
-        ] + $this->carried + UserInfoResponse::HEADERS;
+        return (
+            [
+                'WWW-Authenticate' => $this->challenge(),
+            ]
+            + $this->carried
+            + UserInfoResponse::HEADERS
+        );
     }
 
     /**

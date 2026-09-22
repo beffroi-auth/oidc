@@ -28,7 +28,22 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
      * @var array<string, list<string>>
      */
     private const array SCOPES = [
-        'profile' => ['name', 'family_name', 'given_name', 'middle_name', 'nickname', 'preferred_username', 'profile', 'picture', 'website', 'gender', 'birthdate', 'zoneinfo', 'locale', 'updated_at'],
+        'profile' => [
+            'name',
+            'family_name',
+            'given_name',
+            'middle_name',
+            'nickname',
+            'preferred_username',
+            'profile',
+            'picture',
+            'website',
+            'gender',
+            'birthdate',
+            'zoneinfo',
+            'locale',
+            'updated_at',
+        ],
         'email' => ['email', 'email_verified'],
         'address' => ['address'],
         'phone' => ['phone_number', 'phone_number_verified'],
@@ -38,7 +53,7 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
     {
         $due = array_keys($requested);
         foreach ($scopes as $scope) {
-            $due = [...$due, ...self::SCOPES[$scope->value] ?? []];
+            $due = [...$due, ...(self::SCOPES[$scope->value] ?? [])];
         }
 
         $claims = [];
@@ -103,14 +118,17 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
         if ($address === null) {
             return null;
         }
-        $members = array_filter([
-            'formatted' => $address->formatted,
-            'street_address' => $address->streetAddress,
-            'locality' => $address->locality,
-            'region' => $address->region,
-            'postal_code' => $address->postalCode,
-            'country' => $address->country,
-        ], static fn (?string $member): bool => $member !== null);
+        $members = array_filter(
+            [
+                'formatted' => $address->formatted,
+                'street_address' => $address->streetAddress,
+                'locality' => $address->locality,
+                'region' => $address->region,
+                'postal_code' => $address->postalCode,
+                'country' => $address->country,
+            ],
+            static fn (?string $member): bool => $member !== null,
+        );
 
         return $members === [] ? null : $members;
     }

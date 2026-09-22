@@ -53,7 +53,10 @@ final readonly class ClientDocumentIssuer
     public function issue(Client $client, ResponseFormat $format, array $claims): string
     {
         if ($format->isPlain()) {
-            throw new LogicException(sprintf('The client "%s" registered neither a signature nor an encryption for this document; it is handed over as it is.', $client->clientId));
+            throw new LogicException(sprintf(
+                'The client "%s" registered neither a signature nor an encryption for this document; it is handed over as it is.',
+                $client->clientId,
+            ));
         }
         $payload = JwtPayload::encode($claims);
         $header = [];
@@ -82,8 +85,12 @@ final readonly class ClientDocumentIssuer
      */
     private function recipient(Client $client, ResponseEncryption $encryption): array
     {
-        return $this->keys->keysOf($client, null)
-            ->encryptionKeyFor($encryption->algorithm)
-            ?? throw new ClientKeysUnavailableException(sprintf('The client "%s" publishes no key a document encrypted under "%s" can be addressed to.', $client->clientId, $encryption->algorithm->name()));
+        return (
+            $this->keys->keysOf($client, null)->encryptionKeyFor($encryption->algorithm) ?? throw new ClientKeysUnavailableException(sprintf(
+                'The client "%s" publishes no key a document encrypted under "%s" can be addressed to.',
+                $client->clientId,
+                $encryption->algorithm->name(),
+            ))
+        );
     }
 }

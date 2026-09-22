@@ -112,7 +112,13 @@ final readonly class RequestParameters
      */
     public static function uiLocales(array $parameters, bool $redirectable): array
     {
-        return self::list($parameters, 'ui_locales', self::LANGUAGE_TAG_PATTERN, 'The ui_locales parameter must be a space-separated list of language tags.', $redirectable);
+        return self::list(
+            $parameters,
+            'ui_locales',
+            self::LANGUAGE_TAG_PATTERN,
+            'The ui_locales parameter must be a space-separated list of language tags.',
+            $redirectable,
+        );
     }
 
     /**

@@ -72,12 +72,21 @@ final readonly class RequestObjectReader
         } catch (InvalidJweException $exception) {
             // What did not open is not written back: an error description names the rule and never the
             // key, the algorithm or anything else the sender chose (RFC 6749 §5.2)
-            throw new InvalidRequestObjectException('The request object does not open with a key this provider publishes for encryption (RFC 9101 section 6.1).', $exception);
+            throw new InvalidRequestObjectException(
+                'The request object does not open with a key this provider publishes for encryption (RFC 9101 section 6.1).',
+                $exception,
+            );
         }
         if (str_starts_with(ltrim($payload), '{')) {
-            return new RequestObject(new UnverifiedJwt($received, [
-                'alg' => UnsignedRequestObjects::ALGORITHM,
-            ], $this->claims($payload)));
+            return new RequestObject(
+                new UnverifiedJwt(
+                    $received,
+                    [
+                        'alg' => UnsignedRequestObjects::ALGORITHM,
+                    ],
+                    $this->claims($payload),
+                ),
+            );
         }
 
         return $this->object($payload);

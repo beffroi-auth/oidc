@@ -45,7 +45,10 @@ final readonly class ClientUri implements Stringable
         }
         $scheme = strtolower($parts['scheme']);
         if ($scheme !== 'https' && ! ($scheme === 'http' && Issuer::isLoopbackHost(strtolower($parts['host'])))) {
-            throw new InvalidArgumentException(sprintf('The URI "%s" registered for a client must use HTTPS; plain HTTP is only accepted on a loopback host.', $value));
+            throw new InvalidArgumentException(sprintf(
+                'The URI "%s" registered for a client must use HTTPS; plain HTTP is only accepted on a loopback host.',
+                $value,
+            ));
         }
 
         $this->value = $value;

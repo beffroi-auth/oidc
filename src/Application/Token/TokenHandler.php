@@ -59,18 +59,24 @@ final readonly class TokenHandler
      *
      * @throws OAuth2Exception
      */
-    public function handle(Tenant $tenant, ?string $authorizationHeader, array $parameters, RequestContext $context, ?ClientCertificate $certificate = null, ?string $dpopProof = null): TokenResponse
-    {
+    public function handle(
+        Tenant $tenant,
+        ?string $authorizationHeader,
+        array $parameters,
+        RequestContext $context,
+        ?ClientCertificate $certificate = null,
+        ?string $dpopProof = null,
+    ): TokenResponse {
         // RFC 6749 §3.2: the token endpoint takes a POST and nothing else, which is what a proof made
         // for this request names in its "htm"
-        $endpoint = $this->endpoints->locate($tenant)
-            ->token;
-        $client = $this->clients->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)
+        $endpoint = $this->endpoints->locate($tenant)->token;
+        $client = $this->clients
+            ->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)
             ->alsoProving($this->proofs->verify($dpopProof, 'POST', $endpoint, $context->receivedAt));
         $request = new TokenRequest($parameters);
 
         $grantType = GrantType::tryFrom($request->required('grant_type'));
-        $grant = $grantType === null ? null : ($this->grants[$grantType->value] ?? null);
+        $grant = $grantType === null ? null : $this->grants[$grantType->value] ?? null;
         if ($grantType === null || $grant === null) {
             throw new UnsupportedGrantTypeException('The grant type is not supported by this provider.');
         }
@@ -78,7 +84,6 @@ final readonly class TokenHandler
             throw new UnauthorizedClientException('The client is not registered for this grant type.');
         }
 
-        return $grant->grant($client, $request, $context)
-            ->toResponse();
+        return $grant->grant($client, $request, $context)->toResponse();
     }
 }

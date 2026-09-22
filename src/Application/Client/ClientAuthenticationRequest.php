@@ -77,7 +77,12 @@ final class ClientAuthenticationRequest
         foreach (self::CREDENTIAL_PARAMETERS as $name) {
             $value = $parameters[$name] ?? null;
             if ($value !== null && ! is_string($value)) {
-                throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, null, null, sprintf('The %s parameter must be a string.', $name));
+                throw ClientAuthenticationFailure::malformedRequest(
+                    ClientAuthenticationFailureReason::MalformedCredentials,
+                    null,
+                    null,
+                    sprintf('The %s parameter must be a string.', $name),
+                );
             }
         }
     }
@@ -148,15 +153,31 @@ final class ClientAuthenticationRequest
             return null;
         }
         if ($assertion === null || $type === null) {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, 'The client_assertion and client_assertion_type parameters go together (RFC 7523 section 2.2).');
+            throw ClientAuthenticationFailure::malformedRequest(
+                ClientAuthenticationFailureReason::MalformedCredentials,
+                $this->clientId(),
+                null,
+                'The client_assertion and client_assertion_type parameters go together (RFC 7523 section 2.2).',
+            );
         }
         if ($type !== self::ASSERTION_TYPE) {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, sprintf('The client_assertion_type parameter must be "%s" (RFC 7523 section 2.2).', self::ASSERTION_TYPE));
+            throw ClientAuthenticationFailure::malformedRequest(
+                ClientAuthenticationFailureReason::MalformedCredentials,
+                $this->clientId(),
+                null,
+                sprintf('The client_assertion_type parameter must be "%s" (RFC 7523 section 2.2).', self::ASSERTION_TYPE),
+            );
         }
         try {
             return $this->assertion = $reader->read($assertion);
         } catch (InvalidJwtException $exception) {
-            throw ClientAuthenticationFailure::malformedRequest(ClientAuthenticationFailureReason::MalformedCredentials, $this->clientId(), null, 'The client assertion is not a readable JWT (RFC 7523 section 2.2).', $exception);
+            throw ClientAuthenticationFailure::malformedRequest(
+                ClientAuthenticationFailureReason::MalformedCredentials,
+                $this->clientId(),
+                null,
+                'The client assertion is not a readable JWT (RFC 7523 section 2.2).',
+                $exception,
+            );
         }
     }
 
@@ -171,7 +192,12 @@ final class ClientAuthenticationRequest
     {
         $clientId = $assertion->claim('sub') ?? $this->clientId();
         if ($clientId === null) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidAssertion, null, null, 'the client assertion names no client in its "sub"');
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::InvalidAssertion,
+                null,
+                null,
+                'the client assertion names no client in its "sub"',
+            );
         }
 
         return $clientId;

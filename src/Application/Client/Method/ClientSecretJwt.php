@@ -93,7 +93,13 @@ final readonly class ClientSecretJwt implements AssertionMethodInterface, Secret
         try {
             $this->verifier->verify($assertion, $secret, $this->assertionSigningAlgorithms());
         } catch (InvalidJwtException $exception) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidAssertion, $client->clientId, $this->name(), $exception->getMessage(), $exception);
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::InvalidAssertion,
+                $client->clientId,
+                $this->name(),
+                $exception->getMessage(),
+                $exception,
+            );
         }
         $this->claims->validate($this, $assertion, $client, $request);
     }
