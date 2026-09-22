@@ -21,7 +21,6 @@ use Heidi\Oidc\Exception\InvalidRequestUriException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\RequestObjectUnavailableException;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use Heidi\Oidc\Port\JwtKeyVerifierInterface;
 use Heidi\Oidc\Port\RequestObjectFetcherInterface;
 use Psr\Clock\ClockInterface;
@@ -33,6 +32,10 @@ use Psr\Clock\ClockInterface;
  * it is written, so that what the client signed and what the provider reads are the same request. Only
  * "client_id" stays, because RFC 9101 §5 has it outside the object as well and the two must be one.
  *
+ * An object a client encrypted to a key the tenant publishes is opened before it is read, and what comes
+ * out of the JWE goes on exactly as an object that arrived in clear (RFC 9101 §6.1): being encrypted
+ * says who may read the request, never who wrote it.
+ *
  * Nothing of the object is trusted before its signature is: the algorithm is the one the client
  * registered, the key is one the client publishes, and an object signed with nothing is read only from a
  * client that registered "none" (decision 0006). A "request_uri" is read back only when the client
@@ -43,7 +46,7 @@ final readonly class RequestObjectResolver
 {
     public function __construct(
         private ClientRepositoryInterface $clients,
-        private CompactJwtReaderInterface $reader,
+        private RequestObjectReader $objects,
         private JwtKeyVerifierInterface $signatures,
         private ClientKeySetProvider $keys,
         private RequestObjectValidator $claims,
@@ -75,7 +78,7 @@ final readonly class RequestObjectResolver
             throw new InvalidRequestException('The request and request_uri parameters are never sent together (OIDC Core section 6).');
         }
         $client ??= $this->client($tenant, $parameters);
-        $object = $this->read($byReference === null ? $byValue : $this->fetch($client, $byReference));
+        $object = $this->objects->read($tenant, $byReference === null ? $byValue : $this->fetch($client, $byReference));
         $this->verify($client, $object);
         $this->claims->validate($object, $client, $tenant, $this->clock->now());
 
@@ -102,18 +105,6 @@ final readonly class RequestObjectResolver
         }
 
         return $this->clients->findByClientId($tenant, $clientId) ?? throw new InvalidRequestException('The client is unknown.');
-    }
-
-    /**
-     * @throws OAuth2Exception
-     */
-    private function read(string $compact): RequestObject
-    {
-        try {
-            return new RequestObject($this->reader->read($compact));
-        } catch (InvalidJwtException $exception) {
-            throw new InvalidRequestObjectException('The request object is not a readable JWT (RFC 9101 section 4).', $exception);
-        }
     }
 
     /**
