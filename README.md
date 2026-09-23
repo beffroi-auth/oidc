@@ -1,3 +1,3 @@
 # heidi/oidc
 
-Part of [heidi/framework](https://github.com/Spomky-Labs/heidi). See the monorepo for documentation and contributions.
+Part of [heidi/framework](https://github.com/beffroi-php/heidi). See the monorepo for documentation and contributions.
