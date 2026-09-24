@@ -12,7 +12,6 @@ use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
-use function in_array;
 use function preg_match;
 use function sprintf;
 
@@ -24,6 +23,9 @@ use function sprintf;
  * registering itself, and it is validated before anything is built from it. What it does not hold is
  * what is not registered: the tenant it belongs to, and the shared secret in the shape the provider
  * keeps it, which are the two things a `Client` adds.
+ *
+ * The names it registers are read against what the provider is wired with, where the two meet, and not
+ * here: a registration knows the shape of a grant name and not which names anybody serves.
  *
  * Every list is closed, no wildcard. "requiresConsent = false" and "requiresPkce = false" are the named
  * exceptions of architecture §7 and decision 0008, carried by the registration and by nothing global;
@@ -48,7 +50,7 @@ final readonly class ClientRegistration
     public array $postLogoutRedirectUris;
 
     /**
-     * @var list<GrantType>
+     * @var list<GrantTypeName>
      */
     public array $grantTypes;
 
@@ -69,7 +71,7 @@ final readonly class ClientRegistration
      * @param bool $registersASecret whether the client registered a shared secret; what shape the provider keeps it in is the business of the `Client` that holds it
      * @param list<RedirectUri> $redirectUris at least one
      * @param list<RedirectUri> $postLogoutRedirectUris
-     * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
+     * @param list<GrantTypeName> $grantTypes at least one; "authorization_code" alone for a client that registers none (RFC 7591 §2). Which names the provider serves, and which of them need another beside them, is what it is wired with and is read where a registration meets that wiring (architecture §4.8)
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
@@ -96,7 +98,7 @@ final readonly class ClientRegistration
         public bool $registersASecret,
         array $redirectUris,
         array $postLogoutRedirectUris = [],
-        array $grantTypes = [GrantType::AuthorizationCode],
+        array $grantTypes = [new GrantTypeName('authorization_code')],
         ?Scopes $allowedScopes = null,
         public bool $requiresConsent = true,
         ?ResponseFormat $idToken = null,
@@ -125,7 +127,7 @@ final readonly class ClientRegistration
         $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
         $this->redirectUris = self::unique($redirectUris, $sameUri);
         $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris, $sameUri);
-        $this->grantTypes = self::unique($grantTypes, static fn (GrantType $a, GrantType $b): bool => $a === $b);
+        $this->grantTypes = self::unique($grantTypes, static fn (GrantTypeName $a, GrantTypeName $b): bool => $a->equals($b));
         $this->requestUris = self::unique($requestUris, static fn (ClientUri $a, ClientUri $b): bool => $a->equals($b));
 
         $this->assertHoldsTogether();
@@ -163,9 +165,9 @@ final readonly class ClientRegistration
         return array_any($this->postLogoutRedirectUris, static fn (RedirectUri $registered): bool => $registered->matches($redirectUri));
     }
 
-    public function allowsGrant(GrantType $grantType): bool
+    public function allowsGrant(GrantTypeName $grantType): bool
     {
-        return in_array($grantType, $this->grantTypes, true);
+        return array_any($this->grantTypes, static fn (GrantTypeName $registered): bool => $registered->equals($grantType));
     }
 
     /**
@@ -257,12 +259,6 @@ final readonly class ClientRegistration
         }
         if ($this->grantTypes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one grant type.', $this->clientId));
-        }
-        if ($this->allowsGrant(GrantType::RefreshToken) && ! $this->allowsGrant(GrantType::AuthorizationCode)) {
-            throw new InvalidArgumentException(sprintf(
-                'The client "%s" cannot refresh tokens it has no way to obtain: refresh_token requires authorization_code.',
-                $this->clientId,
-            ));
         }
         if (! $this->requiresPkce && $this->isPublic()) {
             throw new InvalidArgumentException(sprintf(

@@ -18,6 +18,7 @@ use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
+use Heidi\Oidc\Port\ServedGrantsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 use WeakMap;
 
@@ -56,6 +57,7 @@ final class ConfigurationClientRepository implements
         private readonly PasswordHasherInterface $hasher,
         SignatureAlgorithmsInterface $algorithms,
         ClientAuthenticationMethodsInterface $methods,
+        ServedGrantsInterface $grants,
         CertificateReaderInterface $certificates,
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
@@ -66,6 +68,7 @@ final class ConfigurationClientRepository implements
                 $definition,
                 $algorithms,
                 $methods,
+                $grants,
                 $certificates,
                 $keyEncryption,
                 $contentEncryption,

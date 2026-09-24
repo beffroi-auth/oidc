@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
-use Heidi\Oidc\Domain\Client\GrantType;
+use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Event\RefreshTokenReuseDetected;
 use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
@@ -34,7 +34,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * nobody else: the client that holds it is a public client, and the binding is the whole of what tells
  * it from whoever took a copy of the token.
  */
-final readonly class RefreshTokenGrant implements GrantInterface
+final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
     private const string INVALID = 'The refresh token is invalid.';
 
@@ -47,9 +47,9 @@ final readonly class RefreshTokenGrant implements GrantInterface
     ) {
     }
 
-    public function grantType(): GrantType
+    public function grantType(): GrantTypeName
     {
-        return GrantType::RefreshToken;
+        return new GrantTypeName('refresh_token');
     }
 
     public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens
@@ -74,7 +74,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
             throw new InvalidScopeException('The requested scope exceeds the scope granted to the refresh token (RFC 6749 section 6).');
         }
 
-        $authorization = GrantedAuthorization::fromRefreshToken($token, $scopes, $client->confirmation);
+        $authorization = GrantedAuthorization::fromRefreshToken($this->grantType(), $token, $scopes, $client->confirmation);
         if (! $token->rotatesOnUse()) {
             return $this->issuer->issue($authorization, null, $context, $now);
         }

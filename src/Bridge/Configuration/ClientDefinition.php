@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Bridge\Configuration;
 
+use function array_any;
 use function array_column;
 use function array_diff;
+use function array_find;
 use function array_keys;
 use BackedEnum;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
@@ -19,6 +21,7 @@ use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
 use Heidi\Oidc\Application\Client\MethodNames;
 use Heidi\Oidc\Application\Key\AlgorithmNames;
+use Heidi\Oidc\Application\Token\GrantNames;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
@@ -28,7 +31,7 @@ use Heidi\Oidc\Domain\Client\ClientJwks;
 use Heidi\Oidc\Domain\Client\ClientRegistration;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\ClientUri;
-use Heidi\Oidc\Domain\Client\GrantType;
+use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
@@ -42,6 +45,7 @@ use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
+use Heidi\Oidc\Port\ServedGrantsInterface;
 use function implode;
 use function is_array;
 use function is_bool;
@@ -60,6 +64,16 @@ final readonly class ClientDefinition
      * RFC 6749 appendix A.2, at least 32 characters (RFC 6819 §5.1.4.2.2).
      */
     private const string SECRET_PATTERN = '/^[\x21-\x7E]{32,}$/';
+
+    /**
+     * What a client that declares no "grant_types" is registered for: the browser flow and the renewal
+     * that goes with it, which is what a relying party of this provider comes for. RFC 7591 §2 defaults
+     * to "authorization_code" alone; a deployment that wants that writes it, and one that wants more
+     * names what it is wired with.
+     *
+     * @var non-empty-list<string>
+     */
+    public const array DEFAULT_GRANT_TYPES = ['authorization_code', 'refresh_token'];
 
     private const array KEYS = [
         'name',
@@ -108,6 +122,7 @@ final readonly class ClientDefinition
      * @param KeyEncryptionAlgorithmsInterface $keyEncryption what the provider encrypts a document to a client with: a client registers one of those names, or none and receives nothing encrypted
      * @param ContentEncryptionAlgorithmsInterface $contentEncryption what the payload of such a document is encrypted with
      * @param ClientAuthenticationMethodsInterface $methods what the provider authenticates clients with: a client registers one of those names
+     * @param ServedGrantsInterface $grants what the provider serves at its token endpoint: a client registers those names and no other
      * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
      */
     public static function fromArray(
@@ -115,6 +130,7 @@ final readonly class ClientDefinition
         array $definition,
         SignatureAlgorithmsInterface $algorithms,
         ClientAuthenticationMethodsInterface $methods,
+        ServedGrantsInterface $grants,
         CertificateReaderInterface $certificates,
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
@@ -155,10 +171,7 @@ final readonly class ClientDefinition
             static fn (string $uri): RedirectUri => new RedirectUri($uri),
             self::stringList($clientId, 'post_logout_redirect_uris', $definition['post_logout_redirect_uris'] ?? []),
         );
-        $grantTypes = array_map(
-            static fn (string $grant): GrantType => self::enumCase($clientId, 'grant_types', $grant, GrantType::class),
-            self::stringList($clientId, 'grant_types', $definition['grant_types'] ?? [GrantType::AuthorizationCode->value, GrantType::RefreshToken->value]),
-        );
+        $grantTypes = self::grantTypes($clientId, $definition, $grants);
         $allowedScopes = new Scopes(array_map(
             static fn (string $scope): Scope => new Scope($scope),
             self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']),
@@ -394,6 +407,48 @@ final readonly class ClientDefinition
     }
 
     /**
+     * The grants the client registers, among those the provider serves (issue #98): a name nothing
+     * serves fails at boot with the list of the wired ones, because the configuration tree cannot know
+     * that list. A grant that spends a refresh token is worth nothing without one that issues it, so a
+     * registration that names the first and none of the second is refused here too, where the two lists
+     * meet; which grants those are, the wired grants say themselves and this reads nowhere else.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return list<GrantTypeName>
+     */
+    private static function grantTypes(string $clientId, array $definition, ServedGrantsInterface $grants): array
+    {
+        $served = $grants->servedGrantTypes();
+        $registered = [];
+        foreach (self::stringList($clientId, 'grant_types', $definition['grant_types'] ?? self::DEFAULT_GRANT_TYPES) as $name) {
+            $grantType = array_find($served, static fn (GrantTypeName $wired): bool => $wired->value === $name);
+            if ($grantType === null) {
+                throw self::oneOf($clientId, 'grant_types', GrantNames::of($served));
+            }
+            $registered[] = $grantType;
+        }
+
+        $isRegistered = static fn (GrantTypeName $grantType): bool => array_any(
+            $registered,
+            static fn (GrantTypeName $one): bool => $one->equals($grantType),
+        );
+        $spends = array_find($grants->spendingRefreshTokens(), $isRegistered);
+        if ($spends !== null && ! array_any($grants->issuingRefreshTokens(), $isRegistered)) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" cannot spend with "%s" a refresh token it has no way to obtain: register it for one of: %s.',
+                $clientId,
+                $spends->value,
+                implode(', ', GrantNames::of($grants->issuingRefreshTokens())),
+            ));
+        }
+
+        return $registered;
+    }
+
+    /**
      * What names the client in the certificate it presents (RFC 8705 §2.1.2): one of the five keys, and
      * one only. A distinguished name is written back by the reader that will read the one of the
      * certificate, so that the registration is kept in the form the comparison will be made in and a
@@ -514,7 +569,7 @@ final readonly class ClientDefinition
      * A client registered a name the provider is not wired with. The configuration tree cannot know that
      * list, so the refusal carries it, and it is read from the wiring wherever the name came from.
      *
-     * @param list<non-empty-string> $wired
+     * @param list<string> $wired
      */
     private static function oneOf(string $clientId, string $option, array $wired, ?UnsupportedAlgorithmException $previous = null): InvalidArgumentException
     {

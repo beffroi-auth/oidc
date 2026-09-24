@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\GrantType;
+use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\ConfirmationInterface;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
@@ -27,7 +27,7 @@ final readonly class TokensIssued implements DomainEventInterface
     public function __construct(
         public DateTimeImmutable $occurredAt,
         public Tenant $tenant,
-        public GrantType $grantType,
+        public GrantTypeName $grantType,
         public Uuid $grantId,
         public string $clientId,
         public Uuid $sessionId,

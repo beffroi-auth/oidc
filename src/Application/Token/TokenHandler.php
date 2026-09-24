@@ -9,15 +9,12 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Token\TokenResponse;
-use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnauthorizedClientException;
 use Heidi\Oidc\Exception\UnsupportedGrantTypeException;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
-use function sprintf;
 
 /**
  * The token endpoint (RFC 6749 §3.2, architecture §4.5): the client first, then what the request proved
@@ -26,31 +23,19 @@ use function sprintf;
  * A request that carries a proof of possession (RFC 9449 §5) binds the tokens of the response to the key
  * it proved, exactly as a certificate binds them to itself; what the grant does with that binding, and
  * whether the authorization it spends was reserved for that key, is the grant's.
+ *
+ * Which grant serves a request is the wiring's answer and not this endpoint's: the name the request
+ * wrote is looked up among the wired grants, and one that names none is "unsupported_grant_type"
+ * whatever it says.
  */
 final readonly class TokenHandler
 {
-    /**
-     * @var array<string, GrantInterface> by grant type value
-     */
-    private array $grants;
-
-    /**
-     * @param iterable<GrantInterface> $grants
-     */
     public function __construct(
         private ClientAuthenticator $clients,
         private DpopProofVerifier $proofs,
         private EndpointLocatorInterface $endpoints,
-        iterable $grants,
+        private ServedGrants $grants,
     ) {
-        $indexed = [];
-        foreach ($grants as $grant) {
-            if (isset($indexed[$grant->grantType()->value])) {
-                throw new InvalidArgumentException(sprintf('Two grants handle "%s".', $grant->grantType()->value));
-            }
-            $indexed[$grant->grantType()->value] = $grant;
-        }
-        $this->grants = $indexed;
     }
 
     /**
@@ -82,12 +67,11 @@ final readonly class TokenHandler
         }
         $request = new TokenRequest($parameters);
 
-        $grantType = GrantType::tryFrom($request->required('grant_type'));
-        $grant = $grantType === null ? null : $this->grants[$grantType->value] ?? null;
-        if ($grantType === null || $grant === null) {
+        $grant = $this->grants->named($request->required('grant_type'));
+        if ($grant === null) {
             throw new UnsupportedGrantTypeException('The grant type is not supported by this provider.');
         }
-        if (! $client->client->registration->allowsGrant($grantType)) {
+        if (! $client->client->registration->allowsGrant($grant->grantType())) {
             throw new UnauthorizedClientException('The client is not registered for this grant type.');
         }
 

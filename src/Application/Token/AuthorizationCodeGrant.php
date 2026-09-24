@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use function array_any;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
@@ -11,7 +12,7 @@ use Heidi\Oidc\Application\Client\AuthenticatedClient;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\CodeChallenge;
 use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\GrantType;
+use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Event\AuthorizationCodeReplayed;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
@@ -22,6 +23,7 @@ use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
+use Heidi\Oidc\Port\ServedGrantsInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
@@ -36,11 +38,12 @@ use Symfony\Component\Uid\Uuid;
  * other: the authorization request said which key would come and collect it, and a code intercepted on
  * its way back through the browser is worth nothing to whoever does not hold it.
  */
-final readonly class AuthorizationCodeGrant implements GrantInterface
+final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterface
 {
     private const string INVALID = 'The authorization code is invalid.';
 
     /**
+     * @param ServedGrantsInterface $servedGrants what the provider serves, read for the grants that spend a refresh token: this one issues none the client could not spend
      * @param DateInterval $refreshTokenFamilyLifetime the absolute lifetime no rotation extends (architecture §4.6)
      */
     public function __construct(
@@ -50,14 +53,15 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         private TokenIssuer $issuer,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
+        private ServedGrantsInterface $servedGrants,
         private DateInterval $refreshTokenFamilyLifetime = new DateInterval('P90D'),
         private bool $refreshTokenWithoutOfflineAccess = true,
     ) {
     }
 
-    public function grantType(): GrantType
+    public function grantType(): GrantTypeName
     {
-        return GrantType::AuthorizationCode;
+        return new GrantTypeName('authorization_code');
     }
 
     public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens
@@ -92,7 +96,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
             throw new InvalidGrantException(self::INVALID);
         }
 
-        $authorization = GrantedAuthorization::fromAuthorizationCode($record, $client->confirmation);
+        $authorization = GrantedAuthorization::fromAuthorizationCode($this->grantType(), $record, $client->confirmation);
         $refreshToken = null;
         if ($this->refreshTokenDue($authorization)) {
             $family = new RefreshTokenFamily(Uuid::v7(), $record->codeHash, $record->grantId, $now, $now->add($this->refreshTokenFamilyLifetime));
@@ -124,9 +128,19 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         return $record->dpopKey === null || $client->confirmation !== null && $client->confirmation->matches($record->dpopKey);
     }
 
+    /**
+     * RFC 6749 §4.1.4, OIDC Core §11: a refresh token this client could not spend is one this response
+     * does not carry. What spends one is what the provider is wired with and the client registered for,
+     * and neither this grant nor the client names it.
+     */
     private function refreshTokenDue(GrantedAuthorization $authorization): bool
     {
-        if (! $authorization->client->registration->allowsGrant(GrantType::RefreshToken)) {
+        $registration = $authorization->client->registration;
+        $spent = array_any(
+            $this->servedGrants->spendingRefreshTokens(),
+            static fn (GrantTypeName $grantType): bool => $registration->allowsGrant($grantType),
+        );
+        if (! $spent) {
             return false;
         }
         if ($authorization->scopes->has(Scope::offlineAccess())) {
