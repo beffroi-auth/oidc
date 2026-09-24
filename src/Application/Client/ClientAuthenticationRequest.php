@@ -7,9 +7,12 @@ namespace Heidi\Oidc\Application\Client;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
 use Heidi\Oidc\Exception\InvalidJwtException;
+use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use function is_string;
 use function sprintf;
@@ -28,6 +31,44 @@ use function sprintf;
  */
 final class ClientAuthenticationRequest
 {
+    /**
+     * The certificate this request was made with, for a method that only ever runs on a request that
+     * carries one (RFC 8705 §2): the authenticator picked such a method because the certificate was
+     * there, so its absence here is a fault of this module.
+     *
+     * @throws LogicException when the request carries none
+     */
+    public function provenCertificate(ClientAuthenticationMethodInterface $method): ClientCertificate
+    {
+        return (
+            $this->certificate ?? throw new LogicException(sprintf(
+                'A request that authenticated a client with %s carries a certificate.',
+                $method->name(),
+            ))
+        );
+    }
+
+    /**
+     * What a method that recognises its client by the certificate of the connection reads of a request
+     * (RFC 8705 §2): the client names itself in "client_id" and the certificate proves it. A request
+     * made without a certificate presents no mutual-TLS authentication at all, and one made without
+     * "client_id" names nobody to look up.
+     */
+    public function clientIdBesideACertificate(): ?string
+    {
+        return $this->certificate === null ? null : $this->clientId();
+    }
+
+    /**
+     * A method was asked to verify a client it did not authenticate here: the authenticator picked the
+     * method because it read this request, so a request that no longer carries what it read, or a client
+     * kept in a shape the method does not verify, is a fault of this module and never of the caller.
+     */
+    public static function notAuthenticatedHere(Client $client, ClientAuthenticationMethodInterface $method): LogicException
+    {
+        return new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $method->name()));
+    }
+
     /**
      * RFC 6749 §2.3.1, RFC 7523 §2.2: what a client authentication proves the client with, and what an
      * endpoint keeping a request for later therefore never keeps (RFC 9126 §2.1).

@@ -16,6 +16,11 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
  */
 final readonly class UriName implements CertificateIdentityInterface
 {
+    /**
+     * The registration metadata this kind is registered under (RFC 8705 §2.1.2).
+     */
+    public const string NAME = 'tls_client_auth_san_uri';
+
     public function __construct(
         public string $uri,
     ) {
@@ -26,7 +31,7 @@ final readonly class UriName implements CertificateIdentityInterface
 
     public function name(): string
     {
-        return 'tls_client_auth_san_uri';
+        return self::NAME;
     }
 
     public function matches(CertificateSubject $subject): bool

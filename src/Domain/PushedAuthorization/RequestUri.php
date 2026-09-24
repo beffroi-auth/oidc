@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\PushedAuthorization;
 
-use function base64_encode;
-use function hash;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use function preg_match;
-use function random_bytes;
-use function rtrim;
 use SensitiveParameter;
-use function strtr;
 
 /**
  * The reference the pushed authorization request endpoint answers with (RFC 9126 §2.2): the URN of
@@ -38,7 +34,7 @@ final readonly class RequestUri
      */
     public static function generate(): self
     {
-        return new self(self::URN_PREFIX . rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '='));
+        return new self(self::URN_PREFIX . DrawnSecret::draw());
     }
 
     /**
@@ -53,7 +49,7 @@ final readonly class RequestUri
 
     public static function hashOf(#[SensitiveParameter] string $value): string
     {
-        return hash('sha256', $value);
+        return DrawnSecret::digestOf($value);
     }
 
     public function hash(): string

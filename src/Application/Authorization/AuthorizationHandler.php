@@ -158,13 +158,6 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the consent page, when the user refused (RFC 6749 §4.1.2.1).
-     *
-     * @throws InteractionCompletedException
-     * @throws InteractionExpiredException
-     * @throws AccessDeniedException always
-     */
-    /**
      * The record an interaction was started from, claimed atomically: of any number of interactions that
      * reached this point on one reference, exactly one is told true (RFC 9126 §4). An interaction that
      * was not started from a record has nothing to spend and is told true.
@@ -179,6 +172,13 @@ final readonly class AuthorizationHandler
         return $record !== null && $this->pushedRequests->consume($record, $now);
     }
 
+    /**
+     * After the consent page, when the user refused (RFC 6749 §4.1.2.1).
+     *
+     * @throws InteractionCompletedException
+     * @throws InteractionExpiredException
+     * @throws AccessDeniedException always
+     */
     public function deny(Interaction $interaction): never
     {
         $interaction->complete($this->clock->now());

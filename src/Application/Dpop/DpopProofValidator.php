@@ -126,10 +126,6 @@ final readonly class DpopProofValidator
     }
 
     /**
-     * RFC 9449 §4.3: the query and the fragment are no part of what a proof names, an endpoint being one
-     * whatever a client appends to it.
-     */
-    /**
      * The shape two URLs are compared in (RFC 9449 §4.3): the query and the fragment are dropped, and
      * what is left is normalised as RFC 3986 §6.2.2 and §6.2.3 say a URL is. The scheme and the host are
      * case insensitive, and a port that is the default of its scheme is the same URL as no port at all;

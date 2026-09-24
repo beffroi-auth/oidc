@@ -38,7 +38,8 @@ final readonly class DiscoveryHandler
     }
 
     /**
-     * @throws InvalidArgumentException when two capabilities claim the same member: which of the two the
+     * @throws InvalidArgumentException when a capability refuses to announce what it was wired with, or
+     *                                  when two capabilities claim the same member: which of the two the
      *                                  document would carry is not something a deployment should have to
      *                                  guess, and a client reading it would never know
      */

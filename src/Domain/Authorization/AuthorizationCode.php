@@ -4,22 +4,17 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Authorization;
 
-use function base64_encode;
 use DateTimeImmutable;
-use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Scope\Scopes;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
-use function preg_match;
-use function random_bytes;
-use function rtrim;
 use SensitiveParameter;
-use function strtr;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -29,8 +24,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final class AuthorizationCode
 {
-    public const string HASH_PATTERN = '/^[0-9a-f]{64}$/';
-
     public readonly Tenant $tenant;
 
     /**
@@ -63,7 +56,7 @@ final class AuthorizationCode
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
     ) {
-        if (preg_match(self::HASH_PATTERN, $codeHash) !== 1) {
+        if (! DrawnSecret::isDigest($codeHash)) {
             throw new InvalidArgumentException('An authorization code is stored as its hex SHA-256.');
         }
         if (! $session->tenant->equals($client->tenant)) {
@@ -76,17 +69,14 @@ final class AuthorizationCode
         $this->clientId = $client->registration->clientId;
     }
 
-    /**
-     * 256 bits, base64url without padding.
-     */
     public static function generate(): string
     {
-        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        return DrawnSecret::draw();
     }
 
     public static function hash(#[SensitiveParameter] string $code): string
     {
-        return hash('sha256', $code);
+        return DrawnSecret::digestOf($code);
     }
 
     /**

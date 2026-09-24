@@ -14,12 +14,10 @@ use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\SharedClientSecret;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Port\ClientAssertionSecretVerifierInterface;
 use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use function in_array;
 use SensitiveParameter;
-use function sprintf;
 
 /**
  * "client_secret_jwt" (OIDC Core §9): the same assertion as "private_key_jwt", signed with the secret
@@ -88,7 +86,7 @@ final readonly class ClientSecretJwt implements AssertionMethodInterface, Secret
         $assertion = $request->assertion($this->reader);
         $secret = $client->secret;
         if ($assertion === null || ! $secret instanceof SharedClientSecret) {
-            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $this->name()));
+            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
         }
         try {
             $this->verifier->verify($assertion, $secret, $this->assertionSigningAlgorithms());

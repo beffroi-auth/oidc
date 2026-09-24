@@ -10,7 +10,6 @@ use Heidi\Oidc\Domain\Client\CertificateIdentityBearingMethodInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Token\CertificateConfirmation;
-use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use function sprintf;
@@ -55,7 +54,7 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
      */
     public function presentedBy(ClientAuthenticationRequest $request): ?string
     {
-        return $request->certificate === null ? null : $request->clientId();
+        return $request->clientIdBesideACertificate();
     }
 
     public function verify(ClientAuthenticationRequest $request, Client $client): void
@@ -63,7 +62,7 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
         $certificate = $request->certificate;
         $identity = $client->registration->certificateIdentity;
         if ($certificate === null || $identity === null) {
-            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $this->name()));
+            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
         }
         try {
             $subject = $this->certificates->subjectOf($certificate);
@@ -105,11 +104,6 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
 
     public function confirmationOf(ClientAuthenticationRequest $request): CertificateConfirmation
     {
-        $certificate = $request->certificate;
-        if ($certificate === null) {
-            throw new LogicException(sprintf('A request that authenticated a client with %s carries a certificate.', $this->name()));
-        }
-
-        return CertificateConfirmation::ofCertificate($certificate);
+        return CertificateConfirmation::ofCertificate($request->provenCertificate($this));
     }
 }

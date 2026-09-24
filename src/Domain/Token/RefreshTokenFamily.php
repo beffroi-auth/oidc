@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
-use function preg_match;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -24,7 +23,7 @@ final readonly class RefreshTokenFamily
         public DateTimeImmutable $startedAt,
         public DateTimeImmutable $expiresAt,
     ) {
-        if (preg_match(AuthorizationCode::HASH_PATTERN, $authorizationCodeHash) !== 1) {
+        if (! DrawnSecret::isDigest($authorizationCodeHash)) {
             throw new InvalidArgumentException('A refresh token family descends from an authorization code, named by its hex SHA-256.');
         }
         if ($expiresAt <= $startedAt) {

@@ -15,7 +15,6 @@ use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Exception\ClientKeysUnavailableException;
 use Heidi\Oidc\Exception\InvalidJwtException;
 use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use Heidi\Oidc\Port\JwtKeyVerifierInterface;
@@ -82,17 +81,7 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
                 'the request carries no client assertion',
             );
         }
-        try {
-            $keys = $this->keys->keysOf($client, $assertion->keyId());
-        } catch (ClientKeysUnavailableException $exception) {
-            throw ClientAuthenticationFailure::refused(
-                ClientAuthenticationFailureReason::UnreadableClientKeys,
-                $client->registration->clientId,
-                $this->name(),
-                $exception->getMessage(),
-                $exception,
-            );
-        }
+        $keys = $this->keys->keysAuthenticating($client, $assertion->keyId(), $this);
         try {
             $this->verifier->verify($assertion, $keys, $this->assertionSigningAlgorithms());
         } catch (InvalidJwtException $exception) {

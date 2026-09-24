@@ -16,6 +16,11 @@ use function strtolower;
  */
 final readonly class DnsName implements CertificateIdentityInterface
 {
+    /**
+     * The registration metadata this kind is registered under (RFC 8705 §2.1.2).
+     */
+    public const string NAME = 'tls_client_auth_san_dns';
+
     public string $dnsName;
 
     public function __construct(string $dnsName)
@@ -28,7 +33,7 @@ final readonly class DnsName implements CertificateIdentityInterface
 
     public function name(): string
     {
-        return 'tls_client_auth_san_dns';
+        return self::NAME;
     }
 
     public function matches(CertificateSubject $subject): bool

@@ -6,8 +6,7 @@ namespace Heidi\Oidc\Domain\EndSession;
 
 use function array_unique;
 use function array_values;
-use function base64_encode;
-use function hash;
+use Heidi\Oidc\Domain\Page\InlineScript;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use function sort;
@@ -82,7 +81,7 @@ final readonly class FrontChannelLogoutPage
      */
     public function scriptHash(): string
     {
-        return 'sha256-' . base64_encode(hash('sha256', self::SCRIPT, true));
+        return new InlineScript(self::SCRIPT)->cspHashSource();
     }
 
     /**

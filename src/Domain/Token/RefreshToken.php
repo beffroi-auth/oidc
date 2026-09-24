@@ -5,19 +5,16 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
-use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Scope\Scopes;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
 use function min;
-use function preg_match;
-use function random_bytes;
 use SensitiveParameter;
 
 /**
@@ -61,7 +58,7 @@ final class RefreshToken
         public readonly DateTimeImmutable $expiresAt,
         public readonly ?ConfirmationInterface $confirmation = null,
     ) {
-        if (preg_match(AuthorizationCode::HASH_PATTERN, $tokenHash) !== 1) {
+        if (! DrawnSecret::isDigest($tokenHash)) {
             throw new InvalidArgumentException('A refresh token is stored as its hex SHA-256.');
         }
         if (! $session->tenant->equals($client->tenant)) {
@@ -103,24 +100,16 @@ final class RefreshToken
         );
     }
 
-    /**
-     * 256 bits, base64url without padding.
-     */
     public static function generate(): string
     {
-        return Base64Url::encode(random_bytes(32));
+        return DrawnSecret::draw();
     }
 
     public static function hash(#[SensitiveParameter] string $token): string
     {
-        return hash('sha256', $token);
+        return DrawnSecret::digestOf($token);
     }
 
-    /**
-     * RFC 9449 §5: whether the request refreshing this token proved what it is bound to. A token bound
-     * to nothing is refreshed by the client it was issued to, which the endpoint authenticated before
-     * the grant was even reached.
-     */
     /**
      * Whether this token is protected by being replaced at every use (RFC 9700 §4.13.2), which is the
      * last term of a disjunction and not a rule of its own. A refresh token is told from a copy of
@@ -134,6 +123,11 @@ final class RefreshToken
         return $this->client->registration->isPublic() && $this->confirmation === null;
     }
 
+    /**
+     * RFC 9449 §5: whether the request refreshing this token proved what it is bound to. A token bound
+     * to nothing is refreshed by the client it was issued to, which the endpoint authenticated before
+     * the grant was even reached.
+     */
     public function isRefreshedBy(?ConfirmationInterface $confirmation): bool
     {
         return $this->confirmation === null || $confirmation !== null && $confirmation->matches($this->confirmation);

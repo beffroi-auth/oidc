@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Authorization;
 
-use function base64_encode;
-use function hash;
 use Heidi\Oidc\Domain\Client\RedirectUri;
+use Heidi\Oidc\Domain\Page\InlineScript;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
@@ -49,7 +48,7 @@ final readonly class FormPostResponse
      */
     public function scriptHash(): string
     {
-        return 'sha256-' . base64_encode(hash('sha256', self::SCRIPT, true));
+        return new InlineScript(self::SCRIPT)->cspHashSource();
     }
 
     /**

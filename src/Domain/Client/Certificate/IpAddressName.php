@@ -24,6 +24,11 @@ use function sprintf;
 final readonly class IpAddressName implements CertificateIdentityInterface
 {
     /**
+     * The registration metadata this kind is registered under (RFC 8705 §2.1.2).
+     */
+    public const string NAME = 'tls_client_auth_san_ip';
+
+    /**
      * The octets of the address, four or sixteen.
      */
     public string $octets;
@@ -40,7 +45,7 @@ final readonly class IpAddressName implements CertificateIdentityInterface
 
     public function name(): string
     {
-        return 'tls_client_auth_san_ip';
+        return self::NAME;
     }
 
     public function matches(CertificateSubject $subject): bool

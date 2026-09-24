@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Authorization;
 
+use function array_any;
 use function in_array;
 
 /**
@@ -46,5 +47,17 @@ enum ResponseMode: string
     public function signsTheAnswer(): bool
     {
         return in_array($this, [self::Jwt, self::QueryJwt, self::FormPostJwt], true);
+    }
+
+    /**
+     * Whether a deployment serving these modes signs any answer at all. Three things read it, the alias
+     * the document announces, the algorithms it announces beside it, and the retirement window of the
+     * key that signs one, and they cannot be allowed to disagree.
+     *
+     * @param list<self> $modes what the integration wired
+     */
+    public static function anySignsTheAnswer(array $modes): bool
+    {
+        return array_any($modes, static fn (self $mode): bool => $mode->signsTheAnswer());
     }
 }

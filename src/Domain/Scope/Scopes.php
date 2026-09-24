@@ -24,8 +24,7 @@ use Traversable;
  *
  * At least one, because nothing here grants nothing: a request, a consent, a code, a token and a client
  * registration all name what they are for, and an empty set would be a promise with no content.
- */
-/**
+ *
  * @implements IteratorAggregate<int, Scope>
  */
 final readonly class Scopes implements Countable, IteratorAggregate, Stringable

@@ -7,10 +7,10 @@ namespace Heidi\Oidc\Domain\PushedAuthorization;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
 use function max;
-use function preg_match;
 
 /**
  * An authorization request a client pushed before sending its user (RFC 9126 §2), as the provider keeps
@@ -25,8 +25,6 @@ use function preg_match;
  */
 final class PushedAuthorizationRequest
 {
-    public const string HASH_PATTERN = '/^[0-9a-f]{64}$/';
-
     public readonly Tenant $tenant;
 
     /**
@@ -51,7 +49,7 @@ final class PushedAuthorizationRequest
         public readonly DateTimeImmutable $expiresAt,
         public readonly bool $carriedBySignedObject = false,
     ) {
-        if (preg_match(self::HASH_PATTERN, $requestUriHash) !== 1) {
+        if (! DrawnSecret::isDigest($requestUriHash)) {
             throw new InvalidArgumentException('A pushed authorization request is stored as the hex SHA-256 of its request URI.');
         }
         if ($expiresAt <= $issuedAt) {

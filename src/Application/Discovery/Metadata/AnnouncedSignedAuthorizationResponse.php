@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Discovery\Metadata;
 
-use function array_any;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
@@ -26,11 +25,7 @@ final readonly class AnnouncedSignedAuthorizationResponse implements MetadataCon
 
     public function metadata(Tenant $tenant): array
     {
-        $signs = array_any(
-            $this->responseModes->servedResponseModes(),
-            static fn (ResponseMode $mode): bool => $mode->signsTheAnswer(),
-        );
-        if (! $signs) {
+        if (! ResponseMode::anySignsTheAnswer($this->responseModes->servedResponseModes())) {
             return [];
         }
 

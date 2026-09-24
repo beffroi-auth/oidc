@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Port;
 
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * What one specification the provider implements adds to the document it publishes (OIDC Discovery §3,
@@ -22,6 +23,10 @@ interface MetadataContributorInterface
 {
     /**
      * The members this capability puts in the document of that tenant, in the order they are published.
+     *
+     * @throws InvalidArgumentException when what the deployment wired cannot be announced: a capability
+     *                                  refuses rather than announce something a client would misread,
+     *                                  and a deployment learns it at boot
      *
      * @return array<string, mixed> empty when the deployment does not serve this capability
      */

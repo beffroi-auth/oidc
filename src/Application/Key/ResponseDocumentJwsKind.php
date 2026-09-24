@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Key;
 
-use function array_any;
 use DateInterval;
 use Heidi\Core\Domain\Key\KeyUse;
 use Heidi\Core\Domain\Tenant\Tenant;
@@ -34,8 +33,6 @@ final readonly class ResponseDocumentJwsKind implements KeyBoundArtifactInterfac
 
     public function longestLifetime(Tenant $tenant): ?DateInterval
     {
-        return array_any($this->responseModes->servedResponseModes(), static fn (ResponseMode $mode): bool => $mode->signsTheAnswer())
-            ? $this->issuer->lifetime
-            : null;
+        return ResponseMode::anySignsTheAnswer($this->responseModes->servedResponseModes()) ? $this->issuer->lifetime : null;
     }
 }

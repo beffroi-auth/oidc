@@ -25,7 +25,6 @@ use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
-use function str_contains;
 
 /**
  * The revocation endpoint (RFC 7009 §2, architecture §4.12): a stored access token or a refresh token
@@ -70,7 +69,7 @@ final readonly class RevocationHandler
         $token = $request->required('token');
         $request->optional('token_type_hint');
         $now = $context->receivedAt;
-        if (str_contains($token, '.')) {
+        if ($this->verifier->expiresOnItsOwn($token)) {
             $this->refuseSelfContained($tenant, $token, $now);
 
             return;

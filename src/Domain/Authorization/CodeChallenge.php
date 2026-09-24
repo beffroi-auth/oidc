@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Authorization;
 
-use function base64_encode;
+use Heidi\Oidc\Domain\Token\Base64Url;
 use function hash;
 use function hash_equals;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
-use function rtrim;
 use SensitiveParameter;
 use function sprintf;
-use function strtr;
 
 /**
  * The PKCE challenge (RFC 7636 §4.2, §4.3), matched against the verifier at the token endpoint (§4.6).
@@ -35,7 +33,7 @@ final readonly class CodeChallenge
      */
     public function verifies(#[SensitiveParameter] string $codeVerifier): bool
     {
-        $computed = rtrim(strtr(base64_encode(hash('sha256', $codeVerifier, true)), '+/', '-_'), '=');
+        $computed = Base64Url::encode(hash('sha256', $codeVerifier, true));
 
         return hash_equals($this->value, $computed);
     }

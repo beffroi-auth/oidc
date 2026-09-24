@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Discovery\Metadata;
 
-use function array_any;
 use function array_unique;
 use function array_values;
 use const SORT_REGULAR;
@@ -30,7 +29,7 @@ final readonly class AnnouncedResponses implements MetadataContributorInterface
     public function metadata(Tenant $tenant): array
     {
         $modes = array_values(array_unique($this->responseModes->servedResponseModes(), SORT_REGULAR));
-        $signs = array_any($modes, static fn (ResponseMode $mode): bool => $mode->signsTheAnswer());
+        $signs = ResponseMode::anySignsTheAnswer($modes);
 
         return [
             'response_types_supported' => ['code'],

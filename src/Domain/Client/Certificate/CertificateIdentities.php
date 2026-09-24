@@ -21,18 +21,19 @@ use function sprintf;
  */
 final readonly class CertificateIdentities
 {
-    public const string SUBJECT_DN = 'tls_client_auth_subject_dn';
+    public const string SUBJECT_DN = SubjectDistinguishedName::NAME;
 
-    public const string SAN_DNS = 'tls_client_auth_san_dns';
+    public const string SAN_DNS = DnsName::NAME;
 
-    public const string SAN_URI = 'tls_client_auth_san_uri';
+    public const string SAN_URI = UriName::NAME;
 
-    public const string SAN_IP = 'tls_client_auth_san_ip';
+    public const string SAN_IP = IpAddressName::NAME;
 
-    public const string SAN_EMAIL = 'tls_client_auth_san_email';
+    public const string SAN_EMAIL = EmailAddressName::NAME;
 
     /**
-     * In the order of RFC 8705 §2.1.2.
+     * In the order of RFC 8705 §2.1.2. Each kind names itself; this list says which ones the provider
+     * reads a registration for, and in which order, and repeats none of their names.
      */
     public const array NAMES = [self::SUBJECT_DN, self::SAN_DNS, self::SAN_URI, self::SAN_IP, self::SAN_EMAIL];
 
@@ -68,7 +69,8 @@ final readonly class CertificateIdentities
             self::SAN_DNS => new DnsName($value),
             self::SAN_URI => new UriName($value),
             self::SAN_IP => new IpAddressName($value),
-            default => new EmailAddressName($value),
+            self::SAN_EMAIL => new EmailAddressName($value),
+            default => throw new InvalidArgumentException(sprintf('"%s" names no value of RFC 8705 section 2.1.2.', $name)),
         };
     }
 }

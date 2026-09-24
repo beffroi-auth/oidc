@@ -8,7 +8,7 @@ use function array_filter;
 use function array_values;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
-use Heidi\Oidc\Domain\Token\OpaqueTokenValue;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Domain\Token\StoredAccessToken;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokenInterface;
@@ -32,8 +32,8 @@ final class InMemoryAccessTokenRepository implements
 
     public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): string
     {
-        $value = OpaqueTokenValue::draw();
-        $hash = OpaqueTokenValue::hash($value);
+        $value = DrawnSecret::draw();
+        $hash = DrawnSecret::digestOf($value);
         $this->tokens[$hash] = StoredAccessToken::fromAuthorization($hash, $authorization, $now, $expiresAt);
 
         return $value;
@@ -49,7 +49,7 @@ final class InMemoryAccessTokenRepository implements
 
     public function find(string $token): ?StoredAccessToken
     {
-        return $this->tokens[OpaqueTokenValue::hash($token)] ?? null;
+        return $this->tokens[DrawnSecret::digestOf($token)] ?? null;
     }
 
     public function revoke(StoredAccessToken $token): void

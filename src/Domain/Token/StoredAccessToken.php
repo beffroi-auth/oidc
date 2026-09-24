@@ -8,12 +8,11 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Scope\Scopes;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
-use function preg_match;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -31,7 +30,7 @@ final readonly class StoredAccessToken
     public string $clientId;
 
     /**
-     * @param string $tokenHash see OpaqueTokenValue::hash()
+     * @param string $tokenHash see DrawnSecret::digestOf()
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      */
@@ -47,7 +46,7 @@ final readonly class StoredAccessToken
         public DateTimeImmutable $expiresAt,
         public ?ConfirmationInterface $confirmation = null,
     ) {
-        if (preg_match(AuthorizationCode::HASH_PATTERN, $tokenHash) !== 1) {
+        if (! DrawnSecret::isDigest($tokenHash)) {
             throw new InvalidArgumentException('An opaque access token is stored as its hex SHA-256.');
         }
         if (! $session->tenant->equals($client->tenant)) {

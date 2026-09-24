@@ -4,20 +4,16 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Interaction;
 
-use function base64_encode;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Consent\Consent;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InteractionCompletedException;
 use Heidi\Oidc\Exception\InteractionExpiredException;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
-use function preg_match;
-use function random_bytes;
-use function rtrim;
-use function strtr;
 
 /**
  * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier
@@ -25,11 +21,6 @@ use function strtr;
  */
 final class Interaction
 {
-    /**
-     * 256 bits, base64url without padding.
-     */
-    private const string ID_PATTERN = '/^[A-Za-z0-9_-]{43}$/';
-
     /**
      * What a store keeps; the object is what the client repository resolved for it.
      */
@@ -57,7 +48,7 @@ final class Interaction
         public readonly DateTimeImmutable $expiresAt,
         public readonly ?string $requestUriHash = null,
     ) {
-        if (preg_match(self::ID_PATTERN, $id) !== 1) {
+        if (! DrawnSecret::isValue($id)) {
             throw new InvalidArgumentException('An interaction identifier is 256 bits in base64url, see generateId().');
         }
         if (! $request->client->belongsTo($tenant)) {
@@ -74,7 +65,7 @@ final class Interaction
 
     public static function generateId(): string
     {
-        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        return DrawnSecret::draw();
     }
 
     /**

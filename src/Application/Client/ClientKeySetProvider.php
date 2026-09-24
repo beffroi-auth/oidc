@@ -7,6 +7,8 @@ namespace Heidi\Oidc\Application\Client;
 use DateInterval;
 use Heidi\Oidc\Domain\Client\CachedClientJwks;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Client\ClientJwks;
 use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Exception\ClientKeysUnavailableException;
@@ -31,6 +33,30 @@ final readonly class ClientKeySetProvider
         private ClockInterface $clock,
         private DateInterval $cooldown,
     ) {
+    }
+
+    /**
+     * The keys of the client for a method that is authenticating it: keys that cannot be read are a
+     * refusal of that method and not an error of the endpoint, and every method that verifies a
+     * signature of a client refuses the same way (RFC 6749 §5.2).
+     *
+     * @param string|null $keyId the "kid" the signature names, null when it names none
+     *
+     * @throws ClientAuthenticationFailure when the keys of the client cannot be read
+     */
+    public function keysAuthenticating(Client $client, ?string $keyId, ClientAuthenticationMethodInterface $method): ClientJwks
+    {
+        try {
+            return $this->keysOf($client, $keyId);
+        } catch (ClientKeysUnavailableException $exception) {
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UnreadableClientKeys,
+                $client->registration->clientId,
+                $method->name(),
+                $exception->getMessage(),
+                $exception,
+            );
+        }
     }
 
     /**
