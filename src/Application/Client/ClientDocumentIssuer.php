@@ -55,7 +55,7 @@ final readonly class ClientDocumentIssuer
         if ($format->isPlain()) {
             throw new LogicException(sprintf(
                 'The client "%s" registered neither a signature nor an encryption for this document; it is handed over as it is.',
-                $client->clientId,
+                $client->registration->clientId,
             ));
         }
         $payload = JwtPayload::encode($claims);
@@ -88,7 +88,7 @@ final readonly class ClientDocumentIssuer
         return (
             $this->keys->keysOf($client, null)->encryptionKeyFor($encryption->algorithm) ?? throw new ClientKeysUnavailableException(sprintf(
                 'The client "%s" publishes no key a document encrypted under "%s" can be addressed to.',
-                $client->clientId,
+                $client->registration->clientId,
                 $encryption->algorithm->name(),
             ))
         );

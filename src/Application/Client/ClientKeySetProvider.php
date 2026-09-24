@@ -40,13 +40,13 @@ final readonly class ClientKeySetProvider
      */
     public function keysOf(Client $client, ?string $keyId): ClientJwks
     {
-        $inline = $client->jwks;
+        $inline = $client->registration->jwks;
         if ($inline !== null) {
             return $inline;
         }
-        $jwksUri = $client->jwksUri;
+        $jwksUri = $client->registration->jwksUri;
         if ($jwksUri === null) {
-            throw new ClientKeysUnavailableException(sprintf('The client "%s" publishes no key.', $client->clientId));
+            throw new ClientKeysUnavailableException(sprintf('The client "%s" publishes no key.', $client->registration->clientId));
         }
         $kept = $this->cache->read($client);
         if ($kept === null) {

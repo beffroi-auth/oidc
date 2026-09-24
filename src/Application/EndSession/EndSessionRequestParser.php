@@ -102,7 +102,7 @@ final readonly class EndSessionRequestParser
 
             throw new InvalidRequestException('The post_logout_redirect_uri parameter requires id_token_hint or client_id to identify the client.');
         }
-        if (! $client->hasPostLogoutRedirectUri($postLogoutRedirectUri)) {
+        if (! $client->registration->hasPostLogoutRedirectUri($postLogoutRedirectUri)) {
             throw new InvalidRequestException('The post_logout_redirect_uri parameter is not registered for this client.');
         }
 

@@ -83,7 +83,7 @@ final readonly class PushedAuthorizationHandler
         // body that named another was already refused by the authenticator, and a client that
         // authenticated through the Authorization header carries none, so the authenticated client is
         // what the parser is given to read.
-        $parameters['client_id'] = $client->clientId;
+        $parameters['client_id'] = $client->registration->clientId;
         // RFC 9101 §6.1: a pushed request may itself be a request object, which FAPI 2.0 Message
         // Signing asks of one. It is read here, against the client that has just authenticated, and
         // what the store keeps is the request it carried: the object is verified once, by the endpoint

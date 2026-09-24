@@ -63,7 +63,7 @@ final readonly class IntrospectionHandler
             $context,
             $certificate,
         )->client;
-        if ($caller->isPublic()) {
+        if ($caller->registration->isPublic()) {
             throw new InvalidClientException('The introspection endpoint requires client authentication (RFC 7662 section 2.1); a public client has none.');
         }
         $request = new TokenRequest($parameters);
@@ -92,7 +92,7 @@ final readonly class IntrospectionHandler
     {
         $payload = JwtPayload::encode([
             'iss' => (string) $tenant->issuer,
-            'aud' => $caller->clientId,
+            'aud' => $caller->registration->clientId,
             'iat' => $context->receivedAt->getTimestamp(),
             'token_introspection' => $response->members,
         ]);

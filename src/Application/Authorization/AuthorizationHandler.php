@@ -369,7 +369,7 @@ final readonly class AuthorizationHandler
     private function consentRequirement(Interaction $interaction, AuthenticationSession $session, DateTimeImmutable $now): ?ConsentRequirement
     {
         $request = $interaction->request;
-        if (! $request->client->requiresConsent) {
+        if (! $request->client->registration->requiresConsent) {
             return null;
         }
         if ($interaction->consent !== null) {

@@ -92,7 +92,7 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
         if ($tenant->slug !== $this->tenantSlug) {
             return false;
         }
-        return array_any($this->definitions, fn ($definition) => $definition->accessTokenFormat === $format);
+        return array_any($this->definitions, fn ($definition) => $definition->registration->accessTokenFormat === $format);
     }
 
     /**
@@ -106,7 +106,7 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
             return false;
         }
 
-        return array_all($this->definitions, static fn (ClientDefinition $definition): bool => $definition->requiresPushedAuthorizationRequests);
+        return array_all($this->definitions, static fn (ClientDefinition $definition): bool => $definition->registration->requiresPushedAuthorizationRequests);
     }
 
     /**
@@ -119,6 +119,9 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
             return false;
         }
 
-        return array_any($this->definitions, static fn (ClientDefinition $definition): bool => $definition->requestObjectSigning->acceptsUnsigned());
+        return array_any($this->definitions, static fn (ClientDefinition $definition): bool => $definition
+            ->registration
+            ->requestObjectSigning
+            ->acceptsUnsigned());
     }
 }

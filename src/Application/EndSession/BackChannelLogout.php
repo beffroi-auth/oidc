@@ -32,7 +32,7 @@ final readonly class BackChannelLogout
     {
         $now = $this->clock->now();
         foreach ($this->clients->ofSession($session->id) as $client) {
-            $logoutUri = $client->backChannelLogoutUri;
+            $logoutUri = $client->registration->backChannelLogoutUri;
             if ($logoutUri === null) {
                 continue;
             }

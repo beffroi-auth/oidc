@@ -24,7 +24,7 @@ final class InMemoryClientRepository implements ClientRepositoryInterface, Pushe
     public function findByClientId(Tenant $tenant, string $clientId): ?Client
     {
         foreach ($this->clients as $client) {
-            if ($client->belongsTo($tenant) && $client->clientId === $clientId) {
+            if ($client->belongsTo($tenant) && $client->registration->clientId === $clientId) {
                 return $client;
             }
         }
@@ -34,7 +34,7 @@ final class InMemoryClientRepository implements ClientRepositoryInterface, Pushe
 
     public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
     {
-        return array_any($this->clients, fn ($client) => $client->belongsTo($tenant) && $client->accessTokenFormat === $format);
+        return array_any($this->clients, fn ($client) => $client->belongsTo($tenant) && $client->registration->accessTokenFormat === $format);
     }
 
     /**
@@ -44,7 +44,7 @@ final class InMemoryClientRepository implements ClientRepositoryInterface, Pushe
     {
         $registered = array_filter($this->clients, static fn (Client $client): bool => $client->belongsTo($tenant));
 
-        return $registered !== [] && array_all($registered, static fn (Client $client): bool => $client->requiresPushedAuthorizationRequests);
+        return $registered !== [] && array_all($registered, static fn (Client $client): bool => $client->registration->requiresPushedAuthorizationRequests);
     }
 
     /**
@@ -52,7 +52,10 @@ final class InMemoryClientRepository implements ClientRepositoryInterface, Pushe
      */
     public function acceptsUnsignedRequestObjects(Tenant $tenant): bool
     {
-        return array_any($this->clients, static fn (Client $client): bool => $client->belongsTo($tenant) && $client->requestObjectSigning->acceptsUnsigned());
+        return array_any(
+            $this->clients,
+            static fn (Client $client): bool => $client->belongsTo($tenant) && $client->registration->requestObjectSigning->acceptsUnsigned(),
+        );
     }
 
     public function save(Client $client): void

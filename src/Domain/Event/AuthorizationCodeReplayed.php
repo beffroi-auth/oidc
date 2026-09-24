@@ -43,7 +43,7 @@ final readonly class AuthorizationCodeReplayed implements DomainEventInterface
             $code->tenant,
             $code->codeHash,
             $code->clientId,
-            $presentedBy->clientId,
+            $presentedBy->registration->clientId,
             array_map(static fn (RefreshToken $token): string => $token->tokenHash, $revoked),
             $context,
         );

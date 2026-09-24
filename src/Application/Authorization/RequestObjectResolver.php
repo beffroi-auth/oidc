@@ -84,7 +84,7 @@ final readonly class RequestObjectResolver
 
         return [
             ...$object->parameters(),
-            'client_id' => $client->clientId,
+            'client_id' => $client->registration->clientId,
         ];
     }
 
@@ -118,7 +118,7 @@ final readonly class RequestObjectResolver
     private function verify(Client $client, RequestObject $object): void
     {
         $algorithm = $object->jwt->algorithm();
-        if ($algorithm === null || ! $client->requestObjectSigning->accepts($algorithm, $this->wiredAlgorithms())) {
+        if ($algorithm === null || ! $client->registration->requestObjectSigning->accepts($algorithm, $this->wiredAlgorithms())) {
             // The "alg" of the object is not written back: it is a string the sender chose, and an error
             // description is ASCII the specification bounds (RFC 6749 §5.2)
             throw new InvalidRequestObjectException('The request object is not signed with the algorithm the client registered in request_object_signing_alg (OIDC Registration section 2).');
@@ -147,7 +147,7 @@ final readonly class RequestObjectResolver
      */
     private function fetch(Client $client, string $requestUri): string
     {
-        $registered = $client->registeredRequestUri($requestUri);
+        $registered = $client->registration->registeredRequestUri($requestUri);
         if ($registered === null) {
             throw new InvalidRequestUriException('The request_uri parameter names no URL this client registered (OIDC Discovery section 3, require_request_uri_registration).');
         }

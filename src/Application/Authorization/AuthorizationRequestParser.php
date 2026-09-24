@@ -88,20 +88,20 @@ final readonly class AuthorizationRequestParser
         }
         // RFC 9126 §6: before the redirect URI is even read, so that a client held to pushing its
         // requests is told so on a page and nothing of the request reaches the browser it came from
-        if (! $pushed && $client->requiresPushedAuthorizationRequests) {
+        if (! $pushed && $client->registration->requiresPushedAuthorizationRequests) {
             throw new InvalidRequestException('The client only starts an authorization request by pushing it (RFC 9126 section 6).');
         }
         // OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1: read here
         // for the same reason, so that a client held to signing its requests is told so on a page and
         // nothing of the request reaches the browser it came from
-        if (! $signed && $client->requiresSignedRequestObject) {
+        if (! $signed && $client->registration->requiresSignedRequestObject) {
             throw new InvalidRequestException('The client only starts an authorization request with a request object it signed (OIDC Registration, require_signed_request_object).');
         }
         $redirectUri = RequestParameters::single($parameters, 'redirect_uri', false);
         if ($redirectUri === null) {
             throw new InvalidRequestException('The redirect_uri parameter is missing.');
         }
-        if (! $client->hasRedirectUri($redirectUri)) {
+        if (! $client->registration->hasRedirectUri($redirectUri)) {
             throw new InvalidRequestException('The redirect_uri parameter is not registered for this client.');
         }
         return new RedirectTarget($client, new RedirectUri($redirectUri), RequestParameters::state($parameters, false), $this->responseMode($parameters));
@@ -262,7 +262,7 @@ final readonly class AuthorizationRequestParser
             throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', true);
         }
         foreach ($scopes->all as $candidate) {
-            if (! $target->client->allowedScopes->has($candidate)) {
+            if (! $target->client->registration->allowedScopes->has($candidate)) {
                 throw new InvalidScopeException('The requested scope is not allowed for this client.', true);
             }
         }
@@ -279,7 +279,7 @@ final readonly class AuthorizationRequestParser
      */
     private static function codeChallenge(Client $client, ?string $challenge, ?string $method): ?CodeChallenge
     {
-        if ($challenge === null && $method === null && ! $client->requiresPkce) {
+        if ($challenge === null && $method === null && ! $client->registration->requiresPkce) {
             return null;
         }
         if ($challenge === null) {

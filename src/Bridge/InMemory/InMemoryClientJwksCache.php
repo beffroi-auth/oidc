@@ -32,6 +32,6 @@ final class InMemoryClientJwksCache implements ClientJwksCacheInterface
 
     private static function key(Client $client): string
     {
-        return sprintf('%s|%s', $client->tenant->id->toRfc4122(), $client->clientId);
+        return sprintf('%s|%s', $client->tenant->id->toRfc4122(), $client->registration->clientId);
     }
 }

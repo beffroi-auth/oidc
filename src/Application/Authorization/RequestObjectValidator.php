@@ -46,13 +46,13 @@ final readonly class RequestObjectValidator
     {
         $jwt = $object->jwt;
         $clientId = $jwt->claim('client_id');
-        if ($clientId !== null && $clientId !== $client->clientId) {
+        if ($clientId !== null && $clientId !== $client->registration->clientId) {
             throw new InvalidRequestObjectException('The client_id inside a request object is the one the request names outside it (OIDC Core section 6.1).');
         }
         if (! $object->isSigned()) {
             return;
         }
-        if ($jwt->claim('iss') !== $client->clientId) {
+        if ($jwt->claim('iss') !== $client->registration->clientId) {
             throw new InvalidRequestObjectException('The iss of a request object names the client that sends it (RFC 9101 section 4).');
         }
         if (! in_array($tenant->issuer->value, $jwt->audiences(), true)) {

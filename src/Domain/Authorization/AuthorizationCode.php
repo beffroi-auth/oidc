@@ -73,7 +73,7 @@ final class AuthorizationCode
             throw new InvalidArgumentException('An authorization code expires after it was issued.');
         }
         $this->tenant = $client->tenant;
-        $this->clientId = $client->clientId;
+        $this->clientId = $client->registration->clientId;
     }
 
     /**

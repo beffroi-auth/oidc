@@ -50,6 +50,6 @@ final readonly class AccessTokenIssuer implements AccessTokenIssuerInterface
 
     public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now): AccessToken
     {
-        return $this->issuers[$authorization->client->accessTokenFormat->value]->issue($authorization, $now);
+        return $this->issuers[$authorization->client->registration->accessTokenFormat->value]->issue($authorization, $now);
     }
 }

@@ -77,7 +77,7 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
         if ($assertion === null) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::InvalidAssertion,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 'the request carries no client assertion',
             );
@@ -87,7 +87,7 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
         } catch (ClientKeysUnavailableException $exception) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::UnreadableClientKeys,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 $exception->getMessage(),
                 $exception,
@@ -98,7 +98,7 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
         } catch (InvalidJwtException $exception) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::InvalidAssertion,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 $exception->getMessage(),
                 $exception,

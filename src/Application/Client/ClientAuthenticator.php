@@ -89,7 +89,7 @@ final readonly class ClientAuthenticator
             }
             $registered = array_find(
                 $candidates,
-                static fn (AuthenticationMethodInterface $candidate): bool => $candidate->name() === $client->authenticationMethod->name(),
+                static fn (AuthenticationMethodInterface $candidate): bool => $candidate->name() === $client->registration->authenticationMethod->name(),
             );
             if ($registered === null) {
                 $method->payRefusal($request);

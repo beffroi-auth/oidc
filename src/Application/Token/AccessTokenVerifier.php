@@ -127,7 +127,7 @@ final readonly class AccessTokenVerifier
         }
         $clientId = $claims['client_id'] ?? null;
         $client = is_string($clientId) ? $this->clients->findByClientId($tenant, $clientId) : null;
-        if ($client === null || ! self::isAudience($claims['aud'] ?? null, $client->clientId)) {
+        if ($client === null || ! self::isAudience($claims['aud'] ?? null, $client->registration->clientId)) {
             throw new InvalidTokenException(self::NOT_ISSUED_HERE);
         }
         $sub = $claims['sub'] ?? null;

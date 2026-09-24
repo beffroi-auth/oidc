@@ -49,7 +49,7 @@ final readonly class IdTokenHintVerifier
     public function verify(Client $client, string $idTokenHint): Subject
     {
         $hint = $this->read($client->tenant, $idTokenHint, true);
-        if (! $hint->isFor($client->clientId)) {
+        if (! $hint->isFor($client->registration->clientId)) {
             throw new InvalidRequestException(self::NOT_FOR_CLIENT, true);
         }
 

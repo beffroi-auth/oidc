@@ -47,12 +47,12 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 
     public function issue(GrantedAuthorization $authorization, AccessToken $accessToken, DateTimeImmutable $now): string
     {
-        $format = $authorization->client->idToken;
+        $format = $authorization->client->registration->idToken;
         $algorithm = $format->signature ?? $this->algorithms->defaultAlgorithm();
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
             'sub' => $this->subjects->resolve($authorization->user, $authorization->client)->value,
-            'aud' => $authorization->client->clientId,
+            'aud' => $authorization->client->registration->clientId,
             'exp' => $now->add($this->lifetime)->getTimestamp(),
             'iat' => $now->getTimestamp(),
             'auth_time' => $authorization->authentication->authenticatedAt->getTimestamp(),
@@ -62,7 +62,7 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
         }
         $claims['acr'] = $authorization->authentication->contextClass;
         $claims['amr'] = $authorization->authentication->methods;
-        $claims['azp'] = $authorization->client->clientId;
+        $claims['azp'] = $authorization->client->registration->clientId;
         $claims['at_hash'] = TokenHash::of($accessToken->value, $algorithm);
         $claims['sid'] = $authorization->session->id->toRfc4122();
 

@@ -53,7 +53,7 @@ final readonly class TokensIssued implements DomainEventInterface
             $authorization->tenant,
             $authorization->grantType,
             $authorization->grantId,
-            $authorization->client->clientId,
+            $authorization->client->registration->clientId,
             $authorization->session->id,
             $authorization->grantedScopes,
             $accessTokenExpiresAt,

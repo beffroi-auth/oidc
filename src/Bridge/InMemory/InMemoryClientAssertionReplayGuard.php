@@ -23,7 +23,7 @@ final class InMemoryClientAssertionReplayGuard implements ClientAssertionReplayG
 
     public function remember(Client $client, string $jti, DateTimeImmutable $expiresAt): bool
     {
-        $key = sprintf('%s|%s|%s', $client->tenant->id->toRfc4122(), $client->clientId, $jti);
+        $key = sprintf('%s|%s|%s', $client->tenant->id->toRfc4122(), $client->registration->clientId, $jti);
         if (isset($this->seen[$key])) {
             return false;
         }

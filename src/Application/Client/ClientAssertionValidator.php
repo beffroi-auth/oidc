@@ -43,7 +43,7 @@ final readonly class ClientAssertionValidator
      */
     public function validate(AssertionMethodInterface $method, UnverifiedJwt $assertion, Client $client, ClientAuthenticationRequest $request): void
     {
-        $clientId = $client->clientId;
+        $clientId = $client->registration->clientId;
         if ($assertion->claim('iss') !== $clientId || $assertion->claim('sub') !== $clientId) {
             throw $this->refuse($method, $clientId, 'the "iss" and the "sub" of a client assertion both name the client (RFC 7523 section 3)');
         }
@@ -82,10 +82,10 @@ final readonly class ClientAssertionValidator
     {
         $jti = $assertion->claim('jti');
         if ($jti === null) {
-            throw $this->refuse($method, $client->clientId, 'a client assertion carries a "jti"');
+            throw $this->refuse($method, $client->registration->clientId, 'a client assertion carries a "jti"');
         }
         if (! $this->replays->remember($client, $jti, $expiresAt)) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::ReplayedAssertion, $client->clientId, $method->name());
+            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::ReplayedAssertion, $client->registration->clientId, $method->name());
         }
     }
 

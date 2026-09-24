@@ -40,8 +40,13 @@ final readonly class ResponseDocumentIssuer
     public function issue(AuthorizationAnswer $answer): string
     {
         $client = $answer->client;
-        $document = new ResponseDocument($client->tenant->issuer, $client->clientId, $answer->parameters, $this->clock->now()->add($this->lifetime));
+        $document = new ResponseDocument(
+            $client->tenant->issuer,
+            $client->registration->clientId,
+            $answer->parameters,
+            $this->clock->now()->add($this->lifetime),
+        );
 
-        return $this->documents->issue($client, $client->authorizationResponse, $document->claims());
+        return $this->documents->issue($client, $client->registration->authorizationResponse, $document->claims());
     }
 }

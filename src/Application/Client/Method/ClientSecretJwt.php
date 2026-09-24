@@ -88,14 +88,14 @@ final readonly class ClientSecretJwt implements AssertionMethodInterface, Secret
         $assertion = $request->assertion($this->reader);
         $secret = $client->secret;
         if ($assertion === null || ! $secret instanceof SharedClientSecret) {
-            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->clientId, $this->name()));
+            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $this->name()));
         }
         try {
             $this->verifier->verify($assertion, $secret, $this->assertionSigningAlgorithms());
         } catch (InvalidJwtException $exception) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::InvalidAssertion,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 $exception->getMessage(),
                 $exception,

@@ -87,7 +87,7 @@ final readonly class TokenHandler
         if ($grantType === null || $grant === null) {
             throw new UnsupportedGrantTypeException('The grant type is not supported by this provider.');
         }
-        if (! $client->client->allowsGrant($grantType)) {
+        if (! $client->client->registration->allowsGrant($grantType)) {
             throw new UnauthorizedClientException('The client is not registered for this grant type.');
         }
 

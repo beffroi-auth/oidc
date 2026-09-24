@@ -131,14 +131,14 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
 
     private function refreshTokenDue(GrantedAuthorization $authorization): bool
     {
-        if (! $authorization->client->allowsGrant(GrantType::RefreshToken)) {
+        if (! $authorization->client->registration->allowsGrant(GrantType::RefreshToken)) {
             return false;
         }
         if ($authorization->scopes->has(Scope::offlineAccess())) {
             return true;
         }
 
-        return $this->refreshTokenWithoutOfflineAccess && ! $authorization->client->isPublic();
+        return $this->refreshTokenWithoutOfflineAccess && ! $authorization->client->registration->isPublic();
     }
 
     /**

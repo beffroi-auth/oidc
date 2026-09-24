@@ -33,7 +33,7 @@ final readonly class FrontChannelLogout
     {
         $frames = [];
         foreach ($this->clients->ofSession($session->id) as $client) {
-            if ($client->frontChannelLogoutUri === null) {
+            if ($client->registration->frontChannelLogoutUri === null) {
                 continue;
             }
             $frames[] = FrontChannelLogoutFrame::ofSession($client, $session);

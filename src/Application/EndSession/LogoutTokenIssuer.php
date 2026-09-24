@@ -36,7 +36,7 @@ final readonly class LogoutTokenIssuer
     {
         $token = new LogoutToken(
             $session->tenant->issuer,
-            $client->clientId,
+            $client->registration->clientId,
             $this->subjects->resolve($session->user, $client),
             $session->id,
             Uuid::v4(),
@@ -45,7 +45,7 @@ final readonly class LogoutTokenIssuer
 
         return $this->signer->sign(
             $session->tenant,
-            $client->idToken->signature ?? $this->algorithms->defaultAlgorithm(),
+            $client->registration->idToken->signature ?? $this->algorithms->defaultAlgorithm(),
             JwtPayload::encode($token->claims()),
             [
                 'typ' => LogoutToken::TYPE,

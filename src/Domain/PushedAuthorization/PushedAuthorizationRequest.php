@@ -58,7 +58,7 @@ final class PushedAuthorizationRequest
             throw new InvalidArgumentException('A pushed authorization request expires after it was pushed.');
         }
         $this->tenant = $client->tenant;
-        $this->clientId = $client->clientId;
+        $this->clientId = $client->registration->clientId;
     }
 
     /**
@@ -104,6 +104,6 @@ final class PushedAuthorizationRequest
 
     public function belongsTo(Client $client): bool
     {
-        return $this->clientId === $client->clientId && $this->tenant->equals($client->tenant);
+        return $this->clientId === $client->registration->clientId && $this->tenant->equals($client->tenant);
     }
 }

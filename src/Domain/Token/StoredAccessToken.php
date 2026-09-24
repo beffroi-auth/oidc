@@ -57,7 +57,7 @@ final readonly class StoredAccessToken
             throw new InvalidArgumentException('An access token expires after it was issued.');
         }
         $this->tenant = $client->tenant;
-        $this->clientId = $client->clientId;
+        $this->clientId = $client->registration->clientId;
     }
 
     public static function fromAuthorization(string $tokenHash, GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self

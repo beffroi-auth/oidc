@@ -77,7 +77,7 @@ final class RefreshToken
             throw new InvalidArgumentException('A refresh token never outlives its family.');
         }
         $this->tenant = $client->tenant;
-        $this->clientId = $client->clientId;
+        $this->clientId = $client->registration->clientId;
     }
 
     public static function fromAuthorization(
@@ -99,7 +99,7 @@ final class RefreshToken
             min($expiresAt, $family->expiresAt),
             // RFC 8705 §4, RFC 9449 §5: a public client is bound by what it proved, a confidential one
             // by what it authenticates with, which the endpoint asks of it again anyway
-            $authorization->client->isPublic() ? $authorization->confirmation : null,
+            $authorization->client->registration->isPublic() ? $authorization->confirmation : null,
         );
     }
 
@@ -131,7 +131,7 @@ final class RefreshToken
      */
     public function rotatesOnUse(): bool
     {
-        return $this->client->isPublic() && $this->confirmation === null;
+        return $this->client->registration->isPublic() && $this->confirmation === null;
     }
 
     public function isRefreshedBy(?ConfirmationInterface $confirmation): bool

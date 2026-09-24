@@ -43,7 +43,16 @@ final readonly class TokenRevoked implements DomainEventInterface
 
     public static function ofAccessToken(DateTimeImmutable $occurredAt, StoredAccessToken $token, Client $revokedBy, RequestContext $context): self
     {
-        return new self($occurredAt, $revokedBy->tenant, $revokedBy->clientId, self::ACCESS_TOKEN, $token->tokenHash, $token->grantId, [], $context);
+        return new self(
+            $occurredAt,
+            $revokedBy->tenant,
+            $revokedBy->registration->clientId,
+            self::ACCESS_TOKEN,
+            $token->tokenHash,
+            $token->grantId,
+            [],
+            $context,
+        );
     }
 
     /**
@@ -59,7 +68,7 @@ final readonly class TokenRevoked implements DomainEventInterface
         return new self(
             $occurredAt,
             $revokedBy->tenant,
-            $revokedBy->clientId,
+            $revokedBy->registration->clientId,
             self::REFRESH_TOKEN,
             $token->tokenHash,
             $token->family->grantId,

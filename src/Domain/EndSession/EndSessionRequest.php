@@ -36,10 +36,10 @@ final readonly class EndSessionRequest
         if ($client !== null && ! $client->belongsTo($tenant)) {
             throw new InvalidArgumentException('A logout request names a client of its own tenant.');
         }
-        if ($idTokenHint !== null && ($client === null || ! $idTokenHint->isFor($client->clientId))) {
+        if ($idTokenHint !== null && ($client === null || ! $idTokenHint->isFor($client->registration->clientId))) {
             throw new InvalidArgumentException('The client of a logout request is one the id_token_hint was issued to.');
         }
-        if ($postLogoutRedirectUri !== null && ($client === null || ! $client->hasPostLogoutRedirectUri((string) $postLogoutRedirectUri))) {
+        if ($postLogoutRedirectUri !== null && ($client === null || ! $client->registration->hasPostLogoutRedirectUri((string) $postLogoutRedirectUri))) {
             throw new InvalidArgumentException('A post_logout_redirect_uri is one the client registered (OIDC RP-Initiated Logout 1.0 §3).');
         }
         if ($state === '') {

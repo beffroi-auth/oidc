@@ -50,6 +50,6 @@ final readonly class AuthenticatedClient
      */
     public function provesWhatItsClientRequires(): bool
     {
-        return ! $this->client->requiresSenderConstrainedTokens || $this->confirmation !== null;
+        return ! $this->client->registration->requiresSenderConstrainedTokens || $this->confirmation !== null;
     }
 }

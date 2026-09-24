@@ -61,16 +61,16 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
     public function verify(ClientAuthenticationRequest $request, Client $client): void
     {
         $certificate = $request->certificate;
-        $identity = $client->certificateIdentity;
+        $identity = $client->registration->certificateIdentity;
         if ($certificate === null || $identity === null) {
-            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->clientId, $this->name()));
+            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $this->name()));
         }
         try {
             $subject = $this->certificates->subjectOf($certificate);
         } catch (UnreadableCertificateException $exception) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::UnreadableCertificate,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 $exception->getMessage(),
                 $exception,
@@ -79,7 +79,7 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
         if (! $identity->matches($subject)) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::UnexpectedCertificate,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 sprintf('the certificate presented does not carry the %s of the client', $identity->name()),
             );

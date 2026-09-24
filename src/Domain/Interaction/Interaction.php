@@ -69,7 +69,7 @@ final class Interaction
         if ($expiresAt <= $createdAt) {
             throw new InvalidArgumentException('An interaction expires after it was created.');
         }
-        $this->clientId = $request->client->clientId;
+        $this->clientId = $request->client->registration->clientId;
     }
 
     public static function generateId(): string

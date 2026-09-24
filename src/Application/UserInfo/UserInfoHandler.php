@@ -106,14 +106,14 @@ final readonly class UserInfoHandler
         $client = $token->client;
         $subject = $this->subjects->resolve($user, $client)->value;
         $claims = UserInfoResponse::claimsOf($subject, $this->claims->claims($user, $token->scopes, $requested));
-        $format = $client->userInfo;
+        $format = $client->registration->userInfo;
         if ($format->isPlain()) {
             return UserInfoResponse::json($subject, $claims);
         }
         // OIDC Core §5.3.2: a JWT answer names who wrote it and for whom, which the JSON one has no room to say.
         $claims += [
             'iss' => (string) $tenant->issuer,
-            'aud' => $client->clientId,
+            'aud' => $client->registration->clientId,
         ];
 
         return UserInfoResponse::jwt($subject, $claims, $this->documents->issue($client, $format, $claims));

@@ -60,14 +60,14 @@ final readonly class SelfSignedTlsClientAuth implements KeyBearingMethodInterfac
     {
         $certificate = $request->certificate;
         if ($certificate === null) {
-            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->clientId, $this->name()));
+            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $this->name()));
         }
         try {
             $published = $this->keys->keysOf($client, null);
         } catch (ClientKeysUnavailableException $exception) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::UnreadableClientKeys,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 $exception->getMessage(),
                 $exception,
@@ -76,7 +76,7 @@ final readonly class SelfSignedTlsClientAuth implements KeyBearingMethodInterfac
         if (! $published->publishes($certificate)) {
             throw ClientAuthenticationFailure::refused(
                 ClientAuthenticationFailureReason::UnexpectedCertificate,
-                $client->clientId,
+                $client->registration->clientId,
                 $this->name(),
                 'the certificate presented is not one the client publishes',
             );

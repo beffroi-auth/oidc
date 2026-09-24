@@ -38,7 +38,7 @@ final class Consent
             throw new InvalidArgumentException('A consent binds a user and a client of the same tenant.');
         }
         $this->tenant = $user->tenant;
-        $this->clientId = $client->clientId;
+        $this->clientId = $client->registration->clientId;
     }
 
     /**

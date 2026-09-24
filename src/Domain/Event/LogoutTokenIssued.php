@@ -43,6 +43,6 @@ final readonly class LogoutTokenIssued implements DomainEventInterface
         DateTimeImmutable $occurredAt,
         RequestContext $context,
     ): self {
-        return new self($occurredAt, $client->tenant, $client->clientId, $logoutUri, $session->id, $token, $context);
+        return new self($occurredAt, $client->tenant, $client->registration->clientId, $logoutUri, $session->id, $token, $context);
     }
 }

@@ -71,10 +71,10 @@ final readonly class ClientSecretBasic implements SecretKeepingMethodInterface, 
         $credentials = $this->credentials($request);
         $secret = $client->secret;
         if ($credentials === null || ! $secret instanceof HashedClientSecret) {
-            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->clientId, $this->name()));
+            throw new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $this->name()));
         }
         if (! $this->hasher->verify($secret->hash, $credentials[1])) {
-            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidSecret, $client->clientId, $this->name());
+            throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidSecret, $client->registration->clientId, $this->name());
         }
     }
 

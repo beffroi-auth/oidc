@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Bridge\Configuration;
 
-use function array_any;
 use function array_column;
 use function array_diff;
 use function array_keys;
@@ -27,6 +26,7 @@ use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Domain\Client\ClientJwks;
+use Heidi\Oidc\Domain\Client\ClientRegistration;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Domain\Client\GrantType;
@@ -96,40 +96,10 @@ final readonly class ClientDefinition
         ...CertificateIdentities::NAMES,
     ];
 
-    /**
-     * @param list<RedirectUri> $redirectUris
-     * @param list<RedirectUri> $postLogoutRedirectUris
-     * @param list<GrantType> $grantTypes
-     * @param list<ClientUri> $requestUris
-     */
     private function __construct(
-        public string $clientId,
-        public string $name,
         #[SensitiveParameter]
         private ?string $secret,
-        public ClientAuthenticationMethodInterface $authenticationMethod,
-        public array $redirectUris,
-        public array $postLogoutRedirectUris,
-        public array $grantTypes,
-        public Scopes $allowedScopes,
-        public bool $requiresConsent,
-        public ResponseFormat $idToken,
-        public ResponseFormat $userInfo,
-        public ResponseFormat $authorizationResponse,
-        public bool $requiresPkce,
-        public bool $requiresPushedAuthorizationRequests,
-        public bool $requiresSenderConstrainedTokens,
-        public bool $requiresSignedRequestObject,
-        public AccessTokenFormat $accessTokenFormat,
-        public ?ClientUri $backChannelLogoutUri,
-        public bool $backChannelLogoutSessionRequired,
-        public ?ClientUri $frontChannelLogoutUri,
-        public bool $frontChannelLogoutSessionRequired,
-        public ?ClientJwks $jwks,
-        public ?ClientUri $jwksUri,
-        public ?CertificateIdentityInterface $certificateIdentity,
-        public RequestObjectSigningInterface $requestObjectSigning,
-        public array $requestUris,
+        public ClientRegistration $registration,
     ) {
     }
 
@@ -242,47 +212,18 @@ final readonly class ClientDefinition
             self::stringList($clientId, 'request_uris', $definition['request_uris'] ?? []),
         );
 
-        $encrypted = [$idToken, $userInfo, $authorizationResponse];
-        Client::assertConsistent(
+        $registration = new ClientRegistration(
             $clientId,
             $name,
             $method,
             $secret !== null,
-            $redirectUris,
-            $grantTypes,
-            $allowedScopes,
-            $requiresPkce,
-            $backChannelLogoutUri !== null,
-            $backChannelLogoutSessionRequired,
-            $frontChannelLogoutUri !== null,
-            $frontChannelLogoutSessionRequired,
-            $jwks !== null,
-            $jwksUri !== null,
-            $certificateIdentity !== null,
-            $requestObjectSigning,
-            array_any($encrypted, static fn (ResponseFormat $format): bool => $format->isEncrypted()),
-        );
-        foreach ($encrypted as $format) {
-            self::assertAddressable($clientId, $format, $jwks);
-        }
-
-        return new self(
-            $clientId,
-            $name,
-            $secret,
-            $method,
             $redirectUris,
             $postLogoutRedirectUris,
             $grantTypes,
             $allowedScopes,
             $requiresConsent,
             $idToken,
-            $userInfo,
-            $authorizationResponse,
             $requiresPkce,
-            $requiresPushedAuthorizationRequests,
-            $requiresSenderConstrainedTokens,
-            $requiresSignedRequestObject,
             $accessTokenFormat,
             $backChannelLogoutUri,
             $backChannelLogoutSessionRequired,
@@ -291,9 +232,19 @@ final readonly class ClientDefinition
             $jwks,
             $jwksUri,
             $certificateIdentity,
+            $requiresPushedAuthorizationRequests,
             $requestObjectSigning,
             $requestUris,
+            $authorizationResponse,
+            $userInfo,
+            $requiresSenderConstrainedTokens,
+            $requiresSignedRequestObject,
         );
+        foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
+            self::assertAddressable($clientId, $format, $jwks);
+        }
+
+        return new self($secret, $registration);
     }
 
     /**
@@ -444,9 +395,9 @@ final readonly class ClientDefinition
      */
     public function keepSecret(PasswordHasherInterface $hasher): ClientSecretInterface
     {
-        $method = $this->authenticationMethod;
+        $method = $this->registration->authenticationMethod;
         if ($this->secret === null || ! $method instanceof SecretKeepingMethodInterface) {
-            throw new LogicException(sprintf('The client "%s" registers no secret to keep.', $this->clientId));
+            throw new LogicException(sprintf('The client "%s" registers no secret to keep.', $this->registration->clientId));
         }
 
         return $method->keep($this->secret, $hasher);
@@ -454,35 +405,7 @@ final readonly class ClientDefinition
 
     public function toClient(Tenant $tenant, ?ClientSecretInterface $secret): Client
     {
-        return new Client(
-            $tenant,
-            $this->clientId,
-            $this->name,
-            $this->authenticationMethod,
-            $secret,
-            $this->redirectUris,
-            $this->postLogoutRedirectUris,
-            $this->grantTypes,
-            $this->allowedScopes,
-            $this->requiresConsent,
-            $this->idToken,
-            $this->requiresPkce,
-            $this->accessTokenFormat,
-            $this->backChannelLogoutUri,
-            $this->backChannelLogoutSessionRequired,
-            $this->frontChannelLogoutUri,
-            $this->frontChannelLogoutSessionRequired,
-            $this->jwks,
-            $this->jwksUri,
-            $this->certificateIdentity,
-            $this->requiresPushedAuthorizationRequests,
-            $this->requestObjectSigning,
-            $this->requestUris,
-            $this->authorizationResponse,
-            $this->userInfo,
-            $this->requiresSenderConstrainedTokens,
-            $this->requiresSignedRequestObject,
-        );
+        return new Client($tenant, $this->registration, $secret);
     }
 
     /**
