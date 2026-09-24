@@ -28,8 +28,6 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use const SORT_REGULAR;
 use function sprintf;
-use function strlen;
-use function substr;
 
 /**
  * The metadata of a tenant (OIDC Discovery §3, RFC 8414 §2): one document, two well-known locations. It
@@ -211,9 +209,7 @@ final readonly class ProviderMetadata
      */
     public function authorizationServerMetadataUrl(): string
     {
-        $origin = substr($this->issuer->value, 0, strlen($this->issuer->value) - strlen($this->issuer->path));
-
-        return $origin . self::AUTHORIZATION_SERVER_METADATA_PATH . $this->issuer->path;
+        return $this->issuer->origin() . self::AUTHORIZATION_SERVER_METADATA_PATH . $this->issuer->path;
     }
 
     /**
