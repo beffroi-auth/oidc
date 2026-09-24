@@ -14,7 +14,6 @@ use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Port\AccessTokenIssuerInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
-use function implode;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -55,7 +54,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
             'jti' => Uuid::v4()->toRfc4122(),
             ...$authorization->authentication->toClaims(),
         ];
-        $claims['scope'] = implode(' ', $authorization->scopes);
+        $claims['scope'] = (string) $authorization->scopes;
         $requested = $authorization->claimsRequest === null ? [] : $authorization->claimsRequest->userinfo;
         if ($requested !== []) {
             $claims[self::USERINFO_CLAIMS] = array_keys($requested);

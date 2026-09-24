@@ -11,7 +11,7 @@ use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
@@ -38,18 +38,12 @@ final class AuthorizationCode
      */
     public readonly string $clientId;
 
-    /**
-     * @var non-empty-list<Scope>
-     */
-    public readonly array $scopes;
-
     public private(set) ?DateTimeImmutable $usedAt = null;
 
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
     /**
      * @param string $codeHash see hash()
-     * @param list<Scope> $scopes at least one
      * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE (decision 0008)
      * @param KeyConfirmation|null $dpopKey the key the request reserved the code for (RFC 9449 §10), null when it reserved it for none
      * @param AuthenticationSnapshot $authentication what the session had proven, frozen for every token of the grant
@@ -60,7 +54,7 @@ final class AuthorizationCode
         public readonly Client $client,
         public readonly AuthenticationSession $session,
         public readonly RedirectUri $redirectUri,
-        array $scopes,
+        public readonly Scopes $scopes,
         public readonly ?string $nonce,
         public readonly ?CodeChallenge $codeChallenge,
         public readonly ?KeyConfirmation $dpopKey,
@@ -75,15 +69,11 @@ final class AuthorizationCode
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An authorization code binds a session and a client of the same tenant.');
         }
-        if ($scopes === []) {
-            throw new InvalidArgumentException('An authorization code grants at least one scope.');
-        }
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An authorization code expires after it was issued.');
         }
         $this->tenant = $client->tenant;
         $this->clientId = $client->clientId;
-        $this->scopes = $scopes;
     }
 
     /**

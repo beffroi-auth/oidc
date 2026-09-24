@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
-use function implode;
 use SensitiveParameter;
 
 /**
@@ -31,13 +30,7 @@ final readonly class TokenResponse
     ];
 
     /**
-     * @var non-empty-list<Scope>
-     */
-    public array $scopes;
-
-    /**
      * @param positive-int $expiresIn
-     * @param list<Scope> $scopes at least one
      * @param string $tokenType how the client presents the token it is handed (RFC 6749 §5.1), which is
      *                          what the binding of the token says and "Bearer" when it has none
      */
@@ -49,7 +42,7 @@ final readonly class TokenResponse
         public ?string $refreshToken,
         #[SensitiveParameter]
         public ?string $idToken,
-        array $scopes,
+        public Scopes $scopes,
         public string $tokenType = self::BEARER,
     ) {
         if ($accessToken === '') {
@@ -58,10 +51,6 @@ final readonly class TokenResponse
         if ($refreshToken === '' || $idToken === '') {
             throw new InvalidArgumentException('A refresh token or an ID token is either absent or non-empty.');
         }
-        if ($scopes === []) {
-            throw new InvalidArgumentException('A token response names at least one scope.');
-        }
-        $this->scopes = $scopes;
     }
 
     /**
@@ -80,7 +69,7 @@ final readonly class TokenResponse
         if ($this->idToken !== null) {
             $parameters['id_token'] = $this->idToken;
         }
-        $parameters['scope'] = implode(' ', $this->scopes);
+        $parameters['scope'] = (string) $this->scopes;
 
         return $parameters;
     }

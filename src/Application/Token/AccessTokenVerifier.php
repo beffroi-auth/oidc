@@ -12,8 +12,8 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\InvalidArgumentException;
 use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\Confirmations;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
@@ -189,18 +189,17 @@ final readonly class AccessTokenVerifier
      * RFC 9068 §2.2.3, RFC 8693 §4.2; absent, the token carries none.
      *
      * @throws OidcInvalidArgumentException when a scope token is not one
-     * @return list<Scope>
      */
-    private static function scopes(mixed $scope): array
+    private static function scopes(mixed $scope): ?Scopes
     {
         if ($scope === null) {
-            return [];
+            return null;
         }
         if (! is_string($scope)) {
             throw new OidcInvalidArgumentException('The scope claim is not a string.');
         }
 
-        return Scope::parseList($scope);
+        return Scopes::parse($scope);
     }
 
     /**

@@ -6,11 +6,11 @@ namespace Heidi\Oidc\Application\Token;
 
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Event\RefreshTokenReuseDetected;
 use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
-use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshToken;
@@ -70,7 +70,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
         if ($token->isExpired($now) || $token->session->hasEnded() || ! $token->isRefreshedBy($client->confirmation)) {
             throw new InvalidGrantException(self::INVALID);
         }
-        if ($scopes !== null && ! $token->covers($scopes)) {
+        if ($scopes !== null && ! $token->scopes->covers($scopes)) {
             throw new InvalidScopeException('The requested scope exceeds the scope granted to the refresh token (RFC 6749 section 6).');
         }
 
@@ -89,15 +89,15 @@ final readonly class RefreshTokenGrant implements GrantInterface
     /**
      * RFC 6749 §3.3, without repeats.
      *
-     * @return non-empty-list<Scope>|null null when the client did not narrow the scope
+     * @return Scopes|null null when the client did not narrow the scope
      */
-    private static function scopes(?string $scope): ?array
+    private static function scopes(?string $scope): ?Scopes
     {
         if ($scope === null) {
             return null;
         }
         try {
-            return Scope::parseList($scope);
+            return Scopes::parse($scope);
         } catch (InvalidArgumentException $exception) {
             throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', previous: $exception);
         }

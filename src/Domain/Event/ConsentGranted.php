@@ -9,7 +9,7 @@ use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -18,7 +18,6 @@ use Symfony\Component\Uid\Uuid;
 final readonly class ConsentGranted implements DomainEventInterface
 {
     /**
-     * @param list<Scope> $scopes
      * @param Uuid|null $supersedes the consent this one takes over from, null when the user had granted nothing yet
      */
     public function __construct(
@@ -27,7 +26,7 @@ final readonly class ConsentGranted implements DomainEventInterface
         public Uuid $consentId,
         public string $clientId,
         public Uuid $userId,
-        public array $scopes,
+        public Scopes $scopes,
         public ?Uuid $supersedes,
         public RequestContext $context,
     ) {

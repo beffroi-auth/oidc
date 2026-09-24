@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Port;
 
 use Heidi\Core\Domain\Tenant\Tenant;
+use LogicException;
 use Heidi\Oidc\Domain\Discovery\ProviderEndpoints;
 
 /**
@@ -15,5 +16,9 @@ use Heidi\Oidc\Domain\Discovery\ProviderEndpoints;
  */
 interface MutualTlsEndpointLocatorInterface
 {
+    /**
+     * @throws LogicException when the routes are not mounted where the issuer of the tenant makes
+     *                        clients look for them (OIDC Discovery §4.1)
+     */
     public function locateMutualTls(Tenant $tenant): ?ProviderEndpoints;
 }

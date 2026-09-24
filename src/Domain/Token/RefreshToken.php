@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
-use function array_all;
-use function array_any;
 use DateTimeImmutable;
 use function hash;
 use Heidi\Core\Domain\Session\AuthenticationSession;
@@ -14,7 +12,7 @@ use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
 use function min;
@@ -41,18 +39,12 @@ final class RefreshToken
      */
     public readonly string $clientId;
 
-    /**
-     * @var non-empty-list<Scope>
-     */
-    public readonly array $scopes;
-
     public private(set) ?DateTimeImmutable $rotatedAt = null;
 
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
     /**
      * @param string $tokenHash see hash()
-     * @param list<Scope> $scopes at least one
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
      * @param ConfirmationInterface|null $confirmation what a refresh of this token has to prove again (RFC 9449 §5), null when the client proves itself another way
      * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
@@ -62,7 +54,7 @@ final class RefreshToken
         public readonly RefreshTokenFamily $family,
         public readonly Client $client,
         public readonly AuthenticationSession $session,
-        array $scopes,
+        public readonly Scopes $scopes,
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,
@@ -75,9 +67,6 @@ final class RefreshToken
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('A refresh token binds a session and a client of the same tenant.');
         }
-        if ($scopes === []) {
-            throw new InvalidArgumentException('A refresh token grants at least one scope.');
-        }
         if ($issuedAt < $family->startedAt) {
             throw new InvalidArgumentException('A refresh token is issued after its family started.');
         }
@@ -89,7 +78,6 @@ final class RefreshToken
         }
         $this->tenant = $client->tenant;
         $this->clientId = $client->clientId;
-        $this->scopes = $scopes;
     }
 
     public static function fromAuthorization(
@@ -192,18 +180,5 @@ final class RefreshToken
     public function isExpired(DateTimeImmutable $now): bool
     {
         return $now >= $this->expiresAt;
-    }
-
-    /**
-     * @param list<Scope> $scopes
-     */
-    public function covers(array $scopes): bool
-    {
-        return array_all($scopes, fn (Scope $scope): bool => $this->hasScope($scope));
-    }
-
-    public function hasScope(Scope $scope): bool
-    {
-        return array_any($this->scopes, static fn (Scope $granted): bool => $granted->equals($scope));
     }
 }

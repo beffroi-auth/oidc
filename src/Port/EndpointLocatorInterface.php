@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Port;
 
 use Heidi\Core\Domain\Tenant\Tenant;
+use LogicException;
 use Heidi\Oidc\Domain\Discovery\ProviderEndpoints;
 
 /**
@@ -12,5 +13,10 @@ use Heidi\Oidc\Domain\Discovery\ProviderEndpoints;
  */
 interface EndpointLocatorInterface
 {
+    /**
+     * @throws LogicException when the routes of the provider are not mounted where the issuer of the
+     *                        tenant makes clients look for them (OIDC Discovery §4.1): a document served
+     *                        at the wrong place is not a document to serve
+     */
     public function locate(Tenant $tenant): ProviderEndpoints;
 }

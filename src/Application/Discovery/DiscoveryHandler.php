@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Token\GrantInterface;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Discovery\ProviderMetadata;
@@ -81,10 +82,11 @@ final readonly class DiscoveryHandler
 
     public function handle(Tenant $tenant): ProviderMetadata
     {
-        $scopes = $this->claims->supportedScopes();
+        $announced = [Scope::openid(), ...$this->claims->supportedScopes()];
         if (in_array(GrantType::RefreshToken, $this->grantTypes, true)) {
-            $scopes[] = Scope::offlineAccess();
+            $announced[] = Scope::offlineAccess();
         }
+        $scopes = new Scopes($announced);
 
         return new ProviderMetadata(
             $tenant->issuer,

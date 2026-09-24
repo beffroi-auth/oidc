@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Introspection;
 
-use function array_map;
 use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Domain\Token\TokenResponse;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException;
-use function implode;
 use SensitiveParameter;
 
 /**
@@ -64,7 +61,7 @@ final readonly class IntrospectionResponse
         return new self(
             [
                 'active' => true,
-                'scope' => implode(' ', array_map(static fn (Scope $scope): string => $scope->value, $token->scopes)),
+                'scope' => (string) $token->scopes,
                 'client_id' => $token->client->clientId,
                 'token_type' => $token->confirmation?->scheme() ?? TokenResponse::BEARER,
                 'exp' => $token->expiresAt->getTimestamp(),

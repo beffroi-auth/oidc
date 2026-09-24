@@ -104,7 +104,7 @@ final class Interaction
         if (! $consent->isFor($this->session->user, $this->request->client)) {
             throw new InvalidArgumentException('A consent is recorded for the user of the session and the client of the request.');
         }
-        if (! $consent->covers($this->request->scopes)) {
+        if (! $consent->scopes->covers($this->request->scopes)) {
             throw new InvalidArgumentException('A consent recorded on an interaction covers every scope of the request.');
         }
         $this->consent = $consent;

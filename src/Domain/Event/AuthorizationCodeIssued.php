@@ -9,7 +9,7 @@ use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -17,9 +17,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class AuthorizationCodeIssued implements DomainEventInterface
 {
-    /**
-     * @param list<Scope> $scopes
-     */
     public function __construct(
         public DateTimeImmutable $occurredAt,
         public Tenant $tenant,
@@ -27,7 +24,7 @@ final readonly class AuthorizationCodeIssued implements DomainEventInterface
         public Uuid $grantId,
         public Uuid $sessionId,
         public string $codeHash,
-        public array $scopes,
+        public Scopes $scopes,
         public DateTimeImmutable $expiresAt,
         public RequestContext $context,
     ) {

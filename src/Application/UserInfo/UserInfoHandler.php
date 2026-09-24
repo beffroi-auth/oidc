@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Application\UserInfo;
 use function array_fill_keys;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
 use Heidi\Oidc\Application\Token\AccessTokenInspector;
@@ -93,8 +94,11 @@ final readonly class UserInfoHandler
                 $confirmation,
             );
         }
-        if (! $token->hasScope(Scope::openid())) {
-            throw new InsufficientScopeException('The access token was not obtained through an OpenID Connect authentication request.', [Scope::openid()]);
+        if ($token->scopes?->has(Scope::openid()) !== true) {
+            throw new InsufficientScopeException(
+                'The access token was not obtained through an OpenID Connect authentication request.',
+                new Scopes([Scope::openid()]),
+            );
         }
         $user = $inspected->user;
 

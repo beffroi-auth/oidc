@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
-use function array_all;
-use function array_any;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
@@ -14,7 +12,7 @@ use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantType;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,19 +26,11 @@ final readonly class GrantedAuthorization
 
     public User $user;
 
-    /**
-     * @var non-empty-list<Scope>
-     */
-    public array $scopes;
+    public Scopes $scopes;
+
+    public Scopes $grantedScopes;
 
     /**
-     * @var non-empty-list<Scope>
-     */
-    public array $grantedScopes;
-
-    /**
-     * @param list<Scope> $scopes at least one, all among the granted ones
-     * @param list<Scope> $grantedScopes
      * @param string|null $nonce only when the tokens answer a code (OIDC Core §3.1.3.7 step 11, §12.2)
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, written in every token
      * @param ConfirmationInterface|null $confirmation what the tokens of this response are bound to (RFC 8705 §3, RFC 9449 §6.1), null when they are bearer tokens
@@ -50,8 +40,8 @@ final readonly class GrantedAuthorization
         public Uuid $grantId,
         public Client $client,
         public AuthenticationSession $session,
-        array $scopes,
-        array $grantedScopes,
+        Scopes $scopes,
+        Scopes $grantedScopes,
         public ?string $nonce,
         public ?ClaimsRequest $claimsRequest,
         public AuthenticationSnapshot $authentication,
@@ -60,10 +50,7 @@ final readonly class GrantedAuthorization
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An authorization binds a session and a client of the same tenant.');
         }
-        if ($scopes === [] || $grantedScopes === []) {
-            throw new InvalidArgumentException('An authorization carries at least one scope.');
-        }
-        if (! array_all($scopes, static fn (Scope $scope): bool => array_any($grantedScopes, static fn (Scope $granted): bool => $granted->equals($scope)))) {
+        if (! $grantedScopes->covers($scopes)) {
             throw new InvalidArgumentException('The scopes of a response are among the granted ones (RFC 6749 section 6).');
         }
         if ($grantType === GrantType::RefreshToken && $nonce !== null) {
@@ -100,9 +87,8 @@ final readonly class GrantedAuthorization
      * gets tokens bound to the new one, and a client that stops presenting one gets bearer tokens and
      * nothing of what the bound ones could reach.
      *
-     * @param list<Scope>|null $scopes null for the ones of the token
      */
-    public static function fromRefreshToken(RefreshToken $token, ?array $scopes, ?ConfirmationInterface $confirmation = null): self
+    public static function fromRefreshToken(RefreshToken $token, ?Scopes $scopes, ?ConfirmationInterface $confirmation = null): self
     {
         return new self(
             GrantType::RefreshToken,
@@ -116,10 +102,5 @@ final readonly class GrantedAuthorization
             $token->authentication,
             $confirmation,
         );
-    }
-
-    public function hasScope(Scope $scope): bool
-    {
-        return array_any($this->scopes, static fn (Scope $granted): bool => $granted->equals($scope));
     }
 }

@@ -19,6 +19,7 @@ use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
@@ -99,7 +100,6 @@ final readonly class ClientDefinition
      * @param list<RedirectUri> $redirectUris
      * @param list<RedirectUri> $postLogoutRedirectUris
      * @param list<GrantType> $grantTypes
-     * @param list<Scope> $allowedScopes
      * @param list<ClientUri> $requestUris
      */
     private function __construct(
@@ -111,7 +111,7 @@ final readonly class ClientDefinition
         public array $redirectUris,
         public array $postLogoutRedirectUris,
         public array $grantTypes,
-        public array $allowedScopes,
+        public Scopes $allowedScopes,
         public bool $requiresConsent,
         public ResponseFormat $idToken,
         public ResponseFormat $userInfo,
@@ -197,10 +197,10 @@ final readonly class ClientDefinition
             static fn (string $grant): GrantType => self::enumCase($clientId, 'grant_types', $grant, GrantType::class),
             self::stringList($clientId, 'grant_types', $definition['grant_types'] ?? [GrantType::AuthorizationCode->value, GrantType::RefreshToken->value]),
         );
-        $allowedScopes = array_map(
+        $allowedScopes = new Scopes(array_map(
             static fn (string $scope): Scope => new Scope($scope),
             self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']),
-        );
+        ));
         $idToken = ResponseFormat::signed(
             self::algorithm($clientId, 'id_token_signed_response_alg', $definition, $algorithms),
             self::encryption($clientId, 'id_token', $definition, $keyEncryption, $contentEncryption),

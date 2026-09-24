@@ -11,6 +11,7 @@ use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use function preg_match;
@@ -50,10 +51,7 @@ final readonly class Client
      */
     public array $requestUris;
 
-    /**
-     * @var list<Scope>
-     */
-    public array $allowedScopes;
+    public Scopes $allowedScopes;
 
     public ResponseFormat $idToken;
 
@@ -66,7 +64,6 @@ final readonly class Client
      * @param list<RedirectUri> $redirectUris at least one
      * @param list<RedirectUri> $postLogoutRedirectUris
      * @param list<GrantType> $grantTypes at least one; refresh_token needs authorization_code
-     * @param list<Scope> $allowedScopes at least one
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
@@ -94,7 +91,7 @@ final readonly class Client
         array $redirectUris,
         array $postLogoutRedirectUris = [],
         array $grantTypes = [GrantType::AuthorizationCode],
-        ?array $allowedScopes = null,
+        ?Scopes $allowedScopes = null,
         public bool $requiresConsent = true,
         ?ResponseFormat $idToken = null,
         public bool $requiresPkce = true,
@@ -114,7 +111,7 @@ final readonly class Client
         public bool $requiresSenderConstrainedTokens = false,
         public bool $requiresSignedRequestObject = false,
     ) {
-        $allowedScopes ??= [Scope::openid()];
+        $this->allowedScopes = $allowedScopes ??= new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();
         $this->authorizationResponse = $authorizationResponse ?? ResponseFormat::signed();
         $this->userInfo = $userInfo ?? ResponseFormat::unsigned();
@@ -150,7 +147,6 @@ final readonly class Client
         $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris, $sameUri);
         $this->grantTypes = self::unique($grantTypes, static fn (GrantType $a, GrantType $b): bool => $a === $b);
         $this->requestUris = self::unique($requestUris, static fn (ClientUri $a, ClientUri $b): bool => $a->equals($b));
-        $this->allowedScopes = self::unique($allowedScopes, static fn (Scope $a, Scope $b): bool => $a->equals($b));
     }
 
     /**
@@ -158,7 +154,6 @@ final readonly class Client
      *
      * @param list<RedirectUri> $redirectUris
      * @param list<GrantType> $grantTypes
-     * @param list<Scope> $allowedScopes
      */
     public static function assertConsistent(
         string $clientId,
@@ -167,7 +162,7 @@ final readonly class Client
         bool $hasSecret,
         array $redirectUris,
         array $grantTypes,
-        array $allowedScopes,
+        Scopes $allowedScopes,
         bool $requiresPkce = true,
         bool $hasBackChannelLogoutUri = false,
         bool $backChannelLogoutSessionRequired = false,
@@ -253,9 +248,6 @@ final readonly class Client
                 $clientId,
             ));
         }
-        if ($allowedScopes === []) {
-            throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one scope.', $clientId));
-        }
         if (! $requiresPkce && ! $authenticationMethod->authenticatesClient()) {
             throw new InvalidArgumentException(sprintf(
                 'The client "%s" is public and must use PKCE (RFC 9700 section 2.1.1): requires_pkce cannot be false.',
@@ -324,11 +316,6 @@ final readonly class Client
     public function allowsGrant(GrantType $grantType): bool
     {
         return in_array($grantType, $this->grantTypes, true);
-    }
-
-    public function allowsScope(Scope $scope): bool
-    {
-        return array_any($this->allowedScopes, static fn (Scope $allowed): bool => $allowed->equals($scope));
     }
 
     /**

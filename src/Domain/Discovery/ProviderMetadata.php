@@ -23,6 +23,7 @@ use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Heidi\Oidc\Domain\EndSession\LogoutChannel;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
@@ -49,10 +50,7 @@ final readonly class ProviderMetadata
 
     public const string AUTHORIZATION_SERVER_METADATA_PATH = '/.well-known/oauth-authorization-server';
 
-    /**
-     * @var non-empty-list<Scope> "openid" first, no duplicate
-     */
-    public array $scopesSupported;
+    public Scopes $scopesSupported;
 
     /**
      * @var non-empty-list<string> "sub" first, no duplicate
@@ -105,7 +103,6 @@ final readonly class ProviderMetadata
     public array $headers;
 
     /**
-     * @param list<Scope> $scopesSupported "openid" added if missing
      * @param list<string> $claimsSupported "sub" added if missing
      * @param list<ResponseMode> $responseModesSupported the modes the authorization endpoint answers in, at least one
      * @param list<GrantType> $grantTypesSupported the grants the token endpoint serves, at least one
@@ -126,7 +123,7 @@ final readonly class ProviderMetadata
         public ?ProviderEndpoints $mutualTlsEndpoints,
         public bool $requiresPushedAuthorizationRequests,
         public bool $acceptsUnsignedRequestObjects,
-        array $scopesSupported,
+        Scopes $scopesSupported,
         array $claimsSupported,
         array $responseModesSupported,
         array $grantTypesSupported,
@@ -166,12 +163,7 @@ final readonly class ProviderMetadata
         if ($algorithms === []) {
             throw new InvalidArgumentException('A provider signs its JWS with at least one algorithm (OIDC Discovery section 3).');
         }
-        $scopes = [Scope::openid()];
-        foreach ($scopesSupported as $scope) {
-            if (! in_array($scope->value, array_map(static fn (Scope $known): string => $known->value, $scopes), true)) {
-                $scopes[] = $scope;
-            }
-        }
+        $scopes = new Scopes([Scope::openid(), ...$scopesSupported->all]);
         $claims = ['sub'];
         foreach ($claimsSupported as $claim) {
             if ($claim === '') {
@@ -227,7 +219,7 @@ final readonly class ProviderMetadata
             'token_endpoint' => $this->endpoints->token,
             'userinfo_endpoint' => $this->endpoints->userinfo,
             'jwks_uri' => $this->endpoints->jwks,
-            'scopes_supported' => array_map(static fn (Scope $scope): string => $scope->value, $this->scopesSupported),
+            'scopes_supported' => $this->scopesSupported->values(),
             'response_types_supported' => ['code'],
             'response_modes_supported' => self::values($this->announcedResponseModes()),
             'grant_types_supported' => self::values($this->grantTypesSupported),

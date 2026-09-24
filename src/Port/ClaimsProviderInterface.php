@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Port;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Oidc\Domain\Authorization\ClaimRequest;
 use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 
 /**
  * The claims about a user (OIDC Core §5.1): those the scopes stand for (§5.4) and those asked for by name
@@ -16,12 +17,13 @@ use Heidi\Oidc\Domain\Scope\Scope;
 interface ClaimsProviderInterface
 {
     /**
-     * @param list<Scope> $scopes
+     * @param Scopes|null $scopes null when no claim is due to a scope: an ID token carries what was
+     *                            asked for by name and nothing the scopes would add (OIDC Core §5.4)
      * @param array<string, ClaimRequest> $requested by name, for the place answered
      *
      * @return array<string, mixed> by claim name
      */
-    public function claims(User $user, array $scopes, array $requested): array;
+    public function claims(User $user, ?Scopes $scopes, array $requested): array;
 
     /**
      * @return list<Scope>

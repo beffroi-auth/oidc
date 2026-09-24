@@ -67,7 +67,7 @@ final readonly class UserInfoErrorResponse
             $exception->error,
             $exception->errorDescription,
             [TokenResponse::BEARER],
-            $exception instanceof InsufficientScopeException ? implode(' ', $exception->scopes) : null,
+            $exception instanceof InsufficientScopeException ? (string) $exception->scopes : null,
         );
     }
 

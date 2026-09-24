@@ -379,7 +379,7 @@ final readonly class AuthorizationHandler
             return ConsentRequirement::ConsentRequested;
         }
         $consent = $this->consents->findActive($session->user, $request->client);
-        if ($consent === null || ! $consent->covers($request->scopes)) {
+        if ($consent === null || ! $consent->scopes->covers($request->scopes)) {
             return ConsentRequirement::NotGranted;
         }
         $interaction->consent($consent, $now);

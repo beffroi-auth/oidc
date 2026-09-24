@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Port;
 
+use LogicException;
 use Heidi\Core\Domain\Session\AuthenticationMethod;
 
 /**
@@ -15,6 +16,9 @@ use Heidi\Core\Domain\Session\AuthenticationMethod;
 interface ProvableMethodsInterface
 {
     /**
+     * @throws LogicException when the integration wires no login at all, or one it cannot read: what a
+     *                        provider announces it can prove is read from its logins, so having none is
+     *                        a provider that cannot answer, not a provider that proves nothing
      * @return non-empty-list<AuthenticationMethod>
      */
     public function provableMethods(): array;

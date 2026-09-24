@@ -68,7 +68,7 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 
         $requested = $authorization->claimsRequest === null ? [] : $authorization->claimsRequest->idToken;
         if ($requested !== []) {
-            $claims += $this->claims->claims($authorization->user, [], $requested);
+            $claims += $this->claims->claims($authorization->user, null, $requested);
         }
 
         return $this->documents->issue($authorization->client, $format, $claims);

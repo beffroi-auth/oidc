@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
-use function array_any;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
@@ -12,7 +11,7 @@ use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use Symfony\Component\Uid\Uuid;
@@ -32,13 +31,7 @@ final readonly class StoredAccessToken
     public string $clientId;
 
     /**
-     * @var non-empty-list<Scope>
-     */
-    public array $scopes;
-
-    /**
      * @param string $tokenHash see OpaqueTokenValue::hash()
-     * @param list<Scope> $scopes at least one
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      */
@@ -47,7 +40,7 @@ final readonly class StoredAccessToken
         public Uuid $grantId,
         public Client $client,
         public AuthenticationSession $session,
-        array $scopes,
+        public Scopes $scopes,
         public ?ClaimsRequest $claimsRequest,
         public AuthenticationSnapshot $authentication,
         public DateTimeImmutable $issuedAt,
@@ -60,15 +53,11 @@ final readonly class StoredAccessToken
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An access token binds a session and a client of the same tenant.');
         }
-        if ($scopes === []) {
-            throw new InvalidArgumentException('An access token carries at least one scope.');
-        }
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An access token expires after it was issued.');
         }
         $this->tenant = $client->tenant;
         $this->clientId = $client->clientId;
-        $this->scopes = $scopes;
     }
 
     public static function fromAuthorization(string $tokenHash, GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self
@@ -90,10 +79,5 @@ final readonly class StoredAccessToken
     public function isExpired(DateTimeImmutable $now): bool
     {
         return $now >= $this->expiresAt;
-    }
-
-    public function hasScope(Scope $scope): bool
-    {
-        return array_any($this->scopes, static fn (Scope $granted): bool => $granted->equals($scope));
     }
 }

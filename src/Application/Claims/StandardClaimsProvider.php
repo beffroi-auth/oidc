@@ -11,6 +11,7 @@ use function array_merge;
 use function array_values;
 use Heidi\Core\Domain\Identity\Address;
 use Heidi\Core\Domain\Identity\User;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use function in_array;
@@ -49,10 +50,10 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
         'phone' => ['phone_number', 'phone_number_verified'],
     ];
 
-    public function claims(User $user, array $scopes, array $requested): array
+    public function claims(User $user, ?Scopes $scopes, array $requested): array
     {
         $due = array_keys($requested);
-        foreach ($scopes as $scope) {
+        foreach ($scopes->all ?? [] as $scope) {
             $due = [...$due, ...(self::SCOPES[$scope->value] ?? [])];
         }
 

@@ -9,7 +9,7 @@ use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\GrantType;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\ConfirmationInterface;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\RefreshToken;
@@ -21,7 +21,6 @@ use Symfony\Component\Uid\Uuid;
 final readonly class TokensIssued implements DomainEventInterface
 {
     /**
-     * @param list<Scope> $grantedScopes
      * @param ConfirmationInterface|null $confirmation what the tokens that left are bound to, null for bearer ones (RFC 9449 §6, RFC 8705 §3)
      * @param string|null $refreshTokenHash the refresh token that left, by its hash, null when none did
      */
@@ -32,7 +31,7 @@ final readonly class TokensIssued implements DomainEventInterface
         public Uuid $grantId,
         public string $clientId,
         public Uuid $sessionId,
-        public array $grantedScopes,
+        public Scopes $grantedScopes,
         public DateTimeImmutable $accessTokenExpiresAt,
         public bool $idTokenIssued,
         public ?ConfirmationInterface $confirmation,

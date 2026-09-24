@@ -49,7 +49,7 @@ final readonly class TokenIssuer
     public function issue(GrantedAuthorization $authorization, ?IssuedRefreshToken $refreshToken, RequestContext $context, DateTimeImmutable $now): IssuedTokens
     {
         $accessToken = $this->accessTokens->issue($authorization, $now);
-        $idToken = $authorization->hasScope(Scope::openid()) ? $this->idTokens->issue($authorization, $accessToken, $now) : null;
+        $idToken = $authorization->scopes->has(Scope::openid()) ? $this->idTokens->issue($authorization, $accessToken, $now) : null;
         $this->events->dispatch(TokensIssued::of($now, $authorization, $accessToken->expiresAt, $idToken !== null, $refreshToken?->token, $context));
 
         return new IssuedTokens($authorization, $accessToken, $idToken, $refreshToken);

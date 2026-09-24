@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Authorization;
 
-use function array_any;
 use function count;
 use function explode;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
@@ -250,24 +250,23 @@ final readonly class AuthorizationRequestParser
     /**
      * RFC 6749 §3.3, OIDC Core §3.1.2.2 step 3: contains "openid", every token allowed to the client.
      *
-     * @return list<Scope>
      */
-    private function scopes(RedirectTarget $target, ?string $scope): array
+    private function scopes(RedirectTarget $target, ?string $scope): Scopes
     {
         if ($scope === null) {
             throw new InvalidRequestException('The scope parameter is missing.', true);
         }
         try {
-            $scopes = Scope::parseList($scope);
+            $scopes = Scopes::parse($scope);
         } catch (InvalidArgumentException) {
             throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', true);
         }
-        foreach ($scopes as $candidate) {
-            if (! $target->client->allowsScope($candidate)) {
+        foreach ($scopes->all as $candidate) {
+            if (! $target->client->allowedScopes->has($candidate)) {
                 throw new InvalidScopeException('The requested scope is not allowed for this client.', true);
             }
         }
-        if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals(Scope::openid()))) {
+        if (! $scopes->has(Scope::openid())) {
             throw new InvalidScopeException('The scope parameter must contain openid (OIDC Core section 3.1.2.1).', true);
         }
 
