@@ -57,6 +57,20 @@ final readonly class RequestParameters
     }
 
     /**
+     * RFC 6749 §4.1.1: the client names itself in every request that reaches these endpoints, and one
+     * that names nobody names nothing to look up. Never redirectable: where an answer may go is read
+     * off the client, so it is not known yet.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @throws InvalidRequestException when the parameter is missing, or is not a single string
+     */
+    public static function clientId(array $parameters): string
+    {
+        return self::single($parameters, 'client_id', false) ?? throw new InvalidRequestException('The client_id parameter is missing.');
+    }
+
+    /**
      * @param array<string, mixed> $parameters
      */
     public static function isPresent(array $parameters, string $name): bool

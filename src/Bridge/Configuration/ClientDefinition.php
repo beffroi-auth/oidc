@@ -7,10 +7,7 @@ namespace Heidi\Oidc\Bridge\Configuration;
 use function array_column;
 use function array_diff;
 use function array_keys;
-use function array_map;
 use BackedEnum;
-use Heidi\Core\Domain\Key\ContentEncryptionAlgorithmInterface;
-use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\UnsupportedAlgorithmException;
@@ -20,6 +17,8 @@ use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
+use Heidi\Oidc\Application\Client\MethodNames;
+use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
@@ -138,17 +137,10 @@ final readonly class ClientDefinition
             }
         }
 
-        $method = self::method($clientId, $definition['token_endpoint_auth_method'] ?? null, $methods);
+        $method = self::method($clientId, $definition, $methods);
 
-        $requiresConsent = $definition['requires_consent'] ?? true;
-        if (! is_bool($requiresConsent)) {
-            throw new InvalidArgumentException(sprintf('The requires_consent option of the client "%s" must be a boolean.', $clientId));
-        }
-
-        $requiresPkce = $definition['requires_pkce'] ?? true;
-        if (! is_bool($requiresPkce)) {
-            throw new InvalidArgumentException(sprintf('The requires_pkce option of the client "%s" must be a boolean.', $clientId));
-        }
+        $requiresConsent = self::flag($clientId, 'requires_consent', $definition, true);
+        $requiresPkce = self::flag($clientId, 'requires_pkce', $definition, true);
 
         $name = $definition['name'] ?? $clientId;
         if (! is_string($name)) {
@@ -206,7 +198,7 @@ final readonly class ClientDefinition
 
         $certificateIdentity = self::certificateIdentity($clientId, $definition, $certificates);
 
-        $requestObjectSigning = self::requestObjectSigning($clientId, $definition['request_object_signing_alg'] ?? null, $algorithms);
+        $requestObjectSigning = self::requestObjectSigning($clientId, $definition, $algorithms);
         $requestUris = array_map(
             static fn (string $uri): ClientUri => new ClientUri($uri),
             self::stringList($clientId, 'request_uris', $definition['request_uris'] ?? []),
@@ -260,26 +252,14 @@ final readonly class ClientDefinition
         array $definition,
         SignatureAlgorithmsInterface $algorithms,
     ): SignatureAlgorithmInterface {
-        $name = $definition[$option] ?? null;
+        $name = self::text($clientId, $option, $definition);
         if ($name === null) {
             return $algorithms->defaultAlgorithm();
-        }
-        if (! is_string($name)) {
-            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $option, $clientId));
         }
         try {
             return $algorithms->named($name);
         } catch (UnsupportedAlgorithmException $exception) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'The %s option of the client "%s" must be one of: %s.',
-                    $option,
-                    $clientId,
-                    implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all())),
-                ),
-                0,
-                $exception,
-            );
+            throw self::oneOf($clientId, $option, AlgorithmNames::of($algorithms->all()), $exception);
         }
     }
 
@@ -328,31 +308,13 @@ final readonly class ClientDefinition
         try {
             $algorithm = $keyEncryption->named($algorithmName);
         } catch (UnsupportedAlgorithmException $exception) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'The %s option of the client "%s" must be one of: %s.',
-                    $algorithmOption,
-                    $clientId,
-                    implode(', ', array_map(static fn (KeyEncryptionAlgorithmInterface $wired): string => $wired->name(), $keyEncryption->all())),
-                ),
-                0,
-                $exception,
-            );
+            throw self::oneOf($clientId, $algorithmOption, AlgorithmNames::of($keyEncryption->all()), $exception);
         }
 
         try {
             $method = $contentEncryption->named($methodName);
         } catch (UnsupportedAlgorithmException $exception) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'The %s option of the client "%s" must be one of: %s.',
-                    $methodOption,
-                    $clientId,
-                    implode(', ', array_map(static fn (ContentEncryptionAlgorithmInterface $wired): string => $wired->name(), $contentEncryption->all())),
-                ),
-                0,
-                $exception,
-            );
+            throw self::oneOf($clientId, $methodOption, AlgorithmNames::of($contentEncryption->all()), $exception);
         }
 
         return new ResponseEncryption($algorithm, $method);
@@ -412,15 +374,15 @@ final readonly class ClientDefinition
      * The method the client registers, among those the provider is wired with (issue #98): a name
      * nothing authenticates with fails at boot with the list of the wired ones, because the
      * configuration tree cannot know that list.
+     *
+     * @param array<string, mixed> $definition
      */
-    private static function method(string $clientId, mixed $name, ClientAuthenticationMethodsInterface $methods): ClientAuthenticationMethodInterface
+    private static function method(string $clientId, array $definition, ClientAuthenticationMethodsInterface $methods): ClientAuthenticationMethodInterface
     {
         $wired = $methods->clientAuthenticationMethods();
+        $name = self::text($clientId, 'token_endpoint_auth_method', $definition);
         if ($name === null) {
             return $wired[0];
-        }
-        if (! is_string($name)) {
-            throw new InvalidArgumentException(sprintf('The token_endpoint_auth_method option of the client "%s" must be a string.', $clientId));
         }
         foreach ($wired as $method) {
             if ($method->name() === $name) {
@@ -428,11 +390,7 @@ final readonly class ClientDefinition
             }
         }
 
-        throw new InvalidArgumentException(sprintf(
-            'The token_endpoint_auth_method option of the client "%s" must be one of: %s.',
-            $clientId,
-            implode(', ', array_map(static fn (ClientAuthenticationMethodInterface $method): string => $method->name(), $wired)),
-        ));
+        throw self::oneOf($clientId, 'token_endpoint_auth_method', MethodNames::of($wired));
     }
 
     /**
@@ -447,11 +405,7 @@ final readonly class ClientDefinition
     {
         $registration = [];
         foreach (CertificateIdentities::NAMES as $key) {
-            $value = $definition[$key] ?? null;
-            if ($value !== null && ! is_string($value)) {
-                throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $key, $clientId));
-            }
-            $registration[$key] = $value;
+            $registration[$key] = self::text($clientId, $key, $definition);
         }
         $subjectDn = $registration[CertificateIdentities::SUBJECT_DN];
         if ($subjectDn !== null) {
@@ -475,14 +429,14 @@ final readonly class ClientDefinition
      * named exception of decision 0006, which is registered here and nowhere else. A client that
      * registers nothing has its request objects read under any algorithm the provider verifies, and
      * never unsigned.
+     *
+     * @param array<string, mixed> $definition
      */
-    private static function requestObjectSigning(string $clientId, mixed $name, SignatureAlgorithmsInterface $algorithms): RequestObjectSigningInterface
+    private static function requestObjectSigning(string $clientId, array $definition, SignatureAlgorithmsInterface $algorithms): RequestObjectSigningInterface
     {
+        $name = self::text($clientId, 'request_object_signing_alg', $definition);
         if ($name === null) {
             return new AnyRegisteredAlgorithm();
-        }
-        if (! is_string($name)) {
-            throw new InvalidArgumentException(sprintf('The request_object_signing_alg option of the client "%s" must be a string.', $clientId));
         }
         if ($name === UnsignedRequestObjects::ALGORITHM) {
             return new UnsignedRequestObjects();
@@ -495,7 +449,7 @@ final readonly class ClientDefinition
                     'The request_object_signing_alg option of the client "%s" must be "%s" or one of: %s.',
                     $clientId,
                     UnsignedRequestObjects::ALGORITHM,
-                    implode(', ', array_map(static fn (SignatureAlgorithmInterface $wired): string => $wired->name(), $algorithms->all())),
+                    implode(', ', AlgorithmNames::of($algorithms->all())),
                 ),
                 0,
                 $exception,
@@ -530,23 +484,53 @@ final readonly class ClientDefinition
      */
     private static function clientUri(string $clientId, string $key, array $definition): ?ClientUri
     {
-        $uri = $definition[$key] ?? null;
-        if ($uri === null) {
+        $uri = self::text($clientId, $key, $definition);
+
+        return $uri === null ? null : new ClientUri($uri);
+    }
+
+    /**
+     * An option a client registers as text, read once for every one of them, so that a value of another
+     * kind is refused the same way wherever it was written.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @return string|null null when the client registered none
+     */
+    private static function text(string $clientId, string $option, array $definition): ?string
+    {
+        $value = $definition[$option] ?? null;
+        if ($value === null) {
             return null;
         }
-        if (! is_string($uri)) {
-            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $key, $clientId));
+        if (! is_string($value)) {
+            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a string.', $option, $clientId));
         }
 
-        return new ClientUri($uri);
+        return $value;
+    }
+
+    /**
+     * A client registered a name the provider is not wired with. The configuration tree cannot know that
+     * list, so the refusal carries it, and it is read from the wiring wherever the name came from.
+     *
+     * @param list<non-empty-string> $wired
+     */
+    private static function oneOf(string $clientId, string $option, array $wired, ?UnsupportedAlgorithmException $previous = null): InvalidArgumentException
+    {
+        return new InvalidArgumentException(
+            sprintf('The %s option of the client "%s" must be one of: %s.', $option, $clientId, implode(', ', $wired)),
+            0,
+            $previous,
+        );
     }
 
     /**
      * @param array<string, mixed> $definition
      */
-    private static function flag(string $clientId, string $key, array $definition): bool
+    private static function flag(string $clientId, string $key, array $definition, bool $default = false): bool
     {
-        $value = $definition[$key] ?? false;
+        $value = $definition[$key] ?? $default;
         if (! is_bool($value)) {
             throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a boolean.', $key, $clientId));
         }
@@ -559,13 +543,14 @@ final readonly class ClientDefinition
      */
     private static function stringList(string $clientId, string $key, mixed $value): array
     {
+        $refusal = new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a list of strings.', $key, $clientId));
         if (! is_array($value)) {
-            throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a list of strings.', $key, $clientId));
+            throw $refusal;
         }
         $list = [];
         foreach ($value as $item) {
             if (! is_string($item)) {
-                throw new InvalidArgumentException(sprintf('The %s option of the client "%s" must be a list of strings.', $key, $clientId));
+                throw $refusal;
             }
             $list[] = $item;
         }

@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Client;
 
 use function array_filter;
-use function array_find;
 use function array_map;
 use function array_unique;
 use function array_values;
 use function count;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
 use Heidi\Oidc\Application\Client\Method\ConfirmingMethodInterface;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\CertificateBindingMethodInterface;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailed;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Exception\InvalidClientException;
@@ -70,8 +67,9 @@ final readonly class ClientAuthenticator
     ): AuthenticatedClient {
         try {
             $request = new ClientAuthenticationRequest($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate);
-            [$candidates, $clientId] = $this->presentedIn($request);
-            $method = $candidates[0];
+            $presented = $this->presentedIn($request);
+            $clientId = $presented->clientId();
+            $method = $presented->first();
             $named = $request->clientId();
             if ($named !== null && $named !== $clientId) {
                 throw ClientAuthenticationFailure::malformedRequest(
@@ -87,10 +85,7 @@ final readonly class ClientAuthenticator
 
                 throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnknownClient, $clientId, $method->name());
             }
-            $registered = array_find(
-                $candidates,
-                static fn (AuthenticationMethodInterface $candidate): bool => $candidate->name() === $client->registration->authenticationMethod->name(),
-            );
+            $registered = $presented->registeredBy($client);
             if ($registered === null) {
                 $method->payRefusal($request);
 
@@ -124,35 +119,34 @@ final readonly class ClientAuthenticator
      * authenticates nothing comes last: a public client names itself and carries no credential.
      *
      * @throws ClientAuthenticationFailure
-     * @return array{non-empty-list<AuthenticationMethodInterface>, string}
      */
-    private function presentedIn(ClientAuthenticationRequest $request): array
+    private function presentedIn(ClientAuthenticationRequest $request): PresentedCredentials
     {
         $presented = [];
         foreach ($this->methods->clientAuthenticationMethods() as $method) {
             $clientId = $method->presentedBy($request);
             if ($clientId !== null) {
-                $presented[] = [$method, $clientId];
+                $presented[] = new PresentedMethod($method, $clientId);
             }
         }
-        $proving = array_values(array_filter($presented, static fn (array $claim): bool => $claim[0]->authenticatesClient()));
-        $chosen = array_values(array_filter($proving, static fn (array $claim): bool => ! $claim[0] instanceof CertificateBindingMethodInterface));
+        $proving = array_values(array_filter($presented, static fn (PresentedMethod $claim): bool => $claim->authenticatesClient()));
+        $chosen = array_values(array_filter($proving, static fn (PresentedMethod $claim): bool => ! $claim->bindsACertificate()));
         $proving = $chosen === [] ? $proving : $chosen;
         if ($proving !== []) {
-            $mechanisms = array_unique(array_map(static fn (array $claim): string => $claim[0]->mechanism(), $proving));
+            $mechanisms = array_unique(array_map(static fn (PresentedMethod $claim): string => $claim->mechanism(), $proving));
             if (count($mechanisms) > 1) {
                 throw ClientAuthenticationFailure::malformedRequest(
                     ClientAuthenticationFailureReason::MultipleMechanisms,
-                    $proving[0][1],
+                    $proving[0]->clientId,
                     null,
                     sprintf('The client must not use more than one authentication method in a request (RFC 6749 section 2.3); this one uses %s.', implode(' and ', array_map(
-                        static fn (array $claim): string => $claim[0]->name(),
+                        static fn (PresentedMethod $claim): string => $claim->name(),
                         $proving,
                     ))),
                 );
             }
 
-            return [array_map(static fn (array $claim): AuthenticationMethodInterface => $claim[0], $proving), $proving[0][1]];
+            return new PresentedCredentials($proving);
         }
         if ($request->authorizationHeader !== null) {
             throw ClientAuthenticationFailure::unauthenticated(
@@ -161,7 +155,7 @@ final readonly class ClientAuthenticator
             );
         }
         if ($presented !== []) {
-            return [[$presented[0][0]], $presented[0][1]];
+            return new PresentedCredentials([$presented[0]]);
         }
 
         throw ClientAuthenticationFailure::unauthenticated(ClientAuthenticationFailureReason::NoCredentials, 'The request carries no client authentication.');

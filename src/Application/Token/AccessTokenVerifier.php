@@ -22,8 +22,6 @@ use SensitiveParameter;
  */
 final readonly class AccessTokenVerifier
 {
-    private const string NOT_ISSUED_HERE = 'The access token is not an access token issued by this provider.';
-
     /**
      * @param iterable<AccessTokenVerifierInterface> $verifiers one per shape the provider writes
      */
@@ -48,13 +46,7 @@ final readonly class AccessTokenVerifier
      */
     public function expiresOnItsOwn(#[SensitiveParameter] string $accessToken): bool
     {
-        foreach ($this->verifiers as $verifier) {
-            if ($verifier->recognises($accessToken)) {
-                return $verifier->expiresOnItsOwn();
-            }
-        }
-
-        return false;
+        return self::recognisedBy($this->verifiers, $accessToken)?->expiresOnItsOwn() ?? false;
     }
 
     /**
@@ -62,12 +54,23 @@ final readonly class AccessTokenVerifier
      */
     private function recognising(#[SensitiveParameter] string $accessToken): AccessTokenVerifierInterface
     {
-        foreach ($this->verifiers as $verifier) {
+        return self::recognisedBy($this->verifiers, $accessToken) ?? throw InvalidTokenException::notIssuedHere();
+    }
+
+    /**
+     * The wired shape this value has, null when it has none: asked once, by both the reading and the
+     * question the revocation endpoint asks before it looks anything up.
+     *
+     * @param iterable<AccessTokenVerifierInterface> $verifiers
+     */
+    private static function recognisedBy(iterable $verifiers, #[SensitiveParameter] string $accessToken): ?AccessTokenVerifierInterface
+    {
+        foreach ($verifiers as $verifier) {
             if ($verifier->recognises($accessToken)) {
                 return $verifier;
             }
         }
 
-        throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+        return null;
     }
 }

@@ -17,6 +17,12 @@ namespace Heidi\Oidc\Domain\Token;
 interface ConfirmationInterface
 {
     /**
+     * RFC 7800 §3.1: the claim every confirmation is written under, in an "at+jwt", in an introspection
+     * response and in the record of an opaque token.
+     */
+    public const string CLAIM = 'cnf';
+
+    /**
      * The member of the "cnf" this confirmation is written under (RFC 7800 §3.1).
      *
      * @return non-empty-string

@@ -22,12 +22,6 @@ use function strcasecmp;
 final readonly class PresentedAccessToken
 {
     /**
-     * The schemes a resource of this provider reads, each one named by what defines it: the type of a
-     * token nothing binds and of one the transport binds, and the one of a token bound to a key.
-     */
-    public const array SCHEMES = [TokenResponse::BEARER, KeyConfirmation::SCHEME];
-
-    /**
      * RFC 6750 §2.1: b64token = 1*( ALPHA / DIGIT / "-" / "." / "_" / "~" / "+" / "/" ) *"=".
      */
     private const string B64TOKEN = '[A-Za-z0-9\-._~+\/]+=*';
@@ -44,7 +38,7 @@ final readonly class PresentedAccessToken
     private const string PARAMETER = '/^' . self::B64TOKEN . '$/';
 
     /**
-     * @param string $scheme one of SCHEMES, spelled as this provider spells it
+     * @param string $scheme one of the schemes the resource serves, spelled as this provider spells it
      */
     public function __construct(
         public string $scheme,
@@ -55,12 +49,14 @@ final readonly class PresentedAccessToken
 
     /**
      * @param array<string, mixed> $parameters the form parameters of the request body, never the query string
+     * @param non-empty-list<string> $schemes what the resource reads a token under, which is what the
+     *                                        provider is wired to bind tokens with
      *
      * @throws InvalidRequestException when the token is malformed or sent twice
      */
-    public static function fromRequest(?string $authorizationHeader, array $parameters): ?self
+    public static function fromRequest(?string $authorizationHeader, array $parameters, array $schemes): ?self
     {
-        $fromHeader = self::fromHeader($authorizationHeader);
+        $fromHeader = self::fromHeader($authorizationHeader, $schemes);
         $fromBody = self::fromBody($parameters);
         if ($fromHeader === null) {
             return $fromBody;
@@ -81,12 +77,15 @@ final readonly class PresentedAccessToken
         return $this->scheme === ($confirmation?->scheme() ?? TokenResponse::BEARER);
     }
 
-    private static function fromHeader(?string $header): ?self
+    /**
+     * @param non-empty-list<string> $schemes
+     */
+    private static function fromHeader(?string $header, array $schemes): ?self
     {
         if ($header === null || preg_match(self::SCHEME, $header, $matches) !== 1) {
             return null;
         }
-        $scheme = self::served($matches[1]);
+        $scheme = self::served($matches[1], $schemes);
         if ($scheme === null) {
             return null;
         }
@@ -100,10 +99,12 @@ final readonly class PresentedAccessToken
     /**
      * RFC 9110 §11.6.1: a scheme is compared without regard to case, and answered in the spelling of the
      * specification that defines it.
+     *
+     * @param non-empty-list<string> $schemes
      */
-    private static function served(string $scheme): ?string
+    private static function served(string $scheme, array $schemes): ?string
     {
-        foreach (self::SCHEMES as $served) {
+        foreach ($schemes as $served) {
             if (strcasecmp($scheme, $served) === 0) {
                 return $served;
             }

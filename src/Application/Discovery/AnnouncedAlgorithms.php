@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Discovery;
 
-use function array_map;
 use function array_merge;
 use function array_unique;
 use function array_values;
-use Heidi\Core\Domain\Key\ContentEncryptionAlgorithmInterface;
-use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
@@ -39,7 +36,7 @@ final readonly class AnnouncedAlgorithms
      */
     public function signing(): array
     {
-        return array_map(static fn (SignatureAlgorithmInterface $algorithm): string => $algorithm->name(), $this->signature->all());
+        return AlgorithmNames::of($this->signature->all());
     }
 
     /**
@@ -59,14 +56,8 @@ final readonly class AnnouncedAlgorithms
         }
 
         return [
-            $member . '_alg_values_supported' => array_map(
-                static fn (KeyEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(),
-                $keys,
-            ),
-            $member . '_enc_values_supported' => array_map(
-                static fn (ContentEncryptionAlgorithmInterface $algorithm): string => $algorithm->name(),
-                $contents,
-            ),
+            $member . '_alg_values_supported' => AlgorithmNames::of($keys),
+            $member . '_enc_values_supported' => AlgorithmNames::of($contents),
         ];
     }
 

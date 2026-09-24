@@ -32,9 +32,7 @@ final readonly class DiscoveryHandler
         private iterable $contributors,
         private int $maxAge = 3600,
     ) {
-        if ($maxAge < 0) {
-            throw new InvalidArgumentException('The cache lifetime of the provider metadata is a number of seconds.');
-        }
+        ProviderMetadata::assertCacheLifetime($maxAge);
     }
 
     /**

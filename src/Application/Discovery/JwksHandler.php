@@ -22,14 +22,15 @@ final readonly class JwksHandler
 
     /**
      * @param int $maxAge how long a client may cache the set, in seconds
+     *
+     * @throws InvalidArgumentException when the lifetime is not a number of seconds: a deployment learns
+     *                                  it at boot rather than on the first request
      */
     public function __construct(
         private PublicKeySetProviderInterface $keys,
         private int $maxAge = self::DEFAULT_MAX_AGE,
     ) {
-        if ($maxAge < 0) {
-            throw new InvalidArgumentException('The cache lifetime of the JWK Set is a number of seconds.');
-        }
+        JwkSetResponse::assertCacheLifetime($maxAge);
     }
 
     public function handle(Tenant $tenant): JwkSetResponse

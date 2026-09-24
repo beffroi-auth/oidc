@@ -41,12 +41,24 @@ final readonly class ProviderMetadata
         private array $members,
         public int $maxAge,
     ) {
-        if ($maxAge < 0) {
-            throw new InvalidArgumentException('The cache lifetime of the provider metadata is a number of seconds.');
-        }
+        self::assertCacheLifetime($maxAge);
         $this->headers = [
             'Cache-Control' => sprintf('public, max-age=%d', $maxAge),
         ];
+    }
+
+    /**
+     * How long a client may keep the document. The handler that holds the number refuses it at boot and
+     * the document refuses it again when one is built by hand, which is one rule and is therefore
+     * written here alone.
+     *
+     * @throws InvalidArgumentException when the lifetime is not a number of seconds
+     */
+    public static function assertCacheLifetime(int $maxAge): void
+    {
+        if ($maxAge < 0) {
+            throw new InvalidArgumentException('The cache lifetime of the provider metadata is a number of seconds.');
+        }
     }
 
     /**

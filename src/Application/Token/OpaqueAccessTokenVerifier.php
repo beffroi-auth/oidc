@@ -22,10 +22,6 @@ use SensitiveParameter;
  */
 final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInterface
 {
-    private const string NOT_ISSUED_HERE = 'The access token is not an access token issued by this provider.';
-
-    private const string EXPIRED = 'The access token expired.';
-
     public function __construct(
         private AccessTokenRepositoryInterface $storedTokens,
         private SubjectIdentifierResolverInterface $subjects,
@@ -50,10 +46,10 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
     {
         $token = $this->storedTokens->find($accessToken);
         if ($token === null || ! $token->tenant->equals($tenant)) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         if ($token->isExpired($now)) {
-            throw new InvalidTokenException(self::EXPIRED);
+            throw InvalidTokenException::expired();
         }
         $requested = $token->claimsRequest === null ? [] : array_keys($token->claimsRequest->userinfo);
 

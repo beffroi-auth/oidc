@@ -89,6 +89,8 @@ final readonly class RefreshTokenGrant implements GrantInterface
     /**
      * RFC 6749 §3.3, without repeats.
      *
+     * @throws InvalidScopeException when the parameter is not a list of scope tokens
+     *
      * @return Scopes|null null when the client did not narrow the scope
      */
     private static function scopes(?string $scope): ?Scopes
@@ -99,7 +101,7 @@ final readonly class RefreshTokenGrant implements GrantInterface
         try {
             return Scopes::parse($scope);
         } catch (InvalidArgumentException $exception) {
-            throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', previous: $exception);
+            throw InvalidScopeException::notASpaceSeparatedList(previous: $exception);
         }
     }
 

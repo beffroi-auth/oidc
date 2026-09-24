@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Authorization;
 
-use function array_map;
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Application\Client\ClientKeySetProvider;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\RequestObject;
@@ -99,12 +98,7 @@ final readonly class RequestObjectResolver
      */
     private function client(Tenant $tenant, array $parameters): Client
     {
-        $clientId = RequestParameters::single($parameters, 'client_id', false);
-        if ($clientId === null) {
-            throw new InvalidRequestException('The client_id parameter is missing.');
-        }
-
-        return $this->clients->findByClientId($tenant, $clientId) ?? throw new InvalidRequestException('The client is unknown.');
+        return $this->clients->findByClientId($tenant, RequestParameters::clientId($parameters)) ?? throw new InvalidRequestException('The client is unknown.');
     }
 
     /**
@@ -163,6 +157,6 @@ final readonly class RequestObjectResolver
      */
     private function wiredAlgorithms(): array
     {
-        return array_map(static fn (SignatureAlgorithmInterface $algorithm): string => $algorithm->name(), $this->algorithms->all());
+        return AlgorithmNames::of($this->algorithms->all());
     }
 }

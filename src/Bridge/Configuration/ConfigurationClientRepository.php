@@ -17,6 +17,7 @@ use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 use WeakMap;
 
@@ -25,7 +26,11 @@ use WeakMap;
  * on the first lookup. The clients are built per tenant instance, so that a client always points at the
  * tenant of the request that asked for it.
  */
-final class ConfigurationClientRepository implements ClientRepositoryInterface, PushedAuthorizationRequirementInterface, UnsignedRequestObjectsInterface
+final class ConfigurationClientRepository implements
+    ClientRepositoryInterface,
+    PushedAuthorizationRequirementInterface,
+    ServedAccessTokenFormatsInterface,
+    UnsignedRequestObjectsInterface
 {
     /**
      * @var array<string, ClientDefinition>
@@ -69,9 +74,18 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
         $this->clients = new WeakMap();
     }
 
+    /**
+     * The clients declared here are those of one tenant, named by its slug: anything asked about another
+     * tenant is asked of the repository that holds its clients, and answered here as if there were none.
+     */
+    private function serves(Tenant $tenant): bool
+    {
+        return $tenant->slug === $this->tenantSlug;
+    }
+
     public function findByClientId(Tenant $tenant, string $clientId): ?Client
     {
-        if ($tenant->slug !== $this->tenantSlug || ! isset($this->definitions[$clientId])) {
+        if (! $this->serves($tenant) || ! isset($this->definitions[$clientId])) {
             return null;
         }
         $clients = $this->clients[$tenant] ?? [];
@@ -89,10 +103,14 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
 
     public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
     {
-        if ($tenant->slug !== $this->tenantSlug) {
+        if (! $this->serves($tenant)) {
             return false;
         }
-        return array_any($this->definitions, fn ($definition) => $definition->registration->accessTokenFormat === $format);
+
+        return array_any(
+            $this->definitions,
+            static fn (ClientDefinition $definition): bool => $definition->registration->accessTokenFormat === $format,
+        );
     }
 
     /**
@@ -102,7 +120,7 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
      */
     public function requiresPushedAuthorizationRequests(Tenant $tenant): bool
     {
-        if ($tenant->slug !== $this->tenantSlug || $this->definitions === []) {
+        if (! $this->serves($tenant) || $this->definitions === []) {
             return false;
         }
 
@@ -115,7 +133,7 @@ final class ConfigurationClientRepository implements ClientRepositoryInterface, 
      */
     public function acceptsUnsignedRequestObjects(Tenant $tenant): bool
     {
-        if ($tenant->slug !== $this->tenantSlug) {
+        if (! $this->serves($tenant)) {
             return false;
         }
 

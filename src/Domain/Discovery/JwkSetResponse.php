@@ -25,17 +25,31 @@ final readonly class JwkSetResponse
 
     /**
      * @param int $maxAge how long a client may cache the set, in seconds
+     *
+     * @throws InvalidArgumentException when the lifetime is not a number of seconds
      */
     public function __construct(
         public PublicKeySet $keys,
         public int $maxAge,
     ) {
-        if ($maxAge < 0) {
-            throw new InvalidArgumentException('The cache lifetime of the JWK Set is a number of seconds.');
-        }
+        self::assertCacheLifetime($maxAge);
         $this->headers = [
             'Cache-Control' => $keys->isEmpty() ? 'no-store' : sprintf('public, max-age=%d', $maxAge),
         ];
+    }
+
+    /**
+     * How long a client may cache the set. The handler that holds the number refuses it at boot and the
+     * answer refuses it again when one is built by hand, which is one rule and is therefore written
+     * here alone.
+     *
+     * @throws InvalidArgumentException when the lifetime is not a number of seconds
+     */
+    public static function assertCacheLifetime(int $maxAge): void
+    {
+        if ($maxAge < 0) {
+            throw new InvalidArgumentException('The cache lifetime of the JWK Set is a number of seconds.');
+        }
     }
 
     public function toJson(): string

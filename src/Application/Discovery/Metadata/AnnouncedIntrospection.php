@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Discovery\Metadata;
 
 use function array_filter;
-use function array_map;
 use function array_values;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Application\Client\MethodNames;
 use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
@@ -37,10 +37,7 @@ final readonly class AnnouncedIntrospection implements MetadataContributorInterf
 
         return [
             'introspection_endpoint' => $this->endpoints->locate($tenant)->introspection,
-            'introspection_endpoint_auth_methods_supported' => array_map(
-                static fn (ClientAuthenticationMethodInterface $method): string => $method->name(),
-                $methods,
-            ),
+            'introspection_endpoint_auth_methods_supported' => MethodNames::of($methods),
             'introspection_endpoint_auth_signing_alg_values_supported' => $this->algorithms->assertionSigning($methods),
             'introspection_signing_alg_values_supported' => $this->algorithms->signing(),
         ];

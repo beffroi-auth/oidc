@@ -9,12 +9,17 @@ use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryClientRepository implements ClientRepositoryInterface, PushedAuthorizationRequirementInterface, UnsignedRequestObjectsInterface
+final class InMemoryClientRepository implements
+    ClientRepositoryInterface,
+    PushedAuthorizationRequirementInterface,
+    ServedAccessTokenFormatsInterface,
+    UnsignedRequestObjectsInterface
 {
     /**
      * @var list<Client>
@@ -34,7 +39,10 @@ final class InMemoryClientRepository implements ClientRepositoryInterface, Pushe
 
     public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
     {
-        return array_any($this->clients, fn ($client) => $client->belongsTo($tenant) && $client->registration->accessTokenFormat === $format);
+        return array_any(
+            $this->clients,
+            static fn (Client $client): bool => $client->belongsTo($tenant) && $client->registration->accessTokenFormat === $format,
+        );
     }
 
     /**

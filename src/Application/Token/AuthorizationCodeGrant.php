@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
+use Heidi\Oidc\Domain\Authorization\CodeChallenge;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantType;
 use Heidi\Oidc\Domain\Event\AuthorizationCodeReplayed;
@@ -21,7 +22,6 @@ use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
-use function preg_match;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
@@ -38,11 +38,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class AuthorizationCodeGrant implements GrantInterface
 {
-    /**
-     * RFC 7636 §4.1: code-verifier = 43*128unreserved.
-     */
-    private const string CODE_VERIFIER_PATTERN = '/^[A-Za-z0-9\-._~]{43,128}$/';
-
     private const string INVALID = 'The authorization code is invalid.';
 
     /**
@@ -71,7 +66,7 @@ final readonly class AuthorizationCodeGrant implements GrantInterface
         $code = $request->required('code');
         $redirectUri = $request->required('redirect_uri');
         $codeVerifier = $request->optional('code_verifier');
-        if ($codeVerifier !== null && preg_match(self::CODE_VERIFIER_PATTERN, $codeVerifier) !== 1) {
+        if ($codeVerifier !== null && ! CodeChallenge::hasTheShape($codeVerifier)) {
             throw new InvalidRequestException('The code_verifier parameter is not 43 to 128 unreserved characters (RFC 7636 section 4.1).');
         }
 

@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Client\Method;
 
-use Heidi\Oidc\Application\Client\ClientAuthenticationFailure;
 use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Application\Client\ClientKeySetProvider;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\CertificateConfirmation;
 
 /**
  * "self_signed_tls_client_auth" (RFC 8705 §2.2): the client presents a certificate it signed itself, and
@@ -26,7 +23,7 @@ use Heidi\Oidc\Domain\Token\CertificateConfirmation;
  * discipline a client that rotates a signing key follows; a set behind a "jwks_uri" is read back with
  * the guard time of ClientKeySetProvider.
  */
-final readonly class SelfSignedTlsClientAuth implements KeyBearingMethodInterface, ConfirmingMethodInterface
+final readonly class SelfSignedTlsClientAuth extends CertificateMethod implements KeyBearingMethodInterface
 {
     public function __construct(
         private ClientKeySetProvider $keys,
@@ -38,48 +35,14 @@ final readonly class SelfSignedTlsClientAuth implements KeyBearingMethodInterfac
         return 'self_signed_tls_client_auth';
     }
 
-    public function mechanism(): string
-    {
-        return ClientAuthenticationRequest::CERTIFICATE;
-    }
-
-    public function authenticatesClient(): bool
-    {
-        return true;
-    }
-
-    public function presentedBy(ClientAuthenticationRequest $request): ?string
-    {
-        return $request->clientIdBesideACertificate();
-    }
-
     public function verify(ClientAuthenticationRequest $request, Client $client): void
     {
         $certificate = $request->certificate;
         if ($certificate === null) {
             throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
         }
-        $published = $this->keys->keysAuthenticating($client, null, $this);
-        if (! $published->publishes($certificate)) {
-            throw ClientAuthenticationFailure::refused(
-                ClientAuthenticationFailureReason::UnexpectedCertificate,
-                $client->registration->clientId,
-                $this->name(),
-                'the certificate presented is not one the client publishes',
-            );
+        if (! $this->keys->keysAuthenticating($client, null, $this)->publishes($certificate)) {
+            throw $this->unexpectedCertificate($client, 'the certificate presented is not one the client publishes');
         }
-    }
-
-    /**
-     * A certificate is compared to what a client published, which is public on both sides: nothing here
-     * is a secret whose comparison has to be made constant.
-     */
-    public function payRefusal(ClientAuthenticationRequest $request): void
-    {
-    }
-
-    public function confirmationOf(ClientAuthenticationRequest $request): CertificateConfirmation
-    {
-        return CertificateConfirmation::ofCertificate($request->provenCertificate($this));
     }
 }

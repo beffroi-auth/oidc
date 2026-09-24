@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Dpop;
 
-use function array_map;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Domain\Dpop\DpopProof;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -81,6 +80,6 @@ final readonly class DpopProofVerifier
      */
     private function names(): array
     {
-        return array_map(static fn (SignatureAlgorithmInterface $algorithm): string => $algorithm->name(), $this->algorithms->all());
+        return AlgorithmNames::of($this->algorithms->all());
     }
 }

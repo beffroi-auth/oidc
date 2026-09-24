@@ -78,11 +78,7 @@ final readonly class AuthorizationRequestParser
     public function redirectTarget(Tenant $tenant, array $parameters, bool $pushed = false, bool $signed = false): RedirectTarget
     {
         self::assertResolved($parameters);
-        $clientId = RequestParameters::single($parameters, 'client_id', false);
-        if ($clientId === null) {
-            throw new InvalidRequestException('The client_id parameter is missing.');
-        }
-        $client = $this->clients->findByClientId($tenant, $clientId);
+        $client = $this->clients->findByClientId($tenant, RequestParameters::clientId($parameters));
         if ($client === null) {
             throw new InvalidRequestException('The client is unknown.');
         }
@@ -250,6 +246,9 @@ final readonly class AuthorizationRequestParser
     /**
      * RFC 6749 §3.3, OIDC Core §3.1.2.2 step 3: contains "openid", every token allowed to the client.
      *
+     * @throws InvalidRequestException when the parameter is missing
+     * @throws InvalidScopeException when it is not a list of scope tokens, when it names a scope the
+     *                               client is not allowed, or when it does not name "openid"
      */
     private function scopes(RedirectTarget $target, ?string $scope): Scopes
     {
@@ -258,8 +257,8 @@ final readonly class AuthorizationRequestParser
         }
         try {
             $scopes = Scopes::parse($scope);
-        } catch (InvalidArgumentException) {
-            throw new InvalidScopeException('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', true);
+        } catch (InvalidArgumentException $exception) {
+            throw InvalidScopeException::notASpaceSeparatedList(true, $exception);
         }
         foreach ($scopes->all as $candidate) {
             if (! $target->client->registration->allowedScopes->has($candidate)) {

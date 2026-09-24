@@ -55,7 +55,7 @@ final readonly class KeyConfirmation implements ConfirmationInterface
     public function toClaims(): array
     {
         return [
-            Confirmations::CLAIM => [
+            ConfirmationInterface::CLAIM => [
                 self::MEMBER => $this->thumbprint,
             ],
         ];

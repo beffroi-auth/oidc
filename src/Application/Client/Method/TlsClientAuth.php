@@ -9,7 +9,6 @@ use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Domain\Client\CertificateIdentityBearingMethodInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\CertificateConfirmation;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use function sprintf;
@@ -25,7 +24,7 @@ use function sprintf;
  * a provider that judged a chain from the leaf alone would be judging nothing. The deployment that turns
  * this method on is the deployment that configures the authorities its listener accepts.
  */
-final readonly class TlsClientAuth implements CertificateIdentityBearingMethodInterface, ConfirmingMethodInterface
+final readonly class TlsClientAuth extends CertificateMethod implements CertificateIdentityBearingMethodInterface
 {
     public function __construct(
         private CertificateReaderInterface $certificates,
@@ -35,26 +34,6 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
     public function name(): string
     {
         return 'tls_client_auth';
-    }
-
-    public function mechanism(): string
-    {
-        return ClientAuthenticationRequest::CERTIFICATE;
-    }
-
-    public function authenticatesClient(): bool
-    {
-        return true;
-    }
-
-    /**
-     * RFC 8705 §2: the client names itself in "client_id" and proves it with the certificate of the
-     * connection. A request made without a certificate presents no mutual-TLS authentication at all, and
-     * one made without "client_id" names nobody to look up.
-     */
-    public function presentedBy(ClientAuthenticationRequest $request): ?string
-    {
-        return $request->clientIdBesideACertificate();
     }
 
     public function verify(ClientAuthenticationRequest $request, Client $client): void
@@ -76,19 +55,13 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
             );
         }
         if (! $identity->matches($subject)) {
-            throw ClientAuthenticationFailure::refused(
-                ClientAuthenticationFailureReason::UnexpectedCertificate,
-                $client->registration->clientId,
-                $this->name(),
-                sprintf('the certificate presented does not carry the %s of the client', $identity->name()),
-            );
+            throw $this->unexpectedCertificate($client, sprintf('the certificate presented does not carry the %s of the client', $identity->name()));
         }
     }
 
     /**
-     * A certificate is compared to what a registration says, and both are public: there is no secret
-     * here to make a comparison constant over. What an acceptance costs that a refusal must cost too is
-     * reading the certificate, which is done whether or not there is a client to compare it to.
+     * What an acceptance costs that a refusal must cost too is reading the certificate, which is done
+     * whether or not there is a client to compare it to.
      */
     public function payRefusal(ClientAuthenticationRequest $request): void
     {
@@ -100,10 +73,5 @@ final readonly class TlsClientAuth implements CertificateIdentityBearingMethodIn
             $this->certificates->subjectOf($certificate);
         } catch (UnreadableCertificateException) {
         }
-    }
-
-    public function confirmationOf(ClientAuthenticationRequest $request): CertificateConfirmation
-    {
-        return CertificateConfirmation::ofCertificate($request->provenCertificate($this));
     }
 }

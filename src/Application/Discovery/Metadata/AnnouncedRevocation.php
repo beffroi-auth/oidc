@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Discovery\Metadata;
 
-use function array_map;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Application\Client\MethodNames;
 use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\MetadataContributorInterface;
@@ -31,10 +30,7 @@ final readonly class AnnouncedRevocation implements MetadataContributorInterface
 
         return [
             'revocation_endpoint' => $this->endpoints->locate($tenant)->revocation,
-            'revocation_endpoint_auth_methods_supported' => array_map(
-                static fn (ClientAuthenticationMethodInterface $method): string => $method->name(),
-                $methods,
-            ),
+            'revocation_endpoint_auth_methods_supported' => MethodNames::of($methods),
             'revocation_endpoint_auth_signing_alg_values_supported' => $this->algorithms->assertionSigning($methods),
         ];
     }

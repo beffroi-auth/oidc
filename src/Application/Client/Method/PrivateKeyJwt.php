@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Client\Method;
 
-use function array_map;
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\ClientAssertionValidator;
-use Heidi\Oidc\Application\Client\ClientAuthenticationFailure;
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Application\Client\ClientKeySetProvider;
-use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
+use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Exception\InvalidJwtException;
+use Heidi\Oidc\Domain\Token\UnverifiedJwt;
 use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use Heidi\Oidc\Port\JwtKeyVerifierInterface;
-use function in_array;
 
 /**
  * "private_key_jwt" (OIDC Core §9, RFC 7523 §2.2): the client signs a JWT with a key of its own and the
@@ -29,15 +23,16 @@ use function in_array;
  * that follows FAPI 2 drops the RS256 line of its wiring and the method refuses RS256 with it, the
  * discovery document saying so in "token_endpoint_auth_signing_alg_values_supported".
  */
-final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBearingMethodInterface, AuthenticationMethodInterface
+final readonly class PrivateKeyJwt extends AssertionMethod implements KeyBearingMethodInterface
 {
     public function __construct(
-        private CompactJwtReaderInterface $reader,
+        CompactJwtReaderInterface $reader,
         private JwtKeyVerifierInterface $verifier,
         private ClientKeySetProvider $keys,
-        private ClientAssertionValidator $claims,
+        ClientAssertionValidator $claims,
         private SignatureAlgorithmsInterface $algorithms,
     ) {
+        parent::__construct($reader, $claims);
     }
 
     public function name(): string
@@ -45,62 +40,13 @@ final readonly class PrivateKeyJwt implements AssertionMethodInterface, KeyBeari
         return 'private_key_jwt';
     }
 
-    public function mechanism(): string
-    {
-        return ClientAuthenticationRequest::ASSERTION;
-    }
-
-    public function authenticatesClient(): bool
-    {
-        return true;
-    }
-
     public function assertionSigningAlgorithms(): array
     {
-        return array_map(static fn (SignatureAlgorithmInterface $algorithm): string => $algorithm->name(), $this->algorithms->all());
+        return AlgorithmNames::of($this->algorithms->all());
     }
 
-    public function presentedBy(ClientAuthenticationRequest $request): ?string
+    protected function verifySignature(UnverifiedJwt $assertion, Client $client): void
     {
-        $assertion = $request->assertion($this->reader);
-        if ($assertion === null || ! in_array($assertion->algorithm(), $this->assertionSigningAlgorithms(), true)) {
-            return null;
-        }
-
-        return $request->assertedClientId($assertion);
-    }
-
-    public function verify(ClientAuthenticationRequest $request, Client $client): void
-    {
-        $assertion = $request->assertion($this->reader);
-        if ($assertion === null) {
-            throw ClientAuthenticationFailure::refused(
-                ClientAuthenticationFailureReason::InvalidAssertion,
-                $client->registration->clientId,
-                $this->name(),
-                'the request carries no client assertion',
-            );
-        }
-        $keys = $this->keys->keysAuthenticating($client, $assertion->keyId(), $this);
-        try {
-            $this->verifier->verify($assertion, $keys, $this->assertionSigningAlgorithms());
-        } catch (InvalidJwtException $exception) {
-            throw ClientAuthenticationFailure::refused(
-                ClientAuthenticationFailureReason::InvalidAssertion,
-                $client->registration->clientId,
-                $this->name(),
-                $exception->getMessage(),
-                $exception,
-            );
-        }
-        $this->claims->validate($this, $assertion, $client, $request);
-    }
-
-    /**
-     * An assertion is verified against a key, not against a decoy: there is no secret to compare and
-     * nothing to make constant.
-     */
-    public function payRefusal(ClientAuthenticationRequest $request): void
-    {
+        $this->verifier->verify($assertion, $this->keys->keysAuthenticating($client, $assertion->keyId(), $this), $this->assertionSigningAlgorithms());
     }
 }

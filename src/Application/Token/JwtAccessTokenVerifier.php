@@ -13,12 +13,12 @@ use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\Confirmations;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Port\AccessTokenVerifierInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\ConfirmationReaderInterface;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -38,10 +38,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterface
 {
-    private const string NOT_ISSUED_HERE = 'The access token is not an access token issued by this provider.';
-
-    private const string EXPIRED = 'The access token expired.';
-
     /**
      * Deeper than the lists of strings ("amr", "userinfo_claims") was not issued here.
      */
@@ -50,6 +46,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     public function __construct(
         private JwsVerifierInterface $verifier,
         private ClientRepositoryInterface $clients,
+        private ConfirmationReaderInterface $confirmations,
     ) {
     }
 
@@ -73,41 +70,41 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             $jws = $this->verifier->verify($tenant, $accessToken);
             $claims = self::decode($jws->payload);
         } catch (InvalidJwsException|JsonException $exception) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE, $exception);
+            throw InvalidTokenException::notIssuedHere($exception);
         }
         if (($jws->protectedHeader['typ'] ?? null) !== JwtAccessTokenIssuer::TYPE) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         if (($claims['iss'] ?? null) !== (string) $tenant->issuer) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         $exp = $claims['exp'] ?? null;
         $iat = $claims['iat'] ?? null;
         if (! is_int($exp) || ! is_int($iat) || $exp <= $iat) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         // RFC 7519 §4.1.4, no leeway: the clocks are the provider's own
         if ($exp <= $now->getTimestamp()) {
-            throw new InvalidTokenException(self::EXPIRED);
+            throw InvalidTokenException::expired();
         }
         $clientId = $claims['client_id'] ?? null;
         $client = is_string($clientId) ? $this->clients->findByClientId($tenant, $clientId) : null;
         if ($client === null || ! self::isAudience($claims['aud'] ?? null, $client->registration->clientId)) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         $sub = $claims['sub'] ?? null;
         $sid = $claims['sid'] ?? null;
         $grantId = $claims[JwtAccessTokenIssuer::GRANT_ID] ?? null;
         if (! is_string($sub) || ! is_string($sid) || ! Uuid::isValid($sid) || ! is_string($grantId) || ! Uuid::isValid($grantId)) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         try {
             $subject = new Subject($sub);
             $scopes = self::scopes($claims['scope'] ?? null);
             $authentication = AuthenticationSnapshot::fromClaims($claims);
-            $confirmation = Confirmations::fromClaims($claims);
+            $confirmation = $this->confirmations->fromClaims($claims);
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE, $exception);
+            throw InvalidTokenException::notIssuedHere($exception);
         }
 
         return new VerifiedAccessToken(
@@ -132,7 +129,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     {
         $claims = json_decode($payload, true, self::MAX_DEPTH, JSON_THROW_ON_ERROR);
         if (! is_array($claims)) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
 
         return $claims;
@@ -176,11 +173,11 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     private static function stringList(mixed $values): array
     {
         if (! is_array($values) || ! array_is_list($values)) {
-            throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+            throw InvalidTokenException::notIssuedHere();
         }
         foreach ($values as $value) {
             if (! is_string($value) || $value === '') {
-                throw new InvalidTokenException(self::NOT_ISSUED_HERE);
+                throw InvalidTokenException::notIssuedHere();
             }
         }
 

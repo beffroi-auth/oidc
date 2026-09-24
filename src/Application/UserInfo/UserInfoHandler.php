@@ -24,6 +24,7 @@ use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\TokenBindingNotProvenException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
+use Heidi\Oidc\Port\ServedTokenSchemesInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
@@ -52,6 +53,7 @@ final readonly class UserInfoHandler
         private EndpointLocatorInterface $endpoints,
         private SubjectIdentifierResolverInterface $subjects,
         private ClaimsProviderInterface $claims,
+        private ServedTokenSchemesInterface $schemes,
     ) {
     }
 
@@ -73,7 +75,7 @@ final readonly class UserInfoHandler
         ?ClientCertificate $certificate = null,
         ?string $dpopProof = null,
     ): UserInfoResponse {
-        $presented = PresentedAccessToken::fromRequest($authorizationHeader, $parameters);
+        $presented = PresentedAccessToken::fromRequest($authorizationHeader, $parameters, $this->schemes->servedTokenSchemes());
         if ($presented === null) {
             throw new MissingBearerTokenException();
         }

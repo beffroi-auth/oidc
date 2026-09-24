@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\UserInfo;
 
-use Heidi\Oidc\Domain\Token\PresentedAccessToken;
 use Heidi\Oidc\Domain\Token\TokenResponse;
 use Heidi\Oidc\Exception\ChallengeInterface;
 use Heidi\Oidc\Exception\InsufficientScopeException;
@@ -46,10 +45,14 @@ final readonly class UserInfoErrorResponse
     ) {
     }
 
-    public static function fromException(OAuth2Exception|MissingBearerTokenException $exception): self
+    /**
+     * @param non-empty-list<string> $schemes the schemes this resource serves, named in the bare
+     *                                        challenge a request that carried no token gets (RFC 6750 §3.1)
+     */
+    public static function fromException(OAuth2Exception|MissingBearerTokenException $exception, array $schemes): self
     {
         if ($exception instanceof MissingBearerTokenException) {
-            return new self(MissingBearerTokenException::STATUS_CODE, null, null, PresentedAccessToken::SCHEMES);
+            return new self(MissingBearerTokenException::STATUS_CODE, null, null, $schemes);
         }
         if ($exception instanceof ChallengeInterface) {
             return new self(
