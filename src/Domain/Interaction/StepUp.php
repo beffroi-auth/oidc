@@ -65,7 +65,7 @@ final readonly class StepUp
      */
     public static function towards(AuthenticationProofs $proofs, array $classes, array $credentials): ?self
     {
-        if (array_any($classes, static fn (AuthenticationContextClass $class): bool => $class->isSatisfiedBy($proofs))) {
+        if (array_any($classes, static fn (AuthenticationContextClass $class): bool => $class->isSatisfiedBy($proofs->methods()))) {
             return null;
         }
         $reachable = [];
@@ -134,10 +134,8 @@ final readonly class StepUp
      */
     private static function satisfied(AuthenticationProofs $proofs, array $methods, array $classes): array
     {
-        foreach ($methods as $method) {
-            $proofs = $proofs->with($method, $proofs->latest());
-        }
+        $proven = [...$proofs->methods(), ...$methods];
 
-        return array_values(array_filter($classes, static fn (AuthenticationContextClass $class): bool => $class->isSatisfiedBy($proofs)));
+        return array_values(array_filter($classes, static fn (AuthenticationContextClass $class): bool => $class->isSatisfiedBy($proven)));
     }
 }
