@@ -19,4 +19,12 @@ final readonly class ConsentRequired implements AuthorizationDecision
         public ConsentRequirement $requirement,
     ) {
     }
+
+    /**
+     * The name of this decision, which the integration answers with its consent page.
+     */
+    public function name(): string
+    {
+        return 'consent';
+    }
 }

@@ -18,4 +18,12 @@ final readonly class Granted implements AuthorizationDecision
         public AuthorizationResponse $response,
     ) {
     }
+
+    /**
+     * The name of this decision, which the integration answers by sending the user agent back to the client.
+     */
+    public function name(): string
+    {
+        return 'granted';
+    }
 }

@@ -18,4 +18,12 @@ final readonly class LoginRequired implements AuthorizationDecision
         public ?StepUp $stepUp = null,
     ) {
     }
+
+    /**
+     * The name of this decision, which the integration answers with its login page.
+     */
+    public function name(): string
+    {
+        return 'login';
+    }
 }
