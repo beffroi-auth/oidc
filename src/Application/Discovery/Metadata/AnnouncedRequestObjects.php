@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Heidi\Oidc\Application\Discovery\Metadata;
+
+use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
+use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Heidi\Oidc\Port\MetadataContributorInterface;
+use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
+
+/**
+ * OIDC Discovery §3 and RFC 9101 §10.5: both ways in are served, and a "request_uri" is read back only
+ * from a URL its client registered, which decision 0006 makes a rule and not an option. The algorithms
+ * are the ones the provider verifies signatures with; "none" stands beside them only when a client of
+ * the tenant registered it.
+ */
+final readonly class AnnouncedRequestObjects implements MetadataContributorInterface
+{
+    public function __construct(
+        private UnsignedRequestObjectsInterface $unsigned,
+        private AnnouncedAlgorithms $algorithms,
+    ) {
+    }
+
+    public function metadata(Tenant $tenant): array
+    {
+        $signing = $this->algorithms->signing();
+
+        return [
+            'request_parameter_supported' => true,
+            'request_uri_parameter_supported' => true,
+            'require_request_uri_registration' => true,
+            'request_object_signing_alg_values_supported' => $this->unsigned->acceptsUnsignedRequestObjects($tenant)
+                ? [...$signing, UnsignedRequestObjects::ALGORITHM]
+                : $signing,
+            ...$this->algorithms->encryptionOf('request_object_encryption'),
+        ];
+    }
+}
