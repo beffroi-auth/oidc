@@ -9,6 +9,8 @@ use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Token\CertificateConfirmation;
+use Heidi\Oidc\Exception\LogicException;
+use function sprintf;
 
 /**
  * A method whose client is recognised by the certificate of its connection (RFC 8705 §2). The two of
@@ -24,7 +26,7 @@ abstract readonly class CertificateMethod implements ConfirmingMethodInterface
 {
     public function mechanism(): string
     {
-        return ClientAuthenticationRequest::CERTIFICATE;
+        return 'the certificate of the connection';
     }
 
     public function authenticatesClient(): bool
@@ -34,12 +36,24 @@ abstract readonly class CertificateMethod implements ConfirmingMethodInterface
 
     public function presentedBy(ClientAuthenticationRequest $request): ?string
     {
-        return $request->clientIdBesideACertificate();
+        return $request->certificate === null ? null : $request->clientId();
     }
 
+    /**
+     * The tokens of the request are bound to the certificate it proved (§3.1). The authenticator picked
+     * this method because that certificate was there, so its absence at this point is a fault of this
+     * module.
+     *
+     * @throws LogicException when the request carries none
+     */
     public function confirmationOf(ClientAuthenticationRequest $request): CertificateConfirmation
     {
-        return CertificateConfirmation::ofCertificate($request->provenCertificate($this));
+        return CertificateConfirmation::ofCertificate(
+            $request->certificate ?? throw new LogicException(sprintf(
+                'A request that authenticated a client with %s carries a certificate.',
+                $this->name(),
+            )),
+        );
     }
 
     /**

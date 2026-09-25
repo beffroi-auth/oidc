@@ -9,6 +9,7 @@ use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Domain\Client\CertificateIdentityBearingMethodInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use function sprintf;
@@ -41,7 +42,7 @@ final readonly class TlsClientAuth extends CertificateMethod implements Certific
         $certificate = $request->certificate;
         $identity = $client->registration->certificateIdentity;
         if ($certificate === null || $identity === null) {
-            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
+            throw new ClientNotAuthenticatedHereException($client, $this);
         }
         try {
             $subject = $this->certificates->subjectOf($certificate);

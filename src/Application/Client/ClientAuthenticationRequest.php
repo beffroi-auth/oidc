@@ -7,106 +7,37 @@ namespace Heidi\Oidc\Application\Client;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use function is_string;
-use function sprintf;
 
 /**
- * One request at an endpoint that authenticates a client (RFC 6749 §2.3): the header it carries, the
- * form parameters it carries, the certificate its connection proved (RFC 8705 §2), and the URL of the
- * endpoint that received it, which an assertion may name as its audience (RFC 7523 §3). The parameters a
- * client authentication reads are checked to be strings as soon as the request is built: a request whose
- * credentials are not strings is refused before anything is read, and the audit trail keeps no identifier
- * from it, because none of it can be trusted.
+ * One request at an endpoint that authenticates a client (RFC 6749 §2.3), as the methods read it: the
+ * header it carries, the form parameters it carries, the credentials of it that are already read, and
+ * the URL of the endpoint that received it, which an assertion may name as its audience (RFC 7523 §3).
  *
- * The constants below name what of a request a method reads. Two methods that read the same one are one
- * mechanism of RFC 6749 §2.3 and not two, which is how the two mutual-TLS methods of RFC 8705 §2 can
- * both take the one certificate the connection carries.
+ * A credential a value object stands for is read once, before any method sees the request, and is
+ * carried here as that value object: the certificate the connection proved (RFC 8705 §2), read at the
+ * edge, and the assertion the body carries (RFC 7523 §2.2), read by ClientAuthenticationRequestParser
+ * with the reader the provider is wired with. Two methods that read the same one therefore read what
+ * was read once, and nothing here calls a port or keeps a state of its own.
  */
-final class ClientAuthenticationRequest
+final readonly class ClientAuthenticationRequest
 {
     /**
-     * RFC 6749 §2.3.1, RFC 7523 §2.2: what a client authentication proves the client with, and what an
-     * endpoint keeping a request for later therefore never keeps (RFC 9126 §2.1).
-     */
-    private const array PROVING_PARAMETERS = ['client_secret', 'client_assertion', 'client_assertion_type'];
-
-    /**
-     * The parameters a client authentication reads, all of them strings: what proves the client, and the
-     * name it goes by, which is a parameter of the request in its own right.
-     */
-    private const array CREDENTIAL_PARAMETERS = ['client_id', ...self::PROVING_PARAMETERS];
-
-    /**
-     * RFC 7523 §2.2: the one value of "client_assertion_type".
-     */
-    public const string ASSERTION_TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-
-    public const string AUTHORIZATION_HEADER = 'the Authorization header';
-
-    public const string BODY_SECRET = 'the client_secret parameter';
-
-    public const string ASSERTION = 'the client_assertion parameter';
-
-    public const string CERTIFICATE = 'the certificate of the connection';
-
-    public const string IDENTIFIER = 'the client_id parameter';
-
-    private bool $assertionRead = false;
-
-    private ?UnverifiedJwt $assertion = null;
-
-    /**
      * @param string $endpoint the absolute URL of the endpoint that received the request
-     * @param array<string, mixed> $parameters the form parameters of the request body
+     * @param array<string, mixed> $parameters the form parameters of the request body, the credential ones known to be strings
      * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake, null when it presented none, which is the ordinary case (RFC 8705 §2)
-     *
-     * @throws ClientAuthenticationFailure when a credential parameter is present and is not a string
+     * @param UnverifiedJwt|null $assertion the assertion the request carries, read and verified in nothing, null when it carries none
      */
     public function __construct(
-        public readonly Tenant $tenant,
-        public readonly string $endpoint,
-        public readonly ?string $authorizationHeader,
-        private readonly array $parameters,
-        public readonly RequestContext $context,
-        public readonly ?ClientCertificate $certificate = null,
+        public Tenant $tenant,
+        public string $endpoint,
+        public ?string $authorizationHeader,
+        private array $parameters,
+        public RequestContext $context,
+        public ?ClientCertificate $certificate,
+        public ?UnverifiedJwt $assertion,
     ) {
-        foreach (self::CREDENTIAL_PARAMETERS as $name) {
-            $value = $parameters[$name] ?? null;
-            if ($value !== null && ! is_string($value)) {
-                throw ClientAuthenticationFailure::malformedRequest(
-                    ClientAuthenticationFailureReason::MalformedCredentials,
-                    null,
-                    null,
-                    sprintf('The %s parameter must be a string.', $name),
-                );
-            }
-        }
-    }
-
-    /**
-     * The parameters of a request once what proved the client is taken out of them, for an endpoint that
-     * keeps a request the client will come back to (RFC 9126 §2). A credential authenticates the request
-     * that carries it and nothing else, and a store holding one would hold a secret it has no use for;
-     * "client_id" stays, being a parameter of the authorization request itself.
-     *
-     * @param array<string, mixed> $parameters
-     *
-     * @return array<string, mixed>
-     */
-    public static function withoutCredentials(array $parameters): array
-    {
-        foreach (self::PROVING_PARAMETERS as $name) {
-            unset($parameters[$name]);
-        }
-
-        return $parameters;
     }
 
     /**
@@ -126,44 +57,6 @@ final class ClientAuthenticationRequest
     }
 
     /**
-     * The certificate this request was made with, for a method that only ever runs on a request that
-     * carries one (RFC 8705 §2): the authenticator picked such a method because the certificate was
-     * there, so its absence here is a fault of this module.
-     *
-     * @throws LogicException when the request carries none
-     */
-    public function provenCertificate(ClientAuthenticationMethodInterface $method): ClientCertificate
-    {
-        return (
-            $this->certificate ?? throw new LogicException(sprintf(
-                'A request that authenticated a client with %s carries a certificate.',
-                $method->name(),
-            ))
-        );
-    }
-
-    /**
-     * What a method that recognises its client by the certificate of the connection reads of a request
-     * (RFC 8705 §2): the client names itself in "client_id" and the certificate proves it. A request
-     * made without a certificate presents no mutual-TLS authentication at all, and one made without
-     * "client_id" names nobody to look up.
-     */
-    public function clientIdBesideACertificate(): ?string
-    {
-        return $this->certificate === null ? null : $this->clientId();
-    }
-
-    /**
-     * A method was asked to verify a client it did not authenticate here: the authenticator picked the
-     * method because it read this request, so a request that no longer carries what it read, or a client
-     * kept in a shape the method does not verify, is a fault of this module and never of the caller.
-     */
-    public static function notAuthenticatedHere(Client $client, ClientAuthenticationMethodInterface $method): LogicException
-    {
-        return new LogicException(sprintf('The client "%s" is not authenticated by %s here.', $client->registration->clientId, $method->name()));
-    }
-
-    /**
      * RFC 6749 §2.3.1: a secret in the body. An empty one is a secret all the same, presented and wrong,
      * so it is read as it is given.
      */
@@ -172,75 +65,5 @@ final class ClientAuthenticationRequest
         $value = $this->parameters['client_secret'] ?? null;
 
         return is_string($value) ? $value : null;
-    }
-
-    /**
-     * RFC 7523 §2.2: the assertion of the request, read once whichever method reads it first. A request
-     * that carries one half of the pair carries neither.
-     *
-     * @throws ClientAuthenticationFailure when the type is not the one of RFC 7523 §2.2, when one of the
-     *                                     two parameters is there without the other, or when the
-     *                                     assertion cannot be read
-     */
-    public function assertion(CompactJwtReaderInterface $reader): ?UnverifiedJwt
-    {
-        if ($this->assertionRead) {
-            return $this->assertion;
-        }
-        $this->assertionRead = true;
-        $assertion = $this->parameter('client_assertion');
-        $type = $this->parameter('client_assertion_type');
-        if ($assertion === null && $type === null) {
-            return null;
-        }
-        if ($assertion === null || $type === null) {
-            throw ClientAuthenticationFailure::malformedRequest(
-                ClientAuthenticationFailureReason::MalformedCredentials,
-                $this->clientId(),
-                null,
-                'The client_assertion and client_assertion_type parameters go together (RFC 7523 section 2.2).',
-            );
-        }
-        if ($type !== self::ASSERTION_TYPE) {
-            throw ClientAuthenticationFailure::malformedRequest(
-                ClientAuthenticationFailureReason::MalformedCredentials,
-                $this->clientId(),
-                null,
-                sprintf('The client_assertion_type parameter must be "%s" (RFC 7523 section 2.2).', self::ASSERTION_TYPE),
-            );
-        }
-        try {
-            return $this->assertion = $reader->read($assertion);
-        } catch (InvalidJwtException $exception) {
-            throw ClientAuthenticationFailure::malformedRequest(
-                ClientAuthenticationFailureReason::MalformedCredentials,
-                $this->clientId(),
-                null,
-                'The client assertion is not a readable JWT (RFC 7523 section 2.2).',
-                $exception,
-            );
-        }
-    }
-
-    /**
-     * Which client an assertion claims to come from, before anything of it is verified: its "sub" names
-     * the client (RFC 7523 §3), and the "client_id" of the body names it too when the client sends both.
-     * Whether the two agree is judged once the signature has been.
-     *
-     * @throws ClientAuthenticationFailure when neither names a client, and there is nothing to look up
-     */
-    public function assertedClientId(UnverifiedJwt $assertion): string
-    {
-        $clientId = $assertion->claim('sub') ?? $this->clientId();
-        if ($clientId === null) {
-            throw ClientAuthenticationFailure::refused(
-                ClientAuthenticationFailureReason::InvalidAssertion,
-                null,
-                null,
-                'the client assertion names no client in its "sub"',
-            );
-        }
-
-        return $clientId;
     }
 }

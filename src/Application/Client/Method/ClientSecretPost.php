@@ -22,7 +22,7 @@ final readonly class ClientSecretPost extends HashedSecretMethod
 
     public function mechanism(): string
     {
-        return ClientAuthenticationRequest::BODY_SECRET;
+        return 'the client_secret parameter';
     }
 
     public function presentedBy(ClientAuthenticationRequest $request): ?string

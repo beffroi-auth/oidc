@@ -8,6 +8,7 @@ use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Application\Client\ClientKeySetProvider;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
+use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
 
 /**
  * "self_signed_tls_client_auth" (RFC 8705 §2.2): the client presents a certificate it signed itself, and
@@ -39,7 +40,7 @@ final readonly class SelfSignedTlsClientAuth extends CertificateMethod implement
     {
         $certificate = $request->certificate;
         if ($certificate === null) {
-            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
+            throw new ClientNotAuthenticatedHereException($client, $this);
         }
         if (! $this->keys->keysAuthenticating($client, null, $this)->publishes($certificate)) {
             throw $this->unexpectedCertificate($client, 'the certificate presented is not one the client publishes');

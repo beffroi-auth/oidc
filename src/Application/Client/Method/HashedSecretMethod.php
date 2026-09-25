@@ -12,7 +12,7 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\HashedClientSecret;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Exception\LogicException;
+use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use SensitiveParameter;
 
 /**
@@ -49,8 +49,9 @@ abstract readonly class HashedSecretMethod implements AuthenticationMethodInterf
     }
 
     /**
-     * @throws LogicException when the request no longer carries the secret the authenticator read, or
-     *                        when the client is kept in a shape this method does not verify
+     * @throws ClientNotAuthenticatedHereException when the request no longer carries the secret the
+     *                                                authenticator read, or when the client is kept in a
+     *                                                shape this method does not verify
      * @throws ClientAuthenticationFailure when the secret presented is not the one registered
      */
     public function verify(ClientAuthenticationRequest $request, Client $client): void
@@ -58,7 +59,7 @@ abstract readonly class HashedSecretMethod implements AuthenticationMethodInterf
         $presented = $this->presentedSecret($request);
         $secret = $client->secret;
         if ($presented === null || ! $secret instanceof HashedClientSecret) {
-            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
+            throw new ClientNotAuthenticatedHereException($client, $this);
         }
         if (! $this->hasher->verify($secret->hash, $presented)) {
             throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::InvalidSecret, $client->registration->clientId, $this->name());

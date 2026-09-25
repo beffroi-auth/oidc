@@ -10,7 +10,6 @@ use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Authorization\AuthorizationRequestParser;
 use Heidi\Oidc\Application\Authorization\RequestObjectResolver;
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
 use Heidi\Oidc\Application\Request\RequestParameters;
@@ -48,6 +47,13 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class PushedAuthorizationHandler
 {
+    /**
+     * RFC 6749 §2.3.1, RFC 7523 §2.2: what a client authentication proves the client with, and what this
+     * endpoint therefore never keeps (RFC 9126 §2.1). "client_id" is not one of them: it is a parameter
+     * of the authorization request in its own right.
+     */
+    private const array PROVING_PARAMETERS = ['client_secret', 'client_assertion', 'client_assertion_type'];
+
     public function __construct(
         private ClientAuthenticator $clients,
         private DpopProofVerifier $proofs,
@@ -135,7 +141,9 @@ final readonly class PushedAuthorizationHandler
     /**
      * What the store keeps of the body: the parameters of an authorization request as the client wrote
      * them, without what authenticated it (RFC 9126 §2.1) and without what is not a form parameter at
-     * all, which the parser has already refused for every name it reads.
+     * all, which the parser has already refused for every name it reads. A credential authenticates the
+     * request that carries it and nothing else, and a store holding one would hold a secret it has no
+     * use for.
      *
      * A parameter the client repeated arrives as the list it was and is kept as one (RFC 8707 §2), so
      * that the authorization endpoint reads the same request the parser read here.
@@ -146,8 +154,11 @@ final readonly class PushedAuthorizationHandler
      */
     private static function kept(array $parameters): array
     {
+        foreach (self::PROVING_PARAMETERS as $name) {
+            unset($parameters[$name]);
+        }
         $kept = [];
-        foreach (ClientAuthenticationRequest::withoutCredentials($parameters) as $name => $value) {
+        foreach ($parameters as $name => $value) {
             if (is_string($value)) {
                 $kept[$name] = $value;
 

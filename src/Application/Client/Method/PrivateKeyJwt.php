@@ -11,7 +11,6 @@ use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use Heidi\Oidc\Port\JwtKeyVerifierInterface;
 
 /**
@@ -26,13 +25,12 @@ use Heidi\Oidc\Port\JwtKeyVerifierInterface;
 final readonly class PrivateKeyJwt extends AssertionMethod implements KeyBearingMethodInterface
 {
     public function __construct(
-        CompactJwtReaderInterface $reader,
         private JwtKeyVerifierInterface $verifier,
         private ClientKeySetProvider $keys,
         ClientAssertionValidator $claims,
         private SignatureAlgorithmsInterface $algorithms,
     ) {
-        parent::__construct($reader, $claims);
+        parent::__construct($claims);
     }
 
     public function name(): string

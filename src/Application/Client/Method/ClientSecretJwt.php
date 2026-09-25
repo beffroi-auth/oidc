@@ -6,13 +6,12 @@ namespace Heidi\Oidc\Application\Client\Method;
 
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Oidc\Application\Client\ClientAssertionValidator;
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Client\SharedClientSecret;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
+use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use Heidi\Oidc\Port\ClientAssertionSecretVerifierInterface;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
 use SensitiveParameter;
 
 /**
@@ -31,11 +30,10 @@ final readonly class ClientSecretJwt extends AssertionMethod implements SecretKe
     private const string ALGORITHM = 'HS256';
 
     public function __construct(
-        CompactJwtReaderInterface $reader,
         private ClientAssertionSecretVerifierInterface $verifier,
         ClientAssertionValidator $claims,
     ) {
-        parent::__construct($reader, $claims);
+        parent::__construct($claims);
     }
 
     public function name(): string
@@ -62,7 +60,7 @@ final readonly class ClientSecretJwt extends AssertionMethod implements SecretKe
     {
         $secret = $client->secret;
         if (! $secret instanceof SharedClientSecret) {
-            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
+            throw new ClientNotAuthenticatedHereException($client, $this);
         }
         $this->verifier->verify($assertion, $secret, $this->assertionSigningAlgorithms());
     }

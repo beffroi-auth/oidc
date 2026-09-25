@@ -47,11 +47,14 @@ final readonly class ClientAuthenticator
 {
     /**
      * @param ClientAuthenticationMethods $methods the wired methods, which is what a registration reads
-     *                                             and what the discovery document announces (issue #98)
+     *                                              and what the discovery document announces (issue #98)
+     * @param ClientAuthenticationRequestParser $requests what reads a request into what the methods read,
+     *                                                   the assertion of RFC 7523 §2.2 included, once
      */
     public function __construct(
         private ClientRepositoryInterface $clients,
         private ClientAuthenticationMethods $methods,
+        private ClientAuthenticationRequestParser $requests,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
         private ClientLoadBudgetInterface $budget,
@@ -75,7 +78,7 @@ final readonly class ClientAuthenticator
         ?ClientCertificate $certificate = null,
     ): AuthenticatedClient {
         try {
-            $request = new ClientAuthenticationRequest($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate);
+            $request = $this->requests->read($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate);
             $presented = $this->presentedIn($request);
             $clientId = $presented->clientId();
             $method = $presented->first();

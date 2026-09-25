@@ -11,10 +11,9 @@ use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
+use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\LogicException;
 use function in_array;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
 
 /**
  * A method whose client proves itself with a JWT it signs (RFC 7523 §2.2, OIDC Core §9). What such a
@@ -29,14 +28,13 @@ use Heidi\Oidc\Port\CompactJwtReaderInterface;
 abstract readonly class AssertionMethod implements AssertionMethodInterface, AuthenticationMethodInterface
 {
     public function __construct(
-        private CompactJwtReaderInterface $reader,
         private ClientAssertionValidator $claims,
     ) {
     }
 
     public function mechanism(): string
     {
-        return ClientAuthenticationRequest::ASSERTION;
+        return 'the client_assertion parameter';
     }
 
     public function authenticatesClient(): bool
@@ -45,28 +43,41 @@ abstract readonly class AssertionMethod implements AssertionMethodInterface, Aut
     }
 
     /**
-     * RFC 7523 §3: the assertion names the client in its "sub". A request carrying an assertion signed
-     * under an "alg" this method does not take presents another method, or none.
+     * RFC 7523 §3: the assertion names the client in its "sub", and the "client_id" of the body names it
+     * too when the client sends both; whether the two agree is judged once the signature has been. A
+     * request carrying an assertion signed under an "alg" this method does not take presents another
+     * method, or none.
+     *
+     * @throws ClientAuthenticationFailure when neither names a client, and there is nothing to look up
      */
     public function presentedBy(ClientAuthenticationRequest $request): ?string
     {
-        $assertion = $request->assertion($this->reader);
+        $assertion = $request->assertion;
         if ($assertion === null || ! in_array($assertion->algorithm(), $this->assertionSigningAlgorithms(), true)) {
             return null;
         }
 
-        return $request->assertedClientId($assertion);
+        return (
+            $assertion->claim('sub')
+            ?? $request->clientId()
+            ?? throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::InvalidAssertion,
+                null,
+                null,
+                'the client assertion names no client in its "sub"',
+            )
+        );
     }
 
     /**
-     * @throws LogicException when the request no longer carries the assertion the authenticator read
+     * @throws ClientNotAuthenticatedHereException when the request no longer carries the assertion the authenticator read
      * @throws ClientAuthenticationFailure when the assertion is not the client's
      */
     public function verify(ClientAuthenticationRequest $request, Client $client): void
     {
-        $assertion = $request->assertion($this->reader);
+        $assertion = $request->assertion;
         if ($assertion === null) {
-            throw ClientAuthenticationRequest::notAuthenticatedHere($client, $this);
+            throw new ClientNotAuthenticatedHereException($client, $this);
         }
         try {
             $this->verifySignature($assertion, $client);
@@ -95,7 +106,7 @@ abstract readonly class AssertionMethod implements AssertionMethodInterface, Aut
      * Whether the assertion carries the signature of this client, which is the whole of what tells one
      * kind of assertion from another.
      *
-     * @throws LogicException when the client is kept in a shape this method does not verify
+     * @throws ClientNotAuthenticatedHereException when the client is kept in a shape this method does not verify
      * @throws InvalidJwtException when the signature is not the client's
      */
     abstract protected function verifySignature(UnverifiedJwt $assertion, Client $client): void;

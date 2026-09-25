@@ -27,7 +27,7 @@ final readonly class ClientSecretBasic extends HashedSecretMethod
 
     public function mechanism(): string
     {
-        return ClientAuthenticationRequest::AUTHORIZATION_HEADER;
+        return 'the Authorization header';
     }
 
     public function presentedBy(ClientAuthenticationRequest $request): ?string
