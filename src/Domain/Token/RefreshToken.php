@@ -28,7 +28,7 @@ use SensitiveParameter;
  * whoever took a copy. One issued to a confidential client keeps none: what it authenticates with is
  * what it is asked for again, at every refresh.
  */
-final class RefreshToken
+final class RefreshToken implements HashedTokenInterface
 {
     public readonly Tenant $tenant;
 

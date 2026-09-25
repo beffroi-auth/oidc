@@ -21,7 +21,7 @@ use Symfony\Component\Uid\Uuid;
  * facts a self-contained token would carry as claims. Written once; a revoked token is removed and
  * becomes an unknown one (RFC 6750 §3.1).
  */
-final readonly class StoredAccessToken
+final readonly class StoredAccessToken implements HashedTokenInterface
 {
     public Tenant $tenant;
 

@@ -11,8 +11,6 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\ConfirmationInterface;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
-use Heidi\Oidc\Domain\Token\RefreshToken;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -38,29 +36,5 @@ final readonly class TokensIssued implements DomainEventInterface
         public ?string $refreshTokenHash,
         public RequestContext $context,
     ) {
-    }
-
-    public static function of(
-        DateTimeImmutable $occurredAt,
-        GrantedAuthorization $authorization,
-        DateTimeImmutable $accessTokenExpiresAt,
-        bool $idTokenIssued,
-        ?RefreshToken $refreshToken,
-        RequestContext $context,
-    ): self {
-        return new self(
-            $occurredAt,
-            $authorization->tenant,
-            $authorization->grantType,
-            $authorization->grantId,
-            $authorization->client->registration->clientId,
-            $authorization->session->id,
-            $authorization->grantedScopes,
-            $accessTokenExpiresAt,
-            $idTokenIssued,
-            $authorization->confirmation,
-            $refreshToken?->tokenHash,
-            $context,
-        );
     }
 }

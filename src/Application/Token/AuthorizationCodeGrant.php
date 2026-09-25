@@ -19,6 +19,7 @@ use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
+use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
 use Heidi\Oidc\Exception\InvalidGrantException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
@@ -169,6 +170,14 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         if ($this->accessTokens instanceof CanRevokeAccessTokensByGrantInterface) {
             $this->accessTokens->revokeByGrant($code->grantId);
         }
-        $this->events->dispatch(AuthorizationCodeReplayed::of($now, $code, $presentedBy, $revoked, $context));
+        $this->events->dispatch(new AuthorizationCodeReplayed(
+            $now,
+            $code->tenant,
+            $code->codeHash,
+            $code->clientId,
+            $presentedBy->registration->clientId,
+            RevokedTokenHashes::of($revoked),
+            $context,
+        ));
     }
 }

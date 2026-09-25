@@ -14,6 +14,7 @@ use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\TokenRevoked;
 use Heidi\Oidc\Domain\Token\RefreshToken;
+use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
 use Heidi\Oidc\Domain\Token\StoredAccessToken;
 use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Exception\OAuth2Exception;
@@ -108,7 +109,16 @@ final readonly class RevocationHandler
             throw new UnsupportedTokenTypeException('This provider does not take access tokens back; they expire on their own (RFC 7009 section 2.2.1).');
         }
         $this->accessTokens->revoke($token);
-        $this->events->dispatch(TokenRevoked::ofAccessToken($now, $token, $caller, $context));
+        $this->events->dispatch(new TokenRevoked(
+            $now,
+            $caller->tenant,
+            $caller->registration->clientId,
+            TokenRevoked::ACCESS_TOKEN,
+            $token->tokenHash,
+            $token->grantId,
+            [],
+            $context,
+        ));
     }
 
     private function revokeRefreshToken(RefreshToken $token, Client $caller, RequestContext $context, DateTimeImmutable $now): void
@@ -119,6 +129,15 @@ final readonly class RevocationHandler
         $token->revoke($now);
         $this->refreshTokens->save($token);
         $accessTokens = $this->accessTokens instanceof CanRevokeAccessTokensByGrantInterface ? $this->accessTokens->revokeByGrant($token->family->grantId) : [];
-        $this->events->dispatch(TokenRevoked::ofRefreshToken($now, $token, $caller, $accessTokens, $context));
+        $this->events->dispatch(new TokenRevoked(
+            $now,
+            $caller->tenant,
+            $caller->registration->clientId,
+            TokenRevoked::REFRESH_TOKEN,
+            $token->tokenHash,
+            $token->family->grantId,
+            RevokedTokenHashes::of($accessTokens),
+            $context,
+        ));
     }
 }

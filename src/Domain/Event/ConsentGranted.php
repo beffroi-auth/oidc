@@ -8,7 +8,6 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Consent\Consent;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Symfony\Component\Uid\Uuid;
 
@@ -30,19 +29,5 @@ final readonly class ConsentGranted implements DomainEventInterface
         public ?Uuid $supersedes,
         public RequestContext $context,
     ) {
-    }
-
-    public static function of(Consent $consent, ?Consent $supersedes, RequestContext $context): self
-    {
-        return new self(
-            $consent->grantedAt,
-            $consent->tenant,
-            $consent->id,
-            $consent->clientId,
-            $consent->user->id,
-            $consent->scopes,
-            $supersedes?->id,
-            $context,
-        );
     }
 }

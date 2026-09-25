@@ -151,7 +151,16 @@ final readonly class AuthorizationHandler
             $this->consents->save($previous);
         }
         $this->consents->save($consent);
-        $this->events->dispatch(ConsentGranted::of($consent, $previous, $context));
+        $this->events->dispatch(new ConsentGranted(
+            $consent->grantedAt,
+            $consent->tenant,
+            $consent->id,
+            $consent->clientId,
+            $consent->user->id,
+            $consent->scopes,
+            $previous?->id,
+            $context,
+        ));
         $interaction->consent($consent, $now);
 
         return $this->decide($interaction, $session, $context, $now);
@@ -253,7 +262,17 @@ final readonly class AuthorizationHandler
         }
         $interaction->complete($now);
         $this->interactions->save($interaction);
-        $this->events->dispatch(AuthorizationCodeIssued::of($record, $context));
+        $this->events->dispatch(new AuthorizationCodeIssued(
+            $record->issuedAt,
+            $record->tenant,
+            $record->clientId,
+            $record->grantId,
+            $record->session->id,
+            $record->codeHash,
+            $record->scopes,
+            $record->expiresAt,
+            $context,
+        ));
 
         return new Granted($interaction, $record, new AuthorizationResponse($request->client->tenant->issuer, $request->redirectUri, $request->state, $code));
     }

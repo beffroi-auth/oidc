@@ -6,10 +6,8 @@ namespace Heidi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
 use Heidi\Core\Domain\Event\DomainEventInterface;
-use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientUri;
 use Symfony\Component\Uid\Uuid;
 
@@ -33,16 +31,5 @@ final readonly class LogoutTokenIssued implements DomainEventInterface
         public string $token,
         public RequestContext $context,
     ) {
-    }
-
-    public static function of(
-        Client $client,
-        ClientUri $logoutUri,
-        AuthenticationSession $session,
-        string $token,
-        DateTimeImmutable $occurredAt,
-        RequestContext $context,
-    ): self {
-        return new self($occurredAt, $client->tenant, $client->registration->clientId, $logoutUri, $session->id, $token, $context);
     }
 }

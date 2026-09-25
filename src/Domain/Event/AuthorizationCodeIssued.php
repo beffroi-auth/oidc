@@ -8,7 +8,6 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Event\DomainEventInterface;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,20 +27,5 @@ final readonly class AuthorizationCodeIssued implements DomainEventInterface
         public DateTimeImmutable $expiresAt,
         public RequestContext $context,
     ) {
-    }
-
-    public static function of(AuthorizationCode $code, RequestContext $context): self
-    {
-        return new self(
-            $code->issuedAt,
-            $code->tenant,
-            $code->clientId,
-            $code->grantId,
-            $code->session->id,
-            $code->codeHash,
-            $code->scopes,
-            $code->expiresAt,
-            $context,
-        );
     }
 }

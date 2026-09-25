@@ -15,6 +15,7 @@ use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshToken;
+use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidGrantException;
 use Heidi\Oidc\Exception\InvalidScopeException;
@@ -88,7 +89,16 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
         $token->rotate($now);
         $this->refreshTokens->save($token);
         $successor = $this->issuer->refreshToken($token->family, $authorization, $now);
-        $this->events->dispatch(RefreshTokenRotated::of($token, $successor->token, $context));
+        $this->events->dispatch(new RefreshTokenRotated(
+            $successor->token->issuedAt,
+            $successor->token->tenant,
+            $successor->token->clientId,
+            $successor->token->family->id,
+            $token->tokenHash,
+            $successor->token->tokenHash,
+            $successor->token->expiresAt,
+            $context,
+        ));
 
         return $this->issuer->issue($authorization, $successor, $context, $now);
     }
@@ -118,6 +128,14 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
     private function reused(RefreshToken $presented, RequestContext $context, DateTimeImmutable $now): void
     {
         $revoked = $this->revocation->revokeFamily($presented->family->id, $now);
-        $this->events->dispatch(RefreshTokenReuseDetected::of($now, $presented, $revoked, $context));
+        $this->events->dispatch(new RefreshTokenReuseDetected(
+            $now,
+            $presented->tenant,
+            $presented->clientId,
+            $presented->family->id,
+            $presented->tokenHash,
+            RevokedTokenHashes::of($revoked),
+            $context,
+        ));
     }
 }
