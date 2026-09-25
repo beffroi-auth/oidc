@@ -6,9 +6,7 @@ namespace Heidi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_values;
-use DateTimeImmutable;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 use Heidi\Oidc\Domain\Token\StoredAccessToken;
 use Heidi\Oidc\Domain\Token\StoredUserAccessToken;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
@@ -31,19 +29,7 @@ final class InMemoryAccessTokenRepository implements
      */
     private array $tokens = [];
 
-    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): string
-    {
-        $value = DrawnSecret::draw();
-        $hash = DrawnSecret::digestOf($value);
-        $this->tokens[$hash] = $authorization->storedUnder($hash, $now, $expiresAt);
-
-        return $value;
-    }
-
-    /**
-     * For tests: a record under the hash of the value they chose.
-     */
-    public function keep(StoredAccessToken $token): void
+    public function save(StoredAccessToken $token): void
     {
         $this->tokens[$token->tokenHash] = $token;
     }

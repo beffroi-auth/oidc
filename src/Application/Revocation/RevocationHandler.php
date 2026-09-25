@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Revocation;
 
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
@@ -81,7 +82,7 @@ final readonly class RevocationHandler
 
             return;
         }
-        $refreshToken = $this->refreshTokens->findByTokenHash(RefreshToken::hash($token));
+        $refreshToken = $this->refreshTokens->findByTokenHash(DrawnSecret::digestOf($token));
         if ($refreshToken !== null) {
             $this->revokeRefreshToken($refreshToken, $caller, $context, $now);
         }

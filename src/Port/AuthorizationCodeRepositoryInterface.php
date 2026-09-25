@@ -16,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
 interface AuthorizationCodeRepositoryInterface
 {
     /**
-     * @param string $codeHash see AuthorizationCode::hash()
+     * @param string $codeHash see DrawnSecret::digestOf()
      */
     public function findByCodeHash(string $codeHash): ?AuthorizationCode;
 

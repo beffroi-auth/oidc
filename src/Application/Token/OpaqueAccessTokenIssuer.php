@@ -6,10 +6,12 @@ namespace Heidi\Oidc\Application\Token;
 
 use DateInterval;
 use DateTimeImmutable;
+use Heidi\Oidc\Application\Secret\SecretDrawer;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\AuthorizationInterface;
-use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
+use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
 
 /**
  * The opaque shape of the access token (architecture §4.6): a random value, and a record kept under its
@@ -19,6 +21,7 @@ final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerIn
 {
     public function __construct(
         private AccessTokenRepositoryInterface $tokens,
+        private SecretDrawer $secrets,
         private DateInterval $lifetime = new DateInterval('PT10M'),
     ) {
     }
@@ -35,7 +38,9 @@ final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerIn
     public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken
     {
         $expiresAt = $now->add($this->lifetime);
+        $value = $this->secrets->draw();
+        $this->tokens->save($authorization->storedUnder(DrawnSecret::digestOf($value), $now, $expiresAt));
 
-        return new AccessToken($this->tokens->issue($authorization, $now, $expiresAt), $now, $expiresAt);
+        return new AccessToken($value, $now, $expiresAt);
     }
 }

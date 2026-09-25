@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Heidi\Oidc\Application\Secret\SecretDrawer;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
@@ -36,6 +38,7 @@ final readonly class TokenIssuer
         private AccessTokenIssuerInterface $accessTokens,
         private IdTokenIssuerInterface $idTokens,
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private SecretDrawer $secrets,
         private EventDispatcherInterface $events,
         private DateInterval $refreshTokenLifetime = new DateInterval('P30D'),
     ) {
@@ -43,8 +46,8 @@ final readonly class TokenIssuer
 
     public function refreshToken(RefreshTokenFamily $family, UserAuthorizationInterface $authorization, DateTimeImmutable $now): IssuedRefreshToken
     {
-        $value = RefreshToken::generate();
-        $token = RefreshToken::fromAuthorization(RefreshToken::hash($value), $family, $authorization, $now, $now->add($this->refreshTokenLifetime));
+        $value = $this->secrets->draw();
+        $token = RefreshToken::fromAuthorization(DrawnSecret::digestOf($value), $family, $authorization, $now, $now->add($this->refreshTokenLifetime));
         $this->refreshTokens->save($token);
 
         return new IssuedRefreshToken($token, $value);

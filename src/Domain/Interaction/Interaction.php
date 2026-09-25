@@ -49,7 +49,7 @@ final class Interaction
         public readonly ?string $requestUriHash = null,
     ) {
         if (! DrawnSecret::isValue($id)) {
-            throw new InvalidArgumentException('An interaction identifier is 256 bits in base64url, see generateId().');
+            throw new InvalidArgumentException('An interaction identifier is 256 bits in base64url, as every value this provider draws.');
         }
         if (! $request->client->belongsTo($tenant)) {
             throw new InvalidArgumentException('An interaction serves a client of its own tenant.');
@@ -61,11 +61,6 @@ final class Interaction
             throw new InvalidArgumentException('An interaction expires after it was created.');
         }
         $this->clientId = $request->client->registration->clientId;
-    }
-
-    public static function generateId(): string
-    {
-        return DrawnSecret::draw();
     }
 
     /**

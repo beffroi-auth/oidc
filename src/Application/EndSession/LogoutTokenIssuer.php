@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\EndSession;
 
+use Heidi\Core\Port\UuidGeneratorInterface;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Port\JwsSignerInterface;
@@ -12,7 +13,6 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\EndSession\LogoutToken;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Mints the logout token of one client of one ended session (Back-Channel Logout 1.0 §2.4, architecture
@@ -26,6 +26,7 @@ final readonly class LogoutTokenIssuer
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
         private SignatureAlgorithmsInterface $algorithms,
+        private UuidGeneratorInterface $uuids,
     ) {
     }
 
@@ -39,7 +40,7 @@ final readonly class LogoutTokenIssuer
             $client->registration->clientId,
             $this->subjects->resolve($session->user, $client),
             $session->id,
-            Uuid::v4(),
+            $this->uuids->opaque(),
             $now,
         );
 

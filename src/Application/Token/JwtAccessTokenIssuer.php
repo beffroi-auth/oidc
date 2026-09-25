@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use Heidi\Core\Port\UuidGeneratorInterface;
 use function array_keys;
 use DateInterval;
 use DateTimeImmutable;
@@ -18,7 +19,6 @@ use Heidi\Oidc\Domain\Token\TokenSignIn;
 use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * RFC 9068 (architecture §4.6): "typ" is "at+jwt" (§2.1), the claims are those of §2.2 and §2.2.1, "scope"
@@ -45,6 +45,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
         private SignatureAlgorithmsInterface $algorithms,
+        private UuidGeneratorInterface $uuids,
         public DateInterval $lifetime = new DateInterval('PT10M'),
     ) {
     }
@@ -71,7 +72,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
             'sub' => $this->subjectOf($authorization)->value,
             'client_id' => $authorization->client->registration->clientId,
             'iat' => $now->getTimestamp(),
-            'jti' => Uuid::v4()->toRfc4122(),
+            'jti' => $this->uuids->opaque()->toRfc4122(),
             // RFC 9068 §2.2.1: what the session had proven, of a token there is a session behind
             ...($signIn?->authentication->toClaims() ?? []),
         ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -60,7 +61,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
         $value = $request->required('refresh_token');
         $scopes = self::scopes($request->optional('scope'));
 
-        $token = $this->refreshTokens->findByTokenHash(RefreshToken::hash($value));
+        $token = $this->refreshTokens->findByTokenHash(DrawnSecret::digestOf($value));
         if ($token === null || ! $token->client->equals($client->client) || $token->isRevoked()) {
             throw new InvalidGrantException(self::INVALID);
         }

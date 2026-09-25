@@ -11,6 +11,8 @@ use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Port\CredentialRepositoryInterface;
+use Heidi\Core\Port\UuidGeneratorInterface;
+use Heidi\Oidc\Application\Secret\SecretDrawer;
 use Heidi\Oidc\Domain\Authorization\AuthenticationContextRequest;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
@@ -41,10 +43,10 @@ use Heidi\Oidc\Port\ConsentRepositoryInterface;
 use Heidi\Oidc\Port\InteractionRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use function sprintf;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Decides what a validated authorization request still needs (architecture §4.3): a login, a consent, or
@@ -78,6 +80,8 @@ final readonly class AuthorizationHandler
         private IdTokenHintVerifier $idTokenHints,
         private ProvableMethodsInterface $provable,
         private CredentialRepositoryInterface $credentials,
+        private UuidGeneratorInterface $uuids,
+        private SecretDrawer $secrets,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
         private DateInterval $interactionLifetime = new DateInterval('PT10M'),
@@ -99,7 +103,7 @@ final readonly class AuthorizationHandler
     ): AuthorizationDecision {
         $now = $this->clock->now();
         $interaction = new Interaction(
-            Interaction::generateId(),
+            $this->secrets->draw(),
             $request->client->tenant,
             $request,
             $locale,
@@ -145,9 +149,9 @@ final readonly class AuthorizationHandler
         $client = $interaction->request->client;
         $previous = $this->consents->findActive($session->user, $client);
         if ($previous === null) {
-            $consent = new Consent(Uuid::v7(), $session->user, $client, $interaction->request->scopes, $now);
+            $consent = new Consent($this->uuids->timeOrdered(), $session->user, $client, $interaction->request->scopes, $now);
         } else {
-            $consent = $previous->extendedWith($interaction->request->scopes, Uuid::v7(), $now);
+            $consent = $previous->extendedWith($interaction->request->scopes, $this->uuids->timeOrdered(), $now);
             $this->consents->save($previous);
         }
         $this->consents->save($consent);
@@ -236,10 +240,10 @@ final readonly class AuthorizationHandler
             throw $exception;
         }
 
-        $code = AuthorizationCode::generate();
+        $code = $this->secrets->draw();
         $record = new AuthorizationCode(
-            AuthorizationCode::hash($code),
-            Uuid::v7(),
+            DrawnSecret::digestOf($code),
+            $this->uuids->timeOrdered(),
             $request->client,
             $session,
             $request->redirectUri,

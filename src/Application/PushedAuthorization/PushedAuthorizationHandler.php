@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\PushedAuthorization;
 
+use Heidi\Oidc\Application\Secret\SecretDrawer;
 use DateInterval;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
@@ -54,6 +55,7 @@ final readonly class PushedAuthorizationHandler
         private AuthorizationRequestParser $parser,
         private RequestObjectResolver $requestObjects,
         private PushedAuthorizationRecordRepositoryInterface $records,
+        private SecretDrawer $secrets,
         private ClockInterface $clock,
         public DateInterval $lifetime = new DateInterval('PT60S'),
     ) {
@@ -98,7 +100,7 @@ final readonly class PushedAuthorizationHandler
         $this->parser->parse($target, $parameters);
 
         $now = $this->clock->now();
-        $requestUri = RequestUri::generate();
+        $requestUri = RequestUri::of($this->secrets->draw());
         $record = new PushedAuthorizationRecord($requestUri->hash(), $client, self::kept($parameters), $now, $now->add($this->lifetime), $object !== null);
         $this->records->save($record);
 

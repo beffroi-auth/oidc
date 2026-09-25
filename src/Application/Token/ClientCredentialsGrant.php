@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Token;
 
 use Heidi\Core\Domain\Session\RequestContext;
+use Heidi\Core\Port\UuidGeneratorInterface;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\ClientRegistration;
@@ -19,7 +20,6 @@ use Heidi\Oidc\Exception\InvalidClientException;
 use Heidi\Oidc\Exception\InvalidScopeException;
 use Heidi\Oidc\Exception\InvalidTargetException;
 use Psr\Clock\ClockInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * RFC 6749 §4.4 (architecture §4.5): the client asks for itself, there being no user to ask and nobody to
@@ -45,6 +45,7 @@ final readonly class ClientCredentialsGrant implements ActsForTheClientItselfInt
 {
     public function __construct(
         private TokenIssuer $issuer,
+        private UuidGeneratorInterface $uuids,
         private ClockInterface $clock,
     ) {
     }
@@ -62,7 +63,7 @@ final readonly class ClientCredentialsGrant implements ActsForTheClientItselfInt
         }
         $authorization = new ClientAuthorization(
             $this->grantType(),
-            Uuid::v7(),
+            $this->uuids->timeOrdered(),
             $client->client,
             self::scopes($request->required('scope'), $registration),
             self::resources($request, $registration),

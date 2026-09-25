@@ -6,8 +6,6 @@ namespace Heidi\Oidc\Domain\Secret;
 
 use function hash;
 use function preg_match;
-use function random_bytes;
-use Heidi\Oidc\Domain\Token\Base64Url;
 use SensitiveParameter;
 
 /**
@@ -20,6 +18,9 @@ use SensitiveParameter;
  * value safe in a URL and in a form. What the provider keeps of it is the hex SHA-256 and never the
  * value, so that a store read by someone else replays nothing: whoever holds the store holds digests of
  * secrets they cannot present.
+ *
+ * This is the shape and nothing else: what it is made of and what a store keeps of it. Drawing one is
+ * SecretDrawer, which is given its randomness as a use case is given its clock.
  */
 final readonly class DrawnSecret
 {
@@ -33,10 +34,10 @@ final readonly class DrawnSecret
      */
     public const string DIGEST_PATTERN = '/^[0-9a-f]{64}$/D';
 
-    public static function draw(): string
-    {
-        return Base64Url::encode(random_bytes(32));
-    }
+    /**
+     * How many bytes are drawn for one, before they are written in base64url.
+     */
+    public const int LENGTH = 32;
 
     /**
      * What a store keeps of a value, and what a lookup is made by.

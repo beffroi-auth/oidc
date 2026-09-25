@@ -7,9 +7,9 @@ namespace Heidi\Oidc\Domain\PushedAuthorization;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Record\RecordReadOnce;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\LogicException;
 use function max;
 
 /**
@@ -25,7 +25,7 @@ use function max;
  * authorization code. A consumed or expired record grants nothing and stays only so that the next
  * presentation is told from a reference nobody ever issued.
  */
-final class PushedAuthorizationRecord
+final class PushedAuthorizationRecord extends RecordReadOnce
 {
     public readonly Tenant $tenant;
 
@@ -33,8 +33,6 @@ final class PushedAuthorizationRecord
      * What a store keeps; the object is what the client repository resolved for it.
      */
     public readonly string $clientId;
-
-    public private(set) ?DateTimeImmutable $usedAt = null;
 
     /**
      * @param string $requestUriHash see RequestUri::hashOf()
@@ -72,38 +70,18 @@ final class PushedAuthorizationRecord
         return max(1, $this->expiresAt->getTimestamp() - $now->getTimestamp());
     }
 
-    /**
-     * RFC 9126 §4: one use. The repository claims the record atomically and calls this on the winner;
-     * called twice is a programming error, not a replay.
-     */
-    public function consume(DateTimeImmutable $now): void
-    {
-        if ($this->usedAt !== null) {
-            throw new LogicException('A pushed authorization request is consumed once; the authorization endpoint checks isUsed() first.');
-        }
-        $this->usedAt = $now;
-    }
-
-    /**
-     * For a repository whose claim was lost: the instant the store holds.
-     */
-    public function recordConsumption(DateTimeImmutable $usedAt): void
-    {
-        $this->usedAt = $usedAt;
-    }
-
-    public function isUsed(): bool
-    {
-        return $this->usedAt !== null;
-    }
-
-    public function isExpired(DateTimeImmutable $now): bool
-    {
-        return $now >= $this->expiresAt;
-    }
-
     public function belongsTo(Client $client): bool
     {
         return $this->clientId === $client->registration->clientId && $this->tenant->equals($client->tenant);
+    }
+
+    protected function nameOfRecord(): string
+    {
+        return 'A pushed authorization request';
+    }
+
+    protected function readerThatChecks(): string
+    {
+        return 'the authorization endpoint';
     }
 }

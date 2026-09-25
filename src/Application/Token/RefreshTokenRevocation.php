@@ -23,7 +23,7 @@ final readonly class RefreshTokenRevocation
     }
 
     /**
-     * @param string $codeHash see AuthorizationCode::hash()
+     * @param string $codeHash see DrawnSecret::digestOf()
      *
      * @return list<RefreshToken> the tokens revoked by this call
      */

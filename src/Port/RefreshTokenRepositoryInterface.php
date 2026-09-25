@@ -14,7 +14,7 @@ use Symfony\Component\Uid\Uuid;
 interface RefreshTokenRepositoryInterface
 {
     /**
-     * @param string $tokenHash see RefreshToken::hash()
+     * @param string $tokenHash see DrawnSecret::digestOf()
      */
     public function findByTokenHash(string $tokenHash): ?RefreshToken;
 
@@ -24,7 +24,7 @@ interface RefreshTokenRepositoryInterface
     public function findByFamily(Uuid $family): array;
 
     /**
-     * @param string $codeHash see AuthorizationCode::hash()
+     * @param string $codeHash see DrawnSecret::digestOf()
      *
      * @return list<RefreshToken> whatever their state
      */

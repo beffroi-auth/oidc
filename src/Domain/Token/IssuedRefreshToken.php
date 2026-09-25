@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
@@ -17,7 +18,7 @@ final readonly class IssuedRefreshToken
         #[SensitiveParameter]
         public string $value,
     ) {
-        if (RefreshToken::hash($value) !== $token->tokenHash) {
+        if (DrawnSecret::digestOf($value) !== $token->tokenHash) {
             throw new InvalidArgumentException('The refresh token record is the hash of the value.');
         }
     }

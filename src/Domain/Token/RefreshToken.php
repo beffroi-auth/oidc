@@ -10,13 +10,13 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Record\ExpiringRecord;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
 use function min;
-use SensitiveParameter;
 
 /**
  * A refresh token (RFC 6749 §6, architecture §4.6) as the provider keeps it: the SHA-256 of the value,
@@ -28,7 +28,7 @@ use SensitiveParameter;
  * whoever took a copy. One issued to a confidential client keeps none: what it authenticates with is
  * what it is asked for again, at every refresh.
  */
-final class RefreshToken implements HashedTokenInterface
+final class RefreshToken extends ExpiringRecord implements HashedTokenInterface
 {
     public readonly Tenant $tenant;
 
@@ -42,7 +42,7 @@ final class RefreshToken implements HashedTokenInterface
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
     /**
-     * @param string $tokenHash see hash()
+     * @param string $tokenHash the hex SHA-256 of the value drawn for it, see DrawnSecret
      * @param ResourceIndicators|null $resources the resources of the whole grant, which a refresh is bound to and may narrow (RFC 8707 §2.2), null when the authorization named none
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
      * @param ConfirmationInterface|null $confirmation what a refresh of this token has to prove again (RFC 9449 §5), null when the client proves itself another way
@@ -106,16 +106,6 @@ final class RefreshToken implements HashedTokenInterface
         );
     }
 
-    public static function generate(): string
-    {
-        return DrawnSecret::draw();
-    }
-
-    public static function hash(#[SensitiveParameter] string $token): string
-    {
-        return DrawnSecret::digestOf($token);
-    }
-
     /**
      * Whether this token is protected by being replaced at every use (RFC 9700 §4.13.2), which is the
      * last term of a disjunction and not a rule of its own. A refresh token is told from a copy of
@@ -172,13 +162,5 @@ final class RefreshToken implements HashedTokenInterface
     public function isRevoked(): bool
     {
         return $this->revokedAt !== null;
-    }
-
-    /**
-     * Never past the expiry of the family.
-     */
-    public function isExpired(DateTimeImmutable $now): bool
-    {
-        return $now >= $this->expiresAt;
     }
 }

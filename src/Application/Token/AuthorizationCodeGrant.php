@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Heidi\Core\Port\UuidGeneratorInterface;
 use function array_any;
 use DateInterval;
 use DateTimeImmutable;
@@ -29,7 +31,6 @@ use Heidi\Oidc\Port\ServedGrantsInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * RFC 6749 §4.1.3, RFC 7636 §4.6, OIDC Core §3.1.3 (architecture §4.5). Every failure is "invalid_grant"
@@ -53,6 +54,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         private RefreshTokenRevocation $refreshTokens,
         private AccessTokenRepositoryInterface $accessTokens,
         private TokenIssuer $issuer,
+        private UuidGeneratorInterface $uuids,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
         private ServedGrantsInterface $servedGrants,
@@ -76,7 +78,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             throw new InvalidRequestException('The code_verifier parameter is not 43 to 128 unreserved characters (RFC 7636 section 4.1).');
         }
 
-        $record = $this->codes->findByCodeHash(AuthorizationCode::hash($code));
+        $record = $this->codes->findByCodeHash(DrawnSecret::digestOf($code));
         if ($record === null) {
             throw new InvalidGrantException(self::INVALID);
         }
@@ -108,7 +110,13 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         );
         $refreshToken = null;
         if ($this->refreshTokenDue($authorization)) {
-            $family = new RefreshTokenFamily(Uuid::v7(), $record->codeHash, $record->grantId, $now, $now->add($this->refreshTokenFamilyLifetime));
+            $family = new RefreshTokenFamily(
+                $this->uuids->timeOrdered(),
+                $record->codeHash,
+                $record->grantId,
+                $now,
+                $now->add($this->refreshTokenFamilyLifetime),
+            );
             $refreshToken = $this->issuer->refreshToken($family, $authorization, $now);
         }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Domain\PushedAuthorization;
 
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Heidi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use SensitiveParameter;
 
@@ -30,11 +31,18 @@ final readonly class RequestUri
     }
 
     /**
-     * 256 bits, base64url without padding, behind the prefix.
+     * The reference behind the prefix: 256 bits, base64url without padding, drawn where every value this
+     * provider hands out is drawn (SecretDrawer). The record does not draw what names it.
+     *
+     * @throws InvalidArgumentException when the value is not one of the shape this provider draws
      */
-    public static function generate(): self
+    public static function of(#[SensitiveParameter] string $drawn): self
     {
-        return new self(self::URN_PREFIX . DrawnSecret::draw());
+        if (! DrawnSecret::isValue($drawn)) {
+            throw new InvalidArgumentException('A request URI carries a value of the shape this provider draws.');
+        }
+
+        return new self(self::URN_PREFIX . $drawn);
     }
 
     /**
