@@ -45,4 +45,12 @@ interface ServedGrantsInterface
      * @return list<GrantTypeName>
      */
     public function sendingTheUserToTheClient(): array;
+
+    /**
+     * Those of them whose user is asked somewhere other than in the client's own browser, the client
+     * polling for the answer (RFC 8628 §3.3).
+     *
+     * @return list<GrantTypeName>
+     */
+    public function askingTheUserOnAnotherDevice(): array;
 }

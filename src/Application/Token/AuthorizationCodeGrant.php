@@ -6,7 +6,6 @@ namespace Heidi\Oidc\Application\Token;
 
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Core\Port\UuidGeneratorInterface;
-use function array_any;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
@@ -17,7 +16,6 @@ use Heidi\Oidc\Domain\Authorization\CodeChallenge;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Event\AuthorizationCodeReplayed;
-use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\UserAuthorization;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
@@ -27,7 +25,6 @@ use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
@@ -46,7 +43,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
     private const string INVALID = 'The authorization code is invalid.';
 
     /**
-     * @param ServedGrantsInterface $servedGrants what the provider serves, read for the grants that spend a refresh token: this one issues none the client could not spend
+     * @param RefreshTokenDue $refreshTokenDue whether a response of this grant carries a refresh token, asked where every grant that issues one asks it
      * @param DateInterval $refreshTokenFamilyLifetime the absolute lifetime no rotation extends (architecture §4.6)
      */
     public function __construct(
@@ -57,9 +54,8 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         private UuidGeneratorInterface $uuids,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
-        private ServedGrantsInterface $servedGrants,
+        private RefreshTokenDue $refreshTokenDue,
         private DateInterval $refreshTokenFamilyLifetime = new DateInterval('P90D'),
-        private bool $refreshTokenWithoutOfflineAccess = true,
     ) {
     }
 
@@ -109,7 +105,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             RequestedResources::of($request, $record->resources),
         );
         $refreshToken = null;
-        if ($this->refreshTokenDue($authorization)) {
+        if ($this->refreshTokenDue->forThe($authorization)) {
             $family = new RefreshTokenFamily(
                 $this->uuids->timeOrdered(),
                 $record->codeHash,
@@ -143,28 +139,6 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
     private static function reservationSatisfied(AuthorizationCode $record, AuthenticatedClient $client): bool
     {
         return $record->dpopKey === null || $client->confirmation !== null && $client->confirmation->matches($record->dpopKey);
-    }
-
-    /**
-     * RFC 6749 §4.1.4, OIDC Core §11: a refresh token this client could not spend is one this response
-     * does not carry. What spends one is what the provider is wired with and the client registered for,
-     * and neither this grant nor the client names it.
-     */
-    private function refreshTokenDue(UserAuthorization $authorization): bool
-    {
-        $registration = $authorization->client->registration;
-        $spent = array_any(
-            $this->servedGrants->spendingRefreshTokens(),
-            static fn (GrantTypeName $grantType): bool => $registration->allowsGrant($grantType),
-        );
-        if (! $spent) {
-            return false;
-        }
-        if ($authorization->scopes->has(Scope::offlineAccess())) {
-            return true;
-        }
-
-        return $this->refreshTokenWithoutOfflineAccess && ! $authorization->client->registration->isPublic();
     }
 
     /**

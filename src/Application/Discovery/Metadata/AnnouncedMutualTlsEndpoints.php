@@ -34,6 +34,7 @@ final readonly class AnnouncedMutualTlsEndpoints implements MetadataContributorI
                 'introspection_endpoint' => $endpoints->introspection,
                 'revocation_endpoint' => $endpoints->revocation,
                 'pushed_authorization_request_endpoint' => $endpoints->pushedAuthorizationRequest,
+                'device_authorization_endpoint' => $endpoints->deviceAuthorization,
             ],
         ];
     }

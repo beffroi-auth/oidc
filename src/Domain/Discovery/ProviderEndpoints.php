@@ -12,10 +12,16 @@ use function sprintf;
 use function strtolower;
 
 /**
- * The endpoints a tenant announces (OIDC Discovery §3, RP-Initiated Logout §2.1, RFC 8414 §2): absolute,
- * no fragment, no credentials, HTTPS with plain HTTP on a loopback host only. The token, introspection,
- * revocation and pushed authorization request endpoints have no exception (RFC 6749 §3.2, RFC 7662 §2.1,
- * RFC 7009 §2, RFC 9126 §2).
+ * The endpoints of a tenant (OIDC Discovery §3, RP-Initiated Logout §2.1, RFC 8414 §2, RFC 8628 §3.1):
+ * absolute, no fragment, no credentials, HTTPS with plain HTTP on a loopback host only. The endpoints a
+ * client reaches server to server have no exception (RFC 6749 §3.2, RFC 7662 §2.1, RFC 7009 §2,
+ * RFC 9126 §2, RFC 8628 §3.1); the ones a browser reaches keep the loopback one, which is what a
+ * deployment is developed on.
+ *
+ * The page where a user types a device code is one of them (RFC 8628 §3.2 "verification_uri"): it is per
+ * tenant like every other, the answer of the device authorization endpoint carries it, and it is read here
+ * rather than written down a second time. Which of these the document announces is each contributor's
+ * business and not this one's.
  */
 final readonly class ProviderEndpoints
 {
@@ -35,6 +41,10 @@ final readonly class ProviderEndpoints
 
     public string $pushedAuthorizationRequest;
 
+    public string $deviceAuthorization;
+
+    public string $deviceVerification;
+
     public function __construct(
         string $authorization,
         string $token,
@@ -44,6 +54,8 @@ final readonly class ProviderEndpoints
         string $introspection,
         string $revocation,
         string $pushedAuthorizationRequest,
+        string $deviceAuthorization,
+        string $deviceVerification,
     ) {
         $this->authorization = self::secureUrl('authorization', $authorization, true);
         $this->token = self::secureUrl('token', $token, false);
@@ -53,6 +65,8 @@ final readonly class ProviderEndpoints
         $this->introspection = self::secureUrl('introspection', $introspection, false);
         $this->revocation = self::secureUrl('revocation', $revocation, false);
         $this->pushedAuthorizationRequest = self::secureUrl('pushed authorization request', $pushedAuthorizationRequest, false);
+        $this->deviceAuthorization = self::secureUrl('device authorization', $deviceAuthorization, false);
+        $this->deviceVerification = self::secureUrl('device verification', $deviceVerification, true);
     }
 
     private static function secureUrl(string $name, string $url, bool $loopbackInClear): string
@@ -78,7 +92,11 @@ final readonly class ProviderEndpoints
         throw new InvalidArgumentException(
             $loopbackInClear
                 ? sprintf('The %s endpoint "%s" must use HTTPS; plain HTTP is only accepted on a loopback host.', $name, $url)
-                : sprintf('The %s endpoint "%s" must use HTTPS (RFC 6749 section 3.2, RFC 9126 section 2), on a loopback host too.', $name, $url),
+                : sprintf(
+                    'The %s endpoint "%s" must use HTTPS (RFC 6749 section 3.2, RFC 9126 section 2, RFC 8628 section 3.1), on a loopback host too.',
+                    $name,
+                    $url,
+                ),
         );
     }
 }

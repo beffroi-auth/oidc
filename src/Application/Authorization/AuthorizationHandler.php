@@ -19,9 +19,8 @@ use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Authorization\AuthorizationResponse;
 use Heidi\Oidc\Domain\Authorization\Prompt;
-use Heidi\Oidc\Domain\Consent\Consent;
+use Heidi\Oidc\Application\Consent\ConsentGranting;
 use Heidi\Oidc\Domain\Event\AuthorizationCodeIssued;
-use Heidi\Oidc\Domain\Event\ConsentGranted;
 use Heidi\Oidc\Domain\Interaction\AuthorizationDecision;
 use Heidi\Oidc\Domain\Interaction\ConsentRequired;
 use Heidi\Oidc\Domain\Interaction\ConsentRequirement;
@@ -75,6 +74,7 @@ final readonly class AuthorizationHandler
     public function __construct(
         private InteractionRepositoryInterface $interactions,
         private ConsentRepositoryInterface $consents,
+        private ConsentGranting $consentGranting,
         private AuthorizationCodeRepositoryInterface $codes,
         private PushedAuthorizationRecordRepositoryInterface $pushedRecords,
         private IdTokenHintVerifier $idTokenHints,
@@ -146,25 +146,7 @@ final readonly class AuthorizationHandler
         }
         $interaction->authenticate($session, $now);
 
-        $client = $interaction->request->client;
-        $previous = $this->consents->findActive($session->user, $client);
-        if ($previous === null) {
-            $consent = new Consent($this->uuids->timeOrdered(), $session->user, $client, $interaction->request->scopes, $now);
-        } else {
-            $consent = $previous->extendedWith($interaction->request->scopes, $this->uuids->timeOrdered(), $now);
-            $this->consents->save($previous);
-        }
-        $this->consents->save($consent);
-        $this->events->dispatch(new ConsentGranted(
-            $consent->grantedAt,
-            $consent->tenant,
-            $consent->id,
-            $consent->clientId,
-            $consent->user->id,
-            $consent->scopes,
-            $previous?->id,
-            $context,
-        ));
+        $consent = $this->consentGranting->grant($session, $interaction->request->client, $interaction->request->scopes, $context, $now);
         $interaction->consent($consent, $now);
 
         return $this->decide($interaction, $session, $context, $now);
