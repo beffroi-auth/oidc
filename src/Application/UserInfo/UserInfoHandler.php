@@ -10,12 +10,13 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Application\Token\AccessTokenInspector;
+use Heidi\Oidc\Application\Token\PresentedAccessTokenParser;
 use Heidi\Oidc\Domain\Authorization\ClaimRequest;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\CertificateConfirmation;
-use Heidi\Oidc\Domain\Token\PresentedAccessToken;
 use Heidi\Oidc\Domain\Token\ProvenPossession;
 use Heidi\Oidc\Domain\UserInfo\UserInfoResponse;
 use Heidi\Oidc\Exception\InsufficientScopeException;
@@ -25,7 +26,6 @@ use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\TokenBindingNotProvenException;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\ServedTokenSchemesInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
@@ -59,7 +59,7 @@ final readonly class UserInfoHandler
         private EndpointLocatorInterface $endpoints,
         private SubjectIdentifierResolverInterface $subjects,
         private ClaimsProviderInterface $claims,
-        private ServedTokenSchemesInterface $schemes,
+        private PresentedAccessTokenParser $presentedTokens,
     ) {
     }
 
@@ -81,7 +81,7 @@ final readonly class UserInfoHandler
         ?ClientCertificate $certificate = null,
         ?string $dpopProof = null,
     ): UserInfoResponse {
-        $presented = PresentedAccessToken::fromRequest($authorizationHeader, $parameters, $this->schemes->servedTokenSchemes());
+        $presented = $this->presentedTokens->parse($authorizationHeader, RequestParameters::of($parameters));
         if ($presented === null) {
             throw new MissingBearerTokenException();
         }
