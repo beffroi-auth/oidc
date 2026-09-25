@@ -11,6 +11,7 @@ use function array_values;
 use function count;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Exception\LoadBudgetSpentException;
 use Heidi\Oidc\Application\Client\Method\ConfirmingMethodInterface;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailed;
@@ -18,6 +19,7 @@ use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Heidi\Oidc\Exception\InvalidClientException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\OAuth2Exception;
+use Heidi\Oidc\Port\ClientLoadBudgetInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use function implode;
 use Psr\Clock\ClockInterface;
@@ -35,6 +37,11 @@ use function sprintf;
  * What comes back is the client and what it proved beyond being itself: a method that proves a key binds
  * the tokens of the request to it (RFC 8705 §3), and the authenticator carries that without knowing what
  * it is made of.
+ *
+ * A client that authenticated takes one of its load budget (decision 0014), here and nowhere else,
+ * because this is the one place where its identifier is proven rather than claimed. A method that only
+ * names its client takes nothing: a public client is bounded by the budget of its origin, and counting
+ * it here would let anyone empty the budget of a client by naming it.
  */
 final readonly class ClientAuthenticator
 {
@@ -47,6 +54,7 @@ final readonly class ClientAuthenticator
         private ClientAuthenticationMethods $methods,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
+        private ClientLoadBudgetInterface $budget,
     ) {
     }
 
@@ -56,6 +64,7 @@ final readonly class ClientAuthenticator
      * @param array<string, mixed> $parameters the form parameters of the request body
      *
      * @throws OAuth2Exception
+     * @throws LoadBudgetSpentException when the client authenticated and its load budget is spent
      */
     public function authenticate(
         Tenant $tenant,
@@ -92,6 +101,9 @@ final readonly class ClientAuthenticator
                 throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::UnexpectedMethod, $clientId, $method->name());
             }
             $registered->verify($request, $client);
+            if ($registered->authenticatesClient()) {
+                $this->budget->consume($tenant, $clientId);
+            }
 
             return new AuthenticatedClient($client, $registered instanceof ConfirmingMethodInterface ? $registered->confirmationOf($request) : null);
         } catch (ClientAuthenticationFailure $failure) {
