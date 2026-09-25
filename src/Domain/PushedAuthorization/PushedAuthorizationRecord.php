@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\PushedAuthorization;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Record\RecordReadOnce;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -25,7 +26,7 @@ use function max;
  * authorization code. A consumed or expired record grants nothing and stays only so that the next
  * presentation is told from a reference nobody ever issued.
  */
-final class PushedAuthorizationRecord extends RecordReadOnce
+final class PushedAuthorizationRecord extends RecordReadOnce implements ResolvesItsClientInterface
 {
     public readonly Tenant $tenant;
 
@@ -83,5 +84,10 @@ final class PushedAuthorizationRecord extends RecordReadOnce
     protected function readerThatChecks(): string
     {
         return 'the authorization endpoint';
+    }
+
+    public function clientHolder(): object
+    {
+        return $this;
     }
 }

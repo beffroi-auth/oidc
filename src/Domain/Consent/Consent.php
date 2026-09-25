@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
@@ -16,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
  * What a user agreed to let a client obtain about them (architecture §4.3). A new grant to the same client
  * supersedes the previous one, which is revoked.
  */
-final class Consent
+final class Consent implements ResolvesItsClientInterface
 {
     public readonly Tenant $tenant;
 
@@ -73,5 +74,10 @@ final class Consent
     public function isFor(User $user, Client $client): bool
     {
         return $this->user->id->equals($user->id) && $this->client->equals($client);
+    }
+
+    public function clientHolder(): object
+    {
+        return $this;
     }
 }

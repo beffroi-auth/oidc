@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Record\ExpiringRecord;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -28,7 +29,7 @@ use function min;
  * whoever took a copy. One issued to a confidential client keeps none: what it authenticates with is
  * what it is asked for again, at every refresh.
  */
-final class RefreshToken extends ExpiringRecord implements HashedTokenInterface
+final class RefreshToken extends ExpiringRecord implements HashedTokenInterface, ResolvesItsClientInterface
 {
     public readonly Tenant $tenant;
 
@@ -162,5 +163,10 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface
     public function isRevoked(): bool
     {
         return $this->revokedAt !== null;
+    }
+
+    public function clientHolder(): object
+    {
+        return $this;
     }
 }

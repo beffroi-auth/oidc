@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Consent\Consent;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InteractionCompletedException;
@@ -19,7 +20,7 @@ use Heidi\Oidc\Exception\LogicException;
  * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier
  * is 256 random bits and the bundle binds it to the browser session; an interaction is completed once.
  */
-final class Interaction
+final class Interaction implements ResolvesItsClientInterface
 {
     /**
      * What a store keeps; the object is what the client repository resolved for it.
@@ -124,5 +125,14 @@ final class Interaction
         if ($this->isExpired($now)) {
             throw new InteractionExpiredException($this->id);
         }
+    }
+
+    /**
+     * The client of an interaction is the client of the request it parked, and the property that carries
+     * it lives there rather than on the interaction itself.
+     */
+    public function clientHolder(): object
+    {
+        return $this->request;
     }
 }

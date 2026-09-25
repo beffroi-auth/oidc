@@ -9,6 +9,7 @@ use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Record\RecordReadOnce;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -22,7 +23,7 @@ use Symfony\Component\Uid\Uuid;
  * value, and everything the token endpoint needs, what the session had proven, frozen in an
  * AuthenticationSnapshot at issuance. The record is also the grant the tokens descend from, named by "grantId".
  */
-final class AuthorizationCode extends RecordReadOnce
+final class AuthorizationCode extends RecordReadOnce implements ResolvesItsClientInterface
 {
     public readonly Tenant $tenant;
 
@@ -90,5 +91,10 @@ final class AuthorizationCode extends RecordReadOnce
     protected function readerThatChecks(): string
     {
         return 'the grant';
+    }
+
+    public function clientHolder(): object
+    {
+        return $this;
     }
 }

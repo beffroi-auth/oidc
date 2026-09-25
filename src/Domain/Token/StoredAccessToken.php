@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\Token;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
@@ -23,7 +24,7 @@ use Symfony\Component\Uid\Uuid;
  * neither (StoredClientAccessToken); each kind has a table of its own, so that a row never carries a
  * column its kind has nothing to write in.
  */
-abstract readonly class StoredAccessToken implements HashedTokenInterface
+abstract readonly class StoredAccessToken implements HashedTokenInterface, ResolvesItsClientInterface
 {
     public Tenant $tenant;
 
@@ -71,5 +72,10 @@ abstract readonly class StoredAccessToken implements HashedTokenInterface
     public function isExpired(DateTimeImmutable $now): bool
     {
         return $now >= $this->expiresAt;
+    }
+
+    public function clientHolder(): object
+    {
+        return $this;
     }
 }
