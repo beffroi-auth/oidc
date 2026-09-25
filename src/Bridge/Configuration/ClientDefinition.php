@@ -38,6 +38,7 @@ use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
+use Heidi\Oidc\Domain\Token\ClientSubject;
 use Heidi\Oidc\Domain\Client\ResponseEncryption;
 use Heidi\Oidc\Domain\Client\ResponseFormat;
 use Heidi\Oidc\Domain\Scope\Scope;
@@ -177,6 +178,7 @@ final readonly class ClientDefinition
             self::stringList($clientId, 'post_logout_redirect_uris', $definition['post_logout_redirect_uris'] ?? []),
         );
         $grantTypes = self::grantTypes($clientId, $definition, $grants);
+        self::assertGrantsHoldWithTheRest($clientId, $grantTypes, $grants, $redirectUris, $method);
         $allowedScopes = new Scopes(array_map(
             static fn (string $scope): Scope => new Scope($scope),
             self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']),
@@ -484,6 +486,68 @@ final readonly class ClientDefinition
         }
 
         return $registered;
+    }
+
+    /**
+     * What a client's registration must carry beside the grants it names, and what it must not, read where
+     * the registration meets the wiring because only the wiring says what a grant does (issue #98).
+     *
+     * A grant whose flow sends the user's browser back to the client is spent against a redirect URI, so a
+     * client registered for one registers at least one (RFC 6749 §3.1.2.2); a client registered for none
+     * sends nobody anywhere and registers none, a URI nothing can redirect to being a promise the provider
+     * would keep for nobody. A grant a client uses for itself authenticates that client (RFC 6749 §4.4), so
+     * a public client is refused it here rather than at its first request, and the client is named in the
+     * "sub" of the tokens it gets, so an identifier no subject can be is refused with it.
+     *
+     * @param list<GrantTypeName> $registered
+     * @param list<RedirectUri> $redirectUris
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function assertGrantsHoldWithTheRest(
+        string $clientId,
+        array $registered,
+        ServedGrantsInterface $grants,
+        array $redirectUris,
+        ClientAuthenticationMethodInterface $method,
+    ): void {
+        if ($registered === []) {
+            // A client that registers no grant at all is refused by the registration itself, which needs
+            // nothing of the wiring to say so
+            return;
+        }
+        $isRegistered = static fn (GrantTypeName $grantType): bool => array_any(
+            $registered,
+            static fn (GrantTypeName $one): bool => $one->equals($grantType),
+        );
+        $sendsTheUser = array_find($grants->sendingTheUserToTheClient(), $isRegistered);
+        if ($sendsTheUser !== null && $redirectUris === []) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" is registered for "%s", whose flow sends the user back to it, and therefore registers at least one redirect URI (RFC 6749 section 3.1.2.2).',
+                $clientId,
+                $sendsTheUser->value,
+            ));
+        }
+        if ($sendsTheUser === null && $redirectUris !== []) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers redirect URIs and no grant that would send the user to one: register one of: %s.',
+                $clientId,
+                implode(', ', GrantNames::of($grants->sendingTheUserToTheClient())),
+            ));
+        }
+        $actsForItself = array_find($grants->actingForTheClientItself(), $isRegistered);
+        if ($actsForItself === null) {
+            return;
+        }
+        if (! $method->authenticatesClient()) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" is registered for "%s", which requires client authentication, and authenticates with %s, which proves nothing (RFC 6749 section 4.4).',
+                $clientId,
+                $actsForItself->value,
+                $method->name(),
+            ));
+        }
+        ClientSubject::ofIdentifier($clientId);
     }
 
     /**

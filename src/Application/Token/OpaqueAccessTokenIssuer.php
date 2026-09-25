@@ -7,7 +7,7 @@ namespace Heidi\Oidc\Application\Token;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 
@@ -32,7 +32,7 @@ final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerIn
         return 'opaque';
     }
 
-    public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now): AccessToken
+    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken
     {
         $expiresAt = $now->add($this->lifetime);
 

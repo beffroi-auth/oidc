@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 use Heidi\Oidc\Domain\Token\StoredAccessToken;
 use SensitiveParameter;
 
@@ -16,9 +16,11 @@ use SensitiveParameter;
 interface AccessTokenRepositoryInterface
 {
     /**
+     * The record of the kind the authorization is, written under the digest of the value drawn for it.
+     *
      * @return string the value, for the response and nothing else
      */
-    public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): string;
+    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): string;
 
     public function find(#[SensitiveParameter] string $token): ?StoredAccessToken;
 }

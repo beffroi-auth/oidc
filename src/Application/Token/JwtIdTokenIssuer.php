@@ -9,7 +9,7 @@ use DateTimeImmutable;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
 use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Heidi\Oidc\Domain\Token\TokenHash;
 use Heidi\Oidc\Port\ClaimsProviderInterface;
 use Heidi\Oidc\Port\IdTokenIssuerInterface;
@@ -45,7 +45,7 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
     ) {
     }
 
-    public function issue(GrantedAuthorization $authorization, AccessToken $accessToken, DateTimeImmutable $now): string
+    public function issue(UserAuthorizationInterface $authorization, AccessToken $accessToken, DateTimeImmutable $now): string
     {
         $format = $authorization->client->registration->idToken;
         $algorithm = $format->signature ?? $this->algorithms->defaultAlgorithm();

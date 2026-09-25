@@ -7,7 +7,7 @@ namespace Heidi\Oidc\Application\Token;
 use function array_values;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Port\AccessTokenIssuerInterface;
 use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
@@ -48,7 +48,7 @@ final readonly class ServedAccessTokenShapes implements AccessTokenIssuerInterfa
      *
      * @throws InvalidArgumentException when the wiring does not hold together
      */
-    public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now): AccessToken
+    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken
     {
         $shape = $authorization->client->registration->accessTokenShape->name();
         $wired = $this->wired();

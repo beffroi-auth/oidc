@@ -34,6 +34,12 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  * those asked for by name (§5.5). A token without "openid" is insufficient_scope (§5.3.1). Errors are the
  * ones of RFC 6750 §3.1 and of RFC 9449 §7.1.
  *
+ * It answers for a user, so a token nobody signed in for opens nothing here: a client acting for itself
+ * (RFC 6749 §4.4) asks its token for a resource and is refused by the rule below that the token must be
+ * addressed to this provider, and a token with nobody behind it that got that far would be refused for
+ * carrying no "openid" either (OIDC Core §5.3.1). The claims of a user are served to a token that names one
+ * and to no other, whatever else the request is right about.
+ *
  * It is a token of the provider itself: a token asked for a resource (RFC 8707 §2) is addressed to that
  * resource, and this endpoint is not it, so it is refused here however valid it is elsewhere. A client
  * that comes for the claims of its user asks for a token naming no resource, which is what a client of
@@ -105,13 +111,13 @@ final readonly class UserInfoHandler
         if (! $token->audience->has($token->client->registration->clientId)) {
             throw InvalidTokenException::addressedElsewhere();
         }
-        if ($token->scopes?->has(Scope::openid()) !== true) {
+        $user = $inspected->user;
+        if ($user === null || $token->scopes?->has(Scope::openid()) !== true) {
             throw new InsufficientScopeException(
                 'The access token was not obtained through an OpenID Connect authentication request.',
                 new Scopes([Scope::openid()]),
             );
         }
-        $user = $inspected->user;
 
         $requested = array_fill_keys($token->userinfoClaims, new ClaimRequest());
         $client = $token->client;

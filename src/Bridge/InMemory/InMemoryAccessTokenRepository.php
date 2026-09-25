@@ -7,9 +7,10 @@ namespace Heidi\Oidc\Bridge\InMemory;
 use function array_filter;
 use function array_values;
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 use Heidi\Oidc\Domain\Token\StoredAccessToken;
+use Heidi\Oidc\Domain\Token\StoredUserAccessToken;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokenInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
@@ -30,11 +31,11 @@ final class InMemoryAccessTokenRepository implements
      */
     private array $tokens = [];
 
-    public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): string
+    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): string
     {
         $value = DrawnSecret::draw();
         $hash = DrawnSecret::digestOf($value);
-        $this->tokens[$hash] = StoredAccessToken::fromAuthorization($hash, $authorization, $now, $expiresAt);
+        $this->tokens[$hash] = $authorization->storedUnder($hash, $now, $expiresAt);
 
         return $value;
     }
@@ -64,7 +65,7 @@ final class InMemoryAccessTokenRepository implements
 
     public function revokeBySession(Uuid $session): array
     {
-        return $this->remove(static fn (StoredAccessToken $token): bool => $token->session->id->equals($session));
+        return $this->remove(static fn (StoredAccessToken $token): bool => $token instanceof StoredUserAccessToken && $token->session->id->equals($session));
     }
 
     /**

@@ -6,7 +6,7 @@ namespace Heidi\Oidc\Port;
 
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 
 /**
  * Mints the access token of a response (architecture §4.6): how it is written and how long it lives.
@@ -17,5 +17,5 @@ use Heidi\Oidc\Domain\Token\GrantedAuthorization;
  */
 interface AccessTokenIssuerInterface
 {
-    public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now): AccessToken;
+    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken;
 }

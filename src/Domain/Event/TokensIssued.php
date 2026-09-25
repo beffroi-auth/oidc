@@ -20,6 +20,7 @@ final readonly class TokensIssued implements DomainEventInterface
 {
     /**
      * @param ConfirmationInterface|null $confirmation what the tokens that left are bound to, null for bearer ones (RFC 9449 §6, RFC 8705 §3)
+     * @param Uuid|null $sessionId the session the tokens descend from, null when nobody signed in for them (RFC 6749 §4.4)
      * @param string|null $refreshTokenHash the refresh token that left, by its hash, null when none did
      */
     public function __construct(
@@ -28,7 +29,7 @@ final readonly class TokensIssued implements DomainEventInterface
         public GrantTypeName $grantType,
         public Uuid $grantId,
         public string $clientId,
-        public Uuid $sessionId,
+        public ?Uuid $sessionId,
         public Scopes $grantedScopes,
         public DateTimeImmutable $accessTokenExpiresAt,
         public bool $idTokenIssued,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
+use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
@@ -18,12 +19,13 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * What a verified grant entitles the client to (architecture §4.5), read by the token issuers. "scopes"
- * is what this response carries, "grantedScopes" what the user granted (RFC 6749 §6); "resources" and
- * "grantedResources" say the same of the resources the access token is addressed to (RFC 8707 §2.2),
- * a token request being free to narrow either and to widen neither.
+ * What a verified grant of a browser flow entitles the client to (architecture §4.5): an authorization
+ * that descends from a session, and therefore names a user and says what that session had proven when it
+ * was granted. "scopes" is what this response carries, "grantedScopes" what the user granted
+ * (RFC 6749 §6); "resources" and "grantedResources" say the same of the resources the access token is
+ * addressed to (RFC 8707 §2.2), a token request being free to narrow either and to widen neither.
  */
-final readonly class GrantedAuthorization
+final readonly class UserAuthorization implements UserAuthorizationInterface
 {
     public Tenant $tenant;
 
@@ -83,6 +85,11 @@ final readonly class GrantedAuthorization
     public function audience(): TokenAudience
     {
         return TokenAudience::of($this->client, $this->resources);
+    }
+
+    public function storedUnder(string $tokenHash, DateTimeImmutable $now, DateTimeImmutable $expiresAt): StoredUserAccessToken
+    {
+        return StoredUserAccessToken::fromAuthorization($tokenHash, $this, $now, $expiresAt);
     }
 
     /**

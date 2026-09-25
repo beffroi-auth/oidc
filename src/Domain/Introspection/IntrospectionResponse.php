@@ -15,6 +15,9 @@ use SensitiveParameter;
  * The answer of the introspection endpoint (RFC 7662 §2.2): "active" as a real boolean, alone when the
  * token is inactive, followed otherwise by the members of §2.2, those of RFC 9068 §2.2.1 and the private
  * ones of the provider (architecture §4.6). Signed on request (RFC 9701 §4).
+ *
+ * What a token says is what is rendered: a token a client holds for itself names that client in "sub" and
+ * carries no "sid", no "auth_time", no "acr" and no "amr", because nobody signed in for it (RFC 6749 §4.4).
  */
 final readonly class IntrospectionResponse
 {
@@ -69,8 +72,9 @@ final readonly class IntrospectionResponse
                 'sub' => $token->subject->value,
                 'aud' => $token->audience->claim(),
                 'iss' => $issuer->value,
-                ...$token->authentication->toClaims(),
-                'sid' => $token->sessionId->toRfc4122(),
+                // A token a client holds for itself descends from no sign-in, so it renders nothing of
+                // one rather than rendering it empty (RFC 6749 §4.4)
+                ...($token->signIn?->toClaims() ?? []),
                 'grant_id' => $token->grantId->toRfc4122(),
                 // RFC 8705 §3.2: a resource server reads here what it must ask the caller to present again
                 ...($token->confirmation?->toClaims() ?? []),

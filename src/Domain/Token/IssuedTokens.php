@@ -8,12 +8,13 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * What one token request produced (architecture §4.5).
+ * What one token request produced (architecture §4.5): the access token, and whatever else the
+ * authorization it spends entitled the client to.
  */
 final readonly class IssuedTokens
 {
     public function __construct(
-        public GrantedAuthorization $authorization,
+        public AuthorizationInterface $authorization,
         public AccessToken $accessToken,
         #[SensitiveParameter]
         public ?string $idToken,

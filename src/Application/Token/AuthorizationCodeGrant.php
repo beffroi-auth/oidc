@@ -16,7 +16,7 @@ use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Event\AuthorizationCodeReplayed;
 use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\UserAuthorization;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
 use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
@@ -40,7 +40,7 @@ use Symfony\Component\Uid\Uuid;
  * other: the authorization request said which key would come and collect it, and a code intercepted on
  * its way back through the browser is worth nothing to whoever does not hold it.
  */
-final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterface
+final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterface, SendsTheUserToTheClientInterface
 {
     private const string INVALID = 'The authorization code is invalid.';
 
@@ -100,7 +100,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
 
         // RFC 8707 §2.2: the access token of this response may be addressed to a subset of the
         // resources the authorization carries, while the refresh token beside it stays bound to them all
-        $authorization = GrantedAuthorization::fromAuthorizationCode(
+        $authorization = UserAuthorization::fromAuthorizationCode(
             $this->grantType(),
             $record,
             $client->confirmation,
@@ -142,7 +142,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
      * does not carry. What spends one is what the provider is wired with and the client registered for,
      * and neither this grant nor the client names it.
      */
-    private function refreshTokenDue(GrantedAuthorization $authorization): bool
+    private function refreshTokenDue(UserAuthorization $authorization): bool
     {
         $registration = $authorization->client->registration;
         $spent = array_any(

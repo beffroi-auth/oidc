@@ -7,7 +7,12 @@ namespace Heidi\Oidc\Application\Token;
 use function array_keys;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Heidi\Oidc\Domain\Token\ClientSubject;
+use Heidi\Oidc\Domain\Token\StoredAccessToken;
+use Heidi\Oidc\Domain\Token\StoredUserAccessToken;
+use Heidi\Oidc\Domain\Token\TokenSignIn;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
@@ -19,6 +24,10 @@ use SensitiveParameter;
  * Reads back an opaque access token (architecture §4.6), the counterpart of OpaqueAccessTokenIssuer: the
  * record kept under the digest of the value, which is the only thing that says what the token is for. A
  * token of this shape is a reference the provider holds, so it can be taken back (RFC 7009 §2.1).
+ *
+ * The record says whether somebody signed in for the token: the one kept for a sign-in names the user of
+ * its session in "sub" and the sign-in it descends from, the one kept for a client acting for itself names
+ * that client and no sign-in (RFC 6749 §4.4, RFC 9068 §2.2).
  */
 final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInterface
 {
@@ -59,20 +68,30 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
         if ($token->isExpired($now)) {
             throw InvalidTokenException::expired();
         }
-        $requested = $token->claimsRequest === null ? [] : array_keys($token->claimsRequest->userinfo);
+        $signedIn = $token instanceof StoredUserAccessToken;
 
         return new VerifiedAccessToken(
             $token->client,
             $token->audience(),
-            $this->subjects->resolve($token->session->user, $token->client),
-            $token->session->id,
+            $this->subjectOf($token),
             $token->grantId,
             $token->scopes,
-            $requested,
-            $token->authentication,
+            $signedIn ? new TokenSignIn($token->session->id, $token->authentication) : null,
+            $signedIn && $token->claimsRequest !== null ? array_keys($token->claimsRequest->userinfo) : [],
             $token->issuedAt,
             $token->expiresAt,
             $token->confirmation,
         );
+    }
+
+    /**
+     * RFC 9068 §2.2: the pairwise subject of the user who signed in (OIDC Core §8), and the client itself
+     * when nobody did (RFC 6749 §4.4); the same rule the self-contained shape writes into its own "sub".
+     */
+    private function subjectOf(StoredAccessToken $token): Subject
+    {
+        return $token instanceof StoredUserAccessToken
+            ? $this->subjects->resolve($token->session->user, $token->client)
+            : ClientSubject::of($token->client);
     }
 }

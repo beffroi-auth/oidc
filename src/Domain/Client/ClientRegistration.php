@@ -29,7 +29,9 @@ use function sprintf;
  * keeps it, which are the two things a `Client` adds.
  *
  * The names it registers are read against what the provider is wired with, where the two meet, and not
- * here: a registration knows the shape of a grant name and not which names anybody serves.
+ * here: a registration knows the shape of a grant name and not which names anybody serves. Whether it must
+ * carry a redirect URI is one of those rules, since only the wiring says whether a grant it registered
+ * sends a browser anywhere: a client that acts for itself (RFC 6749 §4.4) registers none.
  *
  * Every list is closed, no wildcard. "requiresConsent = false" and "requiresPkce = false" are the named
  * exceptions of architecture §7 and decision 0008, carried by the registration and by nothing global;
@@ -78,7 +80,7 @@ final readonly class ClientRegistration
 
     /**
      * @param bool $registersASecret whether the client registered a shared secret; what shape the provider keeps it in is the business of the `Client` that holds it
-     * @param list<RedirectUri> $redirectUris at least one
+     * @param list<RedirectUri> $redirectUris where the user's browser is sent back to (RFC 6749 §3.1.2); how many a client must register depends on the grants it registered, which is read where a registration meets the wiring
      * @param AccessTokenShapeInterface $accessTokenShape the shape this client receives its access tokens in (architecture §4.6), among those the provider is wired to write; which those are is read where a registration meets that wiring, as for a grant and for an authentication method
      * @param list<RedirectUri> $postLogoutRedirectUris
      * @param list<GrantTypeName> $grantTypes at least one; "authorization_code" alone for a client that registers none (RFC 7591 §2). Which names the provider serves, and which of them need another beside them, is what it is wired with and is read where a registration meets that wiring (architecture §4.8)
@@ -297,9 +299,6 @@ final readonly class ClientRegistration
                 $this->clientId,
                 $this->authenticationMethod->name(),
             ));
-        }
-        if ($this->redirectUris === []) {
-            throw new InvalidArgumentException(sprintf('The client "%s" registers at least one redirect URI (RFC 6749 §3.1.2.2).', $this->clientId));
         }
         if ($this->grantTypes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one grant type.', $this->clientId));

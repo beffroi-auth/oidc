@@ -83,7 +83,7 @@ final class RefreshToken implements HashedTokenInterface
     public static function fromAuthorization(
         string $tokenHash,
         RefreshTokenFamily $family,
-        GrantedAuthorization $authorization,
+        UserAuthorizationInterface $authorization,
         DateTimeImmutable $now,
         DateTimeImmutable $expiresAt,
     ): self {

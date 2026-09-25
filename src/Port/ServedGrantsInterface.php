@@ -31,4 +31,18 @@ interface ServedGrantsInterface
      * @return list<GrantTypeName>
      */
     public function spendingRefreshTokens(): array;
+
+    /**
+     * Those of them a client uses for itself, with nobody signed in behind it (RFC 6749 §4.4).
+     *
+     * @return list<GrantTypeName>
+     */
+    public function actingForTheClientItself(): array;
+
+    /**
+     * Those of them whose flow sends the user's browser back to the client (RFC 6749 §3.1.2).
+     *
+     * @return list<GrantTypeName>
+     */
+    public function sendingTheUserToTheClient(): array;
 }

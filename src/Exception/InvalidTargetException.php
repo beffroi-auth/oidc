@@ -45,6 +45,16 @@ final class InvalidTargetException extends OAuth2Exception
     }
 
     /**
+     * RFC 8707 §2: a resource that is missing is as invalid as one that is unknown. A grant with nobody
+     * behind it asks for the resource its token is for, and is refused rather than answered with a token
+     * addressed to the client that asked for it.
+     */
+    public static function missing(): self
+    {
+        return new self('This grant type issues an access token for a resource, and the request names none (RFC 8707 section 2).');
+    }
+
+    /**
      * RFC 8707 §2.2: a token request narrows the resources of the authorization it spends, and never
      * widens them.
      */

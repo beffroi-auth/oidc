@@ -12,7 +12,7 @@ use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Event\RefreshTokenReuseDetected;
 use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
-use Heidi\Oidc\Domain\Token\GrantedAuthorization;
+use Heidi\Oidc\Domain\Token\UserAuthorization;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Domain\Token\RefreshToken;
 use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
@@ -76,7 +76,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             throw new InvalidScopeException('The requested scope exceeds the scope granted to the refresh token (RFC 6749 section 6).');
         }
 
-        $authorization = GrantedAuthorization::fromRefreshToken(
+        $authorization = UserAuthorization::fromRefreshToken(
             $this->grantType(),
             $token,
             $scopes,

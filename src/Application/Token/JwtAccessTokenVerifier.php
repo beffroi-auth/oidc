@@ -14,6 +14,7 @@ use Heidi\Core\Port\JwsVerifierInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\TokenAudience;
+use Heidi\Oidc\Domain\Token\TokenSignIn;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTokenException;
@@ -35,6 +36,10 @@ use Symfony\Component\Uid\Uuid;
  * claim the issuer wrote, read strictly, and nothing believed that the signature does not cover. A token
  * of this shape carries what it says, so it expires on its own and no endpoint takes it back
  * (RFC 7009 §2.2.1).
+ *
+ * A token that names a sign-in says all of it, and a token that names none says nothing of one: a "sid"
+ * without the claims of its session, or those claims without a "sid", is not what this provider writes
+ * and is refused here (RFC 6749 §4.4).
  */
 final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterface
 {
@@ -112,15 +117,14 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             throw InvalidTokenException::notIssuedHere();
         }
         $sub = $claims['sub'] ?? null;
-        $sid = $claims['sid'] ?? null;
         $grantId = $claims[JwtAccessTokenIssuer::GRANT_ID] ?? null;
-        if (! is_string($sub) || ! is_string($sid) || ! Uuid::isValid($sid) || ! is_string($grantId) || ! Uuid::isValid($grantId)) {
+        if (! is_string($sub) || ! is_string($grantId) || ! Uuid::isValid($grantId)) {
             throw InvalidTokenException::notIssuedHere();
         }
         try {
             $subject = new Subject($sub);
             $scopes = self::scopes($claims['scope'] ?? null);
-            $authentication = AuthenticationSnapshot::fromClaims($claims);
+            $signIn = self::signIn($claims);
             $confirmation = $this->confirmations->fromClaims($claims);
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw InvalidTokenException::notIssuedHere($exception);
@@ -130,11 +134,10 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             $client,
             $audience,
             $subject,
-            Uuid::fromString($sid),
             Uuid::fromString($grantId),
             $scopes,
+            $signIn,
             self::stringList($claims[JwtAccessTokenIssuer::USERINFO_CLAIMS] ?? []),
-            $authentication,
             new DateTimeImmutable('@' . $iat),
             new DateTimeImmutable('@' . $exp),
             $confirmation,
@@ -153,6 +156,33 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         }
 
         return $claims;
+    }
+
+    /**
+     * The sign-in the token descends from, null when it names none, which is what a token a client holds
+     * for itself looks like (RFC 6749 §4.4). A "sid" is answered for by the claims of its session and they
+     * by it: half of a sign-in was not written here.
+     *
+     * @param array<array-key, mixed> $claims
+     *
+     * @throws InvalidTokenException
+     * @throws OidcInvalidArgumentException when what the claims say of a session is not what one says
+     */
+    private static function signIn(array $claims): ?TokenSignIn
+    {
+        $sid = $claims['sid'] ?? null;
+        if ($sid === null) {
+            if (isset($claims['auth_time']) || isset($claims['acr']) || isset($claims['amr'])) {
+                throw InvalidTokenException::notIssuedHere();
+            }
+
+            return null;
+        }
+        if (! is_string($sid) || ! Uuid::isValid($sid)) {
+            throw InvalidTokenException::notIssuedHere();
+        }
+
+        return new TokenSignIn(Uuid::fromString($sid), AuthenticationSnapshot::fromClaims($claims));
     }
 
     /**
