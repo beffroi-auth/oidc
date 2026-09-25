@@ -53,4 +53,12 @@ interface ServedGrantsInterface
      * @return list<GrantTypeName>
      */
     public function askingTheUserOnAnotherDevice(): array;
+
+    /**
+     * Those of them whose user the provider reaches itself, on a device they already hold, the client
+     * having no browser in the flow at all (CIBA Core §7).
+     *
+     * @return list<GrantTypeName>
+     */
+    public function askingTheUserThroughABackchannel(): array;
 }

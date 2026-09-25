@@ -7,6 +7,8 @@ namespace Heidi\Oidc\Domain\Client;
 use function array_all;
 use function array_any;
 use function array_find;
+use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
+use Heidi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
@@ -88,6 +90,8 @@ final readonly class ClientRegistration
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
      * @param bool $requiresSignedRequestObject true when an authorization request of this client is only read from a request object it signed (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1)
+     * @param DeliveryModeInterface|null $backchannelTokenDeliveryMode how this client is told that a backchannel request has been answered (CIBA Core §4), among the modes the provider is wired with; null for a client of no such flow, which is every client that does not ask for one. There is no default: a mode nobody registered would make a client of another flow a client of this one by accident
+     * @param ClientUri|null $backchannelClientNotificationEndpoint where this provider calls that client back (CIBA Core §7.1), for a mode where it does and for no other
      * @param list<ResourceIndicator> $resources the resources this client may ask a token for ("resource", RFC 8707 §2); a closed list like every other, so a resource outside it is "invalid_target". A client that registers none asks for none and its tokens are addressed to itself
      * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
      * @param list<ClientUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
@@ -132,6 +136,8 @@ final readonly class ClientRegistration
         public bool $requiresSenderConstrainedTokens = false,
         public bool $requiresSignedRequestObject = false,
         array $resources = [],
+        public ?DeliveryModeInterface $backchannelTokenDeliveryMode = null,
+        public ?ClientUri $backchannelClientNotificationEndpoint = null,
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();
@@ -318,6 +324,19 @@ final readonly class ClientRegistration
         if ($this->frontChannelLogoutSessionRequired && $this->frontChannelLogoutUri === null) {
             throw new InvalidArgumentException(sprintf(
                 'The client "%s" requires an "iss" and a "sid" on its logout URI but registers no frontchannel_logout_uri to carry them (Front-Channel Logout 1.0 §3).',
+                $this->clientId,
+            ));
+        }
+        if ($this->backchannelTokenDeliveryMode instanceof NotifiesTheClientInterface && $this->backchannelClientNotificationEndpoint === null) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers the "%s" backchannel token delivery mode, where the provider calls it back, but registers no backchannel_client_notification_endpoint to be called at (CIBA Core section 7.1).',
+                $this->clientId,
+                $this->backchannelTokenDeliveryMode->name(),
+            ));
+        }
+        if (! $this->backchannelTokenDeliveryMode instanceof NotifiesTheClientInterface && $this->backchannelClientNotificationEndpoint !== null) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers a backchannel_client_notification_endpoint but no backchannel token delivery mode where the provider calls it (CIBA Core section 7.1).',
                 $this->clientId,
             ));
         }

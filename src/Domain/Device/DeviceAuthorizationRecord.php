@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Record\RecordReadOnce;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -35,7 +36,7 @@ use function max;
  * the client polls for descend from the approval and not from whatever the session became afterwards
  * (architecture §4.6).
  */
-final class DeviceAuthorizationRecord extends RecordReadOnce
+final class DeviceAuthorizationRecord extends RecordReadOnce implements ResolvesItsClientInterface
 {
     /**
      * RFC 8628 §3.2: the seconds a client waits between two polls when the response names none.
@@ -186,6 +187,11 @@ final class DeviceAuthorizationRecord extends RecordReadOnce
         $this->interval += self::INTERVAL_INCREASE;
 
         return true;
+    }
+
+    public function clientHolder(): object
+    {
+        return $this;
     }
 
     protected function nameOfRecord(): string

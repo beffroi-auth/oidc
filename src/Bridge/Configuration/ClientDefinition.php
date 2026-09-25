@@ -17,11 +17,13 @@ use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Scope\Scopes;
+use Heidi\Oidc\Application\Ciba\DeliveryModeNames;
 use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
 use Heidi\Oidc\Application\Client\MethodNames;
 use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Application\Token\GrantNames;
 use Heidi\Oidc\Application\Token\ShapeNames;
+use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
@@ -44,12 +46,14 @@ use Heidi\Oidc\Domain\Client\ResponseFormat;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
+use Heidi\Oidc\Port\ServedDeliveryModesInterface;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_bool;
 use function is_string;
@@ -110,6 +114,8 @@ final readonly class ClientDefinition
         'request_object_signing_alg',
         'request_uris',
         'resources',
+        'backchannel_token_delivery_mode',
+        'backchannel_client_notification_endpoint',
         ...CertificateIdentities::NAMES,
     ];
 
@@ -129,6 +135,7 @@ final readonly class ClientDefinition
      * @param ServedGrantsInterface $grants what the provider serves at its token endpoint: a client registers those names and no other
      * @param ServedAccessTokenShapesInterface $shapes what the provider writes its access tokens in: a client registers one of those names, or none and takes the first
      * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
+     * @param ServedDeliveryModesInterface $deliveryModes how the provider is wired to tell a client that a backchannel request has been answered: a client of that flow registers one of those names, and every other client registers none
      */
     public static function fromArray(
         string $clientId,
@@ -140,6 +147,7 @@ final readonly class ClientDefinition
         CertificateReaderInterface $certificates,
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
+        ServedDeliveryModesInterface $deliveryModes,
     ): self {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -223,6 +231,9 @@ final readonly class ClientDefinition
             self::stringList($clientId, 'resources', $definition['resources'] ?? []),
         );
 
+        $backchannelTokenDeliveryMode = self::deliveryMode($clientId, $definition, $deliveryModes);
+        $backchannelClientNotificationEndpoint = self::clientUri($clientId, 'backchannel_client_notification_endpoint', $definition);
+
         $registration = new ClientRegistration(
             $clientId,
             $name,
@@ -251,6 +262,8 @@ final readonly class ClientDefinition
             $requiresSenderConstrainedTokens,
             $requiresSignedRequestObject,
             $resources,
+            $backchannelTokenDeliveryMode,
+            $backchannelClientNotificationEndpoint,
         );
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
             self::assertAddressable($clientId, $format, $jwks);
@@ -637,6 +650,38 @@ final readonly class ClientDefinition
      * the logout page frames (Front-Channel Logout 1.0 §3), where the keys of the client are read back
      * from (RFC 7591 §2). Read and validated as every other URI a client registers.
      *
+     * @param array<string, mixed> $definition
+     */
+    /**
+     * CIBA Core §4, §7.1: the mode this client registered, among the ones the provider is wired with.
+     * There is no default and no first wired one taken: a client that registers nothing here is a client
+     * of another flow, and it is refused at the endpoint of this one rather than served a mode nobody
+     * asked for.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @throws InvalidArgumentException when the client registers a name nothing is wired with
+     */
+    private static function deliveryMode(string $clientId, array $definition, ServedDeliveryModesInterface $modes): ?DeliveryModeInterface
+    {
+        $name = self::text($clientId, 'backchannel_token_delivery_mode', $definition);
+        if ($name === null) {
+            return null;
+        }
+        $wired = DeliveryModeNames::of($modes->servedDeliveryModes());
+        if (! in_array($name, $wired, true)) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers the backchannel token delivery mode "%s", which this provider is not wired with; it serves %s.',
+                $clientId,
+                $name,
+                $wired === [] ? 'none' : implode(', ', $wired),
+            ));
+        }
+
+        return $modes->named($name);
+    }
+
+    /**
      * @param array<string, mixed> $definition
      */
     private static function clientUri(string $clientId, string $key, array $definition): ?ClientUri
