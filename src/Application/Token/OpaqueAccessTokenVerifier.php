@@ -29,6 +29,14 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
     }
 
     /**
+     * The shape OpaqueAccessTokenIssuer writes, which a client registers by this name.
+     */
+    public function name(): string
+    {
+        return 'opaque';
+    }
+
+    /**
      * The shape this provider draws an opaque token in, and nothing else: a value of another shape was
      * not issued here, whatever a store might answer for it.
      */

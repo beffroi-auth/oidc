@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Bridge\InMemory;
 
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\AccessTokenFormat;
+use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 use Heidi\Oidc\Port\RegisteredResourcesInterface;
-use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 
 /**
@@ -20,8 +20,8 @@ use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 final class InMemoryClientRepository implements
     ClientRepositoryInterface,
     PushedAuthorizationRequirementInterface,
+    RegisteredAccessTokenShapesInterface,
     RegisteredResourcesInterface,
-    ServedAccessTokenFormatsInterface,
     UnsignedRequestObjectsInterface
 {
     /**
@@ -40,11 +40,11 @@ final class InMemoryClientRepository implements
         return null;
     }
 
-    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
+    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenShapeInterface $shape): bool
     {
         return array_any(
             $this->clients,
-            static fn (Client $client): bool => $client->belongsTo($tenant) && $client->registration->accessTokenFormat === $format,
+            static fn (Client $client): bool => $client->belongsTo($tenant) && $client->registration->accessTokenShape->name() === $shape->name(),
         );
     }
 

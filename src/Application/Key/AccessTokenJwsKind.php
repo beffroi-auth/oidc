@@ -9,18 +9,18 @@ use Heidi\Core\Domain\Key\KeyUse;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\KeyBoundArtifactInterface;
 use Heidi\Oidc\Application\Token\JwtAccessTokenIssuer;
-use Heidi\Oidc\Domain\Client\AccessTokenFormat;
-use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
+use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 
 /**
  * The "at+jwt" access token (RFC 9068), issued only when a client of the tenant is registered for that
- * shape (architecture §4.6). The lifetime is read from the issuer so that the two cannot disagree.
+ * shape (architecture §4.6). Both the shape and the lifetime are read from the issuer that writes them,
+ * so that nothing here names either again.
  */
 final readonly class AccessTokenJwsKind implements KeyBoundArtifactInterface
 {
     public function __construct(
         private JwtAccessTokenIssuer $issuer,
-        private ServedAccessTokenFormatsInterface $formats,
+        private RegisteredAccessTokenShapesInterface $shapes,
     ) {
     }
 
@@ -31,6 +31,6 @@ final readonly class AccessTokenJwsKind implements KeyBoundArtifactInterface
 
     public function longestLifetime(Tenant $tenant): ?DateInterval
     {
-        return $this->formats->issuesAccessTokensIn($tenant, AccessTokenFormat::Jwt) ? $this->issuer->lifetime : null;
+        return $this->shapes->issuesAccessTokensIn($tenant, $this->issuer) ? $this->issuer->lifetime : null;
     }
 }

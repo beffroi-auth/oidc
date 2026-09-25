@@ -10,7 +10,7 @@ use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Client\AccessTokenFormat;
+use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
@@ -18,8 +18,9 @@ use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 use Heidi\Oidc\Port\RegisteredResourcesInterface;
-use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
+use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 use WeakMap;
@@ -32,8 +33,8 @@ use WeakMap;
 final class ConfigurationClientRepository implements
     ClientRepositoryInterface,
     PushedAuthorizationRequirementInterface,
+    RegisteredAccessTokenShapesInterface,
     RegisteredResourcesInterface,
-    ServedAccessTokenFormatsInterface,
     UnsignedRequestObjectsInterface
 {
     /**
@@ -61,6 +62,7 @@ final class ConfigurationClientRepository implements
         SignatureAlgorithmsInterface $algorithms,
         ClientAuthenticationMethodsInterface $methods,
         ServedGrantsInterface $grants,
+        ServedAccessTokenShapesInterface $shapes,
         CertificateReaderInterface $certificates,
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
@@ -72,6 +74,7 @@ final class ConfigurationClientRepository implements
                 $algorithms,
                 $methods,
                 $grants,
+                $shapes,
                 $certificates,
                 $keyEncryption,
                 $contentEncryption,
@@ -107,7 +110,7 @@ final class ConfigurationClientRepository implements
         return $clients[$clientId];
     }
 
-    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool
+    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenShapeInterface $shape): bool
     {
         if (! $this->serves($tenant)) {
             return false;
@@ -115,7 +118,7 @@ final class ConfigurationClientRepository implements
 
         return array_any(
             $this->definitions,
-            static fn (ClientDefinition $definition): bool => $definition->registration->accessTokenFormat === $format,
+            static fn (ClientDefinition $definition): bool => $definition->registration->accessTokenShape->name() === $shape->name(),
         );
     }
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Port;
 
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\AccessTokenFormat;
+use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 
 /**
  * Which shapes of access token a tenant actually hands out (architecture §4.6), which is what the
@@ -17,7 +17,11 @@ use Heidi\Oidc\Domain\Client\AccessTokenFormat;
  * resolves a client: a caller that looks a client up never asks this, and a caller that asks this never
  * looks a client up.
  */
-interface ServedAccessTokenFormatsInterface
+interface RegisteredAccessTokenShapesInterface
 {
-    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenFormat $format): bool;
+    /**
+     * Whether a client of this tenant is registered for the shape, compared by the name both sides give
+     * it and never by the instance either of them holds.
+     */
+    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenShapeInterface $shape): bool;
 }

@@ -79,6 +79,7 @@ final readonly class ClientRegistration
     /**
      * @param bool $registersASecret whether the client registered a shared secret; what shape the provider keeps it in is the business of the `Client` that holds it
      * @param list<RedirectUri> $redirectUris at least one
+     * @param AccessTokenShapeInterface $accessTokenShape the shape this client receives its access tokens in (architecture §4.6), among those the provider is wired to write; which those are is read where a registration meets that wiring, as for a grant and for an authentication method
      * @param list<RedirectUri> $postLogoutRedirectUris
      * @param list<GrantTypeName> $grantTypes at least one; "authorization_code" alone for a client that registers none (RFC 7591 §2). Which names the provider serves, and which of them need another beside them, is what it is wired with and is read where a registration meets that wiring (architecture §4.8)
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
@@ -107,13 +108,13 @@ final readonly class ClientRegistration
         public ClientAuthenticationMethodInterface $authenticationMethod,
         public bool $registersASecret,
         array $redirectUris,
+        public AccessTokenShapeInterface $accessTokenShape,
         array $postLogoutRedirectUris = [],
         array $grantTypes = [new GrantTypeName('authorization_code')],
         ?Scopes $allowedScopes = null,
         public bool $requiresConsent = true,
         ?ResponseFormat $idToken = null,
         public bool $requiresPkce = true,
-        public AccessTokenFormat $accessTokenFormat = AccessTokenFormat::Jwt,
         public ?ClientUri $backChannelLogoutUri = null,
         public bool $backChannelLogoutSessionRequired = false,
         public ?ClientUri $frontChannelLogoutUri = null,

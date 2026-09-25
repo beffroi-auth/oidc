@@ -51,6 +51,14 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     }
 
     /**
+     * The shape JwtAccessTokenIssuer writes, which a client registers by this name.
+     */
+    public function name(): string
+    {
+        return 'jwt';
+    }
+
+    /**
      * RFC 7515 §3.1: a compact serialization is three parts separated by dots, which nothing this
      * provider draws for an opaque token ever contains.
      */

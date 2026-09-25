@@ -12,7 +12,7 @@ use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\GrantedAuthorization;
 use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Port\AccessTokenIssuerInterface;
+use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
 use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -26,7 +26,7 @@ use Symfony\Component\Uid\Uuid;
  * registered for its ID tokens. A token issued on a request that proved a key carries the "cnf" of
  * RFC 7800 §3.1, which is what binds it to that key (RFC 8705 §3).
  */
-final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
+final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInterface
 {
     public const string TYPE = 'at+jwt';
 
@@ -40,6 +40,15 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
         private SignatureAlgorithmsInterface $algorithms,
         public DateInterval $lifetime = new DateInterval('PT10M'),
     ) {
+    }
+
+    /**
+     * The name a client registers to receive its access tokens in this shape, which JwtAccessTokenVerifier
+     * reads them back under.
+     */
+    public function name(): string
+    {
+        return 'jwt';
     }
 
     public function issue(GrantedAuthorization $authorization, DateTimeImmutable $now): AccessToken

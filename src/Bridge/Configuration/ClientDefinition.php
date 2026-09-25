@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Bridge\Configuration;
 
 use function array_any;
-use function array_column;
 use function array_diff;
 use function array_find;
 use function array_keys;
-use BackedEnum;
+use function array_search;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\UnsupportedAlgorithmException;
@@ -22,7 +21,8 @@ use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
 use Heidi\Oidc\Application\Client\MethodNames;
 use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Application\Token\GrantNames;
-use Heidi\Oidc\Domain\Client\AccessTokenFormat;
+use Heidi\Oidc\Application\Token\ShapeNames;
+use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\Client;
@@ -46,6 +46,7 @@ use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
+use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
 use function implode;
 use function is_array;
@@ -125,6 +126,7 @@ final readonly class ClientDefinition
      * @param ContentEncryptionAlgorithmsInterface $contentEncryption what the payload of such a document is encrypted with
      * @param ClientAuthenticationMethodsInterface $methods what the provider authenticates clients with: a client registers one of those names
      * @param ServedGrantsInterface $grants what the provider serves at its token endpoint: a client registers those names and no other
+     * @param ServedAccessTokenShapesInterface $shapes what the provider writes its access tokens in: a client registers one of those names, or none and takes the first
      * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
      */
     public static function fromArray(
@@ -133,6 +135,7 @@ final readonly class ClientDefinition
         SignatureAlgorithmsInterface $algorithms,
         ClientAuthenticationMethodsInterface $methods,
         ServedGrantsInterface $grants,
+        ServedAccessTokenShapesInterface $shapes,
         CertificateReaderInterface $certificates,
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
@@ -196,12 +199,7 @@ final readonly class ClientDefinition
         $requiresSenderConstrainedTokens = self::flag($clientId, 'require_sender_constrained_tokens', $definition);
         $requiresSignedRequestObject = self::flag($clientId, 'require_signed_request_object', $definition);
 
-        $accessTokenFormat = self::enumCase(
-            $clientId,
-            'access_token_format',
-            $definition['access_token_format'] ?? AccessTokenFormat::Jwt->value,
-            AccessTokenFormat::class,
-        );
+        $accessTokenShape = self::accessTokenShape($clientId, $definition, $shapes);
 
         $jwks = self::jwks($clientId, $definition);
         $jwksUri = self::clientUri($clientId, 'jwks_uri', $definition);
@@ -229,13 +227,13 @@ final readonly class ClientDefinition
             $method,
             $secret !== null,
             $redirectUris,
+            $accessTokenShape,
             $postLogoutRedirectUris,
             $grantTypes,
             $allowedScopes,
             $requiresConsent,
             $idToken,
             $requiresPkce,
-            $accessTokenFormat,
             $backChannelLogoutUri,
             $backChannelLogoutSessionRequired,
             $frontChannelLogoutUri,
@@ -400,17 +398,50 @@ final readonly class ClientDefinition
     private static function method(string $clientId, array $definition, ClientAuthenticationMethodsInterface $methods): ClientAuthenticationMethodInterface
     {
         $wired = $methods->clientAuthenticationMethods();
-        $name = self::text($clientId, 'token_endpoint_auth_method', $definition);
+
+        return self::named($clientId, 'token_endpoint_auth_method', $definition, $wired, MethodNames::of($wired));
+    }
+
+    /**
+     * The shape the client registers its access tokens in, among those the provider is wired to write
+     * (issue #239): a name nothing writes fails at boot with the list of the wired ones, because the
+     * configuration tree cannot know that list. A client that registers none takes the first wired
+     * shape, as it takes the first wired authentication method.
+     *
+     * @param array<string, mixed> $definition
+     */
+    private static function accessTokenShape(string $clientId, array $definition, ServedAccessTokenShapesInterface $shapes): AccessTokenShapeInterface
+    {
+        $wired = $shapes->servedAccessTokenShapes();
+
+        return self::named($clientId, 'access_token_format', $definition, $wired, ShapeNames::of($wired));
+    }
+
+    /**
+     * One of the things the provider is wired with, picked by the name the client registered, or the
+     * first of them when the client registered none. Written once for the two options that read a wired
+     * list this way, so that they cannot take a name, take a default or refuse differently; the names
+     * are read from the things themselves and never written again here.
+     *
+     * @template T of object
+     *
+     * @param array<string, mixed> $definition
+     * @param non-empty-list<T> $wired
+     * @param non-empty-list<string> $names what each of them calls itself, in the same order
+     *
+     * @throws InvalidArgumentException when the client registered a name nothing is wired with
+     *
+     * @return T
+     */
+    private static function named(string $clientId, string $option, array $definition, array $wired, array $names): object
+    {
+        $name = self::text($clientId, $option, $definition);
         if ($name === null) {
             return $wired[0];
         }
-        foreach ($wired as $method) {
-            if ($method->name() === $name) {
-                return $method;
-            }
-        }
+        $at = array_search($name, $names, true);
 
-        throw self::oneOf($clientId, 'token_endpoint_auth_method', MethodNames::of($wired));
+        return $at === false ? throw self::oneOf($clientId, $option, $names) : $wired[$at];
     }
 
     /**
@@ -618,27 +649,5 @@ final readonly class ClientDefinition
         }
 
         return $list;
-    }
-
-    /**
-     * @template T of BackedEnum
-     *
-     * @param class-string<T> $enum
-     *
-     * @return T
-     */
-    private static function enumCase(string $clientId, string $key, mixed $value, string $enum): object
-    {
-        $case = is_string($value) ? $enum::tryFrom($value) : null;
-        if ($case === null) {
-            throw new InvalidArgumentException(sprintf(
-                'The %s option of the client "%s" must be one of: %s.',
-                $key,
-                $clientId,
-                implode(', ', array_column($enum::cases(), 'value')),
-            ));
-        }
-
-        return $case;
     }
 }
