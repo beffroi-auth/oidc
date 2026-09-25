@@ -69,8 +69,9 @@ final readonly class RequestObjectResolver
      */
     public function resolve(Tenant $tenant, array $parameters, ?Client $client = null): ?array
     {
-        $byValue = RequestParameters::single($parameters, 'request', false);
-        $byReference = RequestParameters::single($parameters, 'request_uri', false);
+        $received = RequestParameters::of($parameters);
+        $byValue = $received->optional('request');
+        $byReference = $received->optional('request_uri');
         if ($byValue === null && $byReference === null) {
             return null;
         }
@@ -99,7 +100,12 @@ final readonly class RequestObjectResolver
      */
     private function client(Tenant $tenant, array $parameters): Client
     {
-        return $this->clients->findByClientId($tenant, RequestParameters::clientId($parameters)) ?? throw new InvalidRequestException('The client is unknown.');
+        return (
+            $this->clients->findByClientId(
+                $tenant,
+                RequestParameters::of($parameters)->clientId(),
+            ) ?? throw new InvalidRequestException('The client is unknown.')
+        );
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTargetException;
@@ -27,7 +28,7 @@ final readonly class RequestedResources
      *
      * @return ResourceIndicators|null null when the request narrows nothing
      */
-    public static function of(TokenRequest $request, ?ResourceIndicators $granted): ?ResourceIndicators
+    public static function of(RequestParameters $request, ?ResourceIndicators $granted): ?ResourceIndicators
     {
         $values = $request->repeated('resource');
         if ($values === []) {

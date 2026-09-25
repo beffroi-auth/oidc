@@ -8,6 +8,7 @@ use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Token\TokenResponse;
 use Heidi\Oidc\Exception\InvalidRequestException;
@@ -65,7 +66,7 @@ final readonly class TokenHandler
         if (! $client->provesWhatItsClientRequires()) {
             throw new InvalidRequestException('The tokens of this client are bound to what the request proves it holds, and this request proves neither a certificate nor a key (FAPI 2.0 Security Profile section 5.3.1).');
         }
-        $request = new TokenRequest($parameters);
+        $request = RequestParameters::of($parameters);
 
         $grant = $this->grants->named($request->required('grant_type'));
         if ($grant === null) {

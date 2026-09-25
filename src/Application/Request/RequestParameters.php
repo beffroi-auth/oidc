@@ -14,9 +14,16 @@ use function preg_match;
 use function sprintf;
 
 /**
- * How the browser-facing endpoints read their parameters (RFC 6749 §3.1): a single string, a repeated
- * or nested one refused, an empty one omitted, an unknown one ignored. Nothing is cast; every pattern
- * ends with the D modifier. Whether a failure is redirectable is the caller's to say.
+ * The raw parameters of a request, read the one way every endpoint of this provider reads them
+ * (RFC 6749 §3.1): a single string, a repeated or nested one refused, an empty one omitted, an unknown
+ * one ignored. Nothing is cast; every pattern ends with the D modifier. A parameter a specification
+ * allows to repeat is the one exception, and it is read as the list it is.
+ *
+ * Whether a failure may be redirected back to the client is a property of the stage that reads, not of
+ * the parameter: the first stage of an authorization request knows no redirect URI yet and the token
+ * endpoint answers in JSON, so what they read refuses without a redirect; the second stage of an
+ * authorization request answers to the client, so what it reads refuses with one. The caller says which
+ * it is once, when it takes the parameters up, and every rule below follows.
  */
 final readonly class RequestParameters
 {
@@ -41,79 +48,102 @@ final readonly class RequestParameters
     public const string COMPACT_JWS_PATTERN = '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D';
 
     /**
-     * RFC 6749 §3.1: empty is omitted, repeated or nested is refused.
+     * @param array<string, mixed> $parameters
+     */
+    private function __construct(
+        private array $parameters,
+        private bool $redirectable,
+    ) {
+    }
+
+    /**
+     * The parameters as an endpoint received them, whose failures are refused on the spot: no redirect
+     * URI is known yet, or the endpoint answers in JSON and never redirects at all.
      *
      * @param array<string, mixed> $parameters
      */
-    public static function single(array $parameters, string $name, bool $redirectable): ?string
+    public static function of(array $parameters): self
     {
-        $value = $parameters[$name] ?? '';
+        return new self($parameters, false);
+    }
+
+    /**
+     * The same parameters, read by a stage whose failures go back to the client with "state" and "iss"
+     * (RFC 6749 §4.1.2.1, RFC 9207 §2).
+     */
+    public function withRedirectableFailures(): self
+    {
+        return new self($this->parameters, true);
+    }
+
+    public function isPresent(string $name): bool
+    {
+        return ($this->parameters[$name] ?? '') !== '';
+    }
+
+    /**
+     * RFC 6749 §3.1: empty is omitted, repeated or nested is refused.
+     *
+     * @throws InvalidRequestException when the parameter is not a single string
+     */
+    public function optional(string $name): ?string
+    {
+        $value = $this->parameters[$name] ?? '';
         if ($value === '') {
             return null;
         }
         if (! is_string($value)) {
-            throw new InvalidRequestException(sprintf('The %s parameter must be a single string.', $name), $redirectable);
+            throw new InvalidRequestException(sprintf('The %s parameter must be a single string.', $name), $this->redirectable);
         }
 
         return $value;
     }
 
     /**
-     * RFC 6749 §4.1.1: the client names itself in every request that reaches these endpoints, and one
-     * that names nobody names nothing to look up. Never redirectable: where an answer may go is read
-     * off the client, so it is not known yet.
-     *
-     * @param array<string, mixed> $parameters
+     * @throws InvalidRequestException when the parameter is missing, empty, or not a single string
+     */
+    public function required(string $name): string
+    {
+        return $this->optional($name) ?? throw new InvalidRequestException(sprintf('The %s parameter is missing.', $name), $this->redirectable);
+    }
+
+    /**
+     * RFC 6749 §4.1.1: the client names itself in every request that reaches an endpoint reading this,
+     * and one that names nobody names nothing to look up. Never redirectable: where an answer may go is
+     * read off the client, so it is not known yet.
      *
      * @throws InvalidRequestException when the parameter is missing, or is not a single string
      */
-    public static function clientId(array $parameters): string
+    public function clientId(): string
     {
-        return self::single($parameters, 'client_id', false) ?? throw new InvalidRequestException('The client_id parameter is missing.');
+        return $this->optional('client_id') ?? throw new InvalidRequestException('The client_id parameter is missing.');
     }
 
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    public static function isPresent(array $parameters, string $name): bool
+    public function state(): ?string
     {
-        return ($parameters[$name] ?? '') !== '';
-    }
-
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    public static function state(array $parameters, bool $redirectable): ?string
-    {
-        $state = self::single($parameters, 'state', $redirectable);
+        $state = $this->optional('state');
         if ($state !== null && preg_match(self::STATE_PATTERN, $state) !== 1) {
-            throw new InvalidRequestException('The state parameter must be printable ASCII text (RFC 6749 appendix A.5).', $redirectable);
+            throw new InvalidRequestException('The state parameter must be printable ASCII text (RFC 6749 appendix A.5).', $this->redirectable);
         }
 
         return $state;
     }
 
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    public static function text(array $parameters, string $name, bool $redirectable): ?string
+    public function text(string $name): ?string
     {
-        $value = self::single($parameters, $name, $redirectable);
+        $value = $this->optional($name);
         if ($value !== null && preg_match(self::TEXT_PATTERN, $value) !== 1) {
-            throw new InvalidRequestException(sprintf('The %s parameter must be text without control characters.', $name), $redirectable);
+            throw new InvalidRequestException(sprintf('The %s parameter must be text without control characters.', $name), $this->redirectable);
         }
 
         return $value;
     }
 
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    public static function compactJws(array $parameters, string $name, bool $redirectable): ?string
+    public function compactJws(string $name): ?string
     {
-        $value = self::single($parameters, $name, $redirectable);
+        $value = $this->optional($name);
         if ($value !== null && preg_match(self::COMPACT_JWS_PATTERN, $value) !== 1) {
-            throw new InvalidRequestException(sprintf('The %s parameter is not a signed compact JWT.', $name), $redirectable);
+            throw new InvalidRequestException(sprintf('The %s parameter is not a signed compact JWT.', $name), $this->redirectable);
         }
 
         return $value;
@@ -122,18 +152,14 @@ final readonly class RequestParameters
     /**
      * OIDC Core §3.1.2.1 "ui_locales": most preferred first.
      *
-     * @param array<string, mixed> $parameters
-     *
      * @return list<string>
      */
-    public static function uiLocales(array $parameters, bool $redirectable): array
+    public function uiLocales(): array
     {
-        return self::list(
-            $parameters,
+        return $this->list(
             'ui_locales',
             self::LANGUAGE_TAG_PATTERN,
             'The ui_locales parameter must be a space-separated list of language tags.',
-            $redirectable,
         );
     }
 
@@ -142,13 +168,13 @@ final readonly class RequestParameters
      * forbids for every other one: what arrives is a single string, a list of them, or nothing. Values
      * are kept in the order they came, without repeats, and nothing is cast.
      *
-     * @param array<string, mixed> $parameters
+     * @throws InvalidRequestException when the parameter is neither a string nor a list of them
      *
      * @return list<string> empty when the request carries none
      */
-    public static function repeated(array $parameters, string $name, bool $redirectable): array
+    public function repeated(string $name): array
     {
-        $value = $parameters[$name] ?? '';
+        $value = $this->parameters[$name] ?? '';
         if ($value === '' || $value === []) {
             return [];
         }
@@ -156,12 +182,12 @@ final readonly class RequestParameters
             return [$value];
         }
         if (! is_array($value) || ! array_is_list($value)) {
-            throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $redirectable);
+            throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $this->redirectable);
         }
         $values = [];
         foreach ($value as $item) {
             if (! is_string($item) || $item === '') {
-                throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $redirectable);
+                throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $this->redirectable);
             }
             if (! in_array($item, $values, true)) {
                 $values[] = $item;
@@ -174,20 +200,18 @@ final readonly class RequestParameters
     /**
      * Space-separated, every item matching the pattern, without repeats.
      *
-     * @param array<string, mixed> $parameters
-     *
      * @return list<string>
      */
-    public static function list(array $parameters, string $name, string $pattern, string $description, bool $redirectable): array
+    public function list(string $name, string $pattern, string $description): array
     {
-        $value = self::single($parameters, $name, $redirectable);
+        $value = $this->optional($name);
         if ($value === null) {
             return [];
         }
         $items = [];
         foreach (explode(' ', $value) as $item) {
             if (preg_match($pattern, $item) !== 1) {
-                throw new InvalidRequestException($description, $redirectable);
+                throw new InvalidRequestException($description, $this->redirectable);
             }
             if (! in_array($item, $items, true)) {
                 $items[] = $item;

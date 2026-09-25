@@ -14,14 +14,14 @@ use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRequest;
+use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
 use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationResponse;
 use Heidi\Oidc\Domain\PushedAuthorization\RequestUri;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\PushedAuthorizationRequestRepositoryInterface;
+use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use function array_all;
 use function array_is_list;
 use function is_array;
@@ -53,7 +53,7 @@ final readonly class PushedAuthorizationHandler
         private EndpointLocatorInterface $endpoints,
         private AuthorizationRequestParser $parser,
         private RequestObjectResolver $requestObjects,
-        private PushedAuthorizationRequestRepositoryInterface $requests,
+        private PushedAuthorizationRecordRepositoryInterface $records,
         private ClockInterface $clock,
         public DateInterval $lifetime = new DateInterval('PT60S'),
     ) {
@@ -78,7 +78,7 @@ final readonly class PushedAuthorizationHandler
         $endpoint = $this->endpoints->locate($tenant)->pushedAuthorizationRequest;
         $client = $this->clients->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)->client;
         $provenKey = $this->proofs->verify($dpopProof, 'POST', $endpoint, $context->receivedAt);
-        if (RequestParameters::isPresent($parameters, 'request_uri')) {
+        if (RequestParameters::of($parameters)->isPresent('request_uri')) {
             throw new InvalidRequestException('The request_uri parameter is not one of those a pushed authorization request carries (RFC 9126 section 2.1).');
         }
 
@@ -99,10 +99,10 @@ final readonly class PushedAuthorizationHandler
 
         $now = $this->clock->now();
         $requestUri = RequestUri::generate();
-        $request = new PushedAuthorizationRequest($requestUri->hash(), $client, self::kept($parameters), $now, $now->add($this->lifetime), $object !== null);
-        $this->requests->save($request);
+        $record = new PushedAuthorizationRecord($requestUri->hash(), $client, self::kept($parameters), $now, $now->add($this->lifetime), $object !== null);
+        $this->records->save($record);
 
-        return new PushedAuthorizationResponse($requestUri, $request->expiresIn($now));
+        return new PushedAuthorizationResponse($requestUri, $record->expiresIn($now));
     }
 
     /**

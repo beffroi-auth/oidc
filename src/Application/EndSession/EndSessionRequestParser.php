@@ -36,7 +36,8 @@ final readonly class EndSessionRequestParser
      */
     public function parse(Tenant $tenant, array $parameters): EndSessionRequest
     {
-        $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', false);
+        $request = RequestParameters::of($parameters);
+        $idTokenHint = $request->compactJws('id_token_hint');
         $hint = null;
         $invalidHint = false;
         if ($idTokenHint !== null) {
@@ -46,17 +47,17 @@ final readonly class EndSessionRequestParser
                 $invalidHint = true;
             }
         }
-        $client = $this->client($tenant, $hint, RequestParameters::single($parameters, 'client_id', false));
-        $postLogoutRedirectUri = self::postLogoutRedirectUri($client, RequestParameters::single($parameters, 'post_logout_redirect_uri', false), $invalidHint);
+        $client = $this->client($tenant, $hint, $request->optional('client_id'));
+        $postLogoutRedirectUri = self::postLogoutRedirectUri($client, $request->optional('post_logout_redirect_uri'), $invalidHint);
 
         return new EndSessionRequest(
             $tenant,
             $client,
             $hint,
             $postLogoutRedirectUri,
-            RequestParameters::state($parameters, false),
-            RequestParameters::text($parameters, 'logout_hint', false),
-            RequestParameters::uiLocales($parameters, false),
+            $request->state(),
+            $request->text('logout_hint'),
+            $request->uiLocales(),
             $invalidHint,
         );
     }

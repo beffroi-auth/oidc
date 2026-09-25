@@ -9,11 +9,11 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Event\PushedRequestRefusalReason;
 use Heidi\Oidc\Domain\Event\PushedRequestRefused;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRequest;
+use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
 use Heidi\Oidc\Domain\PushedAuthorization\RequestUri;
 use Heidi\Oidc\Exception\InvalidRequestUriException;
 use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\PushedAuthorizationRequestRepositoryInterface;
+use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
@@ -37,7 +37,7 @@ final readonly class PushedAuthorizationRequestResolver
     private const string REFUSED = 'The request_uri parameter names no request this provider is holding for this client (RFC 9126 section 4).';
 
     public function __construct(
-        private PushedAuthorizationRequestRepositoryInterface $requests,
+        private PushedAuthorizationRecordRepositoryInterface $records,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
     ) {
@@ -48,31 +48,32 @@ final readonly class PushedAuthorizationRequestResolver
      *
      * @throws OAuth2Exception never redirectable: a pushed request that grants nothing names no redirect
      *                         URI this provider would send anything to
-     * @return PushedAuthorizationRequest|null the record the endpoint reads in place of the query, null
+     * @return PushedAuthorizationRecord|null the record the endpoint reads in place of the query, null
      *                                         when the request was not pushed and the query stands
      */
-    public function resolve(Tenant $tenant, array $parameters, RequestContext $context): ?PushedAuthorizationRequest
+    public function resolve(Tenant $tenant, array $parameters, RequestContext $context): ?PushedAuthorizationRecord
     {
-        $requestUri = RequestParameters::single($parameters, 'request_uri', false);
+        $query = RequestParameters::of($parameters);
+        $requestUri = $query->optional('request_uri');
         if ($requestUri === null || ! RequestUri::isOurs($requestUri)) {
             return null;
         }
-        $clientId = RequestParameters::single($parameters, 'client_id', false);
-        $request = $this->requests->findByRequestUriHash(RequestUri::hashOf($requestUri));
-        if ($request === null) {
+        $clientId = $query->optional('client_id');
+        $record = $this->records->findByRequestUriHash(RequestUri::hashOf($requestUri));
+        if ($record === null) {
             throw $this->refuse($tenant, $context, PushedRequestRefusalReason::Unknown, $clientId, null);
         }
-        if (! $request->tenant->equals($tenant) || $request->clientId !== $clientId) {
-            throw $this->refuse($tenant, $context, PushedRequestRefusalReason::OtherClient, $clientId, $request->clientId);
+        if (! $record->tenant->equals($tenant) || $record->clientId !== $clientId) {
+            throw $this->refuse($tenant, $context, PushedRequestRefusalReason::OtherClient, $clientId, $record->clientId);
         }
-        if ($request->isExpired($this->clock->now())) {
-            throw $this->refuse($tenant, $context, PushedRequestRefusalReason::Expired, $clientId, $request->clientId);
+        if ($record->isExpired($this->clock->now())) {
+            throw $this->refuse($tenant, $context, PushedRequestRefusalReason::Expired, $clientId, $record->clientId);
         }
-        if ($request->isUsed()) {
-            throw $this->refuse($tenant, $context, PushedRequestRefusalReason::AlreadyUsed, $clientId, $request->clientId);
+        if ($record->isUsed()) {
+            throw $this->refuse($tenant, $context, PushedRequestRefusalReason::AlreadyUsed, $clientId, $record->clientId);
         }
 
-        return $request;
+        return $record;
     }
 
     /**
@@ -81,11 +82,11 @@ final readonly class PushedAuthorizationRequestResolver
      *
      * @return array<string, string|list<string>>
      */
-    public static function parametersOf(PushedAuthorizationRequest $request): array
+    public static function parametersOf(PushedAuthorizationRecord $record): array
     {
         return [
-            ...$request->parameters,
-            'client_id' => $request->clientId,
+            ...$record->parameters,
+            'client_id' => $record->clientId,
         ];
     }
 

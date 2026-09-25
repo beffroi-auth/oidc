@@ -9,8 +9,8 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\JwsSignerInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Application\Token\AccessTokenInspector;
-use Heidi\Oidc\Application\Token\TokenRequest;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Introspection\IntrospectionResponse;
@@ -66,7 +66,7 @@ final readonly class IntrospectionHandler
         if ($caller->registration->isPublic()) {
             throw new InvalidClientException('The introspection endpoint requires client authentication (RFC 7662 section 2.1); a public client has none.');
         }
-        $request = new TokenRequest($parameters);
+        $request = RequestParameters::of($parameters);
         $token = $request->required('token');
         $request->optional('token_type_hint');
         $response = $this->describe($tenant, $caller, $token, $context);

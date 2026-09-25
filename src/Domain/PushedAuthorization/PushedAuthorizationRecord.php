@@ -13,17 +13,19 @@ use Heidi\Oidc\Exception\LogicException;
 use function max;
 
 /**
- * An authorization request a client pushed before sending its user (RFC 9126 §2), as the provider keeps
- * it: the SHA-256 of the reference it answered with, the client it is bound to (§2.2), and the
- * parameters the authorization endpoint will read in place of the query (§4). The parameters are kept
- * as the client wrote them and not as the parser understood them, so that the endpoint reads one request
- * whichever way it arrived; what authenticated the client at the endpoint is not among them.
+ * What the provider keeps of an authorization request a client pushed before sending its user
+ * (RFC 9126 §2): the SHA-256 of the reference it answered with, the client the record is bound to
+ * (§2.2), and the parameters the authorization endpoint will read in place of the query (§4). It is a
+ * record and not a request: a request is what a client sent, and this outlives it, with a lifetime, a
+ * use and a state of its own. The parameters are kept as the client wrote them and not as the parser
+ * understood them, so that the endpoint reads one request whichever way it arrived; what authenticated
+ * the client at the endpoint is not among them.
  *
  * The record is read once: the repository claims it atomically and the winner consumes it, as it does an
  * authorization code. A consumed or expired record grants nothing and stays only so that the next
  * presentation is told from a reference nobody ever issued.
  */
-final class PushedAuthorizationRequest
+final class PushedAuthorizationRecord
 {
     public readonly Tenant $tenant;
 

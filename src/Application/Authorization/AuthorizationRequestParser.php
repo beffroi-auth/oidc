@@ -79,8 +79,9 @@ final readonly class AuthorizationRequestParser
      */
     public function redirectTarget(Tenant $tenant, array $parameters, bool $pushed = false, bool $signed = false): RedirectTarget
     {
-        self::assertResolved($parameters);
-        $client = $this->clients->findByClientId($tenant, RequestParameters::clientId($parameters));
+        $request = RequestParameters::of($parameters);
+        self::assertResolved($request);
+        $client = $this->clients->findByClientId($tenant, $request->clientId());
         if ($client === null) {
             throw new InvalidRequestException('The client is unknown.');
         }
@@ -95,14 +96,11 @@ final readonly class AuthorizationRequestParser
         if (! $signed && $client->registration->requiresSignedRequestObject) {
             throw new InvalidRequestException('The client only starts an authorization request with a request object it signed (OIDC Registration, require_signed_request_object).');
         }
-        $redirectUri = RequestParameters::single($parameters, 'redirect_uri', false);
-        if ($redirectUri === null) {
-            throw new InvalidRequestException('The redirect_uri parameter is missing.');
-        }
+        $redirectUri = $request->required('redirect_uri');
         if (! $client->registration->hasRedirectUri($redirectUri)) {
             throw new InvalidRequestException('The redirect_uri parameter is not registered for this client.');
         }
-        return new RedirectTarget($client, new RedirectUri($redirectUri), RequestParameters::state($parameters, false), $this->responseMode($parameters));
+        return new RedirectTarget($client, new RedirectUri($redirectUri), $request->state(), $this->responseMode($parameters));
     }
 
     /**
@@ -110,13 +108,11 @@ final readonly class AuthorizationRequestParser
      * (RFC 9101 §6.1): what the parser is given is the parameters of the object, never the object.
      * Finding one here is an endpoint wired without that resolver, which is a fault of the integration
      * and not of the request.
-     *
-     * @param array<string, mixed> $parameters
      */
-    private static function assertResolved(array $parameters): void
+    private static function assertResolved(RequestParameters $request): void
     {
         foreach (['request', 'request_uri'] as $name) {
-            if (RequestParameters::isPresent($parameters, $name)) {
+            if ($request->isPresent($name)) {
                 throw new LogicException(sprintf(
                     'The %s parameter reaches the parser, which means the endpoint was wired without the resolver that reads a request object (RFC 9101 section 6.1).',
                     $name,
@@ -163,46 +159,42 @@ final readonly class AuthorizationRequestParser
      */
     public function parse(RedirectTarget $target, array $parameters): AuthorizationRequest
     {
-        $responseType = RequestParameters::single($parameters, 'response_type', true);
-        if ($responseType === null) {
-            throw new InvalidRequestException('The response_type parameter is missing.', true);
-        }
+        $request = RequestParameters::of($parameters)->withRedirectableFailures();
+        $responseType = $request->required('response_type');
         if ($responseType !== 'code') {
             throw new UnsupportedResponseTypeException('Only the code response type is supported.');
         }
 
-        $responseMode = RequestParameters::single($parameters, 'response_mode', true);
+        $responseMode = $request->optional('response_mode');
         if ($responseMode !== null && self::requestedMode($responseMode) !== $target->responseMode) {
             throw new UnsupportedResponseModeException('The requested response mode is not supported.');
         }
 
-        $scopes = $this->scopes($target, RequestParameters::single($parameters, 'scope', true));
+        $scopes = $this->scopes($target, $request->required('scope'));
         $codeChallenge = self::codeChallenge(
             $target->client,
-            RequestParameters::single($parameters, 'code_challenge', true),
-            RequestParameters::single($parameters, 'code_challenge_method', true),
+            $request->optional('code_challenge'),
+            $request->optional('code_challenge_method'),
         );
 
-        $nonce = RequestParameters::text($parameters, 'nonce', true);
-        $prompts = self::prompts(RequestParameters::single($parameters, 'prompt', true));
-        $maxAge = RequestParameters::single($parameters, 'max_age', true);
+        $nonce = $request->text('nonce');
+        $prompts = self::prompts($request->optional('prompt'));
+        $maxAge = $request->optional('max_age');
         if ($maxAge !== null && preg_match(self::MAX_AGE_PATTERN, $maxAge) !== 1) {
             throw new InvalidRequestException('The max_age parameter must be a non-negative integer.', true);
         }
-        $loginHint = RequestParameters::text($parameters, 'login_hint', true);
-        $uiLocales = RequestParameters::uiLocales($parameters, true);
-        $acrValues = RequestParameters::list(
-            $parameters,
+        $loginHint = $request->text('login_hint');
+        $uiLocales = $request->uiLocales();
+        $acrValues = $request->list(
             'acr_values',
             self::ACR_VALUE_PATTERN,
             'The acr_values parameter must be a space-separated list of printable ASCII values.',
-            true,
         );
-        $display = self::display(RequestParameters::single($parameters, 'display', true));
-        $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', true);
-        $claims = self::claims(RequestParameters::single($parameters, 'claims', true));
-        $dpopKey = self::dpopKey(RequestParameters::single($parameters, 'dpop_jkt', true));
-        $resources = self::resources($target->client, RequestParameters::repeated($parameters, 'resource', true));
+        $display = self::display($request->optional('display'));
+        $idTokenHint = $request->compactJws('id_token_hint');
+        $claims = self::claims($request->optional('claims'));
+        $dpopKey = self::dpopKey($request->optional('dpop_jkt'));
+        $resources = self::resources($target->client, $request->repeated('resource'));
 
         return new AuthorizationRequest(
             $target->client,
@@ -278,15 +270,11 @@ final readonly class AuthorizationRequestParser
     /**
      * RFC 6749 §3.3, OIDC Core §3.1.2.2 step 3: contains "openid", every token allowed to the client.
      *
-     * @throws InvalidRequestException when the parameter is missing
      * @throws InvalidScopeException when it is not a list of scope tokens, when it names a scope the
      *                               client is not allowed, or when it does not name "openid"
      */
-    private function scopes(RedirectTarget $target, ?string $scope): Scopes
+    private function scopes(RedirectTarget $target, string $scope): Scopes
     {
-        if ($scope === null) {
-            throw new InvalidRequestException('The scope parameter is missing.', true);
-        }
         try {
             $scopes = Scopes::parse($scope);
         } catch (InvalidArgumentException $exception) {

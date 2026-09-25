@@ -37,9 +37,9 @@ use Heidi\Oidc\Exception\LoginRequiredException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
-use Heidi\Oidc\Port\PushedAuthorizationRequestRepositoryInterface;
 use Heidi\Oidc\Port\ConsentRepositoryInterface;
 use Heidi\Oidc\Port\InteractionRepositoryInterface;
+use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use Heidi\Oidc\Port\ProvableMethodsInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -74,7 +74,7 @@ final readonly class AuthorizationHandler
         private InteractionRepositoryInterface $interactions,
         private ConsentRepositoryInterface $consents,
         private AuthorizationCodeRepositoryInterface $codes,
-        private PushedAuthorizationRequestRepositoryInterface $pushedRequests,
+        private PushedAuthorizationRecordRepositoryInterface $pushedRecords,
         private IdTokenHintVerifier $idTokenHints,
         private ProvableMethodsInterface $provable,
         private CredentialRepositoryInterface $credentials,
@@ -167,9 +167,9 @@ final readonly class AuthorizationHandler
         if ($interaction->requestUriHash === null) {
             return true;
         }
-        $record = $this->pushedRequests->findByRequestUriHash($interaction->requestUriHash);
+        $record = $this->pushedRecords->findByRequestUriHash($interaction->requestUriHash);
 
-        return $record !== null && $this->pushedRequests->consume($record, $now);
+        return $record !== null && $this->pushedRecords->consume($record, $now);
     }
 
     /**

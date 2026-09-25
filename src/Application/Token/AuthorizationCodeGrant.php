@@ -9,6 +9,7 @@ use DateInterval;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\CodeChallenge;
 use Heidi\Oidc\Domain\Client\Client;
@@ -64,7 +65,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         return new GrantTypeName('authorization_code');
     }
 
-    public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens
+    public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens
     {
         $now = $this->clock->now();
         $code = $request->required('code');

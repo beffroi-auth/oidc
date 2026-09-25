@@ -8,8 +8,8 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Application\Token\AccessTokenVerifier;
-use Heidi\Oidc\Application\Token\TokenRequest;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\TokenRevoked;
@@ -65,7 +65,7 @@ final readonly class RevocationHandler
             $context,
             $certificate,
         )->client;
-        $request = new TokenRequest($parameters);
+        $request = RequestParameters::of($parameters);
         $token = $request->required('token');
         $request->optional('token_type_hint');
         $now = $context->receivedAt;

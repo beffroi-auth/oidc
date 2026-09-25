@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Event\RefreshTokenReuseDetected;
 use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
@@ -52,7 +53,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
         return new GrantTypeName('refresh_token');
     }
 
-    public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens
+    public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens
     {
         $now = $this->clock->now();
         $value = $request->required('refresh_token');

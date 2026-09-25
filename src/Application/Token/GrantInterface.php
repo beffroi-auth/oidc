@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Application\Token;
 
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Oidc\Application\Client\AuthenticatedClient;
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Token\IssuedTokens;
 use Heidi\Oidc\Exception\OAuth2Exception;
@@ -32,5 +33,5 @@ interface GrantInterface
     /**
      * @throws OAuth2Exception an error of RFC 6749 §5.2, answered as JSON
      */
-    public function grant(AuthenticatedClient $client, TokenRequest $request, RequestContext $context): IssuedTokens;
+    public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens;
 }
