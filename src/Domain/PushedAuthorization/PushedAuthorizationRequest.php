@@ -36,7 +36,7 @@ final class PushedAuthorizationRequest
 
     /**
      * @param string $requestUriHash see RequestUri::hashOf()
-     * @param array<string, string> $parameters the form parameters the client pushed, credentials taken out
+     * @param array<string, string|list<string>> $parameters the form parameters the client pushed, credentials taken out; a parameter the client repeated is kept as the list it was (RFC 8707 §2)
      * @param bool $carriedBySignedObject whether the push carried a request object the client signed
      *                                    (RFC 9101 §6.1), which the authorization endpoint can no longer
      *                                    see once the record answers for the request

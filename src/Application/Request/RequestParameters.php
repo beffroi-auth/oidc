@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Request;
 
+use function array_is_list;
 use function explode;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use function in_array;
+use function is_array;
 use function is_string;
 use function preg_match;
 use function sprintf;
@@ -133,6 +135,40 @@ final readonly class RequestParameters
             'The ui_locales parameter must be a space-separated list of language tags.',
             $redirectable,
         );
+    }
+
+    /**
+     * A parameter a specification allows to be sent several times (RFC 8707 §2), which RFC 6749 §3.1
+     * forbids for every other one: what arrives is a single string, a list of them, or nothing. Values
+     * are kept in the order they came, without repeats, and nothing is cast.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @return list<string> empty when the request carries none
+     */
+    public static function repeated(array $parameters, string $name, bool $redirectable): array
+    {
+        $value = $parameters[$name] ?? '';
+        if ($value === '' || $value === []) {
+            return [];
+        }
+        if (is_string($value)) {
+            return [$value];
+        }
+        if (! is_array($value) || ! array_is_list($value)) {
+            throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $redirectable);
+        }
+        $values = [];
+        foreach ($value as $item) {
+            if (! is_string($item) || $item === '') {
+                throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $redirectable);
+            }
+            if (! in_array($item, $values, true)) {
+                $values[] = $item;
+            }
+        }
+
+        return $values;
     }
 
     /**

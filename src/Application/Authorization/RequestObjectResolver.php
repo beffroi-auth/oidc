@@ -63,8 +63,9 @@ final readonly class RequestObjectResolver
      * @throws OAuth2Exception never redirectable: what names the destination is inside the object, and
      *                         an object that is refused is an object that was not read
      *
-     * @return array<string, string>|null the parameters the endpoint reads in place of them, null when
-     *                                    the request carries no object and the ones it carries stand
+     * @return array<string, string|list<string>>|null the parameters the endpoint reads in place of
+     *                                                  them, null when the request carries no object
+     *                                                  and the ones it carries stand
      */
     public function resolve(Tenant $tenant, array $parameters, ?Client $client = null): ?array
     {

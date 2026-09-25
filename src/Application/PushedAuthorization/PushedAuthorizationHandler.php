@@ -22,6 +22,9 @@ use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Port\EndpointLocatorInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequestRepositoryInterface;
+use function array_all;
+use function array_is_list;
+use function is_array;
 use function is_string;
 use Psr\Clock\ClockInterface;
 
@@ -132,15 +135,24 @@ final readonly class PushedAuthorizationHandler
      * them, without what authenticated it (RFC 9126 §2.1) and without what is not a form parameter at
      * all, which the parser has already refused for every name it reads.
      *
+     * A parameter the client repeated arrives as the list it was and is kept as one (RFC 8707 §2), so
+     * that the authorization endpoint reads the same request the parser read here.
+     *
      * @param array<string, mixed> $parameters
      *
-     * @return array<string, string>
+     * @return array<string, string|list<string>>
      */
     private static function kept(array $parameters): array
     {
         $kept = [];
         foreach (ClientAuthenticationRequest::withoutCredentials($parameters) as $name => $value) {
             if (is_string($value)) {
+                $kept[$name] = $value;
+
+                continue;
+            }
+            if (is_array($value) && array_is_list($value) && array_all($value, static fn (mixed $item): bool => is_string($item))) {
+                /** @var list<string> $value */
                 $kept[$name] = $value;
             }
         }

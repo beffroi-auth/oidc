@@ -13,13 +13,13 @@ use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Scope\Scopes;
+use Heidi\Oidc\Domain\Token\TokenAudience;
 use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Port\AccessTokenVerifierInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\ConfirmationReaderInterface;
-use function in_array;
 use function is_array;
 use function is_int;
 use function is_string;
@@ -89,7 +89,18 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         }
         $clientId = $claims['client_id'] ?? null;
         $client = is_string($clientId) ? $this->clients->findByClientId($tenant, $clientId) : null;
-        if ($client === null || ! self::isAudience($claims['aud'] ?? null, $client->registration->clientId)) {
+        if ($client === null) {
+            throw InvalidTokenException::notIssuedHere();
+        }
+        // RFC 8707 §2: the token is addressed to the resources it was asked for, or to the client when
+        // it was asked for none; an "aud" this provider would never have written for this client is
+        // refused before anything else the token says is believed
+        try {
+            $audience = TokenAudience::fromClaim($claims['aud'] ?? null);
+        } catch (OidcInvalidArgumentException $exception) {
+            throw InvalidTokenException::notIssuedHere($exception);
+        }
+        if (! $client->registration->mayBeAddressedTo($audience)) {
             throw InvalidTokenException::notIssuedHere();
         }
         $sub = $claims['sub'] ?? null;
@@ -109,6 +120,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
 
         return new VerifiedAccessToken(
             $client,
+            $audience,
             $subject,
             Uuid::fromString($sid),
             Uuid::fromString($grantId),
@@ -133,18 +145,6 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         }
 
         return $claims;
-    }
-
-    /**
-     * RFC 7519 §4.1.3 "aud": a single string or a list of strings.
-     */
-    private static function isAudience(mixed $aud, string $clientId): bool
-    {
-        if (is_string($aud)) {
-            return $aud === $clientId;
-        }
-
-        return is_array($aud) && array_is_list($aud) && in_array($clientId, $aud, true);
     }
 
     /**

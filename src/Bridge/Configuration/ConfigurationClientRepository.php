@@ -13,10 +13,12 @@ use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
+use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\RegisteredResourcesInterface;
 use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
@@ -30,6 +32,7 @@ use WeakMap;
 final class ConfigurationClientRepository implements
     ClientRepositoryInterface,
     PushedAuthorizationRequirementInterface,
+    RegisteredResourcesInterface,
     ServedAccessTokenFormatsInterface,
     UnsignedRequestObjectsInterface
 {
@@ -114,6 +117,27 @@ final class ConfigurationClientRepository implements
             $this->definitions,
             static fn (ClientDefinition $definition): bool => $definition->registration->accessTokenFormat === $format,
         );
+    }
+
+    /**
+     * RFC 8707 §2: what the clients declared here may ask a token for, which is what the document
+     * enumerates (RFC 9728 §4) and nothing kept beside them (issue #98).
+     */
+    public function resourcesRegisteredIn(Tenant $tenant): array
+    {
+        if (! $this->serves($tenant)) {
+            return [];
+        }
+        $resources = [];
+        foreach ($this->definitions as $definition) {
+            foreach ($definition->registration->resources as $resource) {
+                if (! array_any($resources, static fn (ResourceIndicator $kept): bool => $kept->equals($resource))) {
+                    $resources[] = $resource;
+                }
+            }
+        }
+
+        return $resources;
     }
 
     /**

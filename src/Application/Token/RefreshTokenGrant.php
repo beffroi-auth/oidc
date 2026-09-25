@@ -74,7 +74,13 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             throw new InvalidScopeException('The requested scope exceeds the scope granted to the refresh token (RFC 6749 section 6).');
         }
 
-        $authorization = GrantedAuthorization::fromRefreshToken($this->grantType(), $token, $scopes, $client->confirmation);
+        $authorization = GrantedAuthorization::fromRefreshToken(
+            $this->grantType(),
+            $token,
+            $scopes,
+            $client->confirmation,
+            RequestedResources::of($request, $token->resources),
+        );
         if (! $token->rotatesOnUse()) {
             return $this->issuer->issue($authorization, null, $context, $now);
         }

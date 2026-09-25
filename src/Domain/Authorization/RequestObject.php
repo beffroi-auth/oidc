@@ -8,6 +8,8 @@ use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Domain\Token\UnverifiedJwt;
 use Heidi\Oidc\Exception\InvalidRequestObjectException;
+use function array_all;
+use function array_is_list;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -20,9 +22,10 @@ use function sprintf;
  * for what a token says about itself; those are the validator's and never a parameter.
  *
  * OIDC Core §6.1 lets a parameter be any JSON value, "max_age" as a number and "claims" as an object
- * being the two the field sends; each is written back as the query would have carried it. A boolean, a
- * fraction or a null is no parameter of an authorization request and is refused rather than cast
- * (decision 0006).
+ * being the two the field sends; each is written back as the query would have carried it. A list of
+ * strings is a parameter given several values, which is how RFC 8707 §2.1 says "resource" travels in an
+ * object, and it reaches the parser as the repeated parameter it is. A boolean, a fraction or a null is
+ * no parameter of an authorization request and is refused rather than cast (decision 0006).
  */
 final readonly class RequestObject
 {
@@ -56,7 +59,7 @@ final readonly class RequestObject
      *
      * @throws InvalidRequestObjectException
      *
-     * @return array<string, string>
+     * @return array<string, string|list<string>>
      */
     public function parameters(): array
     {
@@ -76,14 +79,20 @@ final readonly class RequestObject
 
     /**
      * @throws InvalidRequestObjectException
+     *
+     * @return string|list<string>
      */
-    private function parameter(string $name, mixed $value): string
+    private function parameter(string $name, mixed $value): string|array
     {
         if (is_string($value)) {
             return $value;
         }
         if (is_int($value)) {
             return (string) $value;
+        }
+        if (is_array($value) && array_is_list($value) && array_all($value, static fn (mixed $item): bool => is_string($item))) {
+            /** @var list<string> $value */
+            return $value;
         }
         if (is_array($value)) {
             /** @var array<string, mixed> $value */

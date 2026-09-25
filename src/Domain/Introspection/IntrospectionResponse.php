@@ -67,7 +67,7 @@ final readonly class IntrospectionResponse
                 'exp' => $token->expiresAt->getTimestamp(),
                 'iat' => $token->issuedAt->getTimestamp(),
                 'sub' => $token->subject->value,
-                'aud' => $token->client->registration->clientId,
+                'aud' => $token->audience->claim(),
                 'iss' => $issuer->value,
                 ...$token->authentication->toClaims(),
                 'sid' => $token->sessionId->toRfc4122(),

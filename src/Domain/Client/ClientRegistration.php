@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Client;
 
+use function array_all;
 use function array_any;
 use function array_find;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
+use Heidi\Oidc\Domain\Resource\ResourceIndicator;
+use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Scope\Scopes;
+use Heidi\Oidc\Domain\Token\TokenAudience;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use function sprintf;
@@ -59,6 +63,11 @@ final readonly class ClientRegistration
      */
     public array $requestUris;
 
+    /**
+     * @var list<ResourceIndicator>
+     */
+    public array $resources;
+
     public Scopes $allowedScopes;
 
     public ResponseFormat $idToken;
@@ -76,6 +85,7 @@ final readonly class ClientRegistration
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
      * @param bool $requiresSignedRequestObject true when an authorization request of this client is only read from a request object it signed (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1)
+     * @param list<ResourceIndicator> $resources the resources this client may ask a token for ("resource", RFC 8707 §2); a closed list like every other, so a resource outside it is "invalid_target". A client that registers none asks for none and its tokens are addressed to itself
      * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
      * @param list<ClientUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
@@ -118,6 +128,7 @@ final readonly class ClientRegistration
         ?ResponseFormat $userInfo = null,
         public bool $requiresSenderConstrainedTokens = false,
         public bool $requiresSignedRequestObject = false,
+        array $resources = [],
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();
@@ -129,6 +140,7 @@ final readonly class ClientRegistration
         $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris, $sameUri);
         $this->grantTypes = self::unique($grantTypes, static fn (GrantTypeName $a, GrantTypeName $b): bool => $a->equals($b));
         $this->requestUris = self::unique($requestUris, static fn (ClientUri $a, ClientUri $b): bool => $a->equals($b));
+        $this->resources = self::unique($resources, static fn (ResourceIndicator $a, ResourceIndicator $b): bool => $a->equals($b));
 
         $this->assertHoldsTogether();
     }
@@ -168,6 +180,37 @@ final readonly class ClientRegistration
     public function allowsGrant(GrantTypeName $grantType): bool
     {
         return array_any($this->grantTypes, static fn (GrantTypeName $registered): bool => $registered->equals($grantType));
+    }
+
+    /**
+     * RFC 8707 §2.1: what this client may ask a token for, compared byte for byte as every other URI it
+     * registers. A client that registered none may ask for none.
+     */
+    public function allowsResources(ResourceIndicators $resources): bool
+    {
+        return array_all(
+            $resources->all,
+            fn (ResourceIndicator $asked): bool => array_any($this->resources, static fn (ResourceIndicator $registered): bool => $registered->equals($asked)),
+        );
+    }
+
+    /**
+     * What a token of this client may be addressed to (RFC 8707 §2): one of the resources it registered,
+     * or the client itself when the request named none. Read where a token is read back, so that a value
+     * this provider would never have written is refused before anything is believed of it.
+     */
+    public function mayBeAddressedTo(TokenAudience $audience): bool
+    {
+        return array_all(
+            $audience->values,
+            fn (string $value): bool => (
+                $value === $this->clientId
+                || array_any(
+                    $this->resources,
+                    static fn (ResourceIndicator $registered): bool => $registered->value === $value,
+                )
+            ),
+        );
     }
 
     /**

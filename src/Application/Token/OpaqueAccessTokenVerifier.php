@@ -55,6 +55,7 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
 
         return new VerifiedAccessToken(
             $token->client,
+            $token->audience(),
             $this->subjects->resolve($token->session->user, $token->client),
             $token->session->id,
             $token->grantId,

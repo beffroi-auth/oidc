@@ -37,6 +37,7 @@ use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Domain\Client\ResponseEncryption;
 use Heidi\Oidc\Domain\Client\ResponseFormat;
 use Heidi\Oidc\Domain\Scope\Scope;
@@ -106,6 +107,7 @@ final readonly class ClientDefinition
         'jwks_uri',
         'request_object_signing_alg',
         'request_uris',
+        'resources',
         ...CertificateIdentities::NAMES,
     ];
 
@@ -216,6 +218,10 @@ final readonly class ClientDefinition
             static fn (string $uri): ClientUri => new ClientUri($uri),
             self::stringList($clientId, 'request_uris', $definition['request_uris'] ?? []),
         );
+        $resources = array_map(
+            static fn (string $uri): ResourceIndicator => new ResourceIndicator($uri),
+            self::stringList($clientId, 'resources', $definition['resources'] ?? []),
+        );
 
         $registration = new ClientRegistration(
             $clientId,
@@ -244,6 +250,7 @@ final readonly class ClientDefinition
             $userInfo,
             $requiresSenderConstrainedTokens,
             $requiresSignedRequestObject,
+            $resources,
         );
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
             self::assertAddressable($clientId, $format, $jwks);

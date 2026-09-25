@@ -18,7 +18,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * RFC 9068 (architecture §4.6): "typ" is "at+jwt" (§2.1), the claims are those of §2.2 and §2.2.1, "scope"
- * in the syntax of RFC 8693 §4.2, "aud" the client identifier. Two private claims (RFC 7519 §4.3): "grant_id"
+ * in the syntax of RFC 8693 §4.2, "aud" the resources the request asked the token for (RFC 8707 §2) and
+ * the client itself when it asked for none. Two private claims (RFC 7519 §4.3): "grant_id"
  * names the code the token descends from, "userinfo_claims" what the client asked for by name (OIDC Core §5.5).
  * Nothing is stored: the token is its own record. An access token is read by resource servers, not by the
  * client, so it is signed with the algorithm the provider signs with by default, never the one the client
@@ -47,7 +48,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenIssuerInterface
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
             'exp' => $expiresAt->getTimestamp(),
-            'aud' => $authorization->client->registration->clientId,
+            'aud' => $authorization->audience()->claim(),
             'sub' => $this->subjects->resolve($authorization->user, $authorization->client)->value,
             'client_id' => $authorization->client->registration->clientId,
             'iat' => $now->getTimestamp(),

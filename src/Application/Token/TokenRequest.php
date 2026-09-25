@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Token;
 
+use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use function is_string;
 use function sprintf;
@@ -33,6 +34,19 @@ final readonly class TokenRequest
         }
 
         return $value;
+    }
+
+    /**
+     * A parameter a specification allows to be sent several times (RFC 8707 §2), read as the browser
+     * endpoints read one: a failure here is never redirectable, this endpoint answering in JSON.
+     *
+     * @throws InvalidRequestException when the parameter is neither a string nor a list of them
+     *
+     * @return list<string> empty when the request carries none
+     */
+    public function repeated(string $name): array
+    {
+        return RequestParameters::repeated($this->parameters, $name, false);
     }
 
     /**

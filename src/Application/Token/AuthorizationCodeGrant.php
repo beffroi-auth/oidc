@@ -96,7 +96,14 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             throw new InvalidGrantException(self::INVALID);
         }
 
-        $authorization = GrantedAuthorization::fromAuthorizationCode($this->grantType(), $record, $client->confirmation);
+        // RFC 8707 §2.2: the access token of this response may be addressed to a subset of the
+        // resources the authorization carries, while the refresh token beside it stays bound to them all
+        $authorization = GrantedAuthorization::fromAuthorizationCode(
+            $this->grantType(),
+            $record,
+            $client->confirmation,
+            RequestedResources::of($request, $record->resources),
+        );
         $refreshToken = null;
         if ($this->refreshTokenDue($authorization)) {
             $family = new RefreshTokenFamily(Uuid::v7(), $record->codeHash, $record->grantId, $now, $now->add($this->refreshTokenFamilyLifetime));

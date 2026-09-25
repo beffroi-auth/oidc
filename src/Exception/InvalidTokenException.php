@@ -30,4 +30,14 @@ final class InvalidTokenException extends OAuth2Exception
     {
         return new self('The access token expired.');
     }
+
+    /**
+     * RFC 8707 §2: a token asked for a resource is addressed to that resource, and a protected resource
+     * of the provider is not it. What the caller holds is a token of this provider, issued to this
+     * client, and it opens nothing here all the same.
+     */
+    public static function addressedElsewhere(): self
+    {
+        return new self('The access token is addressed to a resource of its own and not to this provider (RFC 8707 section 2).');
+    }
 }

@@ -19,6 +19,7 @@ use Heidi\Oidc\Domain\Token\PresentedAccessToken;
 use Heidi\Oidc\Domain\Token\ProvenPossession;
 use Heidi\Oidc\Domain\UserInfo\UserInfoResponse;
 use Heidi\Oidc\Exception\InsufficientScopeException;
+use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Exception\MissingBearerTokenException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\TokenBindingNotProvenException;
@@ -32,6 +33,11 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  * inspected as an access token of the provider, answered with the claims its scopes stand for (§5.4) and
  * those asked for by name (§5.5). A token without "openid" is insufficient_scope (§5.3.1). Errors are the
  * ones of RFC 6750 §3.1 and of RFC 9449 §7.1.
+ *
+ * It is a token of the provider itself: a token asked for a resource (RFC 8707 §2) is addressed to that
+ * resource, and this endpoint is not it, so it is refused here however valid it is elsewhere. A client
+ * that comes for the claims of its user asks for a token naming no resource, which is what a client of
+ * OpenID Connect sends and what every certification profile plays.
  *
  * This is a protected resource of the provider, and the first one: a bound token (RFC 8705 §3,
  * RFC 9449 §6.1) is honoured here only when the request proves again what it is bound to, the
@@ -95,6 +101,9 @@ final readonly class UserInfoHandler
                 'The access token is bound to something this request did not present again (RFC 8705 section 3, RFC 9449 section 7.1).',
                 $confirmation,
             );
+        }
+        if (! $token->audience->has($token->client->registration->clientId)) {
+            throw InvalidTokenException::addressedElsewhere();
         }
         if ($token->scopes?->has(Scope::openid()) !== true) {
             throw new InsufficientScopeException(

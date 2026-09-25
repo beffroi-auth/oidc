@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Domain\Authorization;
 
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
+use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use function in_array;
@@ -23,6 +24,7 @@ final readonly class AuthorizationRequest
      * @param list<string> $acrValues in order of preference
      * @param string|null $idTokenHint a compact JWS, verified by the interaction
      * @param KeyConfirmation|null $dpopKey the key the client asks the code to be reserved for ("dpop_jkt", RFC 9449 §10), null when it asks for none
+     * @param ResourceIndicators|null $resources the resources the tokens are asked for ("resource", RFC 8707 §2.1), null when the request names none
      */
     public function __construct(
         public Client $client,
@@ -41,6 +43,7 @@ final readonly class AuthorizationRequest
         public ?ClaimsRequest $claims = null,
         public ResponseMode $responseMode = ResponseMode::Query,
         public ?KeyConfirmation $dpopKey = null,
+        public ?ResourceIndicators $resources = null,
     ) {
     }
 

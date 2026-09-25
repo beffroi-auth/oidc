@@ -19,11 +19,13 @@ use Symfony\Component\Uid\Uuid;
 final readonly class VerifiedAccessToken
 {
     /**
+     * @param TokenAudience $audience who the token is addressed to (RFC 8707 §2), the client itself when the request that got it named no resource
      * @param list<string> $userinfoClaims the names of OIDC Core §5.5
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      */
     public function __construct(
         public Client $client,
+        public TokenAudience $audience,
         public Subject $subject,
         public Uuid $sessionId,
         public Uuid $grantId,

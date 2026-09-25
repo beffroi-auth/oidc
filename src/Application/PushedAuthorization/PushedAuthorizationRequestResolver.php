@@ -79,7 +79,7 @@ final readonly class PushedAuthorizationRequestResolver
      * RFC 9126 §4: the parameters of the record, plus the "client_id" the request must carry, which is
      * the one the record is bound to.
      *
-     * @return array<string, string>
+     * @return array<string, string|list<string>>
      */
     public static function parametersOf(PushedAuthorizationRequest $request): array
     {

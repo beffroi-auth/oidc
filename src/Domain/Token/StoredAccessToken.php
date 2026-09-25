@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -31,6 +32,7 @@ final readonly class StoredAccessToken
 
     /**
      * @param string $tokenHash see DrawnSecret::digestOf()
+     * @param ResourceIndicators|null $resources the resources this token is addressed to (RFC 8707 §2), null when the request named none and the token is addressed to its client
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      */
@@ -40,6 +42,7 @@ final readonly class StoredAccessToken
         public Client $client,
         public AuthenticationSession $session,
         public Scopes $scopes,
+        public ?ResourceIndicators $resources,
         public ?ClaimsRequest $claimsRequest,
         public AuthenticationSnapshot $authentication,
         public DateTimeImmutable $issuedAt,
@@ -67,12 +70,22 @@ final readonly class StoredAccessToken
             $authorization->client,
             $authorization->session,
             $authorization->scopes,
+            $authorization->resources,
             $authorization->claimsRequest,
             $authorization->authentication,
             $now,
             $expiresAt,
             $authorization->confirmation,
         );
+    }
+
+    /**
+     * Who this token is addressed to (RFC 8707 §2), by the rule the self-contained shape writes into
+     * its "aud": what the introspection of this token renders, and what a resource server reads there.
+     */
+    public function audience(): TokenAudience
+    {
+        return TokenAudience::of($this->client, $this->resources);
     }
 
     public function isExpired(DateTimeImmutable $now): bool

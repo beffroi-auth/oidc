@@ -7,8 +7,10 @@ namespace Heidi\Oidc\Bridge\InMemory;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\AccessTokenFormat;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Heidi\Oidc\Port\RegisteredResourcesInterface;
 use Heidi\Oidc\Port\ServedAccessTokenFormatsInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 
@@ -18,6 +20,7 @@ use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 final class InMemoryClientRepository implements
     ClientRepositoryInterface,
     PushedAuthorizationRequirementInterface,
+    RegisteredResourcesInterface,
     ServedAccessTokenFormatsInterface,
     UnsignedRequestObjectsInterface
 {
@@ -43,6 +46,26 @@ final class InMemoryClientRepository implements
             $this->clients,
             static fn (Client $client): bool => $client->belongsTo($tenant) && $client->registration->accessTokenFormat === $format,
         );
+    }
+
+    /**
+     * RFC 8707 §2: what the clients of the tenant registered, each resource named once.
+     */
+    public function resourcesRegisteredIn(Tenant $tenant): array
+    {
+        $resources = [];
+        foreach ($this->clients as $client) {
+            if (! $client->belongsTo($tenant)) {
+                continue;
+            }
+            foreach ($client->registration->resources as $resource) {
+                if (! array_any($resources, static fn (ResourceIndicator $kept): bool => $kept->equals($resource))) {
+                    $resources[] = $resource;
+                }
+            }
+        }
+
+        return $resources;
     }
 
     /**

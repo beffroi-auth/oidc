@@ -235,6 +235,7 @@ final readonly class AuthorizationHandler
             $session,
             $request->redirectUri,
             $request->scopes,
+            $request->resources,
             $request->nonce,
             $request->codeChallenge,
             $request->dpopKey,

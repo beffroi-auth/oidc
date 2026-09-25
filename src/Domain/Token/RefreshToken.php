@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
@@ -42,6 +43,7 @@ final class RefreshToken
 
     /**
      * @param string $tokenHash see hash()
+     * @param ResourceIndicators|null $resources the resources of the whole grant, which a refresh is bound to and may narrow (RFC 8707 §2.2), null when the authorization named none
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
      * @param ConfirmationInterface|null $confirmation what a refresh of this token has to prove again (RFC 9449 §5), null when the client proves itself another way
      * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
@@ -52,6 +54,7 @@ final class RefreshToken
         public readonly Client $client,
         public readonly AuthenticationSession $session,
         public readonly Scopes $scopes,
+        public readonly ?ResourceIndicators $resources,
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,
@@ -90,6 +93,9 @@ final class RefreshToken
             $authorization->client,
             $authorization->session,
             $authorization->grantedScopes,
+            // RFC 8707 §2.2: a refresh token is bound to the full original grant, whatever subset of
+            // its resources the access token beside it was narrowed to
+            $authorization->grantedResources,
             $authorization->claimsRequest,
             $authorization->authentication,
             $now,

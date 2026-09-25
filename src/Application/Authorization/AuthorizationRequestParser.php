@@ -19,11 +19,13 @@ use Heidi\Oidc\Domain\Authorization\RedirectTarget;
 use Heidi\Oidc\Domain\Authorization\ResponseMode;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
+use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\InvalidScopeException;
+use Heidi\Oidc\Exception\InvalidTargetException;
 use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnsupportedResponseModeException;
@@ -200,6 +202,7 @@ final readonly class AuthorizationRequestParser
         $idTokenHint = RequestParameters::compactJws($parameters, 'id_token_hint', true);
         $claims = self::claims(RequestParameters::single($parameters, 'claims', true));
         $dpopKey = self::dpopKey(RequestParameters::single($parameters, 'dpop_jkt', true));
+        $resources = self::resources($target->client, RequestParameters::repeated($parameters, 'resource', true));
 
         return new AuthorizationRequest(
             $target->client,
@@ -218,7 +221,36 @@ final readonly class AuthorizationRequestParser
             $claims,
             $target->responseMode,
             $dpopKey,
+            $resources,
         );
+    }
+
+    /**
+     * RFC 8707 §2.1: the resources the tokens of this request will be addressed to, named once each or
+     * several times over. What a client may ask for is what it registered, as every other list of a
+     * client is: a resource outside it is "invalid_target", and so is a value that is not an absolute
+     * URI. A request that names none asks for none, and its tokens are addressed to the client itself.
+     *
+     * @param list<string> $values
+     *
+     * @throws InvalidTargetException when a value is not an absolute URI, or names a resource the
+     *                                client is not registered for
+     */
+    private static function resources(Client $client, array $values): ?ResourceIndicators
+    {
+        if ($values === []) {
+            return null;
+        }
+        try {
+            $resources = ResourceIndicators::of($values);
+        } catch (InvalidArgumentException $exception) {
+            throw InvalidTargetException::notAnAbsoluteUri(true, $exception);
+        }
+        if (! $client->registration->allowsResources($resources)) {
+            throw InvalidTargetException::notRegistered(true);
+        }
+
+        return $resources;
     }
 
     /**
