@@ -9,7 +9,9 @@ use function array_diff;
 use function array_find;
 use function array_keys;
 use function array_search;
+use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
+use Heidi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\UnsupportedAlgorithmException;
 use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
@@ -39,6 +41,9 @@ use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Heidi\Oidc\Domain\Client\TokenExchange;
+use Heidi\Oidc\Domain\Exchange\MayAct;
+use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Domain\Token\ClientSubject;
 use Heidi\Oidc\Domain\Client\ResponseEncryption;
@@ -50,6 +55,7 @@ use Heidi\Oidc\Port\ServedDeliveryModesInterface;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
+use Heidi\Oidc\Port\PresentedTokenTypesInterface;
 use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
 use function implode;
@@ -116,6 +122,8 @@ final readonly class ClientDefinition
         'resources',
         'backchannel_token_delivery_mode',
         'backchannel_client_notification_endpoint',
+        'token_exchange',
+        'may_act',
         ...CertificateIdentities::NAMES,
     ];
 
@@ -136,6 +144,7 @@ final readonly class ClientDefinition
      * @param ServedAccessTokenShapesInterface $shapes what the provider writes its access tokens in: a client registers one of those names, or none and takes the first
      * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
      * @param ServedDeliveryModesInterface $deliveryModes how the provider is wired to tell a client that a backchannel request has been answered: a client of that flow registers one of those names, and every other client registers none
+     * @param PresentedTokenTypesInterface $tokenTypes what the exchange is wired to read: a client of that grant registers those names and no other (RFC 8693 §3)
      */
     public static function fromArray(
         string $clientId,
@@ -148,6 +157,7 @@ final readonly class ClientDefinition
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
         ServedDeliveryModesInterface $deliveryModes,
+        PresentedTokenTypesInterface $tokenTypes,
     ): self {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -186,7 +196,8 @@ final readonly class ClientDefinition
             self::stringList($clientId, 'post_logout_redirect_uris', $definition['post_logout_redirect_uris'] ?? []),
         );
         $grantTypes = self::grantTypes($clientId, $definition, $grants);
-        self::assertGrantsHoldWithTheRest($clientId, $grantTypes, $grants, $redirectUris, $method);
+        $tokenExchange = self::tokenExchange($clientId, $definition, $tokenTypes);
+        self::assertGrantsHoldWithTheRest($clientId, $grantTypes, $grants, $redirectUris, $method, $tokenExchange);
         $allowedScopes = new Scopes(array_map(
             static fn (string $scope): Scope => new Scope($scope),
             self::stringList($clientId, 'allowed_scopes', $definition['allowed_scopes'] ?? ['openid', 'profile', 'email']),
@@ -264,6 +275,8 @@ final readonly class ClientDefinition
             $resources,
             $backchannelTokenDeliveryMode,
             $backchannelClientNotificationEndpoint,
+            $tokenExchange,
+            self::mayAct($clientId, $definition),
         );
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
             self::assertAddressable($clientId, $format, $jwks);
@@ -523,6 +536,7 @@ final readonly class ClientDefinition
         ServedGrantsInterface $grants,
         array $redirectUris,
         ClientAuthenticationMethodInterface $method,
+        ?TokenExchange $tokenExchange,
     ): void {
         if ($registered === []) {
             // A client that registers no grant at all is refused by the registration itself, which needs
@@ -548,6 +562,27 @@ final readonly class ClientDefinition
                 implode(', ', GrantNames::of($grants->sendingTheUserToTheClient())),
             ));
         }
+        $exchanges = array_find($grants->exchangingTokens(), $isRegistered);
+        if ($exchanges !== null && $tokenExchange === null) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" is registered for "%s", which turns a token into another token, and therefore declares under "token_exchange" what it may present and what it may ask for (RFC 8693 section 2.1).',
+                $clientId,
+                $exchanges->value,
+            ));
+        }
+        if ($exchanges === null && $tokenExchange !== null) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" declares a token_exchange and no grant that would exchange anything: register one of: %s.',
+                $clientId,
+                implode(', ', GrantNames::of($grants->exchangingTokens())),
+            ));
+        }
+        if ($exchanges !== null) {
+            // RFC 8693 §4.1, §4.4: the client is named where a subject is expected, in the "act" of the token
+            // it receives and in the comparison a "may_act" is read for, so an identifier a subject cannot be
+            // is refused here rather than at the first exchange
+            ClientSubject::ofIdentifier($clientId);
+        }
         $actsForItself = array_find($grants->actingForTheClientItself(), $isRegistered);
         if ($actsForItself === null) {
             return;
@@ -561,6 +596,83 @@ final readonly class ClientDefinition
             ));
         }
         ClientSubject::ofIdentifier($clientId);
+    }
+
+    /**
+     * RFC 8693 §2.1: what this client may do at the exchange, as a closed declaration and never a parameter of
+     * a request. The types it may present are among the ones the provider is wired to read, so a type nothing
+     * reads fails at boot rather than at the first request, and a type the provider gains is a class wired
+     * beside the others with nothing here edited.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function tokenExchange(string $clientId, array $definition, PresentedTokenTypesInterface $tokenTypes): ?TokenExchange
+    {
+        $declared = $definition['token_exchange'] ?? null;
+        if ($declared === null) {
+            return null;
+        }
+        if (! is_array($declared)) {
+            throw new InvalidArgumentException(sprintf('The token_exchange option of the client "%s" must be a map (RFC 8693 section 2.1).', $clientId));
+        }
+        /** @var array<string, mixed> $declared */
+        $unknown = array_diff(array_keys($declared), ['subject_token_types', 'may_act_for_a_user']);
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(sprintf(
+                'The token_exchange option of the client "%s" has unknown keys: %s.',
+                $clientId,
+                implode(', ', $unknown),
+            ));
+        }
+        $wired = array_map(static fn (TokenTypeIdentifier $type): string => $type->value, $tokenTypes->presentedTokenTypes());
+        $types = [];
+        foreach (self::stringList($clientId, 'subject_token_types', $declared['subject_token_types'] ?? []) as $name) {
+            if (! in_array($name, $wired, true)) {
+                throw new InvalidArgumentException(sprintf(
+                    'The client "%s" may present a "%s", which this provider does not read; the wired token types are %s (RFC 8693 section 3).',
+                    $clientId,
+                    $name,
+                    implode(', ', $wired),
+                ));
+            }
+            $types[] = new TokenTypeIdentifier($name);
+        }
+        if ($types === []) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers at least one subject_token_types, among %s (RFC 8693 section 2.1).',
+                $clientId,
+                implode(', ', $wired),
+            ));
+        }
+
+        return new TokenExchange($types, self::flag($clientId, 'may_act_for_a_user', $declared));
+    }
+
+    /**
+     * RFC 8693 §4.4: who may act for the subject of a token issued to this client, written on every token it
+     * receives and compared with whoever asks to exchange one. Absent, the token says nothing and what decides
+     * is the registration of the client that asks.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function mayAct(string $clientId, array $definition): ?MayAct
+    {
+        $subject = self::text($clientId, 'may_act', $definition);
+        if ($subject === null) {
+            return null;
+        }
+        try {
+            return new MayAct(new Subject($subject));
+        } catch (CoreInvalidArgumentException $exception) {
+            throw new InvalidArgumentException(sprintf(
+                'The may_act option of the client "%s" names a subject (OIDC Core section 2).',
+                $clientId,
+            ), previous: $exception);
+        }
     }
 
     /**

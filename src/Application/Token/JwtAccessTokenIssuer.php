@@ -15,6 +15,7 @@ use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\AuthorizationInterface;
 use Heidi\Oidc\Domain\Token\ClientSubject;
 use Heidi\Oidc\Domain\Token\JwtPayload;
+use Heidi\Oidc\Domain\Token\NamesItsSubjectInterface;
 use Heidi\Oidc\Domain\Token\TokenSignIn;
 use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
@@ -26,7 +27,12 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  * the client itself when it asked for none. A token somebody signed in for names them in "sub" and says
  * which sign-in it descends from; a token a client holds for itself names that client (§2.2) and carries
  * no "sid", no "auth_time", no "acr" and no "amr", there being nobody to describe (RFC 6749 §4.4).
- * Which of the two a token is, the authorization says by what it is, never the name of the grant. Two private claims (RFC 7519 §4.3): "grant_id"
+ * Which of the two a token is, the authorization says by what it is, never the name of the grant. A token
+ * whose subject was named by what the client presented says what was named and derives nothing
+ * (NamesItsSubjectInterface): the "sub" and the sign-in of the token it descends from, as they stood, plus the
+ * "act" of whoever acts for that subject (RFC 8693 §4.1). "may_act" says who may act for the subject of a
+ * token of this client (§4.4), which its registration decides and which is written so that a resource server
+ * verifying the token offline reads the same rule the provider applies. Two private claims (RFC 7519 §4.3): "grant_id"
  * names the code the token descends from, "userinfo_claims" what the client asked for by name (OIDC Core §5.5).
  * Nothing is stored: the token is its own record. An access token is read by resource servers, not by the
  * client, so it is signed with the algorithm the provider signs with by default, never the one the client
@@ -40,6 +46,16 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
     public const string USERINFO_CLAIMS = 'userinfo_claims';
 
     public const string GRANT_ID = 'grant_id';
+
+    /**
+     * RFC 8693 §4.1.
+     */
+    public const string ACTOR = 'act';
+
+    /**
+     * RFC 8693 §4.4.
+     */
+    public const string MAY_ACT = 'may_act';
 
     public function __construct(
         private JwsSignerInterface $signer,
@@ -62,9 +78,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
     public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken
     {
         $expiresAt = $now->add($this->lifetime);
-        $signIn = $authorization instanceof UserAuthorizationInterface
-            ? new TokenSignIn($authorization->session->id, $authorization->authentication)
-            : null;
+        $signIn = self::signInOf($authorization);
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
             'exp' => $expiresAt->getTimestamp(),
@@ -88,6 +102,17 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
             $claims['sid'] = $signIn->sessionId->toRfc4122();
         }
         $claims[self::GRANT_ID] = $authorization->grantId->toRfc4122();
+        // RFC 8693 §4.1: who holds the token on behalf of its subject, the most recent actor outermost;
+        // absent, nobody does and whoever holds it is the subject (§1.3)
+        $actor = $authorization instanceof NamesItsSubjectInterface ? $authorization->actor : null;
+        if ($actor !== null) {
+            $claims[self::ACTOR] = $actor->toClaim();
+        }
+        // RFC 8693 §4.4: who may act for the subject of a token of this client, as its registration says it
+        $mayAct = $authorization->client->registration->mayAct;
+        if ($mayAct !== null) {
+            $claims[self::MAY_ACT] = $mayAct->toClaim();
+        }
         // RFC 8705 §3.1: what the client proved at the request this token answers, so that a resource
         // server verifying the token offline knows what to ask its caller to present again
         $claims = [...$claims, ...($authorization->confirmation?->toClaims() ?? [])];
@@ -100,13 +125,35 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
     }
 
     /**
-     * RFC 9068 §2.2: the pairwise subject of whoever signed in (OIDC Core §8), and the client itself when
-     * nobody did (RFC 6749 §4.4).
+     * RFC 9068 §2.2: the pairwise subject of whoever signed in (OIDC Core §8), the client itself when nobody
+     * did (RFC 6749 §4.4), and the subject named by what the client presented when somebody else named it
+     * (RFC 8693 §2.2.1, RFC 7523 §2.1), which is not resolved again here because it was resolved where it was
+     * named.
      */
     private function subjectOf(AuthorizationInterface $authorization): Subject
     {
+        if ($authorization instanceof NamesItsSubjectInterface) {
+            return $authorization->subject;
+        }
+
         return $authorization instanceof UserAuthorizationInterface
             ? $this->subjects->resolve($authorization->user, $authorization->client)
             : ClientSubject::of($authorization->client);
+    }
+
+    /**
+     * RFC 9068 §2.2.1: the sign-in the token descends from, null when it descends from none. An authorization
+     * whose subject was named elsewhere carries the sign-in of the token it descends from, unchanged, so that
+     * the provider keeps asking of the new token what it asked of the old one.
+     */
+    private static function signInOf(AuthorizationInterface $authorization): ?TokenSignIn
+    {
+        if ($authorization instanceof NamesItsSubjectInterface) {
+            return $authorization->signIn;
+        }
+
+        return $authorization instanceof UserAuthorizationInterface
+            ? new TokenSignIn($authorization->session->id, $authorization->authentication)
+            : null;
     }
 }

@@ -82,6 +82,11 @@ final readonly class ServedGrants implements ServedGrantsInterface
         return $this->grantTypesOf(static fn (GrantInterface $grant): bool => $grant instanceof AsksTheUserThroughABackchannelInterface);
     }
 
+    public function exchangingTokens(): array
+    {
+        return $this->grantTypesOf(static fn (GrantInterface $grant): bool => $grant instanceof ExchangesATokenInterface);
+    }
+
     /**
      * @param callable(GrantInterface): bool $declares
      *

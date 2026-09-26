@@ -61,4 +61,11 @@ interface ServedGrantsInterface
      * @return list<GrantTypeName>
      */
     public function askingTheUserThroughABackchannel(): array;
+
+    /**
+     * Those of them that take a token as their input and give a token back (RFC 8693 §2.1).
+     *
+     * @return list<GrantTypeName>
+     */
+    public function exchangingTokens(): array;
 }

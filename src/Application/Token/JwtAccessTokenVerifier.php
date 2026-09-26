@@ -12,6 +12,7 @@ use Heidi\Core\Exception\InvalidArgumentException;
 use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Heidi\Oidc\Domain\Exchange\Actor;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\TokenAudience;
 use Heidi\Oidc\Domain\Token\TokenSignIn;
@@ -40,13 +41,18 @@ use Symfony\Component\Uid\Uuid;
  * A token that names a sign-in says all of it, and a token that names none says nothing of one: a "sid"
  * without the claims of its session, or those claims without a "sid", is not what this provider writes
  * and is refused here (RFC 6749 §4.4).
+ *
+ * The chain of actors is read as it was written, the most recent actor outermost (RFC 8693 §4.1), so that a
+ * delegation stays a delegation on the way back and a resource server of the provider reads what a resource
+ * server verifying offline reads.
  */
 final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterface
 {
     /**
-     * Deeper than the lists of strings ("amr", "userinfo_claims") was not issued here.
+     * Deeper than the lists of strings ("amr", "userinfo_claims") and a chain of actors nested a few
+     * exchanges deep ("act", RFC 8693 §4.1) was not issued here.
      */
-    private const int MAX_DEPTH = 3;
+    private const int MAX_DEPTH = 6;
 
     public function __construct(
         private JwsVerifierInterface $verifier,
@@ -126,6 +132,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             $scopes = self::scopes($claims['scope'] ?? null);
             $signIn = self::signIn($claims);
             $confirmation = $this->confirmations->fromClaims($claims);
+            $actor = isset($claims[JwtAccessTokenIssuer::ACTOR]) ? Actor::fromClaim($claims[JwtAccessTokenIssuer::ACTOR]) : null;
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw InvalidTokenException::notIssuedHere($exception);
         }
@@ -141,6 +148,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             new DateTimeImmutable('@' . $iat),
             new DateTimeImmutable('@' . $exp),
             $confirmation,
+            $actor,
         );
     }
 

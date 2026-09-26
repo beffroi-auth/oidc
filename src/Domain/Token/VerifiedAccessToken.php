@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\Token;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Exchange\Actor;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
@@ -18,6 +19,10 @@ use Symfony\Component\Uid\Uuid;
  * A token somebody signed in for says which sign-in it descends from; a token a client holds for itself
  * says none, and names that client in its "sub" (RFC 6749 §4.4, RFC 9068 §2.2). What the provider asks of
  * a session and of a user it asks of the first and never of the second.
+ *
+ * A token somebody else holds for the subject says who (RFC 8693 §4.1): the chain of actors is what makes a
+ * delegation visible where an impersonation shows nothing, and it is read back as it was written, the actor
+ * about to use the token outermost.
  */
 final readonly class VerifiedAccessToken
 {
@@ -27,6 +32,7 @@ final readonly class VerifiedAccessToken
      * @param TokenSignIn|null $signIn the sign-in the token descends from, null for a token a client holds for itself
      * @param list<string> $userinfoClaims the names of OIDC Core §5.5, empty when the client asked for none
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
+     * @param Actor|null $actor who holds the token on behalf of its subject (RFC 8693 §4.1), null when nobody does and the holder is the subject
      */
     public function __construct(
         public Client $client,
@@ -39,6 +45,7 @@ final readonly class VerifiedAccessToken
         public DateTimeImmutable $issuedAt,
         public DateTimeImmutable $expiresAt,
         public ?ConfirmationInterface $confirmation = null,
+        public ?Actor $actor = null,
     ) {
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An access token expires after it was issued.');

@@ -17,7 +17,9 @@ use SensitiveParameter;
  * ones of the provider (architecture §4.6). Signed on request (RFC 9701 §4).
  *
  * What a token says is what is rendered: a token a client holds for itself names that client in "sub" and
- * carries no "sid", no "auth_time", no "acr" and no "amr", because nobody signed in for it (RFC 6749 §4.4).
+ * carries no "sid", no "auth_time", no "acr" and no "amr", because nobody signed in for it (RFC 6749 §4.4);
+ * a token somebody holds for its subject renders who in "act" (RFC 8693 §4.1), and one nobody holds for
+ * anybody renders no "act" at all, which is what tells a delegation from an impersonation (§1.3).
  */
 final readonly class IntrospectionResponse
 {
@@ -76,6 +78,15 @@ final readonly class IntrospectionResponse
                 // one rather than rendering it empty (RFC 6749 §4.4)
                 ...($token->signIn?->toClaims() ?? []),
                 'grant_id' => $token->grantId->toRfc4122(),
+                // RFC 8693 §4.1: who holds the token on behalf of its subject, the most recent actor
+                // outermost, which is what a resource server reads to know through whom it was reached
+                ...(
+                    $token->actor === null
+                        ? []
+                        : [
+                            'act' => $token->actor->toClaim(),
+                        ]
+                ),
                 // RFC 8705 §3.2: a resource server reads here what it must ask the caller to present again
                 ...($token->confirmation?->toClaims() ?? []),
             ],

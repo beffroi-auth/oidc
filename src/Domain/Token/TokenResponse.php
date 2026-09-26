@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Token;
 
+use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
  * The successful answer of the token endpoint (RFC 6749 §5.1, OIDC Core §3.1.3.3); "scope" is always there.
+ *
+ * A grant that turns one token into another names the type of the token it issued (RFC 8693 §2.2.1), which
+ * every other grant has nothing to say and therefore does not write.
  */
 final readonly class TokenResponse
 {
@@ -33,6 +37,7 @@ final readonly class TokenResponse
      * @param positive-int $expiresIn
      * @param string $tokenType how the client presents the token it is handed (RFC 6749 §5.1), which is
      *                          what the binding of the token says and "Bearer" when it has none
+     * @param TokenTypeIdentifier|null $issuedTokenType the type of the token this response carries (RFC 8693 §2.2.1), null for a response no exchange produced
      */
     public function __construct(
         #[SensitiveParameter]
@@ -44,6 +49,7 @@ final readonly class TokenResponse
         public ?string $idToken,
         public Scopes $scopes,
         public string $tokenType = self::BEARER,
+        public ?TokenTypeIdentifier $issuedTokenType = null,
     ) {
         if ($accessToken === '') {
             throw new InvalidArgumentException('A token response carries an access token.');
@@ -63,6 +69,9 @@ final readonly class TokenResponse
             'token_type' => $this->tokenType,
             'expires_in' => $this->expiresIn,
         ];
+        if ($this->issuedTokenType !== null) {
+            $parameters['issued_token_type'] = $this->issuedTokenType->value;
+        }
         if ($this->refreshToken !== null) {
             $parameters['refresh_token'] = $this->refreshToken;
         }

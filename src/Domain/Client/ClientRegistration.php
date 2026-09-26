@@ -12,6 +12,7 @@ use Heidi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
+use Heidi\Oidc\Domain\Exchange\MayAct;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scope;
@@ -91,6 +92,8 @@ final readonly class ClientRegistration
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
      * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2)
      * @param DeliveryModeInterface|null $backchannelTokenDeliveryMode how this client is told that a backchannel request has been answered (CIBA Core §4), among the modes the provider is wired with; null for a client of no such flow, which is every client that does not ask for one. There is no default: a mode nobody registered would make a client of another flow a client of this one by accident
+     * @param TokenExchange|null $tokenExchange what this client may exchange a token for (RFC 8693 §2.1); null for a client that exchanges none, which is every client that is not registered for that grant
+     * @param MayAct|null $mayAct who may act for the subject of a token issued to this client (RFC 8693 §4.4), written on every token it receives; null when the registration names nobody and what decides is the registration of whoever asks
      * @param ClientUri|null $backchannelClientNotificationEndpoint where this provider calls that client back (CIBA Core §7.1), for a mode where it does and for no other
      * @param list<ResourceIndicator> $resources the resources this client may ask a token for ("resource", RFC 8707 §2); a closed list like every other, so a resource outside it is "invalid_target". A client that registers none asks for none and its tokens are addressed to itself
      * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
@@ -138,6 +141,8 @@ final readonly class ClientRegistration
         array $resources = [],
         public ?DeliveryModeInterface $backchannelTokenDeliveryMode = null,
         public ?ClientUri $backchannelClientNotificationEndpoint = null,
+        public ?TokenExchange $tokenExchange = null,
+        public ?MayAct $mayAct = null,
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();

@@ -17,6 +17,7 @@ use Heidi\Oidc\Domain\Resource\ResourceIndicator;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\PresentedTokenTypesInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 use Heidi\Oidc\Port\RegisteredResourcesInterface;
@@ -68,6 +69,7 @@ final class ConfigurationClientRepository implements
         KeyEncryptionAlgorithmsInterface $keyEncryption,
         ContentEncryptionAlgorithmsInterface $contentEncryption,
         ServedDeliveryModesInterface $deliveryModes,
+        PresentedTokenTypesInterface $tokenTypes,
     ) {
         foreach ($definitions as $clientId => $definition) {
             $this->definitions[$clientId] = ClientDefinition::fromArray(
@@ -81,6 +83,7 @@ final class ConfigurationClientRepository implements
                 $keyEncryption,
                 $contentEncryption,
                 $deliveryModes,
+                $tokenTypes,
             );
         }
         $this->clients = new WeakMap();
