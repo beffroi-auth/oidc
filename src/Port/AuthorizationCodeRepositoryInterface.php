@@ -6,12 +6,12 @@ namespace Heidi\Oidc\Port;
 
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Where authorization codes wait for the token endpoint (architecture §4.4, §4.5). A used code stays, so
  * that its replay can be told from an unknown code; the record is also the grant, kept as long as a
- * token descending from it may be presented.
+ * token descending from it may be presented; whether that grant is still alive is asked of
+ * RecordedGrantsInterface, which every record carrying a grant answers.
  */
 interface AuthorizationCodeRepositoryInterface
 {
@@ -19,8 +19,6 @@ interface AuthorizationCodeRepositoryInterface
      * @param string $codeHash see DrawnSecret::digestOf()
      */
     public function findByCodeHash(string $codeHash): ?AuthorizationCode;
-
-    public function findByGrantId(Uuid $grantId): ?AuthorizationCode;
 
     /**
      * Atomic: of any number of requests presenting the same code at once, exactly one is told true

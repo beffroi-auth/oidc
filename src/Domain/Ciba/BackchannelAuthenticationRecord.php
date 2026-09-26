@@ -12,12 +12,13 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
-use Heidi\Oidc\Domain\Record\RecordReadOnce;
+use Heidi\Oidc\Domain\Grant\GrantRecord;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\LogicException;
+use Symfony\Component\Uid\Uuid;
 use function max;
 
 /**
@@ -41,9 +42,11 @@ use function max;
  *
  * The session the user answered with, and what that session had proven then, are frozen here: the tokens
  * the client comes for descend from the approval and not from whatever the session became afterwards
- * (architecture §4.6).
+ * (architecture §4.6). The record is also the grant those tokens descend from (GrantRecord): this flow
+ * writes no authorization code, and a resource of this provider asks of a token whether the grant behind
+ * it is still alive.
  */
-final class BackchannelAuthenticationRecord extends RecordReadOnce implements ResolvesItsClientInterface
+final class BackchannelAuthenticationRecord extends GrantRecord implements ResolvesItsClientInterface
 {
     /**
      * CIBA Core §7.3: the seconds a client waits between two polls when the response names none.
@@ -82,6 +85,7 @@ final class BackchannelAuthenticationRecord extends RecordReadOnce implements Re
 
     /**
      * @param string $authRequestIdHash the hex SHA-256 of the auth_req_id (DrawnSecret)
+     * @param Uuid $grantId the grant the tokens of this request will name
      * @param User|null $user the user the hint named, null when it named nobody
      * @param Scopes $scopes what the request asked for, among the ones the client registered
      * @param ResourceIndicators|null $resources what the access token will be addressed to (RFC 8707 §2), null when the request named none
@@ -95,6 +99,7 @@ final class BackchannelAuthenticationRecord extends RecordReadOnce implements Re
      */
     public function __construct(
         public readonly string $authRequestIdHash,
+        public readonly Uuid $grantId,
         public readonly Client $client,
         public readonly ?User $user,
         public readonly Scopes $scopes,

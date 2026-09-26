@@ -41,6 +41,9 @@ use Psr\Clock\ClockInterface;
  * required of every request of this flow (§7.1). The tokens are bound to what this request proved and
  * not to what the approval proved (RFC 8705 §3, RFC 9449 §5): the browser that approved holds nothing
  * the client can prove.
+ *
+ * The grant those tokens name is the record's own and is not drawn here (GrantRecord): a resource of this
+ * provider asks of every token whether the grant behind it is still alive, and the answer is a row.
  */
 final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroughABackchannelInterface, IssuesRefreshTokensInterface
 {
@@ -104,7 +107,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
 
         $authorization = new UserAuthorization(
             $this->grantType(),
-            $this->uuids->timeOrdered(),
+            $record->grantId,
             $record->client,
             $session,
             $record->scopes,

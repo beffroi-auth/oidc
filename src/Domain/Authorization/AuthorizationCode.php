@@ -10,7 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
-use Heidi\Oidc\Domain\Record\RecordReadOnce;
+use Heidi\Oidc\Domain\Grant\GrantRecord;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
@@ -21,9 +21,10 @@ use Symfony\Component\Uid\Uuid;
 /**
  * An authorization code (RFC 6749 §4.1.2, architecture §4.4) as the provider keeps it: the SHA-256 of the
  * value, and everything the token endpoint needs, what the session had proven, frozen in an
- * AuthenticationSnapshot at issuance. The record is also the grant the tokens descend from, named by "grantId".
+ * AuthenticationSnapshot at issuance. The record is also the grant the tokens descend from
+ * (GrantRecord), revoked when the code is replayed (RFC 6749 §4.1.2).
  */
-final class AuthorizationCode extends RecordReadOnce implements ResolvesItsClientInterface
+final class AuthorizationCode extends GrantRecord implements ResolvesItsClientInterface
 {
     public readonly Tenant $tenant;
 
@@ -31,8 +32,6 @@ final class AuthorizationCode extends RecordReadOnce implements ResolvesItsClien
      * What a store keeps; the object is what the client repository resolved for it.
      */
     public readonly string $clientId;
-
-    public private(set) ?DateTimeImmutable $revokedAt = null;
 
     /**
      * @param string $codeHash the hex SHA-256 of the value drawn for it, see DrawnSecret
@@ -68,19 +67,6 @@ final class AuthorizationCode extends RecordReadOnce implements ResolvesItsClien
         }
         $this->tenant = $client->tenant;
         $this->clientId = $client->registration->clientId;
-    }
-
-    /**
-     * RFC 6749 §4.1.2: the replay of a code revokes what was issued from it.
-     */
-    public function revoke(DateTimeImmutable $now): void
-    {
-        $this->revokedAt ??= $now;
-    }
-
-    public function isRevoked(): bool
-    {
-        return $this->revokedAt !== null;
     }
 
     protected function nameOfRecord(): string

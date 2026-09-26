@@ -79,7 +79,17 @@ final class Consent implements ResolvesItsClientInterface
      */
     public function covers(AuthenticationSession $session, string $clientId): bool
     {
-        return $this->clientId === $clientId && $session->user->id->equals($this->user->id);
+        return $this->coversUser($session->user, $clientId);
+    }
+
+    /**
+     * The same rule where no session is known yet: a record a client drew for a user it named, waiting for
+     * that user to answer (RFC 8628 §3.2, CIBA Core §7), is a grant this consent covers before anybody has
+     * signed in for it.
+     */
+    public function coversUser(User $user, string $clientId): bool
+    {
+        return $this->clientId === $clientId && $user->id->equals($this->user->id);
     }
 
     public function isFor(User $user, Client $client): bool

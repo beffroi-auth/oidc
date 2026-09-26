@@ -38,6 +38,9 @@ use Psr\Clock\ClockInterface;
  * with: the same scopes, the same consent, the same session rules, so the tokens are the ones of a code
  * and nothing new. They are bound to what this request proved and not to what the approval proved
  * (RFC 8705 §3, RFC 9449 §5): the browser that approved holds nothing the appliance can prove.
+ *
+ * The grant those tokens name is the record's own and is not drawn here (GrantRecord): a resource of this
+ * provider asks of every token whether the grant behind it is still alive, and the answer is a row.
  */
 final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterface, IssuesRefreshTokensInterface
 {
@@ -96,7 +99,7 @@ final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterf
 
         $authorization = new UserAuthorization(
             $this->grantType(),
-            $this->uuids->timeOrdered(),
+            $record->grantId,
             $record->client,
             $session,
             $record->scopes,

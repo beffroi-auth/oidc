@@ -11,11 +11,12 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
-use Heidi\Oidc\Domain\Record\RecordReadOnce;
+use Heidi\Oidc\Domain\Grant\GrantRecord;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Symfony\Component\Uid\Uuid;
 use Heidi\Oidc\Exception\LogicException;
 use function max;
 
@@ -34,9 +35,11 @@ use function max;
  *
  * The session the user answered with, and what that session had proven then, are frozen here: the tokens
  * the client polls for descend from the approval and not from whatever the session became afterwards
- * (architecture §4.6).
+ * (architecture §4.6). The record is also the grant those tokens descend from (GrantRecord): this flow
+ * writes no authorization code, and a resource of this provider asks of a token whether the grant behind
+ * it is still alive.
  */
-final class DeviceAuthorizationRecord extends RecordReadOnce implements ResolvesItsClientInterface
+final class DeviceAuthorizationRecord extends GrantRecord implements ResolvesItsClientInterface
 {
     /**
      * RFC 8628 §3.2: the seconds a client waits between two polls when the response names none.
@@ -76,6 +79,7 @@ final class DeviceAuthorizationRecord extends RecordReadOnce implements Resolves
     /**
      * @param string $deviceCodeHash the hex SHA-256 of the device code (DrawnSecret)
      * @param string $userCodeHash see UserCode::hashOf()
+     * @param Uuid $grantId the grant the tokens of this request will name
      * @param Scopes $scopes what the request asked for, among the ones the client registered
      * @param ResourceIndicators|null $resources what the access token will be addressed to (RFC 8707 §2), null when the request named none
      * @param RequestContext $requestedFrom where the appliance asked from, which the approval page shows (BCP 10027 §2)
@@ -86,6 +90,7 @@ final class DeviceAuthorizationRecord extends RecordReadOnce implements Resolves
     public function __construct(
         public readonly string $deviceCodeHash,
         public readonly string $userCodeHash,
+        public readonly Uuid $grantId,
         public readonly Client $client,
         public readonly Scopes $scopes,
         public readonly ?ResourceIndicators $resources,

@@ -11,15 +11,19 @@ use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Consent\Consent;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
-use Heidi\Oidc\Port\GrantsOfAConsentInterface;
+use Heidi\Oidc\Port\CanRevokeGrantsByConsentInterface;
 use Heidi\Oidc\Port\LoggedInClientsInterface;
-use function array_filter;
+use Heidi\Oidc\Port\RecordedGrantsInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepositoryInterface, GrantsOfAConsentInterface, LoggedInClientsInterface
+final class InMemoryAuthorizationCodeRepository implements
+    AuthorizationCodeRepositoryInterface,
+    CanRevokeGrantsByConsentInterface,
+    LoggedInClientsInterface,
+    RecordedGrantsInterface
 {
     /**
      * @var array<string, AuthorizationCode> by code hash
@@ -71,9 +75,19 @@ final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepo
     /**
      * @return list<AuthorizationCode>
      */
-    public function ofConsent(Consent $consent): array
+    public function revokeByConsent(Consent $consent, DateTimeImmutable $now): array
     {
-        return array_values(array_filter($this->codes, static fn (AuthorizationCode $code): bool => $consent->covers($code->session, $code->clientId)));
+        $revoked = [];
+        foreach ($this->codes as $code) {
+            if ($code->isRevoked() || ! $consent->covers($code->session, $code->clientId)) {
+                continue;
+            }
+            $code->revoke($now);
+            $this->save($code);
+            $revoked[] = $code;
+        }
+
+        return $revoked;
     }
 
     public function save(AuthorizationCode $code): void

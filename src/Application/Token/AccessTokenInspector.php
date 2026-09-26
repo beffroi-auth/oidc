@@ -10,7 +10,7 @@ use Heidi\Core\Port\AuthenticationSessionRepositoryInterface;
 use Heidi\Core\Port\UserRepositoryInterface;
 use Heidi\Oidc\Domain\Token\InspectedAccessToken;
 use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
+use Heidi\Oidc\Port\RecordedGrantsInterface;
 use SensitiveParameter;
 
 /**
@@ -26,14 +26,16 @@ use SensitiveParameter;
  * Each question is asked of the tokens that can answer it. A token somebody signed in for answers for its
  * session and for its user; a token a client holds for itself descends from no sign-in and names nobody
  * (RFC 6749 §4.4), so neither question is asked of it and neither is answered in its favour by default.
- * What the token says it descends from is what decides, never the name of the grant that issued it.
+ * What the token says it descends from is what decides, never the name of the grant that issued it: the
+ * grant is looked for among the records every flow of this provider writes (RecordedGrantsInterface), so a
+ * token of a flow that draws no authorization code answers for its grant as an ordinary one does.
  */
 final readonly class AccessTokenInspector
 {
     public function __construct(
         private AccessTokenVerifier $tokens,
         private AuthenticationSessionRepositoryInterface $sessions,
-        private AuthorizationCodeRepositoryInterface $grants,
+        private RecordedGrantsInterface $grants,
         private UserRepositoryInterface $users,
     ) {
     }

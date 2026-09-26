@@ -8,6 +8,7 @@ use function array_any;
 use DateInterval;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Core\Port\UuidGeneratorInterface;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Application\Secret\SecretDrawer;
@@ -67,6 +68,7 @@ final readonly class DeviceAuthorizationHandler
         private DeviceAuthorizationRecordRepositoryInterface $records,
         private SecretDrawer $secrets,
         private UserCodeDrawer $userCodes,
+        private UuidGeneratorInterface $uuids,
         private ClockInterface $clock,
         public DateInterval $lifetime = new DateInterval('PT10M'),
         public int $interval = DeviceAuthorizationRecord::DEFAULT_INTERVAL,
@@ -110,6 +112,7 @@ final readonly class DeviceAuthorizationHandler
         $record = new DeviceAuthorizationRecord(
             DrawnSecret::digestOf($deviceCode),
             $userCode->hash(),
+            $this->uuids->timeOrdered(),
             $client,
             $scopes,
             $resources,

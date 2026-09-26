@@ -10,6 +10,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\SecretSealerInterface;
+use Heidi\Core\Port\UuidGeneratorInterface;
 use Heidi\Oidc\Application\Authorization\RequestObjectResolver;
 use Heidi\Oidc\Application\Authorization\ResolvedRequestObject;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
@@ -89,6 +90,7 @@ final readonly class BackchannelAuthenticationHandler
         private UserHints $hints,
         private BackchannelAuthenticationRecordRepositoryInterface $records,
         private SecretDrawer $secrets,
+        private UuidGeneratorInterface $uuids,
         private SecretSealerInterface $sealer,
         private PendingApprovalNotifierInterface $notifier,
         private ClockInterface $clock,
@@ -154,6 +156,7 @@ final readonly class BackchannelAuthenticationHandler
         $authRequestId = $this->secrets->draw();
         $record = new BackchannelAuthenticationRecord(
             DrawnSecret::digestOf($authRequestId),
+            $this->uuids->timeOrdered(),
             $client,
             $user,
             $scopes,
