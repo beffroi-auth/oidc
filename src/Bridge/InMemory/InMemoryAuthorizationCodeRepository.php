@@ -9,14 +9,17 @@ use function array_values;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Consent\Consent;
 use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
+use Heidi\Oidc\Port\GrantsOfAConsentInterface;
 use Heidi\Oidc\Port\LoggedInClientsInterface;
+use function array_filter;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepositoryInterface, LoggedInClientsInterface
+final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepositoryInterface, GrantsOfAConsentInterface, LoggedInClientsInterface
 {
     /**
      * @var array<string, AuthorizationCode> by code hash
@@ -63,6 +66,14 @@ final class InMemoryAuthorizationCodeRepository implements AuthorizationCodeRepo
         }
 
         return array_values($clients);
+    }
+
+    /**
+     * @return list<AuthorizationCode>
+     */
+    public function ofConsent(Consent $consent): array
+    {
+        return array_values(array_filter($this->codes, static fn (AuthorizationCode $code): bool => $consent->covers($code->session, $code->clientId)));
     }
 
     public function save(AuthorizationCode $code): void

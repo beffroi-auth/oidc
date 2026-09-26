@@ -6,11 +6,13 @@ namespace Heidi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_values;
+use Heidi\Oidc\Domain\Consent\Consent;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Domain\Token\StoredAccessToken;
 use Heidi\Oidc\Domain\Token\StoredUserAccessToken;
 use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokenInterface;
+use Heidi\Oidc\Port\CanRevokeAccessTokensByConsentInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
 use Heidi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
 use Symfony\Component\Uid\Uuid;
@@ -21,6 +23,7 @@ use Symfony\Component\Uid\Uuid;
 final class InMemoryAccessTokenRepository implements
     AccessTokenRepositoryInterface,
     CanRevokeAccessTokenInterface,
+    CanRevokeAccessTokensByConsentInterface,
     CanRevokeAccessTokensByGrantInterface,
     CanRevokeAccessTokensBySessionInterface
 {
@@ -52,6 +55,13 @@ final class InMemoryAccessTokenRepository implements
     public function revokeBySession(Uuid $session): array
     {
         return $this->remove(static fn (StoredAccessToken $token): bool => $token instanceof StoredUserAccessToken && $token->session->id->equals($session));
+    }
+
+    public function revokeByConsent(Consent $consent): array
+    {
+        return $this->remove(
+            static fn (StoredAccessToken $token): bool => $token instanceof StoredUserAccessToken && $consent->covers($token->session, $token->clientId),
+        );
     }
 
     /**

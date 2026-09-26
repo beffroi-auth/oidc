@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Domain\Consent;
 
 use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\User;
+use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
@@ -69,6 +70,16 @@ final class Consent implements ResolvesItsClientInterface
             return;
         }
         $this->revokedAt = $now;
+    }
+
+    /**
+     * Whether what a session obtained from this provider for a client was obtained under this consent:
+     * the same user, the same client. The one place the rule is written for the stores that answer what
+     * a consent taken back reaches, a grant, a refresh token, an access token (architecture §4.3).
+     */
+    public function covers(AuthenticationSession $session, string $clientId): bool
+    {
+        return $this->clientId === $clientId && $session->user->id->equals($this->user->id);
     }
 
     public function isFor(User $user, Client $client): bool

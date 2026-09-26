@@ -8,12 +8,14 @@ use function array_values;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Consent\Consent;
+use Heidi\Oidc\Port\ActiveConsentsInterface;
 use Heidi\Oidc\Port\ConsentRepositoryInterface;
+use function usort;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryConsentRepository implements ConsentRepositoryInterface
+final class InMemoryConsentRepository implements ConsentRepositoryInterface, ActiveConsentsInterface
 {
     /**
      * @var array<string, Consent>
@@ -36,6 +38,22 @@ final class InMemoryConsentRepository implements ConsentRepositoryInterface
                 $found = $consent;
             }
         }
+
+        return $found;
+    }
+
+    /**
+     * @return list<Consent>
+     */
+    public function activeOf(User $user): array
+    {
+        $found = [];
+        foreach ($this->consents as $consent) {
+            if ($consent->isActive() && $consent->user->id->equals($user->id)) {
+                $found[] = $consent;
+            }
+        }
+        usort($found, static fn (Consent $a, Consent $b): int => [$b->grantedAt, $b->clientId] <=> [$a->grantedAt, $a->clientId]);
 
         return $found;
     }

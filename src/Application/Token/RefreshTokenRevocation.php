@@ -10,10 +10,15 @@ use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Takes a set of refresh tokens out of use at once, for the three reasons the protocol names: a code
- * presented twice (RFC 6749 §4.1.2), a rotated token presented again (RFC 9700 §4.13.2), a session that
- * ends (architecture §4.9). A token already revoked keeps its date and is not counted; what the caller
- * announces, and which access tokens go with them, is the caller's.
+ * Takes a set of refresh tokens out of use at once, for the reasons the protocol and the provider name: a
+ * code presented twice (RFC 6749 §4.1.2), a rotated token presented again (RFC 9700 §4.13.2), a session
+ * that ends (architecture §4.9), a consent taken back (architecture §4.3). A token already revoked keeps
+ * its date and is not counted; what the caller announces, and which access tokens go with them, is the
+ * caller's.
+ *
+ * The first three name their set by a question this store answers; the last is a set its caller holds,
+ * found by a companion of the store (RefreshTokensOfAConsentInterface), and revoking it is this class all
+ * the same, there being one place where a refresh token is taken out of use.
  */
 final readonly class RefreshTokenRevocation
 {
@@ -51,9 +56,9 @@ final readonly class RefreshTokenRevocation
     /**
      * @param iterable<RefreshToken> $tokens
      *
-     * @return list<RefreshToken>
+     * @return list<RefreshToken> the tokens revoked by this call
      */
-    private function revokeAll(iterable $tokens, DateTimeImmutable $now): array
+    public function revokeAll(iterable $tokens, DateTimeImmutable $now): array
     {
         $revoked = [];
         foreach ($tokens as $token) {

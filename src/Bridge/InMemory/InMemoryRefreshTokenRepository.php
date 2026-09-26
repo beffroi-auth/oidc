@@ -6,14 +6,16 @@ namespace Heidi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_values;
+use Heidi\Oidc\Domain\Consent\Consent;
 use Heidi\Oidc\Domain\Token\RefreshToken;
 use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Heidi\Oidc\Port\RefreshTokensOfAConsentInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInterface
+final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInterface, RefreshTokensOfAConsentInterface
 {
     /**
      * @var array<string, RefreshToken> by token hash
@@ -43,6 +45,11 @@ final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInte
     public function findBySession(Uuid $session): array
     {
         return array_values(array_filter($this->tokens, static fn (RefreshToken $token): bool => $token->session->id->equals($session)));
+    }
+
+    public function ofConsent(Consent $consent): array
+    {
+        return array_values(array_filter($this->tokens, static fn (RefreshToken $token): bool => $consent->covers($token->session, $token->clientId)));
     }
 
     public function save(RefreshToken $token): void
