@@ -16,7 +16,7 @@ use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
 use Heidi\Oidc\Domain\Authorization\Display;
 use Heidi\Oidc\Domain\Authorization\Prompt;
 use Heidi\Oidc\Domain\Authorization\RedirectTarget;
-use Heidi\Oidc\Domain\Authorization\ResponseMode;
+use Heidi\Oidc\Domain\Authorization\ResponseModeNames;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
@@ -125,29 +125,30 @@ final readonly class AuthorizationRequestParser
      * The mode the answer will use (OAuth 2.0 Multiple Response Type Encoding Practices §2.1), read with
      * the redirect URI because it says how anything reaches the client, a refusal of the second stage as
      * well as a code (OIDC Core §3.1.2.6). It refuses nothing, the failures of this stage being pages:
-     * anything but a mode the integration wired falls back to the default, so that the refusal the
-     * second stage throws reaches the client in the one mode it is sure to read. "jwt" is resolved
-     * before anything is asked of it (JARM §2.1), so that what is kept is the mode that delivers.
+     * what the provider cannot answer as it was asked falls back to a mode the integration wired, so that
+     * the refusal the second stage throws reaches the client in a mode the endpoint can actually deliver.
+     * The alias of JARM §2.1 is resolved by the wiring before anything is asked of it, so that what is
+     * kept is the mode that delivers.
+     *
+     * The fallback is the wiring's and not a name written here: a deployment that answers in "form_post"
+     * and wires no "query" would otherwise refuse its own requests in a mode it has no way of delivering.
      *
      * @param array<string, mixed> $parameters
      */
-    private function responseMode(array $parameters): ResponseMode
+    private function responseMode(array $parameters): string
     {
         $requested = $parameters['response_mode'] ?? null;
-        if (! is_string($requested)) {
-            return ResponseMode::Query;
-        }
-        $mode = self::requestedMode($requested);
+        $mode = is_string($requested) ? $this->requestedMode($requested) : $this->requestedMode(ResponseModeNames::DEFAULT);
 
-        return $mode !== null && in_array($mode, $this->responseModes->servedResponseModes(), true) ? $mode : ResponseMode::Query;
+        return $mode ?? $this->responseModes->servedResponseModes()[0];
     }
 
     /**
-     * What a named mode delivers, or nothing when it names no mode of the specification.
+     * The wired mode a named one is answered in, or nothing when the provider answers in no such mode.
      */
-    private static function requestedMode(string $requested): ?ResponseMode
+    private function requestedMode(string $requested): ?string
     {
-        return ResponseMode::tryFrom($requested)?->resolved();
+        return $this->responseModes->responseModeNamed($requested);
     }
 
     /**
@@ -166,7 +167,7 @@ final readonly class AuthorizationRequestParser
         }
 
         $responseMode = $request->optional('response_mode');
-        if ($responseMode !== null && self::requestedMode($responseMode) !== $target->responseMode) {
+        if ($responseMode !== null && $this->requestedMode($responseMode) !== $target->responseMode) {
             throw new UnsupportedResponseModeException('The requested response mode is not supported.');
         }
 

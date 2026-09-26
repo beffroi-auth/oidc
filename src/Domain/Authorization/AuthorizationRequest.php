@@ -25,6 +25,7 @@ final readonly class AuthorizationRequest
      * @param string|null $idTokenHint a compact JWS, verified by the interaction
      * @param KeyConfirmation|null $dpopKey the key the client asks the code to be reserved for ("dpop_jkt", RFC 9449 §10), null when it asks for none
      * @param ResourceIndicators|null $resources the resources the tokens are asked for ("resource", RFC 8707 §2.1), null when the request names none
+     * @param string $responseMode the wired mode the answer is delivered in, resolved by the parser against what the integration serves (RedirectTarget)
      */
     public function __construct(
         public Client $client,
@@ -41,7 +42,7 @@ final readonly class AuthorizationRequest
         public ?Display $display = null,
         public ?string $idTokenHint = null,
         public ?ClaimsRequest $claims = null,
-        public ResponseMode $responseMode = ResponseMode::Query,
+        public string $responseMode = ResponseModeNames::DEFAULT,
         public ?KeyConfirmation $dpopKey = null,
         public ?ResourceIndicators $resources = null,
     ) {

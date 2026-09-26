@@ -9,7 +9,6 @@ use Heidi\Core\Domain\Key\KeyUse;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\KeyBoundArtifactInterface;
 use Heidi\Oidc\Application\Authorization\ResponseDocumentIssuer;
-use Heidi\Oidc\Domain\Authorization\ResponseMode;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
 
 /**
@@ -33,6 +32,6 @@ final readonly class ResponseDocumentJwsKind implements KeyBoundArtifactInterfac
 
     public function longestLifetime(Tenant $tenant): ?DateInterval
     {
-        return ResponseMode::anySignsTheAnswer($this->responseModes->servedResponseModes()) ? $this->issuer->lifetime : null;
+        return $this->responseModes->signsAnyAnswer() ? $this->issuer->lifetime : null;
     }
 }
