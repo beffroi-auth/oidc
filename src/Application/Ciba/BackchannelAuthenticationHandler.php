@@ -11,6 +11,7 @@ use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\SecretSealerInterface;
 use Heidi\Oidc\Application\Authorization\RequestObjectResolver;
+use Heidi\Oidc\Application\Authorization\ResolvedRequestObject;
 use Heidi\Oidc\Application\Client\ClientAuthenticator;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Application\Secret\SecretDrawer;
@@ -22,6 +23,7 @@ use Heidi\Oidc\Domain\Ciba\ClientNotificationToken;
 use Heidi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
 use Heidi\Oidc\Domain\Ciba\PendingApproval;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientRegistration;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
@@ -31,6 +33,7 @@ use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidBindingMessageException;
 use Heidi\Oidc\Exception\InvalidRequestException;
+use Heidi\Oidc\Exception\InvalidRequestObjectException;
 use Heidi\Oidc\Exception\InvalidScopeException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnauthorizedClientException;
@@ -51,9 +54,11 @@ use function sprintf;
  * that user can answer.
  *
  * It is the endpoint of PushedAuthorizationHandler with a user beside the handle: an authenticated client,
- * a request that may itself be a signed object (RFC 9101 §6.1, which FAPI-CIBA asks for), a record with a
- * lifetime, an identifier answered back. Errors are the ones of §13, in JSON, never a redirect and never
- * a page, this client having no browser to send anywhere.
+ * a request that may itself be a signed object (RFC 9101 §6.1, which FAPI-CIBA §5.2.2 asks of every one
+ * of them), a record with a lifetime, an identifier answered back. Errors are the ones of §13, in JSON,
+ * never a redirect and never a page, this client having no browser to send anywhere; an object this
+ * endpoint will not read is "invalid_request" there and not the "invalid_request_object" of the endpoint
+ * a browser reaches.
  *
  * What it does not do is tell the client whether the user it named exists. §13 defines "unknown_user_id"
  * for exactly that, and serving it would say in one round trip what the whole login path of this provider
@@ -80,6 +85,7 @@ final readonly class BackchannelAuthenticationHandler
         private EndpointLocatorInterface $endpoints,
         private ServedGrantsInterface $grants,
         private RequestObjectResolver $requestObjects,
+        private SignedBackchannelRequest $signedRequests,
         private UserHints $hints,
         private BackchannelAuthenticationRecordRepositoryInterface $records,
         private SecretDrawer $secrets,
@@ -126,10 +132,13 @@ final readonly class BackchannelAuthenticationHandler
             $registration->backchannelTokenDeliveryMode ?? throw new UnauthorizedClientException('The client registered no backchannel token delivery mode, and is told nothing about a request it could not be answered for (CIBA Core section 4).');
 
         // RFC 9101 §6.1: the request may itself be a signed object, which FAPI-CIBA §5.2.2 requires. It
-        // is read here, against the client that has just authenticated, and what follows reads
-        // parameters as at every other endpoint.
+        // is read here, against the client that has just authenticated, then what the object has to say
+        // about itself is asked of it (CIBA Core §7.1.1), and what follows reads parameters as at every
+        // other endpoint.
         $parameters['client_id'] = $registration->clientId;
-        $request = RequestParameters::of($this->requestObjects->resolve($tenant, $parameters, $client) ?? $parameters);
+        $object = $this->readObject($tenant, $parameters, $client);
+        $this->signedRequests->accept($object, $client);
+        $request = RequestParameters::of($object->parameters ?? $parameters);
 
         // what the request asks for is read before anything is drawn for it, and before anybody is
         // looked up: a request this endpoint refuses costs the provider no lookup at all
@@ -173,6 +182,26 @@ final readonly class BackchannelAuthenticationHandler
         }
 
         return new BackchannelAuthenticationResponse($authRequestId, $record->expiresIn($now), $record->interval);
+    }
+
+    /**
+     * CIBA Core §13 names the errors this endpoint answers, and "invalid_request_object" is not one of
+     * them: that is the error of the authorization endpoint, where the parameter is "request" and the
+     * refusal is a page (OIDC Core §6.1, RFC 9101 §5). Here an object the endpoint will not read is
+     * "invalid_request", like every other request it will not read. What is refused and why stays the
+     * resolver's; only the name of the error belongs to the endpoint that answers.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @throws OAuth2Exception
+     */
+    private function readObject(Tenant $tenant, array $parameters, Client $client): ?ResolvedRequestObject
+    {
+        try {
+            return $this->requestObjects->resolve($tenant, $parameters, $client);
+        } catch (InvalidRequestObjectException $exception) {
+            throw new InvalidRequestException($exception->errorDescription, false, $exception);
+        }
     }
 
     /**

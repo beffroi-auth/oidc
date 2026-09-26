@@ -100,7 +100,7 @@ final readonly class PushedAuthorizationHandler
         // what the store keeps is the request it carried: the object is verified once, by the endpoint
         // the client sent it to, and the authorization endpoint reads parameters like any other.
         $object = $this->requestObjects->resolve($tenant, $parameters, $client);
-        $parameters = $object ?? $parameters;
+        $parameters = $object->parameters ?? $parameters;
         $parameters = self::reservedFor($parameters, $provenKey);
         $target = $this->parser->redirectTarget($tenant, $parameters, true, $object !== null);
         $this->parser->parse($target, $parameters);

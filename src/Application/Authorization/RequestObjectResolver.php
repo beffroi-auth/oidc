@@ -63,11 +63,11 @@ final readonly class RequestObjectResolver
      * @throws OAuth2Exception never redirectable: what names the destination is inside the object, and
      *                         an object that is refused is an object that was not read
      *
-     * @return array<string, string|list<string>>|null the parameters the endpoint reads in place of
-     *                                                  them, null when the request carries no object
-     *                                                  and the ones it carries stand
+     * @return ResolvedRequestObject|null the object and the parameters the endpoint reads in place of
+     *                                     them, null when the request carries no object and the ones it
+     *                                     carries stand
      */
-    public function resolve(Tenant $tenant, array $parameters, ?Client $client = null): ?array
+    public function resolve(Tenant $tenant, array $parameters, ?Client $client = null): ?ResolvedRequestObject
     {
         $received = RequestParameters::of($parameters);
         $byValue = $received->optional('request');
@@ -83,10 +83,10 @@ final readonly class RequestObjectResolver
         $this->verify($client, $object);
         $this->claims->validate($object, $client, $tenant, $this->clock->now());
 
-        return [
+        return new ResolvedRequestObject($object, [
             ...$object->parameters(),
             'client_id' => $client->registration->clientId,
-        ];
+        ]);
     }
 
     /**
