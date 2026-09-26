@@ -8,6 +8,7 @@ use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 
 /**
  * An authorization somebody signed in for (architecture §4.5): it descends from a session, so it names a
@@ -15,8 +16,13 @@ use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
  * user can be issued from it.
  *
  * Every grant of a browser flow produces one. What an issuer reads here, "sub" resolved for the client,
- * "sid", "auth_time", "acr", "amr" and an ID token, it reads of the authorizations that implement this
- * and of no other: a grant with nobody behind it carries none of it and is asked for none of it.
+ * "sid", "auth_time", "acr", "amr", an ID token and the authorization details a user agreed to, it reads of
+ * the authorizations that implement this and of no other: a grant with nobody behind it carries none of it
+ * and is asked for none of it.
+ *
+ * The authorization details are here and not on AuthorizationInterface for that reason (RFC 9396 §2): they
+ * are what somebody agreed to on a page, so an authorization nobody was asked for carries none, and an
+ * issuer that writes them asks for them where they exist.
  */
 interface UserAuthorizationInterface extends AuthorizationInterface
 {
@@ -38,4 +44,16 @@ interface UserAuthorizationInterface extends AuthorizationInterface
      * What the session had proven at the grant, written in every token descending from it.
      */
     public AuthenticationSnapshot $authentication { get; }
+
+    /**
+     * What this response carries beyond its scopes ("authorization_details", RFC 9396 §2), null when the
+     * request asked for none.
+     */
+    public ?AuthorizationDetails $authorizationDetails { get; }
+
+    /**
+     * What the user agreed to beyond the scopes, which the whole grant stands on, null when they agreed to
+     * none. A token request narrows the details of the response and never these (§7).
+     */
+    public ?AuthorizationDetails $grantedAuthorizationDetails { get; }
 }

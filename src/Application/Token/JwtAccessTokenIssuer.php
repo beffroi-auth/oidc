@@ -57,6 +57,11 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
      */
     public const string MAY_ACT = 'may_act';
 
+    /**
+     * RFC 9396 §7.
+     */
+    public const string AUTHORIZATION_DETAILS = 'authorization_details';
+
     public function __construct(
         private JwsSignerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
@@ -100,6 +105,12 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         }
         if ($signIn !== null) {
             $claims['sid'] = $signIn->sessionId->toRfc4122();
+        }
+        // RFC 9396 §7: what the user agreed to beyond the scopes, as this response carries it; of an
+        // authorization nobody was asked for, there is nothing to write
+        $details = $authorization instanceof UserAuthorizationInterface ? $authorization->authorizationDetails : null;
+        if ($details !== null) {
+            $claims[self::AUTHORIZATION_DETAILS] = $details->toClaim();
         }
         $claims[self::GRANT_ID] = $authorization->grantId->toRfc4122();
         // RFC 8693 §4.1: who holds the token on behalf of its subject, the most recent actor outermost;

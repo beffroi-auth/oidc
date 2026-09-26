@@ -10,6 +10,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
 use Heidi\Oidc\Domain\Authorization\CodeChallenge;
 use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
@@ -23,6 +24,7 @@ use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Token\KeyConfirmation;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Heidi\Oidc\Exception\InvalidAuthorizationDetailsException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\InvalidScopeException;
 use Heidi\Oidc\Exception\InvalidTargetException;
@@ -30,6 +32,7 @@ use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnsupportedResponseModeException;
 use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
+use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
 use function in_array;
@@ -61,6 +64,7 @@ final readonly class AuthorizationRequestParser
     public function __construct(
         private ClientRepositoryInterface $clients,
         private ServedResponseModesInterface $responseModes,
+        private AuthorizationDetailsReaderInterface $authorizationDetailTypes,
     ) {
     }
 
@@ -196,6 +200,7 @@ final readonly class AuthorizationRequestParser
         $claims = self::claims($request->optional('claims'));
         $dpopKey = self::dpopKey($request->optional('dpop_jkt'));
         $resources = self::resources($target->client, $request->repeated('resource'));
+        $authorizationDetails = $this->authorizationDetails($target->client, $request->optional('authorization_details'));
 
         return new AuthorizationRequest(
             $target->client,
@@ -215,7 +220,35 @@ final readonly class AuthorizationRequestParser
             $target->responseMode,
             $dpopKey,
             $resources,
+            $authorizationDetails,
         );
+    }
+
+    /**
+     * RFC 9396 §2: what this request asks for beyond its scopes, a JSON array of objects each naming its
+     * type. The types are the ones the provider is wired with, each validating its own members, and what
+     * a client may ask for is the closed list of its registration (§11), as every other list of a client
+     * is. A malformed array, an object naming no type, a type nobody serves and a type the client is not
+     * registered for are all "invalid_authorization_details" (§5), which goes back to the redirect URI as
+     * every refusal of this stage does.
+     *
+     * @throws InvalidAuthorizationDetailsException
+     */
+    private function authorizationDetails(Client $client, ?string $json): ?AuthorizationDetails
+    {
+        if ($json === null) {
+            return null;
+        }
+        try {
+            $details = $this->authorizationDetailTypes->fromJson($json);
+        } catch (InvalidArgumentException $exception) {
+            throw InvalidAuthorizationDetailsException::notWhatItMustBe(true, $exception);
+        }
+        if (! $client->registration->allowsAuthorizationDetails($details)) {
+            throw InvalidAuthorizationDetailsException::notRegistered(true);
+        }
+
+        return $details;
     }
 
     /**

@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\Subject;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Exchange\Actor;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -33,6 +34,7 @@ final readonly class VerifiedAccessToken
      * @param list<string> $userinfoClaims the names of OIDC Core §5.5, empty when the client asked for none
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      * @param Actor|null $actor who holds the token on behalf of its subject (RFC 8693 §4.1), null when nobody does and the holder is the subject
+     * @param AuthorizationDetails|null $authorizationDetails what the token carries beyond its scopes (RFC 9396 §7), null when it carries none
      */
     public function __construct(
         public Client $client,
@@ -46,6 +48,7 @@ final readonly class VerifiedAccessToken
         public DateTimeImmutable $expiresAt,
         public ?ConfirmationInterface $confirmation = null,
         public ?Actor $actor = null,
+        public ?AuthorizationDetails $authorizationDetails = null,
     ) {
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An access token expires after it was issued.');

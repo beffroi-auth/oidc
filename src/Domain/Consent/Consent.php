@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -29,12 +30,17 @@ final class Consent implements ResolvesItsClientInterface
 
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
+    /**
+     * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes
+     *                                                        (RFC 9396 §2), null when they agreed to none
+     */
     public function __construct(
         public private(set) Uuid $id,
         public readonly User $user,
         public readonly Client $client,
         public readonly Scopes $scopes,
         public readonly DateTimeImmutable $grantedAt,
+        public readonly ?AuthorizationDetails $authorizationDetails = null,
     ) {
         if (! $client->belongsTo($user->tenant)) {
             throw new InvalidArgumentException('A consent binds a user and a client of the same tenant.');
@@ -45,15 +51,39 @@ final class Consent implements ResolvesItsClientInterface
 
     /**
      * The consent that supersedes this one when the user agrees to more: its scopes and the ones given,
-     * each once, from now; this one is revoked. What a user agreed to is never taken back by a new
-     * agreement (architecture §4.3).
+     * its details and the ones given, each once, from now; this one is revoked. What a user agreed to is
+     * never taken back by a new agreement (architecture §4.3).
      *
+     * @param AuthorizationDetails|null $authorizationDetails what was just agreed to beyond the scopes,
+     *                                                        null when the request asked for none, which
+     *                                                        leaves what this consent already carries
      */
-    public function extendedWith(Scopes $scopes, Uuid $id, DateTimeImmutable $now): self
+    public function extendedWith(Scopes $scopes, ?AuthorizationDetails $authorizationDetails, Uuid $id, DateTimeImmutable $now): self
     {
         $this->revoke($now);
 
-        return new self($id, $this->user, $this->client, new Scopes([...$this->scopes->all, ...$scopes->all]), $now);
+        return new self(
+            $id,
+            $this->user,
+            $this->client,
+            new Scopes([...$this->scopes->all, ...$scopes->all]),
+            $now,
+            self::merged($this->authorizationDetails, $authorizationDetails),
+        );
+    }
+
+    /**
+     * What a consent carries once it has been given twice: both sets as one, each detail once, the ones
+     * already held first (RFC 9396 §2). Either side may be nothing, a request that asks for no detail
+     * taking nothing back from one that did.
+     */
+    private static function merged(?AuthorizationDetails $held, ?AuthorizationDetails $given): ?AuthorizationDetails
+    {
+        if ($held === null) {
+            return $given;
+        }
+
+        return $given === null ? $held : $held->mergedWith($given);
     }
 
     public function isActive(): bool
@@ -90,6 +120,20 @@ final class Consent implements ResolvesItsClientInterface
     public function coversUser(User $user, string $clientId): bool
     {
         return $this->clientId === $clientId && $user->id->equals($this->user->id);
+    }
+
+    /**
+     * Whether this consent answers for a request asking for these details (RFC 9396 §7): every detail is
+     * one the user has already agreed to, or the page asks again. A request that asks for none is covered
+     * by every consent, there being nothing structured to agree to.
+     */
+    public function coversAuthorizationDetails(?AuthorizationDetails $details): bool
+    {
+        if ($details === null) {
+            return true;
+        }
+
+        return $this->authorizationDetails !== null && $this->authorizationDetails->covers($details);
     }
 
     public function isFor(User $user, Client $client): bool

@@ -116,7 +116,14 @@ final readonly class AuthorizationHandler
         }
         $interaction->authenticate($session, $now);
 
-        $consent = $this->consentGranting->grant($session, $interaction->request->client, $interaction->request->scopes, $context, $now);
+        $consent = $this->consentGranting->grant(
+            $session,
+            $interaction->request->client,
+            $interaction->request->scopes,
+            $interaction->request->authorizationDetails,
+            $context,
+            $now,
+        );
         $interaction->consent($consent, $now);
 
         return $this->decide($interaction, $session, $context, $now);
@@ -162,7 +169,7 @@ final readonly class AuthorizationHandler
                 }
                 $this->interactions->save($interaction);
 
-                return new ConsentRequired($interaction, $session, $request->scopes, $consentRequirement);
+                return new ConsentRequired($interaction, $session, $request->scopes, $consentRequirement, $request->authorizationDetails);
             }
             $granted = $this->codes->issue($interaction, $session, $requested->context, $context, $now);
         } catch (OAuth2Exception $exception) {

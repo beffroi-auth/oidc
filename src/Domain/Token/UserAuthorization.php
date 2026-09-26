@@ -11,6 +11,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
@@ -23,7 +24,9 @@ use Symfony\Component\Uid\Uuid;
  * that descends from a session, and therefore names a user and says what that session had proven when it
  * was granted. "scopes" is what this response carries, "grantedScopes" what the user granted
  * (RFC 6749 §6); "resources" and "grantedResources" say the same of the resources the access token is
- * addressed to (RFC 8707 §2.2), a token request being free to narrow either and to widen neither.
+ * addressed to (RFC 8707 §2.2), and "authorizationDetails" and "grantedAuthorizationDetails" of what the
+ * user agreed to beyond the scopes (RFC 9396 §7), a token request being free to narrow any of them and to
+ * widen none.
  */
 final readonly class UserAuthorization implements UserAuthorizationInterface
 {
@@ -39,6 +42,10 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
 
     public ?ResourceIndicators $grantedResources;
 
+    public ?AuthorizationDetails $authorizationDetails;
+
+    public ?AuthorizationDetails $grantedAuthorizationDetails;
+
     /**
      * @param GrantTypeName $grantType the grant that produced this authorization, as it names itself
      * @param string|null $nonce only when the grant has one to carry (OIDC Core §3.1.3.7 step 11, §12.2)
@@ -46,6 +53,8 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
      * @param ConfirmationInterface|null $confirmation what the tokens of this response are bound to (RFC 8705 §3, RFC 9449 §6.1), null when they are bearer tokens
      * @param ResourceIndicators|null $resources the resources this response is for ("resource", RFC 8707 §2), null when the request named none
      * @param ResourceIndicators|null $grantedResources the resources the grant carries, null when it carries none
+     * @param AuthorizationDetails|null $authorizationDetails what this response carries beyond its scopes ("authorization_details", RFC 9396 §2), null when the request asked for none
+     * @param AuthorizationDetails|null $grantedAuthorizationDetails what the user agreed to beyond the scopes, null when they agreed to none
      */
     public function __construct(
         public GrantTypeName $grantType,
@@ -60,6 +69,8 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
         public ?ConfirmationInterface $confirmation = null,
         ?ResourceIndicators $resources = null,
         ?ResourceIndicators $grantedResources = null,
+        ?AuthorizationDetails $authorizationDetails = null,
+        ?AuthorizationDetails $grantedAuthorizationDetails = null,
     ) {
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('An authorization binds a session and a client of the same tenant.');
@@ -70,12 +81,17 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
         if ($resources !== null && ($grantedResources === null || ! $grantedResources->covers($resources))) {
             throw new InvalidArgumentException('The resources of a response are among the granted ones (RFC 8707 section 2.2).');
         }
+        if ($authorizationDetails !== null && ($grantedAuthorizationDetails === null || ! $grantedAuthorizationDetails->covers($authorizationDetails))) {
+            throw new InvalidArgumentException('The authorization details of a response are among the granted ones (RFC 9396 section 7).');
+        }
         $this->tenant = $client->tenant;
         $this->user = $session->user;
         $this->scopes = $scopes;
         $this->grantedScopes = $grantedScopes;
         $this->resources = $resources;
         $this->grantedResources = $grantedResources;
+        $this->authorizationDetails = $authorizationDetails;
+        $this->grantedAuthorizationDetails = $grantedAuthorizationDetails;
     }
 
     /**
@@ -101,6 +117,7 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
         AuthorizationCode $code,
         ?ConfirmationInterface $confirmation = null,
         ?ResourceIndicators $resources = null,
+        ?AuthorizationDetails $authorizationDetails = null,
     ): self {
         return new self(
             $grantType,
@@ -115,6 +132,8 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
             $confirmation,
             $resources ?? $code->resources,
             $code->resources,
+            $authorizationDetails ?? $code->authorizationDetails,
+            $code->authorizationDetails,
         );
     }
 
@@ -132,6 +151,7 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
         ?Scopes $scopes,
         ?ConfirmationInterface $confirmation = null,
         ?ResourceIndicators $resources = null,
+        ?AuthorizationDetails $authorizationDetails = null,
     ): self {
         return new self(
             $grantType,
@@ -146,6 +166,8 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
             $confirmation,
             $resources ?? $token->resources,
             $token->resources,
+            $authorizationDetails ?? $token->authorizationDetails,
+            $token->authorizationDetails,
         );
     }
 }

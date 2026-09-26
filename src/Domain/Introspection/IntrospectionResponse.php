@@ -19,7 +19,9 @@ use SensitiveParameter;
  * What a token says is what is rendered: a token a client holds for itself names that client in "sub" and
  * carries no "sid", no "auth_time", no "acr" and no "amr", because nobody signed in for it (RFC 6749 §4.4);
  * a token somebody holds for its subject renders who in "act" (RFC 8693 §4.1), and one nobody holds for
- * anybody renders no "act" at all, which is what tells a delegation from an impersonation (§1.3).
+ * anybody renders no "act" at all, which is what tells a delegation from an impersonation (§1.3); a token of
+ * a grant somebody agreed to renders the "authorization_details" they agreed to (RFC 9396 §9), and one
+ * nobody agreed to renders none.
  */
 final readonly class IntrospectionResponse
 {
@@ -85,6 +87,15 @@ final readonly class IntrospectionResponse
                         ? []
                         : [
                             'act' => $token->actor->toClaim(),
+                        ]
+                ),
+                // RFC 9396 §9: what the token is good for beyond its scopes, as the resource server that
+                // has to honour it reads it, the same array the self-contained shape carries
+                ...(
+                    $token->authorizationDetails === null
+                        ? []
+                        : [
+                            'authorization_details' => $token->authorizationDetails->toClaim(),
                         ]
                 ),
                 // RFC 8705 §3.2: a resource server reads here what it must ask the caller to present again

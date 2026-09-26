@@ -33,6 +33,10 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * nothing and would lock out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9).
  * The session may have expired, not have been ended (architecture §4.9).
  *
+ * What the request may narrow it narrows and never widens: the scopes of the response (RFC 6749 §6), the
+ * resources its access token is addressed to (RFC 8707 §2.2) and the details it carries (RFC 9396 §7), the
+ * refresh token beside it staying bound to the whole of the original grant in each case.
+ *
  * A token bound to a key (RFC 9449 §5) is refreshed by a request that proves that key again, and by
  * nobody else: the client that holds it is a public client, and the binding is the whole of what tells
  * it from whoever took a copy of the token.
@@ -45,6 +49,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
         private RefreshTokenRepositoryInterface $refreshTokens,
         private RefreshTokenRevocation $revocation,
         private TokenIssuer $issuer,
+        private RequestedAuthorizationDetails $authorizationDetails,
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
     ) {
@@ -83,6 +88,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             $scopes,
             $client->confirmation,
             RequestedResources::of($request, $token->resources),
+            $this->authorizationDetails->of($request, $token->authorizationDetails),
         );
         if (! $token->rotatesOnUse()) {
             return $this->issuer->issue($authorization, null, $context, $now);

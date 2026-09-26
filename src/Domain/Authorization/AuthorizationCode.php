@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\Authorization;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
@@ -37,6 +38,7 @@ final class AuthorizationCode extends GrantRecord implements ResolvesItsClientIn
      * @param string $codeHash the hex SHA-256 of the value drawn for it, see DrawnSecret
      * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE (decision 0008)
      * @param ResourceIndicators|null $resources the resources the request asked the tokens for (RFC 8707 §2.1), null when it named none; a token request may narrow them and never widen them
+     * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes (RFC 9396 §2), null when the request asked for none; a token request may narrow them and never widen them
      * @param KeyConfirmation|null $dpopKey the key the request reserved the code for (RFC 9449 §10), null when it reserved it for none
      * @param AuthenticationSnapshot $authentication what the session had proven, frozen for every token of the grant
      */
@@ -48,6 +50,7 @@ final class AuthorizationCode extends GrantRecord implements ResolvesItsClientIn
         public readonly RedirectUri $redirectUri,
         public readonly Scopes $scopes,
         public readonly ?ResourceIndicators $resources,
+        public readonly ?AuthorizationDetails $authorizationDetails,
         public readonly ?string $nonce,
         public readonly ?CodeChallenge $codeChallenge,
         public readonly ?KeyConfirmation $dpopKey,

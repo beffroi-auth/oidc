@@ -7,6 +7,7 @@ namespace Heidi\Oidc\Domain\Client;
 use function array_all;
 use function array_any;
 use function array_find;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
 use Heidi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
@@ -19,6 +20,7 @@ use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\TokenAudience;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use function in_array;
 use function preg_match;
 use function sprintf;
 
@@ -73,6 +75,11 @@ final readonly class ClientRegistration
      */
     public array $resources;
 
+    /**
+     * @var list<non-empty-string>
+     */
+    public array $authorizationDetailsTypes;
+
     public Scopes $allowedScopes;
 
     public ResponseFormat $idToken;
@@ -96,6 +103,7 @@ final readonly class ClientRegistration
      * @param MayAct|null $mayAct who may act for the subject of a token issued to this client (RFC 8693 §4.4), written on every token it receives; null when the registration names nobody and what decides is the registration of whoever asks
      * @param ClientUri|null $backchannelClientNotificationEndpoint where this provider calls that client back (CIBA Core §7.1), for a mode where it does and for no other
      * @param list<ResourceIndicator> $resources the resources this client may ask a token for ("resource", RFC 8707 §2); a closed list like every other, so a resource outside it is "invalid_target". A client that registers none asks for none and its tokens are addressed to itself
+     * @param list<string> $authorizationDetailsTypes the types of authorization detail this client may ask for ("authorization_details", RFC 9396 §2, §11), among the ones the provider is wired with, which is read where a registration meets that wiring; a closed list like every other, so a type outside it is "invalid_authorization_details". A client that registers none asks for none
      * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
      * @param list<ClientUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
@@ -143,6 +151,7 @@ final readonly class ClientRegistration
         public ?ClientUri $backchannelClientNotificationEndpoint = null,
         public ?TokenExchange $tokenExchange = null,
         public ?MayAct $mayAct = null,
+        array $authorizationDetailsTypes = [],
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();
@@ -155,6 +164,7 @@ final readonly class ClientRegistration
         $this->grantTypes = self::unique($grantTypes, static fn (GrantTypeName $a, GrantTypeName $b): bool => $a->equals($b));
         $this->requestUris = self::unique($requestUris, static fn (ClientUri $a, ClientUri $b): bool => $a->equals($b));
         $this->resources = self::unique($resources, static fn (ResourceIndicator $a, ResourceIndicator $b): bool => $a->equals($b));
+        $this->authorizationDetailsTypes = self::uniqueNames($authorizationDetailsTypes);
 
         $this->assertHoldsTogether();
     }
@@ -205,6 +215,20 @@ final readonly class ClientRegistration
         return array_all(
             $resources->all,
             fn (ResourceIndicator $asked): bool => array_any($this->resources, static fn (ResourceIndicator $registered): bool => $registered->equals($asked)),
+        );
+    }
+
+    /**
+     * RFC 9396 §11: what this client may ask for is the types it registered, compared byte for byte as
+     * every other closed list of a client. A client that registered none may ask for none, and a detail
+     * of a type outside the list is "invalid_authorization_details" whatever that type would have made
+     * of it.
+     */
+    public function allowsAuthorizationDetails(AuthorizationDetails $details): bool
+    {
+        return array_all(
+            $details->types(),
+            fn (string $type): bool => in_array($type, $this->authorizationDetailsTypes, true),
         );
     }
 
@@ -345,6 +369,30 @@ final readonly class ClientRegistration
                 $this->clientId,
             ));
         }
+    }
+
+    /**
+     * The names of a closed list a client registers, each once, in the order they were registered.
+     *
+     * @param list<string> $names
+     *
+     * @throws InvalidArgumentException when one of them is empty
+     *
+     * @return list<non-empty-string>
+     */
+    private function uniqueNames(array $names): array
+    {
+        $unique = [];
+        foreach ($names as $name) {
+            if ($name === '') {
+                throw new InvalidArgumentException(sprintf('The client "%s" registers no empty name in a closed list.', $this->clientId));
+            }
+            if (! in_array($name, $unique, true)) {
+                $unique[] = $name;
+            }
+        }
+
+        return $unique;
     }
 
     /**

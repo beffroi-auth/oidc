@@ -57,6 +57,7 @@ use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\PresentedTokenTypesInterface;
 use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
+use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
 use function implode;
 use function in_array;
@@ -120,6 +121,7 @@ final readonly class ClientDefinition
         'request_object_signing_alg',
         'request_uris',
         'resources',
+        'authorization_details_types',
         'backchannel_token_delivery_mode',
         'backchannel_client_notification_endpoint',
         'token_exchange',
@@ -145,6 +147,7 @@ final readonly class ClientDefinition
      * @param CertificateReaderInterface $certificates what writes a registered distinguished name the way it will be read out of a certificate (RFC 8705 §2.1.2)
      * @param ServedDeliveryModesInterface $deliveryModes how the provider is wired to tell a client that a backchannel request has been answered: a client of that flow registers one of those names, and every other client registers none
      * @param PresentedTokenTypesInterface $tokenTypes what the exchange is wired to read: a client of that grant registers those names and no other (RFC 8693 §3)
+     * @param ServedAuthorizationDetailTypesInterface $authorizationDetailTypes what the provider is wired to read an "authorization_details" with: a client registers those names and no other (RFC 9396 §2, §11)
      */
     public static function fromArray(
         string $clientId,
@@ -158,6 +161,7 @@ final readonly class ClientDefinition
         ContentEncryptionAlgorithmsInterface $contentEncryption,
         ServedDeliveryModesInterface $deliveryModes,
         PresentedTokenTypesInterface $tokenTypes,
+        ServedAuthorizationDetailTypesInterface $authorizationDetailTypes,
     ): self {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -242,6 +246,8 @@ final readonly class ClientDefinition
             self::stringList($clientId, 'resources', $definition['resources'] ?? []),
         );
 
+        $authorizationDetailsTypes = self::authorizationDetailsTypes($clientId, $definition, $authorizationDetailTypes);
+
         $backchannelTokenDeliveryMode = self::deliveryMode($clientId, $definition, $deliveryModes);
         $backchannelClientNotificationEndpoint = self::clientUri($clientId, 'backchannel_client_notification_endpoint', $definition);
 
@@ -277,6 +283,7 @@ final readonly class ClientDefinition
             $backchannelClientNotificationEndpoint,
             $tokenExchange,
             self::mayAct($clientId, $definition),
+            $authorizationDetailsTypes,
         );
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
             self::assertAddressable($clientId, $format, $jwks);
@@ -822,6 +829,37 @@ final readonly class ClientDefinition
         }
 
         return $value;
+    }
+
+    /**
+     * RFC 9396 §11 "authorization_details_types": the types of authorization detail this client may ask
+     * for, among the ones the provider is wired with. A name nothing serves fails at boot rather than at
+     * the first request that uses it, as a grant name and a token shape do.
+     *
+     * @param array<string, mixed> $definition
+     *
+     * @throws InvalidArgumentException when a name is not one of the wired types
+     *
+     * @return list<string>
+     */
+    private static function authorizationDetailsTypes(
+        string $clientId,
+        array $definition,
+        ServedAuthorizationDetailTypesInterface $types,
+    ): array {
+        $served = $types->servedAuthorizationDetailTypes();
+        $registered = self::stringList($clientId, 'authorization_details_types', $definition['authorization_details_types'] ?? []);
+        foreach ($registered as $name) {
+            if (! in_array($name, $served, true)) {
+                throw self::oneOf(
+                    $clientId,
+                    'authorization_details_types',
+                    $served === [] ? ['none: this provider is wired with no authorization detail type'] : $served,
+                );
+            }
+        }
+
+        return $registered;
     }
 
     /**

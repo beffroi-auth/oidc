@@ -67,7 +67,8 @@ final readonly class DeviceApproval
     public function approve(DeviceAuthorizationRecord $record, AuthenticationSession $session, RequestContext $context): void
     {
         $now = $this->clock->now();
-        $this->consents->grant($session, $record->client, $record->scopes, $context, $now);
+        // RFC 9396 §2 is not read at the endpoint this record was drawn at, so there is no detail to agree to
+        $this->consents->grant($session, $record->client, $record->scopes, null, $context, $now);
         $record->approve($session, AuthenticationSnapshot::ofSession($session, $session->authenticationContextClass()), $now);
         $this->records->save($record);
     }

@@ -94,6 +94,9 @@ final class Interaction implements ResolvesItsClientInterface
         if (! $consent->scopes->covers($this->request->scopes)) {
             throw new InvalidArgumentException('A consent recorded on an interaction covers every scope of the request.');
         }
+        if (! $consent->coversAuthorizationDetails($this->request->authorizationDetails)) {
+            throw new InvalidArgumentException('A consent recorded on an interaction covers every authorization detail of the request (RFC 9396 section 7).');
+        }
         $this->consent = $consent;
     }
 

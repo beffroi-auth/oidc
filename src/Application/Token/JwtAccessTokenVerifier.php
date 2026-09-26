@@ -12,6 +12,7 @@ use Heidi\Core\Exception\InvalidArgumentException;
 use Heidi\Core\Exception\InvalidJwsException;
 use Heidi\Core\Port\JwsVerifierInterface;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Exchange\Actor;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\TokenAudience;
@@ -20,6 +21,7 @@ use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
 use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidTokenException;
 use Heidi\Oidc\Port\AccessTokenVerifierInterface;
+use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\ConfirmationReaderInterface;
 use function is_array;
@@ -49,15 +51,17 @@ use Symfony\Component\Uid\Uuid;
 final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterface
 {
     /**
-     * Deeper than the lists of strings ("amr", "userinfo_claims") and a chain of actors nested a few
-     * exchanges deep ("act", RFC 8693 §4.1) was not issued here.
+     * Deeper than the lists of strings ("amr", "userinfo_claims"), a chain of actors nested a few
+     * exchanges deep ("act", RFC 8693 §4.1) and an "authorization_details" as deep as the parameter it
+     * came from (RFC 9396 §2, §7) was not issued here.
      */
-    private const int MAX_DEPTH = 6;
+    private const int MAX_DEPTH = 7;
 
     public function __construct(
         private JwsVerifierInterface $verifier,
         private ClientRepositoryInterface $clients,
         private ConfirmationReaderInterface $confirmations,
+        private AuthorizationDetailsReaderInterface $authorizationDetailTypes,
     ) {
     }
 
@@ -133,6 +137,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             $signIn = self::signIn($claims);
             $confirmation = $this->confirmations->fromClaims($claims);
             $actor = isset($claims[JwtAccessTokenIssuer::ACTOR]) ? Actor::fromClaim($claims[JwtAccessTokenIssuer::ACTOR]) : null;
+            $details = self::authorizationDetails($claims, $this->authorizationDetailTypes);
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw InvalidTokenException::notIssuedHere($exception);
         }
@@ -149,7 +154,25 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             new DateTimeImmutable('@' . $exp),
             $confirmation,
             $actor,
+            $details,
         );
+    }
+
+    /**
+     * RFC 9396 §7: what the token carries beyond its scopes, read back through the types the provider is
+     * wired with, null when it carries none. A token naming a type this provider no longer serves is a
+     * token it can no longer describe, and it is refused rather than described without the part that says
+     * what it was for.
+     *
+     * @param array<array-key, mixed> $claims
+     *
+     * @throws OidcInvalidArgumentException when what the claim carries is not what this provider writes there
+     */
+    private static function authorizationDetails(array $claims, AuthorizationDetailsReaderInterface $types): ?AuthorizationDetails
+    {
+        $claim = $claims[JwtAccessTokenIssuer::AUTHORIZATION_DETAILS] ?? null;
+
+        return $claim === null ? null : $types->fromClaim($claim);
     }
 
     /**

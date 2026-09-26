@@ -55,6 +55,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         private ClockInterface $clock,
         private EventDispatcherInterface $events,
         private RefreshTokenDue $refreshTokenDue,
+        private RequestedAuthorizationDetails $authorizationDetails,
         private DateInterval $refreshTokenFamilyLifetime = new DateInterval('P90D'),
     ) {
     }
@@ -96,13 +97,15 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             throw new InvalidGrantException(self::INVALID);
         }
 
-        // RFC 8707 §2.2: the access token of this response may be addressed to a subset of the
-        // resources the authorization carries, while the refresh token beside it stays bound to them all
+        // RFC 8707 §2.2, RFC 9396 §7: the access token of this response may be addressed to a subset of
+        // the resources the authorization carries and may carry a subset of its details, while the refresh
+        // token beside it stays bound to them all
         $authorization = UserAuthorization::fromAuthorizationCode(
             $this->grantType(),
             $record,
             $client->confirmation,
             RequestedResources::of($request, $record->resources),
+            $this->authorizationDetails->of($request, $record->authorizationDetails),
         );
         $refreshToken = null;
         if ($this->refreshTokenDue->forThe($authorization)) {

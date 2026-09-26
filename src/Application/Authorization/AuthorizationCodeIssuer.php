@@ -66,6 +66,7 @@ final readonly class AuthorizationCodeIssuer
             $request->redirectUri,
             $request->scopes,
             $request->resources,
+            $request->authorizationDetails,
             $request->nonce,
             $request->codeChallenge,
             $request->dpopKey,

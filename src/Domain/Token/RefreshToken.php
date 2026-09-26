@@ -9,6 +9,7 @@ use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Heidi\Oidc\Domain\Record\ExpiringRecord;
@@ -45,6 +46,7 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     /**
      * @param string $tokenHash the hex SHA-256 of the value drawn for it, see DrawnSecret
      * @param ResourceIndicators|null $resources the resources of the whole grant, which a refresh is bound to and may narrow (RFC 8707 §2.2), null when the authorization named none
+     * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes, which a refresh is bound to and may narrow (RFC 9396 §7), null when they agreed to none
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
      * @param ConfirmationInterface|null $confirmation what a refresh of this token has to prove again (RFC 9449 §5), null when the client proves itself another way
      * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
@@ -56,6 +58,7 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
         public readonly AuthenticationSession $session,
         public readonly Scopes $scopes,
         public readonly ?ResourceIndicators $resources,
+        public readonly ?AuthorizationDetails $authorizationDetails,
         public readonly ?ClaimsRequest $claimsRequest,
         public readonly AuthenticationSnapshot $authentication,
         public readonly DateTimeImmutable $issuedAt,
@@ -94,9 +97,10 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
             $authorization->client,
             $authorization->session,
             $authorization->grantedScopes,
-            // RFC 8707 §2.2: a refresh token is bound to the full original grant, whatever subset of
-            // its resources the access token beside it was narrowed to
+            // RFC 8707 §2.2, RFC 9396 §7: a refresh token is bound to the full original grant, whatever
+            // subset of its resources and of its details the access token beside it was narrowed to
             $authorization->grantedResources,
+            $authorization->grantedAuthorizationDetails,
             $authorization->claimsRequest,
             $authorization->authentication,
             $now,

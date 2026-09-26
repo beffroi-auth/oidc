@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
+use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Resource\ResourceIndicators;
 use Heidi\Oidc\Domain\Scope\Scopes;
@@ -16,9 +17,9 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * An opaque access token somebody signed in for (architecture §4.6): the record of the session it
- * descends from, of what that session had proven at the grant, and of the claims the client asked for by
- * name, which is what its introspection renders and what the verifier reads back as "sid", "auth_time",
- * "acr" and "amr".
+ * descends from, of what that session had proven at the grant, of the claims the client asked for by
+ * name, and of what the user agreed to beyond the scopes (RFC 9396 §9), which is what its introspection
+ * renders and what the verifier reads back as "sid", "auth_time", "acr", "amr" and "authorization_details".
  *
  * The session is kept and not only its identifier, because the "sub" a client sees is resolved for the
  * user of that session (OIDC Core §8) and the logout of the session takes the token with it.
@@ -27,6 +28,7 @@ final readonly class StoredUserAccessToken extends StoredAccessToken
 {
     /**
      * @param AuthenticationSnapshot $authentication what the session had proven at the grant
+     * @param AuthorizationDetails|null $authorizationDetails what this token carries beyond its scopes (RFC 9396 §7), null when the request asked for none
      *
      * @throws InvalidArgumentException
      */
@@ -37,6 +39,7 @@ final readonly class StoredUserAccessToken extends StoredAccessToken
         public AuthenticationSession $session,
         Scopes $scopes,
         ?ResourceIndicators $resources,
+        public ?AuthorizationDetails $authorizationDetails,
         public ?ClaimsRequest $claimsRequest,
         public AuthenticationSnapshot $authentication,
         DateTimeImmutable $issuedAt,
@@ -65,6 +68,7 @@ final readonly class StoredUserAccessToken extends StoredAccessToken
             $authorization->session,
             $authorization->scopes,
             $authorization->resources,
+            $authorization->authorizationDetails,
             $authorization->claimsRequest,
             $authorization->authentication,
             $now,

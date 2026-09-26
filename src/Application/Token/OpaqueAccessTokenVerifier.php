@@ -85,6 +85,8 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
             $token->expiresAt,
             $token->confirmation,
             $token instanceof StoredSubjectAccessToken ? $token->actor : null,
+            // RFC 9396 §7: only a record of a grant somebody agreed to carries details
+            $signedIn ? $token->authorizationDetails : null,
         );
     }
 
