@@ -175,11 +175,23 @@ final readonly class ClientRegistration
     }
 
     /**
-     * RFC 6749 §3.1.2.3: byte for byte.
+     * RFC 6749 §3.1.2.3: byte for byte, with the one named exception of RFC 8252 §7.3, which this is the
+     * only place able to apply: the port of a loopback redirection of a **public** client, which listens
+     * on whatever port the operating system handed it when it started and cannot register that port in
+     * advance. Nothing else varies, and a confidential client is held to the port it registered, having a
+     * host of its own to be reached at.
+     *
+     * It is the named and bounded exception decision 0006 allows, carried by the registration that may
+     * claim it as `requiresConsent` and `requiresPkce` are, and by no option of a deployment. PKCE stays
+     * mandatory for such a client, as it is for every public one, and the registration of such a client
+     * names the loopback interface by its IP literal and never by a name (§8.3, checked at construction).
      */
     public function hasRedirectUri(string $redirectUri): bool
     {
-        return array_any($this->redirectUris, static fn (RedirectUri $registered): bool => $registered->matches($redirectUri));
+        return array_any(
+            $this->redirectUris,
+            fn (RedirectUri $registered): bool => $registered->matches($redirectUri) || $this->isPublic() && $registered->matchesOnAnyPort($redirectUri),
+        );
     }
 
     /**
@@ -194,11 +206,17 @@ final readonly class ClientRegistration
     }
 
     /**
-     * RP-Initiated Logout §2.
+     * RP-Initiated Logout §2, and the same exception for the same reason: a native client is reached on
+     * the port it was given at the end of a session as at the beginning of one, so a provider that let it
+     * sign in and not sign out would have applied the rule of RFC 8252 §7.3 to half of what a client
+     * registers.
      */
     public function hasPostLogoutRedirectUri(string $redirectUri): bool
     {
-        return array_any($this->postLogoutRedirectUris, static fn (RedirectUri $registered): bool => $registered->matches($redirectUri));
+        return array_any(
+            $this->postLogoutRedirectUris,
+            fn (RedirectUri $registered): bool => $registered->matches($redirectUri) || $this->isPublic() && $registered->matchesOnAnyPort($redirectUri),
+        );
     }
 
     public function allowsGrant(GrantTypeName $grantType): bool
@@ -337,6 +355,15 @@ final readonly class ClientRegistration
         }
         if ($this->grantTypes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one grant type.', $this->clientId));
+        }
+        foreach ([...$this->redirectUris, ...$this->postLogoutRedirectUris] as $redirectUri) {
+            if ($this->isPublic() && $redirectUri->isPlainHttpOnAName()) {
+                throw new InvalidArgumentException(sprintf(
+                    'The client "%s" is public and sends its browser back to "%s" in plain HTTP: a native client registers the loopback interface by its IP literal, 127.0.0.1 or [::1], and never by a name (RFC 8252 section 8.3).',
+                    $this->clientId,
+                    $redirectUri->value,
+                ));
+            }
         }
         if (! $this->requiresPkce && $this->isPublic()) {
             throw new InvalidArgumentException(sprintf(
