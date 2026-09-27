@@ -13,6 +13,7 @@ use Heidi\Core\Port\JwsSignerInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
 use Heidi\Oidc\Domain\Token\AccessToken;
 use Heidi\Oidc\Domain\Token\AuthorizationInterface;
+use Heidi\Oidc\Domain\Token\CarriedAuthorizationDetails;
 use Heidi\Oidc\Domain\Token\ClientSubject;
 use Heidi\Oidc\Domain\Token\JwtPayload;
 use Heidi\Oidc\Domain\Token\NamesItsSubjectInterface;
@@ -108,7 +109,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         }
         // RFC 9396 §7: what the user agreed to beyond the scopes, as this response carries it; of an
         // authorization nobody was asked for, there is nothing to write
-        $details = $authorization instanceof UserAuthorizationInterface ? $authorization->authorizationDetails : null;
+        $details = CarriedAuthorizationDetails::of($authorization);
         if ($details !== null) {
             $claims[self::AUTHORIZATION_DETAILS] = $details->toClaim();
         }
