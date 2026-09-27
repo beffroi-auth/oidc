@@ -31,8 +31,10 @@ use Psr\Clock\ClockInterface;
  * What it spends is a record read once, as the authorization code grant spends a code: of any number of
  * requests presenting one device code at once exactly one is served, and a code presented again is worth
  * nothing. The order of the answers is the order of what a client can do about them: a code that belongs
- * to somebody else or expired is beyond polling, polling too fast is answered before anything is read of
- * the user's answer, and only then does the answer itself count.
+ * to somebody else or expired is beyond polling, then the answer the user gave, and the interval bounds
+ * the wait and only the wait. "slow_down" is a variant of "authorization_pending" (§3.5), so it is
+ * something to say about a request that is still pending and nothing to say about one that is over: a
+ * request that has an answer is answered, however soon after the last one it is asked for.
  *
  * What comes out is an authorization of the ordinary kind, descending from the session the user approved
  * with: the same scopes, the same consent, the same session rules, so the tokens are the ones of a code
@@ -74,17 +76,18 @@ final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterf
         if ($record->isExpired($now)) {
             throw new ExpiredTokenException('The device code has expired and the client starts a new request (RFC 8628 section 3.5).');
         }
-        // RFC 8628 §3.5: the poll is recorded whatever comes of it, so the record is saved on every path
-        // out of here and not only on the one that grants
-        $tooSoon = $record->polledTooSoon($now);
-        $this->records->save($record);
-        if ($tooSoon) {
-            throw new SlowDownException('The client is polling faster than the interval it was given, which grows by five seconds (RFC 8628 section 3.5).');
-        }
         if ($record->isDenied()) {
             throw new AccessDeniedException('The end user denied the request.', false);
         }
         if (! $record->isApproved()) {
+            // RFC 8628 §3.5: every poll is recorded, the refused ones included, so that asking again does
+            // not buy a faster answer; the record is saved before either of the two answers below
+            $tooSoon = $record->polledTooSoon($now);
+            $this->records->save($record);
+            if ($tooSoon) {
+                throw new SlowDownException('The client is polling faster than the interval it was given, which grows by five seconds (RFC 8628 section 3.5).');
+            }
+
             throw new AuthorizationPendingException('The end user has not answered the request yet (RFC 8628 section 3.5).');
         }
         // atomic: of the requests presenting this device code at once, exactly one is the first

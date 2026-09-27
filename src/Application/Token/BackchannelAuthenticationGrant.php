@@ -33,8 +33,12 @@ use Psr\Clock\ClockInterface;
  * What it spends is a record read once, as the authorization code grant spends a code: of any number of
  * requests presenting one auth_req_id at once exactly one is served, and an identifier presented again is
  * worth nothing. The order of the answers is the order of what a client can do about them: an identifier
- * that belongs to somebody else or expired is beyond polling, polling too fast is answered before
- * anything is read of the user's answer, and only then does the answer itself count.
+ * that belongs to somebody else or expired is beyond polling, then the answer the user gave, and the
+ * interval bounds the wait and only the wait. "slow_down" is a variant of "authorization_pending" (§11),
+ * so it is something to say about a request that is still pending and nothing to say about one that is
+ * over: a request that has an answer is answered, however soon after the last one it is asked for. That
+ * is what a client called back needs, §10.2 telling it to come when it is notified, which is sooner than
+ * the interval it was given to poll at.
  *
  * What comes out is an authorization of the ordinary kind, descending from the session the user approved
  * with: the same scopes, the same consent, the same session rules, and an ID token, "openid" being
@@ -82,17 +86,18 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
         if ($record->isExpired($now)) {
             throw new ExpiredTokenException('The auth_req_id has expired and the client starts a new request (CIBA Core section 11).');
         }
-        // CIBA Core §11: the poll is recorded whatever comes of it, so the record is saved on every path
-        // out of here and not only on the one that grants
-        $tooSoon = $record->polledTooSoon($now);
-        $this->records->save($record);
-        if ($tooSoon) {
-            throw new SlowDownException('The client is polling faster than the interval it was given, which grows by five seconds (CIBA Core section 11).');
-        }
         if ($record->isDenied()) {
             throw new AccessDeniedException('The end user denied the request.', false);
         }
         if (! $record->isApproved()) {
+            // CIBA Core §11: every poll is recorded, the refused ones included, so that asking again does
+            // not buy a faster answer; the record is saved before either of the two answers below
+            $tooSoon = $record->polledTooSoon($now);
+            $this->records->save($record);
+            if ($tooSoon) {
+                throw new SlowDownException('The client is polling faster than the interval it was given, which grows by five seconds (CIBA Core section 11).');
+            }
+
             throw new AuthorizationPendingException('The end user has not answered the request yet (CIBA Core section 11).');
         }
         // atomic: of the requests presenting this auth_req_id at once, exactly one is the first
