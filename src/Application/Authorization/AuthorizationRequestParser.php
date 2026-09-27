@@ -4,40 +4,18 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Authorization;
 
-use function count;
-use function explode;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
-use Heidi\Oidc\Domain\Authorization\CodeChallenge;
-use Heidi\Oidc\Domain\Authorization\CodeChallengeMethod;
-use Heidi\Oidc\Domain\Authorization\Display;
-use Heidi\Oidc\Domain\Authorization\Prompt;
 use Heidi\Oidc\Domain\Authorization\RedirectTarget;
-use Heidi\Oidc\Domain\Authorization\ResponseModeNames;
-use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidAuthorizationDetailsException;
 use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\InvalidScopeException;
-use Heidi\Oidc\Exception\InvalidTargetException;
 use Heidi\Oidc\Exception\LogicException;
 use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\UnsupportedResponseModeException;
 use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
 use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
-use function in_array;
-use function is_string;
-use function preg_match;
 use function sprintf;
 
 /**
@@ -45,27 +23,28 @@ use function sprintf;
  * §4.1.2.1: the client and the redirect URI first, whose failures are never redirected; everything else
  * then, whose failures go back to the client with "state" and "iss".
  *
+ * The two stages are two methods of one class because they are the two halves of one rule, when a failure
+ * may be redirected at all (RFC 9700 §4.1); what each parameter of the second stage must be is not here
+ * but in a class per group of them that belong together (`Requested*`), so that what is left is the stage
+ * and not the dozen readings.
+ *
  * It reads parameters and nothing else. A request the client pushed (RFC 9126 §4) and one it carried in
  * a JWT (RFC 9101 §6.1) are both resolved into parameters before they reach it, by the resolver of each,
  * so that the rules of a request are written once and judged once whichever way the request came in.
  */
 final readonly class AuthorizationRequestParser
 {
-    /**
-     * OIDC Core §3.1.2.1: seconds, bounded to a PHP integer.
-     */
-    private const string MAX_AGE_PATTERN = '/^(?:0|[1-9][0-9]{0,17})$/D';
+    private RequestedResponseMode $responseMode;
 
-    /**
-     * OIDC Core §2 "acr": printable ASCII without space.
-     */
-    private const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
+    private RequestedAuthorizationDetails $authorizationDetails;
 
     public function __construct(
         private ClientRepositoryInterface $clients,
-        private ServedResponseModesInterface $responseModes,
-        private AuthorizationDetailsReaderInterface $authorizationDetailTypes,
+        ServedResponseModesInterface $responseModes,
+        AuthorizationDetailsReaderInterface $authorizationDetailTypes,
     ) {
+        $this->responseMode = new RequestedResponseMode($responseModes);
+        $this->authorizationDetails = new RequestedAuthorizationDetails($authorizationDetailTypes);
     }
 
     /**
@@ -104,7 +83,7 @@ final readonly class AuthorizationRequestParser
         if (! $client->registration->hasRedirectUri($redirectUri)) {
             throw new InvalidRequestException('The redirect_uri parameter is not registered for this client.');
         }
-        return new RedirectTarget($client, new RedirectUri($redirectUri), $request->state(), $this->responseMode($parameters));
+        return new RedirectTarget($client, new RedirectUri($redirectUri), $request->state(), $this->responseMode->of($parameters));
     }
 
     /**
@@ -126,37 +105,8 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * The mode the answer will use (OAuth 2.0 Multiple Response Type Encoding Practices §2.1), read with
-     * the redirect URI because it says how anything reaches the client, a refusal of the second stage as
-     * well as a code (OIDC Core §3.1.2.6). It refuses nothing, the failures of this stage being pages:
-     * what the provider cannot answer as it was asked falls back to a mode the integration wired, so that
-     * the refusal the second stage throws reaches the client in a mode the endpoint can actually deliver.
-     * The alias of JARM §2.1 is resolved by the wiring before anything is asked of it, so that what is
-     * kept is the mode that delivers.
-     *
-     * The fallback is the wiring's and not a name written here: a deployment that answers in "form_post"
-     * and wires no "query" would otherwise refuse its own requests in a mode it has no way of delivering.
-     *
-     * @param array<string, mixed> $parameters
-     */
-    private function responseMode(array $parameters): string
-    {
-        $requested = $parameters['response_mode'] ?? null;
-        $mode = is_string($requested) ? $this->requestedMode($requested) : $this->requestedMode(ResponseModeNames::DEFAULT);
-
-        return $mode ?? $this->responseModes->servedResponseModes()[0];
-    }
-
-    /**
-     * The wired mode a named one is answered in, or nothing when the provider answers in no such mode.
-     */
-    private function requestedMode(string $requested): ?string
-    {
-        return $this->responseModes->responseModeNamed($requested);
-    }
-
-    /**
-     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): everything else.
+     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): everything else, each
+     * parameter judged by the class that owns its rule.
      *
      * @param array<string, mixed> $parameters
      *
@@ -165,234 +115,36 @@ final readonly class AuthorizationRequestParser
     public function parse(RedirectTarget $target, array $parameters): AuthorizationRequest
     {
         $request = RequestParameters::of($parameters)->withRedirectableFailures();
-        $responseType = $request->required('response_type');
-        if ($responseType !== 'code') {
+        if ($request->required('response_type') !== 'code') {
             throw new UnsupportedResponseTypeException('Only the code response type is supported.');
         }
+        $this->responseMode->assertItIsTheOneDelivered($request, $target->responseMode);
 
-        $responseMode = $request->optional('response_mode');
-        if ($responseMode !== null && $this->requestedMode($responseMode) !== $target->responseMode) {
-            throw new UnsupportedResponseModeException('The requested response mode is not supported.');
-        }
-
-        $scopes = $this->scopes($target, $request->required('scope'));
-        $codeChallenge = self::codeChallenge(
-            $target->client,
-            $request->optional('code_challenge'),
-            $request->optional('code_challenge_method'),
-        );
-
-        $nonce = $request->text('nonce');
-        $prompts = self::prompts($request->optional('prompt'));
-        $maxAge = $request->optional('max_age');
-        if ($maxAge !== null && preg_match(self::MAX_AGE_PATTERN, $maxAge) !== 1) {
-            throw new InvalidRequestException('The max_age parameter must be a non-negative integer.', true);
-        }
-        $loginHint = $request->text('login_hint');
-        $uiLocales = $request->uiLocales();
-        $acrValues = $request->list(
-            'acr_values',
-            self::ACR_VALUE_PATTERN,
-            'The acr_values parameter must be a space-separated list of printable ASCII values.',
-        );
-        $display = self::display($request->optional('display'));
-        $idTokenHint = $request->compactJws('id_token_hint');
-        $claims = self::claims($request->optional('claims'));
-        $dpopKey = self::dpopKey($request->optional('dpop_jkt'));
-        $resources = self::resources($target->client, $request->repeated('resource'));
-        $authorizationDetails = $this->authorizationDetails($target->client, $request->optional('authorization_details'));
+        $interaction = RequestedInteraction::of($request);
 
         return new AuthorizationRequest(
             $target->client,
             $target->redirectUri,
-            $scopes,
-            $codeChallenge,
+            RequestedScopes::of($target->client, $request->required('scope')),
+            RequestedCodeChallenge::of(
+                $target->client,
+                $request->optional('code_challenge'),
+                $request->optional('code_challenge_method'),
+            ),
             $target->state,
-            $nonce,
-            $prompts,
-            $maxAge === null ? null : (int) $maxAge,
-            $loginHint,
-            $uiLocales,
-            $acrValues,
-            $display,
-            $idTokenHint,
-            $claims,
+            $request->text('nonce'),
+            $interaction->prompts,
+            $interaction->maxAge,
+            $interaction->loginHint,
+            $interaction->uiLocales,
+            $interaction->acrValues,
+            $interaction->display,
+            $interaction->idTokenHint,
+            $interaction->claims,
             $target->responseMode,
-            $dpopKey,
-            $resources,
-            $authorizationDetails,
+            RequestedCodeReservation::of($request->optional('dpop_jkt')),
+            RequestedResources::of($target->client, $request->repeated('resource')),
+            $this->authorizationDetails->of($target->client, $request->optional('authorization_details')),
         );
-    }
-
-    /**
-     * RFC 9396 §2: what this request asks for beyond its scopes, a JSON array of objects each naming its
-     * type. The types are the ones the provider is wired with, each validating its own members, and what
-     * a client may ask for is the closed list of its registration (§11), as every other list of a client
-     * is. A malformed array, an object naming no type, a type nobody serves and a type the client is not
-     * registered for are all "invalid_authorization_details" (§5), which goes back to the redirect URI as
-     * every refusal of this stage does.
-     *
-     * @throws InvalidAuthorizationDetailsException
-     */
-    private function authorizationDetails(Client $client, ?string $json): ?AuthorizationDetails
-    {
-        if ($json === null) {
-            return null;
-        }
-        try {
-            $details = $this->authorizationDetailTypes->fromJson($json);
-        } catch (InvalidArgumentException $exception) {
-            throw InvalidAuthorizationDetailsException::notWhatItMustBe(true, $exception);
-        }
-        if (! $client->registration->allowsAuthorizationDetails($details)) {
-            throw InvalidAuthorizationDetailsException::notRegistered(true);
-        }
-
-        return $details;
-    }
-
-    /**
-     * RFC 8707 §2.1: the resources the tokens of this request will be addressed to, named once each or
-     * several times over. What a client may ask for is what it registered, as every other list of a
-     * client is: a resource outside it is "invalid_target", and so is a value that is not an absolute
-     * URI. A request that names none asks for none, and its tokens are addressed to the client itself.
-     *
-     * @param list<string> $values
-     *
-     * @throws InvalidTargetException when a value is not an absolute URI, or names a resource the
-     *                                client is not registered for
-     */
-    private static function resources(Client $client, array $values): ?ResourceIndicators
-    {
-        if ($values === []) {
-            return null;
-        }
-        try {
-            $resources = ResourceIndicators::of($values);
-        } catch (InvalidArgumentException $exception) {
-            throw InvalidTargetException::notAnAbsoluteUri(true, $exception);
-        }
-        if (! $client->registration->allowsResources($resources)) {
-            throw InvalidTargetException::notRegistered(true);
-        }
-
-        return $resources;
-    }
-
-    /**
-     * RFC 9449 §10: the key the client will exchange the code with, named by its JWK thumbprint, so that
-     * a code stolen on its way back is worth nothing to whoever does not hold that key. A request that
-     * names one is a request whose token exchange must prove it, whether the client pushed the request
-     * or signed it.
-     */
-    private static function dpopKey(?string $thumbprint): ?KeyConfirmation
-    {
-        if ($thumbprint === null) {
-            return null;
-        }
-        try {
-            return new KeyConfirmation($thumbprint);
-        } catch (InvalidArgumentException $exception) {
-            throw new InvalidRequestException(
-                'The dpop_jkt parameter is the JWK thumbprint of a key, the base64url of a SHA-256 (RFC 9449 section 10).',
-                true,
-                $exception,
-            );
-        }
-    }
-
-    /**
-     * RFC 6749 §3.3, OIDC Core §3.1.2.2 step 3: contains "openid", every token allowed to the client.
-     *
-     * @throws InvalidScopeException when it is not a list of scope tokens, when it names a scope the
-     *                               client is not allowed, or when it does not name "openid"
-     */
-    private function scopes(RedirectTarget $target, string $scope): Scopes
-    {
-        try {
-            $scopes = Scopes::parse($scope);
-        } catch (InvalidArgumentException $exception) {
-            throw InvalidScopeException::notASpaceSeparatedList(true, $exception);
-        }
-        foreach ($scopes->all as $candidate) {
-            if (! $target->client->registration->allowedScopes->has($candidate)) {
-                throw new InvalidScopeException('The requested scope is not allowed for this client.', true);
-            }
-        }
-        if (! $scopes->has(Scope::openid())) {
-            throw new InvalidScopeException('The scope parameter must contain openid (OIDC Core section 3.1.2.1).', true);
-        }
-
-        return $scopes;
-    }
-
-    /**
-     * RFC 7636 §4.3, §4.4.1: S256 only (decision 0006). A client exempted by decision 0008 may send no
-     * challenge; one it sends is checked like any other (RFC 9700 §2.1.1).
-     */
-    private static function codeChallenge(Client $client, ?string $challenge, ?string $method): ?CodeChallenge
-    {
-        if ($challenge === null && $method === null && ! $client->registration->requiresPkce) {
-            return null;
-        }
-        if ($challenge === null) {
-            throw new InvalidRequestException('The code_challenge parameter is missing (RFC 7636 section 4.3).', true);
-        }
-        if ($method !== CodeChallengeMethod::S256->value) {
-            throw new InvalidRequestException('The code_challenge_method parameter must be S256 (RFC 7636 section 4.3).', true);
-        }
-        try {
-            return new CodeChallenge($challenge, CodeChallengeMethod::S256);
-        } catch (InvalidArgumentException) {
-            throw new InvalidRequestException('The code_challenge parameter is not 43 to 128 unreserved characters (RFC 7636 section 4.2).', true);
-        }
-    }
-
-    /**
-     * OIDC Core §3.1.2.1 "prompt": a closed list, "none" alone.
-     *
-     * @return list<Prompt>
-     */
-    private static function prompts(?string $prompt): array
-    {
-        if ($prompt === null) {
-            return [];
-        }
-        $prompts = [];
-        foreach (explode(' ', $prompt) as $value) {
-            $candidate = Prompt::tryFrom($value);
-            if ($candidate === null) {
-                throw new InvalidRequestException('The prompt parameter is not a space-separated list of none, login, consent or select_account.', true);
-            }
-            if (! in_array($candidate, $prompts, true)) {
-                $prompts[] = $candidate;
-            }
-        }
-        if (in_array(Prompt::None, $prompts, true) && count($prompts) > 1) {
-            throw new InvalidRequestException('The prompt value none cannot be combined with another value (OIDC Core section 3.1.2.1).', true);
-        }
-
-        return $prompts;
-    }
-
-    private static function display(?string $display): ?Display
-    {
-        if ($display === null) {
-            return null;
-        }
-
-        return Display::tryFrom($display) ?? throw new InvalidRequestException('The display parameter is not one of page, popup, touch or wap.', true);
-    }
-
-    private static function claims(?string $claims): ?ClaimsRequest
-    {
-        if ($claims === null) {
-            return null;
-        }
-        try {
-            return ClaimsRequest::fromJson($claims);
-        } catch (InvalidArgumentException) {
-            throw new InvalidRequestException('The claims parameter is not a claims request (OIDC Core section 5.5).', true);
-        }
     }
 }
