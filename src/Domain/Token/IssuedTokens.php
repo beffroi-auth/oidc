@@ -44,7 +44,8 @@ final readonly class IssuedTokens
     }
 
     /**
-     * RFC 6749 §5.1, OIDC Core §3.1.3.3.
+     * RFC 6749 §5.1, OIDC Core §3.1.3.3, RFC 9396 §7: what the client is handed, and what of it was granted
+     * beyond the scopes, which the authorization carries and this does not recompute.
      */
     public function toResponse(): TokenResponse
     {
@@ -56,6 +57,7 @@ final readonly class IssuedTokens
             $this->authorization->scopes,
             $this->authorization->confirmation?->scheme() ?? TokenResponse::BEARER,
             $this->issuedTokenType,
+            CarriedAuthorizationDetails::of($this->authorization),
         );
     }
 }
