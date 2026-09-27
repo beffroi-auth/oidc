@@ -111,6 +111,7 @@ final readonly class ClientDefinition
         'require_pushed_authorization_requests',
         'require_sender_constrained_tokens',
         'require_signed_request_object',
+        'tls_client_certificate_bound_access_tokens',
         'access_token_format',
         'backchannel_logout_uri',
         'backchannel_logout_session_required',
@@ -223,6 +224,7 @@ final readonly class ClientDefinition
         $requiresPushedAuthorizationRequests = self::flag($clientId, 'require_pushed_authorization_requests', $definition);
         $requiresSenderConstrainedTokens = self::flag($clientId, 'require_sender_constrained_tokens', $definition);
         $requiresSignedRequestObject = self::flag($clientId, 'require_signed_request_object', $definition);
+        $requiresCertificateBoundTokens = self::flag($clientId, 'tls_client_certificate_bound_access_tokens', $definition);
 
         $accessTokenShape = self::accessTokenShape($clientId, $definition, $shapes);
 
@@ -284,6 +286,7 @@ final readonly class ClientDefinition
             $tokenExchange,
             self::mayAct($clientId, $definition),
             $authorizationDetailsTypes,
+            $requiresCertificateBoundTokens,
         );
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
             self::assertAddressable($clientId, $format, $jwks);

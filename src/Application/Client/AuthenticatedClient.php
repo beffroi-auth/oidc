@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Client;
 
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Token\CertificateConfirmation;
 use Heidi\Oidc\Domain\Token\ConfirmationInterface;
 use Heidi\Oidc\Exception\InvalidDpopProofException;
 
@@ -51,5 +52,16 @@ final readonly class AuthenticatedClient
     public function provesWhatItsClientRequires(): bool
     {
         return ! $this->client->registration->requiresSenderConstrainedTokens || $this->confirmation !== null;
+    }
+
+    /**
+     * RFC 8705 §3.4, FAPI 1.0 Advanced Final §5.2.2: a client registered for certificate-bound access
+     * tokens gets tokens bound to the certificate it presented or gets nothing. The other rule asks the
+     * confirmation to be there and never what it is made of; this one names the member the client
+     * registered for, a token bound to a key not being the token that client asked for.
+     */
+    public function provesTheCertificateItsTokensAreBoundTo(): bool
+    {
+        return ! $this->client->registration->requiresCertificateBoundTokens || $this->confirmation?->member() === CertificateConfirmation::MEMBER;
     }
 }

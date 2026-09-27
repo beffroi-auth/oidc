@@ -98,6 +98,7 @@ final readonly class ClientRegistration
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
      * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2)
+     * @param bool $requiresCertificateBoundTokens true when the tokens of this client are bound to the certificate it presents whichever way it authenticated (RFC 8705 §3.4 "tls_client_certificate_bound_access_tokens", FAPI 1.0 Advanced Final §5.2.2): a token request of such a client that proves no certificate is refused rather than answered with tokens bound to nothing. It is what a client authenticated by its certificate gets anyway (§3), so it is the registration of a client that authenticates some other way
      * @param DeliveryModeInterface|null $backchannelTokenDeliveryMode how this client is told that a backchannel request has been answered (CIBA Core §4), among the modes the provider is wired with; null for a client of no such flow, which is every client that does not ask for one. There is no default: a mode nobody registered would make a client of another flow a client of this one by accident
      * @param TokenExchange|null $tokenExchange what this client may exchange a token for (RFC 8693 §2.1); null for a client that exchanges none, which is every client that is not registered for that grant
      * @param MayAct|null $mayAct who may act for the subject of a token issued to this client (RFC 8693 §4.4), written on every token it receives; null when the registration names nobody and what decides is the registration of whoever asks
@@ -152,6 +153,7 @@ final readonly class ClientRegistration
         public ?TokenExchange $tokenExchange = null,
         public ?MayAct $mayAct = null,
         array $authorizationDetailsTypes = [],
+        public bool $requiresCertificateBoundTokens = false,
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();

@@ -66,6 +66,14 @@ final readonly class TokenHandler
         if (! $client->provesWhatItsClientRequires()) {
             throw new InvalidRequestException('The tokens of this client are bound to what the request proves it holds, and this request proves neither a certificate nor a key (FAPI 2.0 Security Profile section 5.3.1).');
         }
+        // RFC 8705 §3.4, FAPI 1.0 Advanced Final §5.2.2: this client registered that its tokens are
+        // bound to the certificate it presents, whichever way it authenticated, and a request proving
+        // no certificate would be answered with tokens bound to nothing. The refusal is here and not in
+        // a grant, so that what a request holds is read before the state of whatever it comes to spend:
+        // a request that proves nothing is refused rather than told to come back later.
+        if (! $client->provesTheCertificateItsTokensAreBoundTo()) {
+            throw new InvalidRequestException('The tokens of this client are bound to the certificate it presents, and this request proves none (RFC 8705 section 3.4).');
+        }
         $request = RequestParameters::of($parameters);
 
         $grant = $this->grants->named($request->required('grant_type'));

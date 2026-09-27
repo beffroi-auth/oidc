@@ -12,10 +12,14 @@ use function count;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Exception\LoadBudgetSpentException;
+use Heidi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
 use Heidi\Oidc\Application\Client\Method\ConfirmingMethodInterface;
 use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailed;
 use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Heidi\Oidc\Domain\Token\CertificateConfirmation;
+use Heidi\Oidc\Domain\Token\ConfirmationInterface;
 use Heidi\Oidc\Exception\InvalidClientException;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\OAuth2Exception;
@@ -108,7 +112,7 @@ final readonly class ClientAuthenticator
                 $this->budget->consume($tenant, $clientId);
             }
 
-            return new AuthenticatedClient($client, $registered instanceof ConfirmingMethodInterface ? $registered->confirmationOf($request) : null);
+            return new AuthenticatedClient($client, self::proven($registered, $request, $client));
         } catch (ClientAuthenticationFailure $failure) {
             throw $this->announce($tenant, $context, $authorizationHeader, $failure);
         }
@@ -125,9 +129,8 @@ final readonly class ClientAuthenticator
      * listener asks for a certificate presents one because it was asked, so a certificate beside a
      * credential of the request is not a second authentication method: the credential of the request
      * authenticates, and the certificate authenticates only the clients registered for a mutual-TLS
-     * method. RFC 8705 §3 lets a provider bind the tokens of a client authenticated otherwise to the
-     * certificate it presented all the same; that is a registration of its own, which no client has
-     * here, and binding a client that never asked for it would break the resource server it calls.
+     * method. What that certificate binds is another question, answered by the registration of the
+     * client and not here (proven()).
      *
      * An Authorization header no method could read is refused whatever the body carries beside it, so
      * that a header the provider does not understand is never silently dropped. A method that
@@ -174,6 +177,30 @@ final readonly class ClientAuthenticator
         }
 
         throw ClientAuthenticationFailure::unauthenticated(ClientAuthenticationFailureReason::NoCredentials, 'The request carries no client authentication.');
+    }
+
+    /**
+     * What the request proved beyond being this client, said in the terms a token is bound in (RFC 8705
+     * §3, RFC 7800 §3.1). A method that proves the client holds a key says so itself, and what the
+     * binding is made of is the method's to say.
+     *
+     * A client that registered certificate-bound access tokens is bound to the certificate of its
+     * connection whichever way it authenticated (RFC 8705 §3.4): the provider may do it for any client
+     * and does it for the ones that asked, an assertion proving who the client is and a certificate
+     * proving who holds the token that leaves. A client that registered none is not bound to a
+     * certificate it presented only because the listener asked for one: binding a client that never
+     * asked for it would break the resource server it calls.
+     */
+    private static function proven(AuthenticationMethodInterface $method, ClientAuthenticationRequest $request, Client $client): ?ConfirmationInterface
+    {
+        if ($method instanceof ConfirmingMethodInterface) {
+            return $method->confirmationOf($request);
+        }
+        $certificate = $request->certificate;
+
+        return $certificate !== null && $client->registration->requiresCertificateBoundTokens
+            ? CertificateConfirmation::ofCertificate($certificate)
+            : null;
     }
 
     /**
