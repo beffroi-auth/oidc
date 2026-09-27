@@ -8,6 +8,7 @@ use Heidi\Core\Domain\Credential\Credential;
 use Heidi\Core\Domain\Session\AuthenticationContextClass;
 use Heidi\Core\Domain\Session\AuthenticationMethod;
 use Heidi\Core\Domain\Session\AuthenticationSession;
+use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Interaction\StepUp;
 use Heidi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 
@@ -43,13 +44,26 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
+     * What an authorization request asks of the authentication (OIDC Core §3.1.2.1, §5.5.1.1).
+     *
      * @param non-empty-list<AuthenticationMethod> $provableMethods what the provider is wired to prove
      */
     public static function of(AuthorizationRequest $request, array $provableMethods): self
     {
-        $requested = AuthenticationContextRequest::of($request);
+        return self::against(AuthenticationContextRequest::of($request), $request->client->tenant, $provableMethods);
+    }
 
-        return new self($requested, $requested->among($request->client->tenant->authenticationContextPolicy->provableWith($provableMethods)));
+    /**
+     * The same rules for a request that is not an authorization request: what is asked of the user of a
+     * backchannel authentication request is asked of the same policy, judged against the same wiring and
+     * answered on the same page of the provider (CIBA Core §7.1, decision 0010). The demand is read where
+     * that request was read, and what it means is decided once, here.
+     *
+     * @param non-empty-list<AuthenticationMethod> $provableMethods what the provider is wired to prove
+     */
+    public static function against(AuthenticationContextRequest $requested, Tenant $tenant, array $provableMethods): self
+    {
+        return new self($requested, $requested->among($tenant->authenticationContextPolicy->provableWith($provableMethods)));
     }
 
     /**

@@ -48,6 +48,11 @@ final readonly class RequestParameters
     public const string COMPACT_JWS_PATTERN = '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D';
 
     /**
+     * OIDC Core §2 "acr": printable ASCII without space.
+     */
+    public const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
+
+    /**
      * @param array<string, mixed> $parameters
      */
     private function __construct(
@@ -160,6 +165,22 @@ final readonly class RequestParameters
             'ui_locales',
             self::LANGUAGE_TAG_PATTERN,
             'The ui_locales parameter must be a space-separated list of language tags.',
+        );
+    }
+
+    /**
+     * OIDC Core §3.1.2.1, CIBA Core §7.1 "acr_values": the classes the client would like the
+     * authentication to reach, in its order of preference. One reading for the two doors, the one a
+     * browser reaches and the one a client with no browser at all does.
+     *
+     * @return list<string>
+     */
+    public function acrValues(): array
+    {
+        return $this->list(
+            'acr_values',
+            self::ACR_VALUE_PATTERN,
+            'The acr_values parameter must be a space-separated list of printable ASCII values.',
         );
     }
 

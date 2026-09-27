@@ -34,11 +34,6 @@ final readonly class RequestedInteraction
     private const string MAX_AGE_PATTERN = '/^(?:0|[1-9][0-9]{0,17})$/D';
 
     /**
-     * OIDC Core §2 "acr": printable ASCII without space.
-     */
-    private const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
-
-    /**
      * @param list<Prompt> $prompts
      * @param list<string> $uiLocales most preferred first
      * @param list<string> $acrValues in order of preference
@@ -66,11 +61,7 @@ final readonly class RequestedInteraction
             self::maxAge($request->optional('max_age')),
             $request->text('login_hint'),
             $request->uiLocales(),
-            $request->list(
-                'acr_values',
-                self::ACR_VALUE_PATTERN,
-                'The acr_values parameter must be a space-separated list of printable ASCII values.',
-            ),
+            $request->acrValues(),
             self::display($request->optional('display')),
             $request->compactJws('id_token_hint'),
             self::claims($request->optional('claims')),

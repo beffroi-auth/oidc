@@ -147,6 +147,10 @@ final readonly class BackchannelAuthenticationHandler
         $scopes = self::scopes($request->required('scope'), $registration);
         $resources = self::resources($request, $registration);
         $bindingMessage = self::bindingMessage($request);
+        // CIBA Core §7.1 "acr_values": read here, with the rest of what the request asks for, and
+        // carried on the record. Nothing is judged against it now: what a class is worth is what the
+        // session of the person who answers proves, and that person is asked on a page (§4.14)
+        $acrValues = $request->acrValues();
         $notificationToken = self::notificationToken($request, $delivery instanceof NotifiesTheClientInterface);
         self::refuseAUserCode($request);
         $now = $this->clock->now();
@@ -162,6 +166,7 @@ final readonly class BackchannelAuthenticationHandler
             $scopes,
             $resources,
             $bindingMessage,
+            $acrValues,
             // a client this provider has to call back is the only reason it keeps what it handed out:
             // both values are sealed under the KMS of the tenant, as a shared secret of a user is
             // (architecture §3.3), and a client that only polls leaves neither behind

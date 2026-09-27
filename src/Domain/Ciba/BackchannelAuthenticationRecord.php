@@ -9,6 +9,7 @@ use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Domain\Session\AuthenticationSession;
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Authorization\AuthenticationContextRequest;
 use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
@@ -39,6 +40,11 @@ use function max;
  * to §13 "unknown_user_id": what the login page is built not to say (decision 0006, architecture §3.4) is
  * not said here either, and a client that names a stranger learns exactly what a client that names
  * somebody who never answers learns.
+ *
+ * What the client would like that user to prove is kept with the rest of what it asked for, and it is a
+ * demand on the approval and not on the request: whether the session somebody holds proves a class is a
+ * question about that person, and asking it at the endpoint would answer, to whoever authenticated as a
+ * client, something about a user they only named (§13 "unknown_user_id" above).
  *
  * The session the user answered with, and what that session had proven then, are frozen here: the tokens
  * the client comes for descend from the approval and not from whatever the session became afterwards
@@ -90,6 +96,7 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
      * @param Scopes $scopes what the request asked for, among the ones the client registered
      * @param ResourceIndicators|null $resources what the access token will be addressed to (RFC 8707 §2), null when the request named none
      * @param BindingMessage|null $bindingMessage what the user is shown beside the name of the client (§7.1)
+     * @param list<string> $acrValues the classes the client would like the authentication to reach, in its order of preference (§7.1)
      * @param string|null $sealedAuthRequestId the identifier itself, sealed, for a client this provider has to call back with it (§10.2); null for a client that only polls, which is then the only holder of it
      * @param string|null $sealedNotificationToken the token such a client sent to recognise that call (§7.1), sealed the same way
      * @param RequestContext $requestedFrom where the client asked from, which the approval page shows (BCP 10027 §5.2)
@@ -105,6 +112,7 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
         public readonly Scopes $scopes,
         public readonly ?ResourceIndicators $resources,
         public readonly ?BindingMessage $bindingMessage,
+        public readonly array $acrValues,
         public readonly ?string $sealedAuthRequestId,
         public readonly ?string $sealedNotificationToken,
         public readonly RequestContext $requestedFrom,
@@ -127,6 +135,17 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
         $this->interval = $interval;
         $this->tenant = $client->tenant;
         $this->clientId = $client->registration->clientId;
+    }
+
+    /**
+     * What the request asks of the authentication of whoever answers it (CIBA Core §7.1, decision 0010).
+     * It is voluntary and never a condition: §7.1 takes "acr_values" and takes no "claims", so this flow
+     * has no essential form of the demand at all, and the "acr" of the tokens says what the session that
+     * approved actually proved (OIDC Core §5.5.1.1).
+     */
+    public function requestedAuthenticationContext(): AuthenticationContextRequest
+    {
+        return new AuthenticationContextRequest($this->acrValues);
     }
 
     /**
