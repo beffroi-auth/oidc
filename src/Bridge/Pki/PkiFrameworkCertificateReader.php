@@ -25,7 +25,7 @@ use Throwable;
  *
  * Only the leaf is read, and nothing of it is trusted beyond what it says: the chain, the validity and
  * the revocation are the edge's to judge before the request reaches the provider
- * (docs/mtls-at-the-edge.md).
+ * (architecture §6).
  */
 final readonly class PkiFrameworkCertificateReader implements CertificateReaderInterface
 {

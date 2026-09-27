@@ -17,7 +17,7 @@ use function strlen;
 /**
  * The certificate a client presented at the TLS handshake, as it reached the provider: the leaf in its
  * DER form and nothing else. The chain is not part of it, because no edge this application knows hands
- * one over (docs/mtls-at-the-edge.md); whatever has to be validated against a certificate authority is
+ * one over (architecture §6); whatever has to be validated against a certificate authority is
  * validated where the handshake happens, not here (RFC 8705 §2.1).
  *
  * Nothing here reads what is inside the certificate. What names the client in it is read by a

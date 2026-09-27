@@ -21,7 +21,7 @@ use function sprintf;
  *
  * What this method does not do is as important as what it does. It does not build a chain, does not look
  * at a validity period and does not ask a revocation list anything: the handshake did, at the edge,
- * before the request existed (docs/mtls-at-the-edge.md), because only the leaf reaches the provider and
+ * before the request existed (architecture §6), because only the leaf reaches the provider and
  * a provider that judged a chain from the leaf alone would be judging nothing. The deployment that turns
  * this method on is the deployment that configures the authorities its listener accepts.
  */
