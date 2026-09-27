@@ -75,6 +75,23 @@ final readonly class UserCode
         return strtoupper((string) preg_replace('/[\s' . self::SEPARATOR . ']+/', '', $typed));
     }
 
+    /**
+     * What a page shows back of what was typed: the code in the form the appliance shows it, separator
+     * included, when what was typed is a code at all, and what was typed when it is not, so that a wrong
+     * character can be corrected rather than hidden.
+     *
+     * It is the counterpart of normalize(): the bare value is the reading a lookup is made by, this one is
+     * the reading a user recognises. A code shown without the grouping their device shows is a code they
+     * have to re-read character by character before allowing anything, which is the recognition BCP 10027
+     * §2 is about.
+     */
+    public static function shown(#[SensitiveParameter] string $typed): string
+    {
+        $value = self::normalize($typed);
+
+        return self::isWellFormed($value) ? self::of($value)->formatted() : $value;
+    }
+
     public static function isWellFormed(#[SensitiveParameter] string $value): bool
     {
         return preg_match(sprintf('/^[%s]{%d}$/D', self::ALPHABET, self::LENGTH), $value) === 1;
