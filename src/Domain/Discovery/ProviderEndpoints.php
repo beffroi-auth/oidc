@@ -12,7 +12,7 @@ use function sprintf;
 use function strtolower;
 
 /**
- * The endpoints of a tenant (OIDC Discovery §3, RP-Initiated Logout §2.1, RFC 8414 §2, RFC 8628 §3.1, CIBA Core §4):
+ * The endpoints of a tenant (OIDC Discovery §3, RP-Initiated Logout §2.1, RFC 8414 §2, RFC 8628 §3.1, CIBA Core §4, RFC 7591 §3.1):
  * absolute, no fragment, no credentials, HTTPS with plain HTTP on a loopback host only. The endpoints a
  * client reaches server to server have no exception (RFC 6749 §3.2, RFC 7662 §2.1, RFC 7009 §2,
  * RFC 9126 §2, RFC 8628 §3.1, CIBA Core §7); the ones a browser reaches keep the loopback one, which is what a
@@ -51,6 +51,8 @@ final readonly class ProviderEndpoints
 
     public string $backchannelApproval;
 
+    public string $clientRegistration;
+
     public function __construct(
         string $authorization,
         string $token,
@@ -64,6 +66,7 @@ final readonly class ProviderEndpoints
         string $deviceVerification,
         string $backchannelAuthentication,
         string $backchannelApproval,
+        string $clientRegistration,
     ) {
         $this->authorization = self::secureUrl('authorization', $authorization, true);
         $this->token = self::secureUrl('token', $token, false);
@@ -77,6 +80,7 @@ final readonly class ProviderEndpoints
         $this->deviceVerification = self::secureUrl('device verification', $deviceVerification, true);
         $this->backchannelAuthentication = self::secureUrl('backchannel authentication', $backchannelAuthentication, false);
         $this->backchannelApproval = self::secureUrl('backchannel approval', $backchannelApproval, true);
+        $this->clientRegistration = self::secureUrl('client registration', $clientRegistration, false);
     }
 
     private static function secureUrl(string $name, string $url, bool $loopbackInClear): string

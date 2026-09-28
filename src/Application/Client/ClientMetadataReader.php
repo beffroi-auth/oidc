@@ -189,7 +189,7 @@ final readonly class ClientMetadataReader
             );
         }
 
-        $method = $this->method($clientId, $metadata);
+        $method = $this->authenticationMethodOf($clientId, $metadata);
         $redirectUris = $this->redirectUris($clientId, 'redirect_uris', $metadata);
         $grantTypes = $this->grantTypes($clientId, $metadata);
         $tokenExchange = $this->tokenExchange($clientId, $metadata);
@@ -456,8 +456,16 @@ final readonly class ClientMetadataReader
      * The method the client registers, among those the provider is wired with (issue #98): a name
      * nothing authenticates with is refused with the list of the wired ones, because nothing upstream can
      * know that list.
+     *
+     * Read on its own by the registration endpoint, which owes two answers before the registration
+     * exists: whether to draw a secret, since the provider assigns one exactly when the registered
+     * method proves one (RFC 7591 §3.2.1), and whether the policy of the tenant writes anything on this
+     * registration, since it exempts a confidential client from PKCE and never a public one (decision
+     * 0017). Both are the same question about the same member, so it is read here and not a second time.
+     *
+     * @throws UnreadableClientMetadataException when the client registered a name nothing is wired with
      */
-    private function method(string $clientId, ClientMetadata $metadata): ClientAuthenticationMethodInterface
+    public function authenticationMethodOf(string $clientId, ClientMetadata $metadata): ClientAuthenticationMethodInterface
     {
         $wired = $this->methods->clientAuthenticationMethods();
 
