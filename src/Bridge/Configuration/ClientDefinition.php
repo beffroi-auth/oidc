@@ -149,6 +149,7 @@ final readonly class ClientDefinition
      * @param ServedDeliveryModesInterface $deliveryModes how the provider is wired to tell a client that a backchannel request has been answered: a client of that flow registers one of those names, and every other client registers none
      * @param PresentedTokenTypesInterface $tokenTypes what the exchange is wired to read: a client of that grant registers those names and no other (RFC 8693 §3)
      * @param ServedAuthorizationDetailTypesInterface $authorizationDetailTypes what the provider is wired to read an "authorization_details" with: a client registers those names and no other (RFC 9396 §2, §11)
+     * @param bool $secretIsHeld whether this provider holds a secret for that client although the metadata carries none: what a store knows from the column it keeps it in, RFC 7591 §2 having no member for a secret the provider assigned (§3.2.1). A declaration says it with the "secret" it carries and leaves this alone
      */
     public static function fromArray(
         string $clientId,
@@ -163,6 +164,7 @@ final readonly class ClientDefinition
         ServedDeliveryModesInterface $deliveryModes,
         PresentedTokenTypesInterface $tokenTypes,
         ServedAuthorizationDetailTypesInterface $authorizationDetailTypes,
+        bool $secretIsHeld = false,
     ): self {
         $unknown = array_diff(array_keys($definition), self::KEYS);
         if ($unknown !== []) {
@@ -257,7 +259,7 @@ final readonly class ClientDefinition
             $clientId,
             $name,
             $method,
-            $secret !== null,
+            $secret !== null || $secretIsHeld,
             $redirectUris,
             $accessTokenShape,
             $postLogoutRedirectUris,

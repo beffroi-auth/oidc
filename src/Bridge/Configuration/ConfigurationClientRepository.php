@@ -10,24 +10,16 @@ use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Resource\ResourceIndicator;
-use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Port\CertificateReaderInterface;
+use Heidi\Oidc\Port\ClientSourceInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PresentedTokenTypesInterface;
-use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
-use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
-use Heidi\Oidc\Port\RegisteredResourcesInterface;
-use Heidi\Oidc\Port\RegisteredScopesInterface;
 use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 use Heidi\Oidc\Port\ServedDeliveryModesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
-use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 use WeakMap;
 
 /**
@@ -35,13 +27,7 @@ use WeakMap;
  * on the first lookup. The clients are built per tenant instance, so that a client always points at the
  * tenant of the request that asked for it.
  */
-final class ConfigurationClientRepository implements
-    ClientRepositoryInterface,
-    PushedAuthorizationRequirementInterface,
-    RegisteredAccessTokenShapesInterface,
-    RegisteredResourcesInterface,
-    RegisteredScopesInterface,
-    UnsignedRequestObjectsInterface
+final class ConfigurationClientRepository implements ClientSourceInterface
 {
     /**
      * @var array<string, ClientDefinition>
@@ -122,87 +108,17 @@ final class ConfigurationClientRepository implements
         return $clients[$clientId];
     }
 
-    public function issuesAccessTokensIn(Tenant $tenant, AccessTokenShapeInterface $shape): bool
-    {
-        if (! $this->serves($tenant)) {
-            return false;
-        }
-
-        return array_any(
-            $this->definitions,
-            static fn (ClientDefinition $definition): bool => $definition->registration->accessTokenShape->name() === $shape->name(),
-        );
-    }
-
     /**
-     * RFC 8707 §2: what the clients declared here may ask a token for, which is what the document
-     * enumerates (RFC 9728 §4) and nothing kept beside them (issue #98).
+     * What this source holds for that tenant: the registrations it read at boot, in the order they were
+     * declared. What the set of them means is read once, where every source is read (`RegisteredClients`).
      */
-    public function resourcesRegisteredIn(Tenant $tenant): array
+    public function registrationsIn(Tenant $tenant): iterable
     {
         if (! $this->serves($tenant)) {
-            return [];
+            return;
         }
-        $resources = [];
         foreach ($this->definitions as $definition) {
-            foreach ($definition->registration->resources as $resource) {
-                if (! array_any($resources, static fn (ResourceIndicator $kept): bool => $kept->equals($resource))) {
-                    $resources[] = $resource;
-                }
-            }
+            yield $definition->registration;
         }
-
-        return $resources;
-    }
-
-    /**
-     * OIDC Discovery §3: the scopes the clients declared here may ask for, which is where a scope that
-     * stands for no claim comes from, each named once (issue #98).
-     */
-    public function scopesRegisteredIn(Tenant $tenant): array
-    {
-        if (! $this->serves($tenant)) {
-            return [];
-        }
-        $scopes = [];
-        foreach ($this->definitions as $definition) {
-            foreach ($definition->registration->allowedScopes as $scope) {
-                if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals($scope))) {
-                    $scopes[] = $scope;
-                }
-            }
-        }
-
-        return $scopes;
-    }
-
-    /**
-     * RFC 9126 §5: the document says so when every client declared here does, which is what makes it the
-     * truth about the endpoint and not a second place to keep in agreement (issue #98). A tenant nothing
-     * is declared for requires nothing of anybody.
-     */
-    public function requiresPushedAuthorizationRequests(Tenant $tenant): bool
-    {
-        if (! $this->serves($tenant) || $this->definitions === []) {
-            return false;
-        }
-
-        return array_all($this->definitions, static fn (ClientDefinition $definition): bool => $definition->registration->requiresPushedAuthorizationRequests);
-    }
-
-    /**
-     * OIDC Registration §2: the document announces "none" when a client declared here registered it, so
-     * that what is announced is what a client of this tenant may actually send (issue #98).
-     */
-    public function acceptsUnsignedRequestObjects(Tenant $tenant): bool
-    {
-        if (! $this->serves($tenant)) {
-            return false;
-        }
-
-        return array_any($this->definitions, static fn (ClientDefinition $definition): bool => $definition
-            ->registration
-            ->requestObjectSigning
-            ->acceptsUnsigned());
     }
 }
