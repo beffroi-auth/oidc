@@ -14,6 +14,7 @@ use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
+use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
@@ -21,6 +22,7 @@ use Heidi\Oidc\Port\PresentedTokenTypesInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 use Heidi\Oidc\Port\RegisteredResourcesInterface;
+use Heidi\Oidc\Port\RegisteredScopesInterface;
 use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 use Heidi\Oidc\Port\ServedDeliveryModesInterface;
@@ -38,6 +40,7 @@ final class ConfigurationClientRepository implements
     PushedAuthorizationRequirementInterface,
     RegisteredAccessTokenShapesInterface,
     RegisteredResourcesInterface,
+    RegisteredScopesInterface,
     UnsignedRequestObjectsInterface
 {
     /**
@@ -150,6 +153,27 @@ final class ConfigurationClientRepository implements
         }
 
         return $resources;
+    }
+
+    /**
+     * OIDC Discovery §3: the scopes the clients declared here may ask for, which is where a scope that
+     * stands for no claim comes from, each named once (issue #98).
+     */
+    public function scopesRegisteredIn(Tenant $tenant): array
+    {
+        if (! $this->serves($tenant)) {
+            return [];
+        }
+        $scopes = [];
+        foreach ($this->definitions as $definition) {
+            foreach ($definition->registration->allowedScopes as $scope) {
+                if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals($scope))) {
+                    $scopes[] = $scope;
+                }
+            }
+        }
+
+        return $scopes;
     }
 
     /**

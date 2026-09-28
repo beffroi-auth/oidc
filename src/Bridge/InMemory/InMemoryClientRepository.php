@@ -8,10 +8,12 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Resource\ResourceIndicator;
+use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
 use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
 use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 use Heidi\Oidc\Port\RegisteredResourcesInterface;
+use Heidi\Oidc\Port\RegisteredScopesInterface;
 use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
 
 /**
@@ -22,6 +24,7 @@ final class InMemoryClientRepository implements
     PushedAuthorizationRequirementInterface,
     RegisteredAccessTokenShapesInterface,
     RegisteredResourcesInterface,
+    RegisteredScopesInterface,
     UnsignedRequestObjectsInterface
 {
     /**
@@ -66,6 +69,26 @@ final class InMemoryClientRepository implements
         }
 
         return $resources;
+    }
+
+    /**
+     * OIDC Discovery §3: what the clients of the tenant registered, each scope named once.
+     */
+    public function scopesRegisteredIn(Tenant $tenant): array
+    {
+        $scopes = [];
+        foreach ($this->clients as $client) {
+            if (! $client->belongsTo($tenant)) {
+                continue;
+            }
+            foreach ($client->registration->allowedScopes as $scope) {
+                if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals($scope))) {
+                    $scopes[] = $scope;
+                }
+            }
+        }
+
+        return $scopes;
     }
 
     /**
