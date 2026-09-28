@@ -89,6 +89,7 @@ final readonly class ClientRegistration
     public ResponseFormat $authorizationResponse;
 
     /**
+     * @param ClientPresentation $presentation what the registration says about who is asking (OIDC Registration §2), which the consent page shows
      * @param bool $registersASecret whether the client registered a shared secret; what shape the provider keeps it in is the business of the `Client` that holds it
      * @param list<RedirectUri> $redirectUris where the user's browser is sent back to (RFC 6749 §3.1.2); how many a client must register depends on the grants it registered, which is read where a registration meets the wiring
      * @param AccessTokenShapeInterface $accessTokenShape the shape this client receives its access tokens in (architecture §4.6), among those the provider is wired to write; which those are is read where a registration meets that wiring, as for a grant and for an authentication method
@@ -98,6 +99,9 @@ final readonly class ClientRegistration
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
      * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2)
+     * @param SubjectType $subjectType the kind of "sub" this client sees for a user (OIDC Core §8); which kinds this provider assigns one for is read where a registration meets the wiring, as for a grant and for an authentication method
+     * @param ClientUri|null $sectorIdentifierUri the document naming every redirection URI of the clients that share a "sub" with this one (OIDC Core §8.1); null for a client that registered none, which is every client whose sector is its own host
+     * @param ClientUri|null $initiateLoginUri where a third party sends a user to have this provider begin a login at this client (OIDC Core §4, OIDC Registration §2); null for a client no third party starts a login at
      * @param bool $requiresCertificateBoundTokens true when the tokens of this client are bound to the certificate it presents whichever way it authenticated (RFC 8705 §3.4 "tls_client_certificate_bound_access_tokens", FAPI 1.0 Advanced Final §5.2.2): a token request of such a client that proves no certificate is refused rather than answered with tokens bound to nothing. It is what a client authenticated by its certificate gets anyway (§3), so it is the registration of a client that authenticates some other way
      * @param DeliveryModeInterface|null $backchannelTokenDeliveryMode how this client is told that a backchannel request has been answered (CIBA Core §4), among the modes the provider is wired with; null for a client of no such flow, which is every client that does not ask for one. There is no default: a mode nobody registered would make a client of another flow a client of this one by accident
      * @param TokenExchange|null $tokenExchange what this client may exchange a token for (RFC 8693 §2.1); null for a client that exchanges none, which is every client that is not registered for that grant
@@ -122,7 +126,7 @@ final readonly class ClientRegistration
      */
     public function __construct(
         public string $clientId,
-        public string $name,
+        public ClientPresentation $presentation,
         public ClientAuthenticationMethodInterface $authenticationMethod,
         public bool $registersASecret,
         array $redirectUris,
@@ -154,6 +158,9 @@ final readonly class ClientRegistration
         public ?MayAct $mayAct = null,
         array $authorizationDetailsTypes = [],
         public bool $requiresCertificateBoundTokens = false,
+        public SubjectType $subjectType = SubjectType::Public,
+        public ?ClientUri $sectorIdentifierUri = null,
+        public ?ClientUri $initiateLoginUri = null,
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();
@@ -299,8 +306,11 @@ final readonly class ClientRegistration
                 $this->clientId,
             ));
         }
-        if ($this->name === '') {
+        if ($this->presentation->name === '') {
             throw new InvalidArgumentException(sprintf('The client "%s" has a name.', $this->clientId));
+        }
+        if (in_array('', $this->presentation->contacts, true)) {
+            throw new InvalidArgumentException(sprintf('The client "%s" registers no empty contact (OIDC Registration section 2).', $this->clientId));
         }
         if ($this->authenticationMethod instanceof SecretBearingMethodInterface && ! $this->registersASecret) {
             throw new InvalidArgumentException(sprintf(

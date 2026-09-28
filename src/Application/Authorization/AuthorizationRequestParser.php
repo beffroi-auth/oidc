@@ -8,6 +8,7 @@ use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Heidi\Oidc\Domain\Authorization\RedirectTarget;
+use Heidi\Oidc\Domain\Authorization\ResponseType;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Exception\LogicException;
@@ -115,7 +116,7 @@ final readonly class AuthorizationRequestParser
     public function parse(RedirectTarget $target, array $parameters): AuthorizationRequest
     {
         $request = RequestParameters::of($parameters)->withRedirectableFailures();
-        if ($request->required('response_type') !== 'code') {
+        if ($request->required('response_type') !== ResponseType::Code->value) {
             throw new UnsupportedResponseTypeException('Only the code response type is supported.');
         }
         $this->responseMode->assertItIsTheOneDelivered($request, $target->responseMode);

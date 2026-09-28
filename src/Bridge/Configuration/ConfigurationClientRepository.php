@@ -6,20 +6,11 @@ namespace Heidi\Oidc\Bridge\Configuration;
 
 use function array_key_exists;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
-use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
 use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
+use Heidi\Oidc\Application\Client\ClientMetadataReader;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Port\CertificateReaderInterface;
 use Heidi\Oidc\Port\ClientSourceInterface;
-use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
-use Heidi\Oidc\Port\PresentedTokenTypesInterface;
-use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
-use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
-use Heidi\Oidc\Port\ServedDeliveryModesInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
 use WeakMap;
 
 /**
@@ -51,32 +42,10 @@ final class ConfigurationClientRepository implements ClientSourceInterface
         private readonly string $tenantSlug,
         array $definitions,
         private readonly PasswordHasherInterface $hasher,
-        SignatureAlgorithmsInterface $algorithms,
-        ClientAuthenticationMethodsInterface $methods,
-        ServedGrantsInterface $grants,
-        ServedAccessTokenShapesInterface $shapes,
-        CertificateReaderInterface $certificates,
-        KeyEncryptionAlgorithmsInterface $keyEncryption,
-        ContentEncryptionAlgorithmsInterface $contentEncryption,
-        ServedDeliveryModesInterface $deliveryModes,
-        PresentedTokenTypesInterface $tokenTypes,
-        ServedAuthorizationDetailTypesInterface $authorizationDetailTypes,
+        ClientMetadataReader $reader,
     ) {
         foreach ($definitions as $clientId => $definition) {
-            $this->definitions[$clientId] = ClientDefinition::fromArray(
-                (string) $clientId,
-                $definition,
-                $algorithms,
-                $methods,
-                $grants,
-                $shapes,
-                $certificates,
-                $keyEncryption,
-                $contentEncryption,
-                $deliveryModes,
-                $tokenTypes,
-                $authorizationDetailTypes,
-            );
+            $this->definitions[$clientId] = ClientDefinition::fromArray((string) $clientId, $definition, $reader);
         }
         $this->clients = new WeakMap();
     }

@@ -182,7 +182,7 @@ final readonly class BackchannelAuthenticationHandler
             $this->notifier->tell(new PendingApproval(
                 $tenant,
                 $user->id,
-                $registration->name,
+                $registration->presentation->name,
                 $bindingMessage,
                 $expiresAt,
                 $endpoints->backchannelApproval,
