@@ -99,7 +99,7 @@ final readonly class ClientRegistration
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
      * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2)
-     * @param SubjectType $subjectType the kind of "sub" this client sees for a user (OIDC Core §8); which kinds this provider assigns one for is read where a registration meets the wiring, as for a grant and for an authentication method
+     * @param non-empty-string|null $subjectType the kind of "sub" this client registered ("subject_type", OIDC Core §8), under the name the resolver of that kind gives itself; which kinds the provider assigns one for is read where a registration meets the wiring, as for a grant and for an authentication method. Null for a client that registered none, which sees the kind the provider assigns by default
      * @param ClientUri|null $sectorIdentifierUri the document naming every redirection URI of the clients that share a "sub" with this one (OIDC Core §8.1); null for a client that registered none, which is every client whose sector is its own host
      * @param ClientUri|null $initiateLoginUri where a third party sends a user to have this provider begin a login at this client (OIDC Core §4, OIDC Registration §2); null for a client no third party starts a login at
      * @param bool $requiresCertificateBoundTokens true when the tokens of this client are bound to the certificate it presents whichever way it authenticated (RFC 8705 §3.4 "tls_client_certificate_bound_access_tokens", FAPI 1.0 Advanced Final §5.2.2): a token request of such a client that proves no certificate is refused rather than answered with tokens bound to nothing. It is what a client authenticated by its certificate gets anyway (§3), so it is the registration of a client that authenticates some other way
@@ -158,7 +158,7 @@ final readonly class ClientRegistration
         public ?MayAct $mayAct = null,
         array $authorizationDetailsTypes = [],
         public bool $requiresCertificateBoundTokens = false,
-        public SubjectType $subjectType = SubjectType::Public,
+        public ?string $subjectType = null,
         public ?ClientUri $sectorIdentifierUri = null,
         public ?ClientUri $initiateLoginUri = null,
     ) {

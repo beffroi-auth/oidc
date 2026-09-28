@@ -21,7 +21,7 @@ use Heidi\Oidc\Application\Ciba\DeliveryModeNames;
 use Heidi\Oidc\Application\Key\AlgorithmNames;
 use Heidi\Oidc\Application\Token\GrantNames;
 use Heidi\Oidc\Application\Token\ShapeNames;
-use Heidi\Oidc\Domain\Authorization\ResponseType;
+use Heidi\Oidc\Domain\Authorization\ResponseTypeNames;
 use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
 use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentities;
@@ -34,7 +34,6 @@ use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
 use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
 use Heidi\Oidc\Domain\Client\Metadata\NestedMembers;
-use Heidi\Oidc\Domain\Client\Metadata\RegistrationError;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
@@ -42,7 +41,6 @@ use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
 use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Heidi\Oidc\Domain\Client\ResponseEncryption;
 use Heidi\Oidc\Domain\Client\ResponseFormat;
-use Heidi\Oidc\Domain\Client\SubjectType;
 use Heidi\Oidc\Domain\Client\TokenExchange;
 use Heidi\Oidc\Domain\Exchange\MayAct;
 use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
@@ -51,6 +49,8 @@ use Heidi\Oidc\Domain\Scope\Scope;
 use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Domain\Token\ClientSubject;
 use Heidi\Oidc\Exception\InvalidArgumentException;
+use Heidi\Oidc\Exception\InvalidClientMetadataException;
+use Heidi\Oidc\Exception\InvalidRedirectUriException;
 use Heidi\Oidc\Exception\UnreadableCertificateException;
 use Heidi\Oidc\Exception\UnreadableClientMetadataException;
 use Heidi\Oidc\Port\CertificateReaderInterface;
@@ -60,6 +60,7 @@ use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 use Heidi\Oidc\Port\ServedDeliveryModesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
+use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
 use function implode;
 use function in_array;
 use function is_array;
@@ -78,10 +79,10 @@ use function sprintf;
  * provider is wired with, where the registration and the wiring meet. A registration this reader does not
  * understand does not exist.
  *
- * It raises one thing, `UnreadableClientMetadataException`, carrying the code of RFC 7591 §3.2.2, the
- * member and the source the value came from. What that becomes is the caller's: a boot that stops for a
- * declaration, a 400 for a client that registered itself. The reader knows neither, and there is no branch
- * in it for either.
+ * It raises one kind of thing, `UnreadableClientMetadataException`, of which there is one subclass per error
+ * code of RFC 7591 §3.2.2, each naming its own; it carries the member that does not hold and the source the
+ * value came from. What that becomes is the caller's: a boot that stops for a declaration, a 400 for a client
+ * that registered itself. The reader knows neither, and there is no branch in it for either.
  *
  * What differs between callers beyond that is what each passes in. The defaults of a deployment and those of
  * RFC 7591 §2 are sources read behind the members themselves (`DeploymentDefaults`, `SpecifiedDefaults`), so
@@ -154,6 +155,7 @@ final readonly class ClientMetadataReader
      * @param ServedDeliveryModesInterface $deliveryModes how the provider is wired to tell a client that a backchannel request has been answered: a client of that flow registers one of those names, and every other client registers none
      * @param PresentedTokenTypesInterface $tokenTypes what the exchange is wired to read: a client of that grant registers those names and no other (RFC 8693 §3)
      * @param ServedAuthorizationDetailTypesInterface $authorizationDetailTypes what the provider is wired to read an "authorization_details" with: a client registers those names and no other (RFC 9396 §2, §11)
+     * @param SubjectIdentifierResolverInterface $subjects what resolves the "sub" a client sees (OIDC Core §8): a client registers the kind it names, and no other
      */
     public function __construct(
         private SignatureAlgorithmsInterface $algorithms,
@@ -166,6 +168,7 @@ final readonly class ClientMetadataReader
         private ServedDeliveryModesInterface $deliveryModes,
         private PresentedTokenTypesInterface $tokenTypes,
         private ServedAuthorizationDetailTypesInterface $authorizationDetailTypes,
+        private SubjectIdentifierResolverInterface $subjects,
     ) {
     }
 
@@ -179,8 +182,7 @@ final readonly class ClientMetadataReader
     {
         $unknown = array_diff($metadata->members(), self::MEMBERS);
         if ($unknown !== []) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 null,
                 null,
                 sprintf('The client "%s" has unknown keys: %s.', $clientId, implode(', ', $unknown)),
@@ -260,7 +262,7 @@ final readonly class ClientMetadataReader
             // its own already says which one it was
             throw $exception instanceof UnreadableClientMetadataException
                 ? $exception
-                : self::keeping($exception, RegistrationError::InvalidClientMetadata);
+                : self::keeping($exception);
         }
 
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
@@ -301,50 +303,51 @@ final readonly class ClientMetadataReader
         try {
             return new Scopes(Scope::parseList($scope));
         } catch (InvalidArgumentException $exception) {
-            throw self::keeping($exception, RegistrationError::InvalidClientMetadata, 'scope', $metadata->sourceOf('scope'));
+            throw self::keeping($exception, 'scope', $metadata->sourceOf('scope'));
         }
     }
 
     /**
      * OIDC Registration §2 "response_types": what this client asks the authorization endpoint to answer
-     * with, among the ones this provider answers at all, which decision 0006 closes to a code (ResponseType).
+     * with, among the ones this provider answers at all, which decision 0006 closes to a code
+     * (ResponseTypeNames).
      * It is not kept: a response type a client may ask for is the grant it registered, and holding both
      * would be two places that must agree. What is checked is that they do.
      *
-     * @return list<ResponseType> empty for a client that registered none, which RFC 7591 §2 reads as the one
-     *                            a flow that sends the user back answers with
+     * @return list<string> empty for a client that registered none, which RFC 7591 §2 reads as the one a flow
+     *                      that sends the user back answers with
      */
     private function responseTypes(string $clientId, ClientMetadata $metadata): array
     {
-        $registered = [];
-        foreach ($this->stringList($clientId, 'response_types', $metadata) as $name) {
-            $responseType = ResponseType::tryFrom($name);
-            if ($responseType === null) {
-                throw $this->oneOf($clientId, 'response_types', $metadata, ResponseType::names());
+        $registered = $this->stringList($clientId, 'response_types', $metadata);
+        foreach ($registered as $name) {
+            if ($name !== ResponseTypeNames::CODE) {
+                throw $this->oneOf($clientId, 'response_types', $metadata, [ResponseTypeNames::CODE]);
             }
-            $registered[] = $responseType;
         }
 
         return $registered;
     }
 
     /**
-     * OIDC Core §8, OIDC Registration §2 "subject_type": the kind of "sub" this client sees, among the kinds
-     * this provider resolves one for. A kind nothing resolves is refused here rather than answered with an
-     * identifier of the other kind.
+     * OIDC Core §8, OIDC Registration §2 "subject_type": the kind of "sub" this client registered, among the
+     * kinds this provider resolves one for, which the resolvers name themselves. A kind nothing resolves is
+     * refused here rather than answered with an identifier of another kind, as a grant nothing serves is.
+     *
+     * @return non-empty-string|null null for a client that registered none
      */
-    private function subjectType(string $clientId, ClientMetadata $metadata): SubjectType
+    private function subjectType(string $clientId, ClientMetadata $metadata): ?string
     {
         $name = $this->text($clientId, 'subject_type', $metadata);
         if ($name === null) {
-            return SubjectType::assigned()[0];
+            return null;
         }
-        $assigned = array_map(static fn (SubjectType $type): string => $type->value, SubjectType::assigned());
-        if (! in_array($name, $assigned, true)) {
-            throw $this->oneOf($clientId, 'subject_type', $metadata, $assigned);
+        $assigned = $this->subjects->subjectType();
+        if ($name !== $assigned) {
+            throw $this->oneOf($clientId, 'subject_type', $metadata, [$assigned]);
         }
 
-        return SubjectType::from($name);
+        return $name;
     }
 
     /**
@@ -385,8 +388,7 @@ final readonly class ClientMetadataReader
             return null;
         }
         if (! $carriesAlgorithm || ! $carriesMethod) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 $carriesAlgorithm ? $methodOption : $algorithmOption,
                 $metadata->sourceOf($carriesAlgorithm ? $algorithmOption : $methodOption),
                 sprintf(
@@ -400,8 +402,7 @@ final readonly class ClientMetadataReader
         $algorithmName = $metadata->value($algorithmOption);
         $methodName = $metadata->value($methodOption);
         if (! is_string($algorithmName) || ! is_string($methodName)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 is_string($algorithmName) ? $methodOption : $algorithmOption,
                 $metadata->sourceOf(is_string($algorithmName) ? $methodOption : $algorithmOption),
                 sprintf('The %s and %s options of the client "%s" must be strings.', $algorithmOption, $methodOption, $clientId),
@@ -439,8 +440,7 @@ final readonly class ClientMetadataReader
             return;
         }
 
-        throw new UnreadableClientMetadataException(
-            RegistrationError::InvalidClientMetadata,
+        throw new InvalidClientMetadataException(
             'jwks',
             null,
             sprintf(
@@ -530,8 +530,7 @@ final readonly class ClientMetadataReader
         );
         $spends = array_find($this->grants->spendingRefreshTokens(), $isRegistered);
         if ($spends !== null && ! array_any($this->grants->issuingRefreshTokens(), $isRegistered)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'grant_types',
                 $metadata->sourceOf('grant_types'),
                 sprintf(
@@ -562,7 +561,7 @@ final readonly class ClientMetadataReader
      *
      * @param list<GrantTypeName> $registered
      * @param list<RedirectUri> $redirectUris
-     * @param list<ResponseType> $responseTypes empty for a client that registered none, which RFC 7591 §2 reads as the one this provider answers with
+     * @param list<string> $responseTypes empty for a client that registered none, which RFC 7591 §2 reads as the one this provider answers with
      *
      * @throws UnreadableClientMetadataException
      */
@@ -585,8 +584,7 @@ final readonly class ClientMetadataReader
         );
         $sendsTheUser = array_find($this->grants->sendingTheUserToTheClient(), $isRegistered);
         if ($sendsTheUser !== null && $redirectUris === []) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidRedirectUri,
+            throw new InvalidRedirectUriException(
                 'redirect_uris',
                 null,
                 sprintf(
@@ -597,8 +595,7 @@ final readonly class ClientMetadataReader
             );
         }
         if ($sendsTheUser === null && $redirectUris !== []) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidRedirectUri,
+            throw new InvalidRedirectUriException(
                 'redirect_uris',
                 null,
                 sprintf(
@@ -609,22 +606,20 @@ final readonly class ClientMetadataReader
             );
         }
         if ($sendsTheUser === null && $responseTypes !== []) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'response_types',
                 null,
                 sprintf(
                     'The client "%s" registers the response type "%s" and no grant that would answer with one: register one of: %s (OIDC Registration section 2).',
                     $clientId,
-                    $responseTypes[0]->value,
+                    $responseTypes[0],
                     implode(', ', GrantNames::of($this->grants->sendingTheUserToTheClient())),
                 ),
             );
         }
         $exchanges = array_find($this->grants->exchangingTokens(), $isRegistered);
         if ($exchanges !== null && $tokenExchange === null) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'token_exchange',
                 null,
                 sprintf(
@@ -635,8 +630,7 @@ final readonly class ClientMetadataReader
             );
         }
         if ($exchanges === null && $tokenExchange !== null) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'token_exchange',
                 null,
                 sprintf(
@@ -657,8 +651,7 @@ final readonly class ClientMetadataReader
             return;
         }
         if (! $method->authenticatesClient()) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'token_endpoint_auth_method',
                 null,
                 sprintf(
@@ -682,7 +675,7 @@ final readonly class ClientMetadataReader
         try {
             ClientSubject::ofIdentifier($clientId);
         } catch (InvalidArgumentException $exception) {
-            throw self::keeping($exception, RegistrationError::InvalidClientMetadata);
+            throw self::keeping($exception);
         }
     }
 
@@ -702,8 +695,7 @@ final readonly class ClientMetadataReader
         $declared = $metadata->value('token_exchange');
         $source = $metadata->sourceOf('token_exchange');
         if (! is_array($declared)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'token_exchange',
                 $source,
                 sprintf('The token_exchange option of the client "%s" must be a map (RFC 8693 section 2.1).', $clientId),
@@ -712,8 +704,7 @@ final readonly class ClientMetadataReader
         /** @var array<string, mixed> $declared */
         $unknown = array_diff(array_keys($declared), ['subject_token_types', 'may_act_for_a_user']);
         if ($unknown !== []) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'token_exchange',
                 $source,
                 sprintf('The token_exchange option of the client "%s" has unknown keys: %s.', $clientId, implode(', ', $unknown)),
@@ -724,8 +715,7 @@ final readonly class ClientMetadataReader
         $types = [];
         foreach ($this->stringList($clientId, 'subject_token_types', $inside) as $name) {
             if (! in_array($name, $wired, true)) {
-                throw new UnreadableClientMetadataException(
-                    RegistrationError::InvalidClientMetadata,
+                throw new InvalidClientMetadataException(
                     'token_exchange',
                     $source,
                     sprintf(
@@ -739,8 +729,7 @@ final readonly class ClientMetadataReader
             $types[] = new TokenTypeIdentifier($name);
         }
         if ($types === []) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'token_exchange',
                 $source,
                 sprintf(
@@ -770,8 +759,7 @@ final readonly class ClientMetadataReader
         try {
             return new MayAct(new Subject($subject));
         } catch (CoreInvalidArgumentException $exception) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'may_act',
                 $metadata->sourceOf('may_act'),
                 sprintf('The may_act option of the client "%s" names a subject (OIDC Core section 2).', $clientId),
@@ -799,8 +787,7 @@ final readonly class ClientMetadataReader
             try {
                 $registration[CertificateIdentities::SUBJECT_DN] = $this->certificates->distinguishedName($subjectDn);
             } catch (UnreadableCertificateException $exception) {
-                throw new UnreadableClientMetadataException(
-                    RegistrationError::InvalidClientMetadata,
+                throw new InvalidClientMetadataException(
                     CertificateIdentities::SUBJECT_DN,
                     $metadata->sourceOf(CertificateIdentities::SUBJECT_DN),
                     sprintf('The %s option of the client "%s" must be a distinguished name of RFC 4514.', CertificateIdentities::SUBJECT_DN, $clientId),
@@ -812,7 +799,7 @@ final readonly class ClientMetadataReader
         try {
             return CertificateIdentities::fromRegistration($registration);
         } catch (InvalidArgumentException $exception) {
-            throw self::keeping($exception, RegistrationError::InvalidClientMetadata);
+            throw self::keeping($exception);
         }
     }
 
@@ -837,8 +824,7 @@ final readonly class ClientMetadataReader
         try {
             return new OneRegisteredAlgorithm($this->algorithms->named($name));
         } catch (UnsupportedAlgorithmException $exception) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'request_object_signing_alg',
                 $metadata->sourceOf('request_object_signing_alg'),
                 sprintf(
@@ -865,8 +851,7 @@ final readonly class ClientMetadataReader
         $jwks = $metadata->value('jwks');
         $source = $metadata->sourceOf('jwks');
         if (! is_array($jwks)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'jwks',
                 $source,
                 sprintf('The jwks option of the client "%s" must be a JWK Set (RFC 7517 section 5).', $clientId),
@@ -876,7 +861,7 @@ final readonly class ClientMetadataReader
         try {
             return ClientJwks::fromDocument($jwks);
         } catch (InvalidArgumentException $exception) {
-            throw self::keeping($exception, RegistrationError::InvalidClientMetadata, 'jwks', $source);
+            throw self::keeping($exception, 'jwks', $source);
         }
     }
 
@@ -896,8 +881,7 @@ final readonly class ClientMetadataReader
         }
         $wired = DeliveryModeNames::of($this->deliveryModes->servedDeliveryModes());
         if (! in_array($name, $wired, true)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 'backchannel_token_delivery_mode',
                 $metadata->sourceOf('backchannel_token_delivery_mode'),
                 sprintf(
@@ -926,7 +910,7 @@ final readonly class ClientMetadataReader
             try {
                 $resources[] = new ResourceIndicator($value);
             } catch (InvalidArgumentException $exception) {
-                throw self::keeping($exception, RegistrationError::InvalidClientMetadata, 'resources', $metadata->sourceOf('resources'));
+                throw self::keeping($exception, 'resources', $metadata->sourceOf('resources'));
             }
         }
 
@@ -949,7 +933,7 @@ final readonly class ClientMetadataReader
             try {
                 $uris[] = new RedirectUri($value);
             } catch (InvalidArgumentException $exception) {
-                throw self::keeping($exception, RegistrationError::InvalidRedirectUri, $option, $metadata->sourceOf($option));
+                throw new InvalidRedirectUriException($option, $metadata->sourceOf($option), $exception->getMessage(), $exception);
             }
         }
 
@@ -998,7 +982,7 @@ final readonly class ClientMetadataReader
         try {
             return new ClientUri($value);
         } catch (InvalidArgumentException $exception) {
-            throw self::keeping($exception, RegistrationError::InvalidClientMetadata, $option, $source);
+            throw self::keeping($exception, $option, $source);
         }
     }
 
@@ -1017,8 +1001,7 @@ final readonly class ClientMetadataReader
         }
         $value = $metadata->value($option);
         if (! is_string($value)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 $option,
                 $metadata->sourceOf($option),
                 sprintf('The %s option of the client "%s" must be a string.', $option, $clientId),
@@ -1067,9 +1050,8 @@ final readonly class ClientMetadataReader
         ClientMetadata $metadata,
         array $wired,
         ?UnsupportedAlgorithmException $previous = null,
-    ): UnreadableClientMetadataException {
-        return new UnreadableClientMetadataException(
-            RegistrationError::InvalidClientMetadata,
+    ): InvalidClientMetadataException {
+        return new InvalidClientMetadataException(
             $option,
             $metadata->sourceOf($option),
             sprintf('The %s option of the client "%s" must be one of: %s.', $option, $clientId, implode(', ', $wired)),
@@ -1087,8 +1069,7 @@ final readonly class ClientMetadataReader
         }
         $value = $metadata->value($key);
         if (! is_bool($value)) {
-            throw new UnreadableClientMetadataException(
-                RegistrationError::InvalidClientMetadata,
+            throw new InvalidClientMetadataException(
                 $key,
                 $metadata->sourceOf($key),
                 sprintf('The %s option of the client "%s" must be a boolean.', $key, $clientId),
@@ -1109,8 +1090,7 @@ final readonly class ClientMetadataReader
             return [];
         }
         $value = $metadata->value($key);
-        $refusal = new UnreadableClientMetadataException(
-            RegistrationError::InvalidClientMetadata,
+        $refusal = new InvalidClientMetadataException(
             $key,
             $metadata->sourceOf($key),
             sprintf('The %s option of the client "%s" must be a list of strings.', $key, $clientId),
@@ -1136,10 +1116,9 @@ final readonly class ClientMetadataReader
      */
     private static function keeping(
         InvalidArgumentException $previous,
-        RegistrationError $error,
         ?string $member = null,
         ?string $source = null,
-    ): UnreadableClientMetadataException {
-        return new UnreadableClientMetadataException($error, $member, $source, $previous->getMessage(), $previous);
+    ): InvalidClientMetadataException {
+        return new InvalidClientMetadataException($member, $source, $previous->getMessage(), $previous);
     }
 }

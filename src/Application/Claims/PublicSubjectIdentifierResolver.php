@@ -14,6 +14,11 @@ use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
  */
 final readonly class PublicSubjectIdentifierResolver implements SubjectIdentifierResolverInterface
 {
+    public function subjectType(): string
+    {
+        return 'public';
+    }
+
     public function resolve(User $user, Client $client): Subject
     {
         return $user->subject;
