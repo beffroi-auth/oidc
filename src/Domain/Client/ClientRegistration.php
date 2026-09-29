@@ -102,6 +102,8 @@ final readonly class ClientRegistration
      * @param non-empty-string|null $subjectType the kind of "sub" this client registered ("subject_type", OIDC Core §8), under the name the resolver of that kind gives itself; which kinds the provider assigns one for is read where a registration meets the wiring, as for a grant and for an authentication method. Null for a client that registered none, which sees the kind the provider assigns by default
      * @param ClientUri|null $sectorIdentifierUri the document naming every redirection URI of the clients that share a "sub" with this one (OIDC Core §8.1); null for a client that registered none, which is every client whose sector is its own host
      * @param ClientUri|null $initiateLoginUri where a third party sends a user to have this provider begin a login at this client (OIDC Core §4, OIDC Registration §2); null for a client no third party starts a login at
+     * @param string|null $softwareId what the software this client is an instance of calls itself, the same across every installation of it (RFC 7591 §2); null for a client whose software names none
+     * @param string|null $softwareVersion the version of that software, which unlike the identifier changes from one installation to the next (RFC 7591 §2); null for a client whose software names none
      * @param bool $requiresCertificateBoundTokens true when the tokens of this client are bound to the certificate it presents whichever way it authenticated (RFC 8705 §3.4 "tls_client_certificate_bound_access_tokens", FAPI 1.0 Advanced Final §5.2.2): a token request of such a client that proves no certificate is refused rather than answered with tokens bound to nothing. It is what a client authenticated by its certificate gets anyway (§3), so it is the registration of a client that authenticates some other way
      * @param DeliveryModeInterface|null $backchannelTokenDeliveryMode how this client is told that a backchannel request has been answered (CIBA Core §4), among the modes the provider is wired with; null for a client of no such flow, which is every client that does not ask for one. There is no default: a mode nobody registered would make a client of another flow a client of this one by accident
      * @param TokenExchange|null $tokenExchange what this client may exchange a token for (RFC 8693 §2.1); null for a client that exchanges none, which is every client that is not registered for that grant
@@ -161,6 +163,8 @@ final readonly class ClientRegistration
         public ?string $subjectType = null,
         public ?ClientUri $sectorIdentifierUri = null,
         public ?ClientUri $initiateLoginUri = null,
+        public ?string $softwareId = null,
+        public ?string $softwareVersion = null,
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();

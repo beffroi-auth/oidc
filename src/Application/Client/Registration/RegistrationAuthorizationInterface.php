@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Application\Client\Registration;
 
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
+use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
 use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
 use Heidi\Oidc\Exception\UnauthorizedRegistrationException;
 
@@ -33,11 +34,15 @@ interface RegistrationAuthorizationInterface
     public function name(): string;
 
     /**
+     * The policy is the one that named this mode, and it carries what the tenant wrote about it: the
+     * authorities whose statements the attested mode accepts are the tenant's and nothing global, as the
+     * mode itself is. A mode that needs nothing of it reads nothing of it.
+     *
      * @throws UnauthorizedRegistrationException when the request presents nothing this mode acts on
      *
      * @return list<ClientMetadataSourceInterface> what this mode puts in front of the members the client
      *                                             sent, in the order they win; empty for a mode that
      *                                             reads none
      */
-    public function authorize(Tenant $tenant, RegistrationRequest $request): array;
+    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): array;
 }

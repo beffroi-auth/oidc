@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Client\Registration;
 
+use function array_find;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
@@ -24,6 +25,11 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
  * 0008 on the confidential clients its policy registers, never on a public one. It is a field of this
  * policy and of nothing global, it is written on a registration at the moment the policy creates it, and
  * nothing a client sends grants it.
+ *
+ * The authorities whose software statements it accepts are the tenant's and are written here (RFC 7591
+ * §2.3, `StatementIssuer`): the attested mode reads them, and a tenant that pins none has that mode
+ * closed rather than open to whoever signs. They are a field of this policy and of nothing global, for
+ * the same reason the mode is: what one tenant trusts is unknown to another.
  *
  * The two durations are the hygiene decision 0009 makes part of itself: a client nobody uses any more is
  * deleted, and a tenant says after how long. They are two because a client that was used and a client that
@@ -51,6 +57,7 @@ final readonly class ClientRegistrationPolicy
      * @param bool $exemptsConfidentialClientsFromPkce whether the confidential clients this policy registers are registered without the PKCE requirement (decision 0017); a public client is never exempted, whatever this carries
      * @param DateInterval $keepsAClientUnusedFor how long a client that was used may go without being used again before it is deleted
      * @param DateInterval $keepsAClientNeverUsedFor how long a client that was never used lives at all, which the open mode makes the shorter of the two
+     * @param list<StatementIssuer> $statementIssuers the authorities whose software statements this tenant accepts (RFC 7591 §2.3); none for a tenant that pins nobody, which is every tenant that wrote none
      *
      * @throws InvalidArgumentException when the policy names no mode
      */
@@ -59,10 +66,21 @@ final readonly class ClientRegistrationPolicy
         public bool $exemptsConfidentialClientsFromPkce = false,
         public DateInterval $keepsAClientUnusedFor = new DateInterval(self::UNUSED_FOR),
         public DateInterval $keepsAClientNeverUsedFor = new DateInterval(self::NEVER_USED_FOR),
+        public array $statementIssuers = [],
     ) {
         if ($mode === '') {
             throw new InvalidArgumentException('A registration policy names what authorises a registration (decision 0009); a tenant that authorises none has no policy at all.');
         }
+    }
+
+    /**
+     * The authority a statement names, among the ones this tenant pinned, or null when it pinned nobody by
+     * that name (RFC 7591 §2.3). The name is compared byte for byte, and which key would verify a
+     * statement is this answer and never the statement's.
+     */
+    public function trusts(string $issuer): ?StatementIssuer
+    {
+        return array_find($this->statementIssuers, static fn (StatementIssuer $pinned): bool => $pinned->issuer === $issuer);
     }
 
     /**

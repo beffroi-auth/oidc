@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Client\Registration;
 
+use function array_reverse;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Oidc\Application\Client\ClientMetadataReader;
@@ -41,6 +42,30 @@ final readonly class RegistrationUnderThePolicy
         private SecretDrawer $secrets,
         private PasswordHasherInterface $hasher,
     ) {
+    }
+
+    /**
+     * What is kept of a registration is what described the client, from every source that described it and
+     * in the order they win (RFC 7591 §3.1.1): a member a statement signed is the registered one, so it is
+     * the one the row holds and the one read back from it, or the client would be registered with what its
+     * authority said and served with what its caller typed. What the policy of the tenant writes is beside
+     * it (`AssignedMembers`) and what a specification defaults is derived, neither being anything a client
+     * registered.
+     *
+     * For a mode that puts nothing in front of the body, this is the body.
+     *
+     * @param list<ClientMetadataSourceInterface> $sources the one that wins first
+     *
+     * @return array<string, mixed>
+     */
+    private static function described(array $sources): array
+    {
+        $described = [];
+        foreach (array_reverse($sources) as $source) {
+            $described = [...$described, ...$source->members()];
+        }
+
+        return $described;
     }
 
     /**
@@ -83,6 +108,6 @@ final readonly class RegistrationUnderThePolicy
         $this->tenantOffer->assertHolds($tenant, $registration, $metadata);
         $this->sector->assertHolds($registration, $metadata);
 
-        return new KeptRegistration($members, $assigned->members(), $secret, $drawn);
+        return new KeptRegistration(self::described($sent), $assigned->members(), $secret, $drawn);
     }
 }

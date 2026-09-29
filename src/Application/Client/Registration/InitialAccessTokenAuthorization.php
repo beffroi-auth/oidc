@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Client\Registration;
 
 use Heidi\Core\Domain\Tenant\Tenant;
+use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
 use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
 use Heidi\Oidc\Domain\Secret\DrawnSecret;
 use Heidi\Oidc\Exception\UnauthorizedRegistrationException;
@@ -51,7 +52,7 @@ final readonly class InitialAccessTokenAuthorization implements RegistrationAuth
         return self::MODE;
     }
 
-    public function authorize(Tenant $tenant, RegistrationRequest $request): array
+    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): array
     {
         $presented = self::presented($request->authorizationHeader);
         if ($presented === null) {

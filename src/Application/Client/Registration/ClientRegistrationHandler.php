@@ -66,7 +66,7 @@ final readonly class ClientRegistrationHandler
         if ($policy === null) {
             throw new ClientRegistrationNotOfferedException();
         }
-        $inFront = $this->authorizations->authorizing($policy)->authorize($tenant, $request);
+        $inFront = $this->authorizations->authorizing($policy)->authorize($tenant, $request, $policy);
         $clientId = $this->identifiers->drawFor($tenant);
         $kept = $this->registrations->read($tenant, $clientId, $inFront, $request->members(), $policy);
 

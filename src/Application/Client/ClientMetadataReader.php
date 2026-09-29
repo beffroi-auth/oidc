@@ -141,6 +141,13 @@ final readonly class ClientMetadataReader
         'subject_type',
         'sector_identifier_uri',
         'initiate_login_uri',
+        'software_id',
+        'software_version',
+        // RFC 7591 §2.3: what a statement authorises with, read by the mode that is that authorisation
+        // (SoftwareStatementAuthorization) and never as metadata. It is named here so that a client that
+        // sends one to a tenant whose mode reads none is registered as if the member were absent, rather
+        // than refused for a key nobody reads.
+        'software_statement',
         ...CertificateIdentities::NAMES,
     ];
 
@@ -255,6 +262,8 @@ final readonly class ClientMetadataReader
                 $this->subjectType($clientId, $metadata),
                 $this->clientUri($clientId, 'sector_identifier_uri', $metadata),
                 $this->clientUri($clientId, 'initiate_login_uri', $metadata),
+                $this->text($clientId, 'software_id', $metadata),
+                $this->text($clientId, 'software_version', $metadata),
             );
         } catch (InvalidArgumentException $exception) {
             // What the registration refuses is a rule between several members, which its message names: it
