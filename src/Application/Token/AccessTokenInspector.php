@@ -7,9 +7,9 @@ namespace Heidi\Oidc\Application\Token;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Core\Port\AuthenticationSessionRepositoryInterface;
-use Heidi\Core\Port\UserRepositoryInterface;
 use Heidi\Oidc\Domain\Token\InspectedAccessToken;
 use Heidi\Oidc\Exception\InvalidTokenException;
+use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
 use Heidi\Oidc\Port\RecordedGrantsInterface;
 use SensitiveParameter;
 
@@ -29,6 +29,10 @@ use SensitiveParameter;
  * What the token says it descends from is what decides, never the name of the grant that issued it: the
  * grant is looked for among the records every flow of this provider writes (RecordedGrantsInterface), so a
  * token of a flow that draws no authorization code answers for its grant as an ordinary one does.
+ *
+ * The user is read from the "sub" **for the client the token was written for** and never as a key of a row
+ * (OIDC Core §8): under a pairwise kind (§8.1) that string is the one that client sees, so a token of one
+ * client inspected as if its "sub" were the provider's own identifier would find nobody, or worse, somebody.
  */
 final readonly class AccessTokenInspector
 {
@@ -36,7 +40,7 @@ final readonly class AccessTokenInspector
         private AccessTokenVerifier $tokens,
         private AuthenticationSessionRepositoryInterface $sessions,
         private RecordedGrantsInterface $grants,
-        private UserRepositoryInterface $users,
+        private PresentedSubjectReaderInterface $subjects,
     ) {
     }
 
@@ -58,7 +62,7 @@ final readonly class AccessTokenInspector
         if ($grant === null || $grant->isRevoked()) {
             throw new InvalidTokenException('The access token descends from a grant this provider revoked.');
         }
-        $user = $this->users->findBySubject($tenant, $token->subject);
+        $user = $this->subjects->findUser($token->client, $token->subject);
         if ($user === null || ! $user->isEnabled()) {
             throw new InvalidTokenException('The access token names a user this provider no longer serves.');
         }

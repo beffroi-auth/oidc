@@ -60,7 +60,7 @@ use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
 use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 use Heidi\Oidc\Port\ServedDeliveryModesInterface;
 use Heidi\Oidc\Port\ServedGrantsInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Heidi\Oidc\Port\AssignedSubjectTypesInterface;
 use function implode;
 use function in_array;
 use function is_array;
@@ -155,7 +155,7 @@ final readonly class ClientMetadataReader
      * @param ServedDeliveryModesInterface $deliveryModes how the provider is wired to tell a client that a backchannel request has been answered: a client of that flow registers one of those names, and every other client registers none
      * @param PresentedTokenTypesInterface $tokenTypes what the exchange is wired to read: a client of that grant registers those names and no other (RFC 8693 §3)
      * @param ServedAuthorizationDetailTypesInterface $authorizationDetailTypes what the provider is wired to read an "authorization_details" with: a client registers those names and no other (RFC 9396 §2, §11)
-     * @param SubjectIdentifierResolverInterface $subjects what resolves the "sub" a client sees (OIDC Core §8): a client registers the kind it names, and no other
+     * @param AssignedSubjectTypesInterface $subjects the kinds of "sub" the provider assigns one of (OIDC Core §8): a client registers one of those names, or none and takes the first, and what that kind needs of a registration is read here too
      */
     public function __construct(
         private SignatureAlgorithmsInterface $algorithms,
@@ -168,7 +168,7 @@ final readonly class ClientMetadataReader
         private ServedDeliveryModesInterface $deliveryModes,
         private PresentedTokenTypesInterface $tokenTypes,
         private ServedAuthorizationDetailTypesInterface $authorizationDetailTypes,
-        private SubjectIdentifierResolverInterface $subjects,
+        private AssignedSubjectTypesInterface $subjects,
     ) {
     }
 
@@ -268,6 +268,11 @@ final readonly class ClientMetadataReader
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
             self::assertAddressable($clientId, $format, $jwks);
         }
+        // OIDC Core §8: what the kind of "sub" this client takes needs of a registration, asked of the kind
+        // itself and read wherever the registration came from. What it demands of a client that registers
+        // itself, and that a declaration of a deployment owes nobody, is read where a registration is
+        // written (RegistrationHeldToItsSector).
+        $this->subjects->assertAssignable($registration);
 
         return $registration;
     }
@@ -342,9 +347,9 @@ final readonly class ClientMetadataReader
         if ($name === null) {
             return null;
         }
-        $assigned = $this->subjects->subjectType();
-        if ($name !== $assigned) {
-            throw $this->oneOf($clientId, 'subject_type', $metadata, [$assigned]);
+        $assigned = $this->subjects->assignedSubjectTypes();
+        if (! in_array($name, $assigned, true)) {
+            throw $this->oneOf($clientId, 'subject_type', $metadata, $assigned);
         }
 
         return $name;

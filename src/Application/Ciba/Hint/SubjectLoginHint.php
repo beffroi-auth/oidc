@@ -7,9 +7,9 @@ namespace Heidi\Oidc\Application\Ciba\Hint;
 use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Exception\InvalidArgumentException;
-use Heidi\Core\Port\UserRepositoryInterface;
 use Heidi\Oidc\Application\Ciba\UserHintInterface;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
 use SensitiveParameter;
 
 /**
@@ -19,14 +19,16 @@ use SensitiveParameter;
  * one says it here and to this provider only.
  *
  * A value that is not a subject at all names nobody, exactly as a subject that belongs to nobody does:
- * the two answers are the same answer.
+ * the two answers are the same answer. The hint is read for the client that sent it and never as a key of
+ * a row (OIDC Core §8): a "sub" a client of another sector holds names nobody here, which is what makes a
+ * pairwise identifier worth having.
  */
 final readonly class SubjectLoginHint implements UserHintInterface
 {
     public const string PARAMETER = 'login_hint';
 
     public function __construct(
-        private UserRepositoryInterface $users,
+        private PresentedSubjectReaderInterface $subjects,
     ) {
     }
 
@@ -43,6 +45,6 @@ final readonly class SubjectLoginHint implements UserHintInterface
             return null;
         }
 
-        return $this->users->findBySubject($client->tenant, $subject);
+        return $this->subjects->findUser($client, $subject);
     }
 }

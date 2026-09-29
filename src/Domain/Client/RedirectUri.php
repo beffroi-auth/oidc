@@ -31,6 +31,12 @@ final readonly class RedirectUri implements Stringable
      */
     public string $origin;
 
+    /**
+     * RFC 3986 §3.2.2, lowercased, see ClientUri: what a set of clients has in common when it has one
+     * administrative domain (OIDC Core §8.1, SectorIdentifier).
+     */
+    public string $host;
+
     private ClientUri $uri;
 
     /**
@@ -46,6 +52,7 @@ final readonly class RedirectUri implements Stringable
         $this->uri = new ClientUri($value);
         $this->value = $this->uri->value;
         $this->origin = $this->uri->origin;
+        $this->host = $this->uri->host;
     }
 
     /**

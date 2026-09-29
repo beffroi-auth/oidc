@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Application\Ciba\Hint;
 
 use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Port\UserRepositoryInterface;
 use Heidi\Oidc\Application\Authorization\IdTokenHintVerifier;
 use Heidi\Oidc\Application\Ciba\UserHintInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Exception\InvalidRequestException;
+use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
 use SensitiveParameter;
 
 /**
@@ -20,7 +20,8 @@ use SensitiveParameter;
  * A token that was not issued here, or was issued to another client, is not a hint that names nobody: it
  * is a request that is wrong about what it carries, and it is refused as such. The token is read exactly
  * where every other ID token this provider takes back is read, against the keys of the tenant; "exp" is
- * not looked at, a hint describing a past sign-in being the ordinary case.
+ * not looked at, a hint describing a past sign-in being the ordinary case. Its "sub" is read for the client
+ * that sent it and never as a key of a row (OIDC Core §8), the token having been written for that client.
  */
 final readonly class IdTokenUserHint implements UserHintInterface
 {
@@ -30,7 +31,7 @@ final readonly class IdTokenUserHint implements UserHintInterface
 
     public function __construct(
         private IdTokenHintVerifier $hints,
-        private UserRepositoryInterface $users,
+        private PresentedSubjectReaderInterface $subjects,
     ) {
     }
 
@@ -46,6 +47,6 @@ final readonly class IdTokenUserHint implements UserHintInterface
             throw new InvalidRequestException(self::NOT_FOR_CLIENT);
         }
 
-        return $this->users->findBySubject($client->tenant, $hint->subject);
+        return $this->subjects->findUser($client, $hint->subject);
     }
 }

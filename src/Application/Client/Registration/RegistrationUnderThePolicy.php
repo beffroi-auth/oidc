@@ -29,13 +29,15 @@ use Heidi\Oidc\Exception\UnreadableClientMetadataException;
  * registration exists; the members the policy writes, which it writes on a confidential client and never
  * on a public one (decision 0017); the secret, which the provider assigns exactly when the registered
  * method proves one and which a client that already holds one keeps; then the registration itself, read
- * by the one reader every registration goes through and held to what its tenant offers.
+ * by the one reader every registration goes through, held to what its tenant offers and held to the sector
+ * it claims, which is the one claim of a registration that is proved somewhere other than in the request.
  */
 final readonly class RegistrationUnderThePolicy
 {
     public function __construct(
         private ClientMetadataReader $reader,
         private RegistrationHeldToTheTenant $tenantOffer,
+        private RegistrationHeldToItsSector $sector,
         private SecretDrawer $secrets,
         private PasswordHasherInterface $hasher,
     ) {
@@ -79,6 +81,7 @@ final readonly class RegistrationUnderThePolicy
 
         $registration = $this->reader->read($clientId, $metadata, $secret !== null);
         $this->tenantOffer->assertHolds($tenant, $registration, $metadata);
+        $this->sector->assertHolds($registration, $metadata);
 
         return new KeptRegistration($members, $assigned->members(), $secret, $drawn);
     }
