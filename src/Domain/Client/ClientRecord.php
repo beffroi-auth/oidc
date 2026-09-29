@@ -40,10 +40,18 @@ use Symfony\Component\Uid\Uuid;
  *
  * A replacement (RFC 7592 §2.2) is the same client under the same identifier: the row changes, and what
  * the provider assigned to it stays, the identifier, the date it was drawn on and the token it is read
- * with. An update is whole and never a patch, which is why what changes is given all at once.
+ * with. An update is whole and never a patch, which is why what changes is given all at once. The date of
+ * the last use is not part of a registration either: replacing one is not using the client.
  */
 final class ClientRecord
 {
+    /**
+     * When somebody last used this client (decision 0009): an authorization granted for it, a request it
+     * made at the token endpoint. Null for a client that has never been used, which is not the same as one
+     * used long ago and is not kept for as long.
+     */
+    public private(set) ?DateTimeImmutable $lastUsedAt = null;
+
     /**
      * @param array<string, mixed> $metadata the members of RFC 7591 §2 the client registered, as it registered them
      * @param array<string, mixed> $assigned the members the registration policy of the tenant wrote on this registration (decision 0017); empty for a policy that writes none
@@ -80,6 +88,18 @@ final class ClientRecord
     public function belongsTo(Tenant $tenant): bool
     {
         return $this->tenant->equals($tenant);
+    }
+
+    /**
+     * Somebody used this client at that instant. **The date only moves forward**: the two events that say
+     * so are written to a queue and read from it, so they arrive in whatever order the queue gives them,
+     * and a use recorded late must not make a client look older than it is.
+     */
+    public function recordUse(DateTimeImmutable $at): void
+    {
+        if ($this->lastUsedAt === null || $at > $this->lastUsedAt) {
+            $this->lastUsedAt = $at;
+        }
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Bridge\Configuration;
 
+use DateInterval;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
 use Heidi\Oidc\Port\ClientRegistrationPolicyInterface;
@@ -23,11 +24,15 @@ final readonly class ConfigurationClientRegistrationPolicy implements ClientRegi
     /**
      * @param string|null $mode what authorises a registration on this tenant, under the name the class that is that mode gives itself; null or empty for a deployment that registers nobody
      * @param bool $exemptsConfidentialClientsFromPkce decision 0017
+     * @param DateInterval|null $keepsAClientUnusedFor decision 0009; null for the default of the policy
+     * @param DateInterval|null $keepsAClientNeverUsedFor decision 0009; null for the default of the policy
      */
     public function __construct(
         private string $tenantSlug,
         private ?string $mode = null,
         private bool $exemptsConfidentialClientsFromPkce = false,
+        private ?DateInterval $keepsAClientUnusedFor = null,
+        private ?DateInterval $keepsAClientNeverUsedFor = null,
     ) {
     }
 
@@ -37,6 +42,11 @@ final readonly class ConfigurationClientRegistrationPolicy implements ClientRegi
             return null;
         }
 
-        return new ClientRegistrationPolicy($this->mode, $this->exemptsConfidentialClientsFromPkce);
+        return new ClientRegistrationPolicy(
+            $this->mode,
+            $this->exemptsConfidentialClientsFromPkce,
+            $this->keepsAClientUnusedFor ?? new DateInterval(ClientRegistrationPolicy::UNUSED_FOR),
+            $this->keepsAClientNeverUsedFor ?? new DateInterval(ClientRegistrationPolicy::NEVER_USED_FOR),
+        );
     }
 }

@@ -9,13 +9,16 @@ use function array_find;
 use function array_values;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\ClientRecord;
+use function array_slice;
+use Heidi\Oidc\Domain\Client\Registration\ClientRetention;
 use Heidi\Oidc\Port\ClientStoreInterface;
+use Heidi\Oidc\Port\UnusedClientsInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process. A row written twice is one row, as it
  * is in a store keyed by the identifier the provider drew.
  */
-final class InMemoryClientStore implements ClientStoreInterface
+final class InMemoryClientStore implements ClientStoreInterface, UnusedClientsInterface
 {
     /**
      * @var list<ClientRecord>
@@ -39,6 +42,23 @@ final class InMemoryClientStore implements ClientStoreInterface
             $this->records,
             static fn (ClientRecord $record): bool => $record->belongsTo($tenant) && $record->clientId === $clientId,
         );
+    }
+
+    public function unusedIn(Tenant $tenant, ClientRetention $retention, int $limit): array
+    {
+        $unused = array_values(array_filter(
+            $this->records,
+            static fn (ClientRecord $record): bool => (
+                $record->belongsTo($tenant)
+                && (
+                    $record->lastUsedAt === null
+                        ? $record->issuedAt < $retention->registeredSince
+                        : $record->lastUsedAt < $retention->usedSince
+                )
+            ),
+        ));
+
+        return $limit < 1 ? [] : array_slice($unused, 0, $limit);
     }
 
     public function remove(ClientRecord $record): void

@@ -6,10 +6,7 @@ namespace Heidi\Oidc\Application\Client\Registration;
 
 use Heidi\Core\Domain\Session\RequestContext;
 use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Event\RegisteredClientDeleted;
 use Heidi\Oidc\Exception\UnauthorizedClientConfigurationException;
-use Heidi\Oidc\Port\ClientStoreInterface;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
 
 /**
@@ -17,20 +14,15 @@ use SensitiveParameter;
  * holds a client for, so the same request made again is refused exactly as one of a client nobody
  * registered.
  *
- * It emits the one event a client going away emits, whichever way it went: the timed step that drops a
- * client nobody uses emits the same one, because one thing happened.
- *
- * What becomes of a consent, a grant or a refresh token family that named this client is not read here.
- * Nothing of them can be spent any more, a record whose client no longer resolves being a record nobody
- * finds; what is done with the rows themselves is answered where rows that can no longer do anything are
- * answered for, and this endpoint calls it.
+ * What it does with the client is what the timed step does with one nobody uses any more
+ * (`RegisteredClientRemoval`): one thing removes a client and one event says it is gone, because one thing
+ * happened whichever way it happened.
  */
 final readonly class ClientConfigurationRemoval
 {
     public function __construct(
         private ClientConfigurationAccess $access,
-        private ClientStoreInterface $clients,
-        private EventDispatcherInterface $events,
+        private RegisteredClientRemoval $removal,
     ) {
     }
 
@@ -44,8 +36,6 @@ final readonly class ClientConfigurationRemoval
         ?string $authorizationHeader,
         RequestContext $context,
     ): void {
-        $record = $this->access->granted($tenant, $clientId, $authorizationHeader);
-        $this->clients->remove($record);
-        $this->events->dispatch(new RegisteredClientDeleted($context->receivedAt, $tenant, $record->clientId, $context));
+        $this->removal->remove($this->access->granted($tenant, $clientId, $authorizationHeader), $context);
     }
 }
