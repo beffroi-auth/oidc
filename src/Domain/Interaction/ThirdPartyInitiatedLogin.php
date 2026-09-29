@@ -6,7 +6,7 @@ namespace Heidi\Oidc\Domain\Interaction;
 
 use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Domain\Client\ClientUri;
+use Heidi\Oidc\Domain\Client\InitiateLoginUri;
 use Heidi\Oidc\Domain\Client\RedirectUri;
 
 /**
@@ -20,8 +20,8 @@ use Heidi\Oidc\Domain\Client\RedirectUri;
  * and nothing from the request that asked for it: a destination read from a query string would make this
  * provider a redirector for whoever found the route, and a "target_link_uri" forwarded from one would
  * make it a redirector with a landing page of the caller's choosing. The rule holds by what this takes
- * rather than by what it checks, which is why the destination is the ClientUri the client registered and
- * the landing page the RedirectUri it registered, both objects and neither a string.
+ * rather than by what it checks, which is why the destination is the InitiateLoginUri the client registered
+ * and the landing page the RedirectUri it registered, both objects and neither a string.
  */
 final readonly class ThirdPartyInitiatedLogin
 {
@@ -42,7 +42,7 @@ final readonly class ThirdPartyInitiatedLogin
      *                                        client registered
      */
     public function __construct(
-        public ClientUri $initiateLoginUri,
+        public InitiateLoginUri $initiateLoginUri,
         public Issuer $issuer,
         public ?Subject $loginHint = null,
         public ?RedirectUri $targetLinkUri = null,
@@ -60,7 +60,7 @@ final readonly class ThirdPartyInitiatedLogin
     }
 
     /**
-     * The query the client registered is kept and these are added to it (ClientUri::withParameters): a
+     * The query the client registered is kept and these are added to it (InitiateLoginUri::withParameters): a
      * client that registered an "initiate_login_uri" with a query of its own is sent to the URI it
      * registered, not to a rewriting of it.
      */

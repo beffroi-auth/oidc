@@ -32,6 +32,7 @@ use Heidi\Oidc\Domain\Client\ClientPresentation;
 use Heidi\Oidc\Domain\Client\ClientRegistration;
 use Heidi\Oidc\Domain\Client\ClientUri;
 use Heidi\Oidc\Domain\Client\GrantTypeName;
+use Heidi\Oidc\Domain\Client\InitiateLoginUri;
 use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
 use Heidi\Oidc\Domain\Client\Metadata\NestedMembers;
 use Heidi\Oidc\Domain\Client\RedirectUri;
@@ -261,7 +262,7 @@ final readonly class ClientMetadataReader
                 $this->flag($clientId, 'tls_client_certificate_bound_access_tokens', $metadata),
                 $this->subjectType($clientId, $metadata),
                 $this->clientUri($clientId, 'sector_identifier_uri', $metadata),
-                $this->clientUri($clientId, 'initiate_login_uri', $metadata),
+                $this->initiateLoginUri($clientId, $metadata),
                 $this->text($clientId, 'software_id', $metadata),
                 $this->text($clientId, 'software_version', $metadata),
             );
@@ -983,9 +984,8 @@ final readonly class ClientMetadataReader
     /**
      * A URI the provider calls, loads or shows: where a logout token goes (Back-Channel Logout 1.0 §2.2),
      * what the logout page frames (Front-Channel Logout 1.0 §3), where the keys of the client are read back
-     * from, where a login this provider begins is started (OIDC Core §4), and every page a user is shown
-     * about the client. Read and validated as every other URI a client registers, which is what refuses a
-     * logo served in plain HTTP on a name.
+     * from, and every page a user is shown about the client. Read and validated as every other URI a client
+     * registers, which is what refuses a logo served in plain HTTP on a name.
      *
      * @throws UnreadableClientMetadataException
      */
@@ -994,6 +994,26 @@ final readonly class ClientMetadataReader
         $uri = $this->text($clientId, $option, $metadata);
 
         return $uri === null ? null : self::uri($uri, $option, $metadata->sourceOf($option));
+    }
+
+    /**
+     * Where a third party has this provider begin a login at the client (OIDC Core §4), the one member
+     * OIDC Registration §2 holds to "https" whatever the host, and a kind of its own for that reason
+     * (InitiateLoginUri).
+     *
+     * @throws UnreadableClientMetadataException
+     */
+    private function initiateLoginUri(string $clientId, ClientMetadata $metadata): ?InitiateLoginUri
+    {
+        $value = $this->text($clientId, 'initiate_login_uri', $metadata);
+        if ($value === null) {
+            return null;
+        }
+        try {
+            return new InitiateLoginUri($value);
+        } catch (InvalidArgumentException $exception) {
+            throw self::keeping($exception, 'initiate_login_uri', $metadata->sourceOf('initiate_login_uri'));
+        }
     }
 
     /**
