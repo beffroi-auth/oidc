@@ -28,10 +28,11 @@ use Heidi\Oidc\Exception\UnreadableClientMetadataException;
  * an authorisation put in front of them (RFC 7591 §3.1.1) and in front of the defaults of §2; the
  * authentication method read on its own, because two answers hang on that one member before the
  * registration exists; the members the policy writes, which it writes on a confidential client and never
- * on a public one (decision 0017); the secret, which the provider assigns exactly when the registered
- * method proves one and which a client that already holds one keeps; then the registration itself, read
- * by the one reader every registration goes through, held to what its tenant offers and held to the sector
- * it claims, which is the one claim of a registration that is proved somewhere other than in the request.
+ * on a public one and only where the registration names none of them (decision 0017); the secret, which the
+ * provider assigns exactly when the registered method proves one and which a client that already holds one
+ * keeps; then the registration itself, read by the one reader every registration goes through, held to what
+ * its tenant offers and held to the sector it claims, which is the one claim of a registration that is
+ * proved somewhere other than in the request.
  */
 final readonly class RegistrationUnderThePolicy
 {
@@ -89,9 +90,11 @@ final readonly class RegistrationUnderThePolicy
 
         // What the policy writes is known only once the method is: it exempts a confidential client from
         // PKCE and never a public one (decision 0017), and the provider assigns a secret exactly when the
-        // method proves one (RFC 7591 §3.2.1). One member answers both, and it is read once.
-        $method = $this->reader->authenticationMethodOf($clientId, new ClientMetadata([...$sent, new SpecifiedDefaults()]));
-        $assigned = new AssignedMembers($policy?->membersWrittenOn($method) ?? []);
+        // method proves one (RFC 7591 §3.2.1). One member answers both, and it is read once. The policy
+        // reads the same registration to leave alone every member that registration names itself.
+        $registered = new ClientMetadata([...$sent, new SpecifiedDefaults()]);
+        $method = $this->reader->authenticationMethodOf($clientId, $registered);
+        $assigned = new AssignedMembers($policy?->membersWrittenOn($method, $registered) ?? []);
         $metadata = new ClientMetadata([...$sent, $assigned, new SpecifiedDefaults()]);
 
         $drawn = null;

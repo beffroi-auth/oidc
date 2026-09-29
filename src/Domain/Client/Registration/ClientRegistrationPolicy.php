@@ -8,6 +8,8 @@ use function array_find;
 use DateInterval;
 use DateTimeImmutable;
 use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Heidi\Oidc\Domain\Scope\Scopes;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 
 /**
@@ -25,6 +27,13 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
  * 0008 on the confidential clients its policy registers, never on a public one. It is a field of this
  * policy and of nothing global, it is written on a registration at the moment the policy creates it, and
  * nothing a client sends grants it.
+ *
+ * The default set of scopes is the tenant's too (RFC 7591 §2: "If omitted, an authorization server MAY
+ * register a client with a default set of scopes"). A client that names its own scopes keeps them and a
+ * tenant that writes none registers a client with "openid" alone, which is what the registration itself
+ * takes when nobody says otherwise. It is a field of this policy for the same reason the exemption is: what
+ * one tenant hands out is unknown to another, and what a tenant hands out at all is what it announces, so
+ * a default outside that is refused where every registered scope is (`RegistrationHeldToTheTenant`).
  *
  * The authorities whose software statements it accepts are the tenant's and are written here (RFC 7591
  * §2.3, `StatementIssuer`): the attested mode reads them, and a tenant that pins none has that mode
@@ -58,6 +67,7 @@ final readonly class ClientRegistrationPolicy
      * @param DateInterval $keepsAClientUnusedFor how long a client that was used may go without being used again before it is deleted
      * @param DateInterval $keepsAClientNeverUsedFor how long a client that was never used lives at all, which the open mode makes the shorter of the two
      * @param list<StatementIssuer> $statementIssuers the authorities whose software statements this tenant accepts (RFC 7591 §2.3); none for a tenant that pins nobody, which is every tenant that wrote none
+     * @param Scopes|null $defaultScopes what a registration that names no scope is registered with (RFC 7591 §2); null for a tenant that writes none, whose registrations take "openid" alone
      *
      * @throws InvalidArgumentException when the policy names no mode
      */
@@ -67,6 +77,7 @@ final readonly class ClientRegistrationPolicy
         public DateInterval $keepsAClientUnusedFor = new DateInterval(self::UNUSED_FOR),
         public DateInterval $keepsAClientNeverUsedFor = new DateInterval(self::NEVER_USED_FOR),
         public array $statementIssuers = [],
+        public ?Scopes $defaultScopes = null,
     ) {
         if ($mode === '') {
             throw new InvalidArgumentException('A registration policy names what authorises a registration (decision 0009); a tenant that authorises none has no policy at all.');
@@ -101,16 +112,28 @@ final readonly class ClientRegistrationPolicy
      * the code it spends is bound to it by the verifier and by nothing else. Its registration is not
      * refused for that, since it asked for nothing.
      *
+     * A member the registration names itself is written here by nobody. The exemption is a member no
+     * client may send at all, so the question does not arise for it; the default set of scopes is a
+     * member a client may send, and what this writes is what a registration that named none is
+     * registered with. It is read again from the row that kept it, in front of what the client sent
+     * (`ClientRecord::asRegistered()`), so a default written over a scope the client did name would
+     * outlive the request that refused to take it.
+     *
+     * @param ClientMetadata $registered what the registration names of itself, the members the client
+     *                                   sent and whatever an authorisation put in front of them
+     *
      * @return array<string, mixed>
      */
-    public function membersWrittenOn(ClientAuthenticationMethodInterface $method): array
+    public function membersWrittenOn(ClientAuthenticationMethodInterface $method, ClientMetadata $registered): array
     {
-        if (! $this->exemptsConfidentialClientsFromPkce || ! $method->authenticatesClient()) {
-            return [];
+        $written = [];
+        if ($this->defaultScopes !== null && ! $registered->has('scope')) {
+            $written['scope'] = (string) $this->defaultScopes;
+        }
+        if ($this->exemptsConfidentialClientsFromPkce && $method->authenticatesClient()) {
+            $written['requires_pkce'] = false;
         }
 
-        return [
-            'requires_pkce' => false,
-        ];
+        return $written;
     }
 }
