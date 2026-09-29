@@ -6,13 +6,17 @@ namespace Heidi\Oidc\Bridge\InMemory;
 
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Client;
+use Heidi\Oidc\Domain\Client\InventoriedClient;
+use Heidi\Oidc\Port\ClientInventoryInterface;
 use Heidi\Oidc\Port\ClientSourceInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryClientRepository implements ClientSourceInterface
+final class InMemoryClientRepository implements ClientInventoryInterface, ClientSourceInterface
 {
+    public const string SOURCE = 'memory';
+
     /**
      * @var list<Client>
      */
@@ -39,6 +43,13 @@ final class InMemoryClientRepository implements ClientSourceInterface
             if ($client->belongsTo($tenant)) {
                 yield $client->registration;
             }
+        }
+    }
+
+    public function inventoryIn(Tenant $tenant): iterable
+    {
+        foreach ($this->registrationsIn($tenant) as $registration) {
+            yield new InventoriedClient(self::SOURCE, $registration->clientId, $registration->presentation->name);
         }
     }
 

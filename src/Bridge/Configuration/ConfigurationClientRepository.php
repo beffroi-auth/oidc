@@ -10,6 +10,8 @@ use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Oidc\Application\Client\ClientMetadataReader;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Domain\Client\ClientSecretInterface;
+use Heidi\Oidc\Domain\Client\InventoriedClient;
+use Heidi\Oidc\Port\ClientInventoryInterface;
 use Heidi\Oidc\Port\ClientSourceInterface;
 use WeakMap;
 
@@ -18,8 +20,14 @@ use WeakMap;
  * on the first lookup. The clients are built per tenant instance, so that a client always points at the
  * tenant of the request that asked for it.
  */
-final class ConfigurationClientRepository implements ClientSourceInterface
+final class ConfigurationClientRepository implements ClientInventoryInterface, ClientSourceInterface
 {
+    /**
+     * What this source calls itself where a person is shown where a client came from: these are the
+     * clients of `heidi.yaml`, and one goes away when its block does.
+     */
+    public const string SOURCE = 'configuration';
+
     /**
      * @var array<string, ClientDefinition>
      */
@@ -88,6 +96,24 @@ final class ConfigurationClientRepository implements ClientSourceInterface
         }
         foreach ($this->definitions as $definition) {
             yield $definition->registration;
+        }
+    }
+
+    /**
+     * A declaration was not registered on a day and has nobody's history behind it, so it carries neither
+     * date: what it is, is what the configuration says today.
+     */
+    public function inventoryIn(Tenant $tenant): iterable
+    {
+        if (! $this->serves($tenant)) {
+            return;
+        }
+        foreach ($this->definitions as $definition) {
+            yield new InventoriedClient(
+                self::SOURCE,
+                $definition->registration->clientId,
+                $definition->registration->presentation->name,
+            );
         }
     }
 }

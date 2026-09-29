@@ -5,19 +5,22 @@ declare(strict_types=1);
 namespace Heidi\Oidc\Bridge\InMemory;
 
 use function array_find;
+use function array_reverse;
 use DateTimeImmutable;
 use Heidi\Core\Domain\Tenant\Tenant;
 use Heidi\Oidc\Domain\Client\Registration\InitialAccessToken;
 use Heidi\Oidc\Port\InitialAccessTokenRepositoryInterface;
+use Heidi\Oidc\Port\IssuedInitialAccessTokensInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * For tests and for the examples: nothing here survives the process, and one process has one request at
  * a time, which is what makes spending a token atomic here.
  */
-final class InMemoryInitialAccessTokenRepository implements InitialAccessTokenRepositoryInterface
+final class InMemoryInitialAccessTokenRepository implements InitialAccessTokenRepositoryInterface, IssuedInitialAccessTokensInterface
 {
     /**
-     * @var list<InitialAccessToken>
+     * @var array<string, InitialAccessToken> by identifier, in the order they were issued
      */
     private array $tokens = [];
 
@@ -27,6 +30,22 @@ final class InMemoryInitialAccessTokenRepository implements InitialAccessTokenRe
             $this->tokens,
             static fn (InitialAccessToken $token): bool => $token->belongsTo($tenant) && $token->matches($digest),
         );
+    }
+
+    public function find(Tenant $tenant, Uuid $id): ?InitialAccessToken
+    {
+        $token = $this->tokens[$id->toRfc4122()] ?? null;
+
+        return $token?->belongsTo($tenant) === true ? $token : null;
+    }
+
+    public function issuedIn(Tenant $tenant): iterable
+    {
+        foreach (array_reverse($this->tokens) as $token) {
+            if ($token->belongsTo($tenant)) {
+                yield $token;
+            }
+        }
     }
 
     public function spend(InitialAccessToken $token, DateTimeImmutable $now): bool
@@ -39,8 +58,12 @@ final class InMemoryInitialAccessTokenRepository implements InitialAccessTokenRe
         return true;
     }
 
+    /**
+     * A token saved twice is one token: what is kept is by identifier, so writing back one that was
+     * revoked replaces the row rather than adding a second of the same name.
+     */
     public function save(InitialAccessToken $token): void
     {
-        $this->tokens[] = $token;
+        $this->tokens[$token->id->toRfc4122()] = $token;
     }
 }
