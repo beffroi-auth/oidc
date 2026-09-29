@@ -16,6 +16,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
 use Heidi\Oidc\Exception\InvalidClientMetadataException;
 use Heidi\Oidc\Port\PairwiseSaltInterface;
 use Heidi\Oidc\Port\PairwiseSubjectRepositoryInterface;
+use Heidi\Oidc\Port\SectorIdentifiersInterface;
 use Heidi\Oidc\Port\SubjectIdentifierKindInterface;
 use function hash;
 use Psr\Clock\ClockInterface;
@@ -44,6 +45,7 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
     public const string SUBJECT_TYPE = 'pairwise';
 
     public function __construct(
+        private SectorIdentifiersInterface $sectors,
         private PairwiseSaltInterface $salts,
         private PairwiseSubjectRepositoryInterface $assigned,
         private UuidGeneratorInterface $uuids,
@@ -58,7 +60,7 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
 
     public function resolve(User $user, Client $client): Subject
     {
-        $sector = SectorIdentifier::of($client->registration);
+        $sector = $this->sectors->sectorOf($client->registration);
         $subject = self::identifier($sector, $user, $this->salts->saltOf($user->tenant));
         $this->assigned->record(new PairwiseSubject($this->uuids->timeOrdered(), $user, $sector, $subject, $this->clock->now()));
 
@@ -72,7 +74,7 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
     public function findUser(Client $client, Subject $subject): ?User
     {
         try {
-            $sector = SectorIdentifier::of($client->registration);
+            $sector = $this->sectors->sectorOf($client->registration);
         } catch (InvalidArgumentException) {
             return null;
         }
@@ -81,14 +83,16 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
     }
 
     /**
-     * A client of this kind has a sector, and what says which one is what it registered (OIDC Core §8.1). A
-     * client that registers redirection URIs on several hosts and no "sector_identifier_uri" names no sector,
-     * and it is refused here rather than served an identifier computed from whichever host came first.
+     * A client of this kind has a sector, and what says which one is what it registered, read through every
+     * source the deployment wired (OIDC Core §8.1, CIBA Core §4). A client that registers redirection URIs
+     * on several hosts and no "sector_identifier_uri", and a client that registers no redirection URI and
+     * no "jwks_uri" either, name no sector, and both are refused here rather than served an identifier
+     * computed from whichever value came first.
      */
     public function assertAssignable(ClientRegistration $registration): void
     {
         try {
-            SectorIdentifier::of($registration);
+            $this->sectors->sectorOf($registration);
         } catch (InvalidArgumentException $exception) {
             throw new InvalidClientMetadataException('sector_identifier_uri', null, $exception->getMessage(), $exception);
         }

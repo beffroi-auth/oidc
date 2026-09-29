@@ -10,6 +10,7 @@ use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
 use Heidi\Oidc\Exception\InvalidClientMetadataException;
 use Heidi\Oidc\Exception\SectorIdentifierUnavailableException;
 use Heidi\Oidc\Port\SectorIdentifierDocumentFetcherInterface;
+use Heidi\Oidc\Port\SectorIdentifiersInterface;
 use function sprintf;
 
 /**
@@ -25,11 +26,18 @@ use function sprintf;
  * replacement of RFC 7592 §2.2, and nowhere else: reading a stored client back is not the moment a claim is
  * made, and a declaration of a deployment claims nothing, the deployment being the authority over what it
  * declares. A document that cannot be read is a refusal and never a client registered anyway.
+ *
+ * **Which URIs the document must list is the sources' to say and not this class's** (`SectorIdentifiers`):
+ * what a client publishes to back its claim is what it would otherwise have been judged on, so an ordinary
+ * client publishes its redirection URIs (OIDC Registration §5) and a client that registers none publishes
+ * the "jwks_uri" its sector would have been read from (CIBA Core §4). A source wired later is asked for its
+ * own the same way, and nothing here enumerates them.
  */
 final readonly class RegistrationHeldToItsSector
 {
     public function __construct(
         private SectorIdentifierDocumentFetcherInterface $documents,
+        private SectorIdentifiersInterface $sectors,
     ) {
     }
 
@@ -47,12 +55,12 @@ final readonly class RegistrationHeldToItsSector
         } catch (SectorIdentifierUnavailableException $exception) {
             throw $this->refusal($metadata, $exception->getMessage(), $exception);
         }
-        foreach ($registration->redirectUris as $redirectUri) {
-            if (! in_array($redirectUri->value, $listed, true)) {
+        foreach ($this->sectors->publishedUris($registration) as $uri) {
+            if (! in_array($uri, $listed, true)) {
                 throw $this->refusal($metadata, sprintf(
-                    'The document at %s does not list the redirection URI "%s" of the client "%s" (OIDC Registration section 5).',
+                    'The document at %s does not list the URI "%s" of the client "%s" (OIDC Registration section 5, CIBA Core section 4).',
                     $sectorIdentifierUri->value,
-                    $redirectUri->value,
+                    $uri,
                     $registration->clientId,
                 ));
             }
