@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Application\Client\Method;
 
+use function hash_equals;
 use Heidi\Core\Port\PasswordHasherInterface;
 use Heidi\Oidc\Application\Client\ClientAssertionValidator;
 use Heidi\Oidc\Domain\Client\Client;
@@ -54,6 +55,11 @@ final readonly class ClientSecretJwt extends AssertionMethod implements SecretKe
     public function accepts(ClientSecretInterface $secret): bool
     {
         return $secret instanceof SharedClientSecret;
+    }
+
+    public function holdsSecret(#[SensitiveParameter] string $presented, ClientSecretInterface $kept): bool
+    {
+        return $kept instanceof SharedClientSecret && hash_equals($kept->value, $presented);
     }
 
     protected function verifySignature(UnverifiedJwt $assertion, Client $client): void

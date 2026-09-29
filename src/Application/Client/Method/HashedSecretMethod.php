@@ -48,6 +48,11 @@ abstract readonly class HashedSecretMethod implements AuthenticationMethodInterf
         return $secret instanceof HashedClientSecret;
     }
 
+    public function holdsSecret(#[SensitiveParameter] string $presented, ClientSecretInterface $kept): bool
+    {
+        return $kept instanceof HashedClientSecret && $this->hasher->verify($kept->hash, $presented);
+    }
+
     /**
      * @throws ClientNotAuthenticatedHereException when the request no longer carries the secret the
      *                                                authenticator read, or when the client is kept in a
