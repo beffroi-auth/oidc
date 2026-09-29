@@ -2,21 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba\Hint;
+namespace Heidi\Oidc\Application\Hint;
 
 use Heidi\Core\Domain\Identity\Subject;
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Core\Exception\InvalidArgumentException;
-use Heidi\Oidc\Application\Ciba\UserHintInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
 use SensitiveParameter;
 
 /**
- * A "login_hint" read as the "sub" this provider issues (CIBA Core §7.1, §15). It is the identifier the
- * client already has of that user and the one §15 asks for in place of a static global one: a telephone
- * number or an email address in a login hint is a value that says who somebody is everywhere, and this
- * one says it here and to this provider only.
+ * A "login_hint" read as the "sub" this provider issues (OIDC Core §3.1.2.1, CIBA Core §7.1, §15). It is
+ * the identifier the client already has of that user and the one §15 asks for in place of a static global
+ * one: a telephone number or an email address in a login hint is a value that says who somebody is
+ * everywhere, and this one says it here and to this provider only. It is also the one value this provider
+ * writes itself, in the "login_hint" of a login it begins at the client (OIDC Core §4), so reading it back
+ * is what makes that hint worth carrying.
  *
  * A value that is not a subject at all names nobody, exactly as a subject that belongs to nobody does:
  * the two answers are the same answer. The hint is read for the client that sent it and never as a key of

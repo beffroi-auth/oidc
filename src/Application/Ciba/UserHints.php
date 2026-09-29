@@ -6,6 +6,7 @@ namespace Heidi\Oidc\Application\Ciba;
 
 use function count;
 use Heidi\Core\Domain\Identity\User;
+use Heidi\Oidc\Application\Hint\UserHintInterface;
 use Heidi\Oidc\Application\Request\RequestParameters;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Exception\InvalidRequestException;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Heidi\Oidc\Application\Hint;
 
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Oidc\Domain\Client\Client;
@@ -10,7 +10,9 @@ use Heidi\Oidc\Exception\OAuth2Exception;
 use SensitiveParameter;
 
 /**
- * One way a backchannel authentication request may name the user it is made for (CIBA Core §7.1). One
+ * One way a request may name the user it is made for, whichever side of the provider it arrives on: the
+ * authorization request a browser carries (OIDC Core §3.1.2.1) and the backchannel authentication request
+ * a client makes (CIBA Core §7.1) carry the same "login_hint", and this provider reads it one way. One
  * class per way, wired into the provider: what a request of this tenant may name its user by is what is
  * wired, and a hint the provider gains is a class added rather than a case read somewhere.
  *
@@ -21,8 +23,9 @@ use SensitiveParameter;
 interface UserHintInterface
 {
     /**
-     * The name of the parameter this hint arrives in (CIBA Core §7.1), one of the three that specification
-     * names and no other.
+     * The name of the parameter this hint arrives in, which is what the composite of each side picks a
+     * reading by: one of the three CIBA Core §7.1 names on the backchannel side, "login_hint" on the
+     * authorization one.
      */
     public function parameterName(): string;
 

@@ -6,7 +6,7 @@ namespace Heidi\Oidc\Application\Ciba\Hint;
 
 use Heidi\Core\Domain\Identity\User;
 use Heidi\Oidc\Application\Authorization\IdTokenHintVerifier;
-use Heidi\Oidc\Application\Ciba\UserHintInterface;
+use Heidi\Oidc\Application\Hint\UserHintInterface;
 use Heidi\Oidc\Domain\Client\Client;
 use Heidi\Oidc\Exception\InvalidRequestException;
 use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
