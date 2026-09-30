@@ -15,6 +15,14 @@ use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
  * from a URL its client registered, which decision 0006 makes a rule and not an option. The algorithms
  * are the ones the provider verifies signatures with; "none" stands beside them only when a client of
  * the tenant registered it.
+ *
+ * What the member says is what a client of this tenant may register and be read under, and never what any
+ * client is read under: the grant is carried by a client and by neither the tenant nor a global setting
+ * (decision 0012), so "none" among the values means one client of the tenant registered it, not that an
+ * unsigned object is read from whoever publishes one. A client that registered nothing is read under any
+ * of the wired algorithms and never unsigned (AnyRegisteredAlgorithm), so a caller that reads the member
+ * as a promise made to itself is refused, which is what one module of the Dynamic OP plan does
+ * (oidcc-request-uri-unsigned, issue #385, the "known" list of CONFORMANCE_PLANS).
  */
 final readonly class AnnouncedRequestObjects implements MetadataContributorInterface
 {
