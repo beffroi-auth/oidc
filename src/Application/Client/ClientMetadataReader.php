@@ -36,6 +36,7 @@ use Heidi\Oidc\Domain\Client\InitiateLoginUri;
 use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
 use Heidi\Oidc\Domain\Client\Metadata\NestedMembers;
 use Heidi\Oidc\Domain\Client\RedirectUri;
+use Heidi\Oidc\Domain\Client\RequestUri;
 use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\OneRegisteredAlgorithm;
 use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
@@ -248,7 +249,7 @@ final readonly class ClientMetadataReader
                 $this->certificateIdentity($clientId, $metadata),
                 $this->flag($clientId, 'require_pushed_authorization_requests', $metadata),
                 $this->requestObjectSigning($clientId, $metadata),
-                $this->clientUris($clientId, 'request_uris', $metadata),
+                $this->requestUris($clientId, $metadata),
                 $authorizationResponse,
                 $userInfo,
                 $this->flag($clientId, 'require_sender_constrained_tokens', $metadata),
@@ -964,18 +965,22 @@ final readonly class ClientMetadataReader
     }
 
     /**
-     * A member that carries a list of URLs the provider reads or calls (OIDC Registration §2
-     * "request_uris").
+     * The URLs a request object of the client is read back from (OIDC Registration §2 "request_uris"), each
+     * of the kind that may carry the fragment OIDC Core §6.2 defines (RequestUri).
      *
      * @throws UnreadableClientMetadataException
      *
-     * @return list<ClientUri>
+     * @return list<RequestUri>
      */
-    private function clientUris(string $clientId, string $option, ClientMetadata $metadata): array
+    private function requestUris(string $clientId, ClientMetadata $metadata): array
     {
         $uris = [];
-        foreach ($this->stringList($clientId, $option, $metadata) as $value) {
-            $uris[] = self::uri($value, $option, $metadata->sourceOf($option));
+        foreach ($this->stringList($clientId, 'request_uris', $metadata) as $value) {
+            try {
+                $uris[] = new RequestUri($value);
+            } catch (InvalidArgumentException $exception) {
+                throw self::keeping($exception, 'request_uris', $metadata->sourceOf('request_uris'));
+            }
         }
 
         return $uris;

@@ -66,7 +66,7 @@ final readonly class ClientRegistration
     public array $grantTypes;
 
     /**
-     * @var list<ClientUri>
+     * @var list<RequestUri>
      */
     public array $requestUris;
 
@@ -112,7 +112,7 @@ final readonly class ClientRegistration
      * @param list<ResourceIndicator> $resources the resources this client may ask a token for ("resource", RFC 8707 §2); a closed list like every other, so a resource outside it is "invalid_target". A client that registers none asks for none and its tokens are addressed to itself
      * @param list<string> $authorizationDetailsTypes the types of authorization detail this client may ask for ("authorization_details", RFC 9396 §2, §11), among the ones the provider is wired with, which is read where a registration meets that wiring; a closed list like every other, so a type outside it is "invalid_authorization_details". A client that registers none asks for none
      * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
-     * @param list<ClientUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
+     * @param list<RequestUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
      * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
      * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
      * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
@@ -175,7 +175,7 @@ final readonly class ClientRegistration
         $this->redirectUris = self::unique($redirectUris, $sameUri);
         $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris, $sameUri);
         $this->grantTypes = self::unique($grantTypes, static fn (GrantTypeName $a, GrantTypeName $b): bool => $a->equals($b));
-        $this->requestUris = self::unique($requestUris, static fn (ClientUri $a, ClientUri $b): bool => $a->equals($b));
+        $this->requestUris = self::unique($requestUris, static fn (RequestUri $a, RequestUri $b): bool => $a->equals($b));
         $this->resources = self::unique($resources, static fn (ResourceIndicator $a, ResourceIndicator $b): bool => $a->equals($b));
         $this->authorizationDetailsTypes = self::uniqueNames($authorizationDetailsTypes);
 
@@ -208,14 +208,14 @@ final readonly class ClientRegistration
     }
 
     /**
-     * OIDC Core §6.2, OIDC Registration §2 "request_uris": byte for byte, as every other URL a client
-     * registers. The provider reads a request object back from a URL the client registered and from no
-     * other, which is what "require_request_uri_registration" announces. What comes back is the
+     * OIDC Core §6.2, OIDC Registration §2 "request_uris": byte for byte, fragment included, as every other
+     * URL a client registers. The provider reads a request object back from a URL the client registered and
+     * from no other, which is what "require_request_uri_registration" announces. What comes back is the
      * registration itself, validated at boot, so that nothing reads a URL a request wrote.
      */
-    public function registeredRequestUri(string $requestUri): ?ClientUri
+    public function registeredRequestUri(string $requestUri): ?RequestUri
     {
-        return array_find($this->requestUris, static fn (ClientUri $registered): bool => $registered->value === $requestUri);
+        return array_find($this->requestUris, static fn (RequestUri $registered): bool => $registered->value === $requestUri);
     }
 
     /**

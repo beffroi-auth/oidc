@@ -142,7 +142,9 @@ final readonly class RequestObjectResolver
     /**
      * RFC 9101 §5.2, OIDC Core §6.2: read back from the URL the client registered and from no other.
      * The URL is compared with the registration before anything leaves the process, so an unregistered
-     * one costs the provider one comparison and no request at all (decision 0006).
+     * one costs the provider one comparison and no request at all (decision 0006). What is compared is
+     * the URI the client registered, fragment included, and what is read is the URL without it: §6.2
+     * gives that fragment a meaning, and a fragment is never sent to a server (RequestUri).
      *
      * @throws OAuth2Exception
      */
@@ -153,7 +155,7 @@ final readonly class RequestObjectResolver
             throw new InvalidRequestUriException('The request_uri parameter names no URL this client registered (OIDC Discovery section 3, require_request_uri_registration).');
         }
         try {
-            return $this->references->fetch($registered);
+            return $this->references->fetch($registered->location);
         } catch (RequestObjectUnavailableException $exception) {
             throw new InvalidRequestUriException('The request object behind the request_uri parameter cannot be read back.', $exception);
         }
