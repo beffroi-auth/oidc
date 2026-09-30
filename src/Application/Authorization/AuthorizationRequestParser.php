@@ -16,6 +16,7 @@ use Heidi\Oidc\Exception\OAuth2Exception;
 use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
 use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
 use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Heidi\Oidc\Port\CodeChallengeMethodsInterface;
 use Heidi\Oidc\Port\ServedResponseModesInterface;
 use function sprintf;
 
@@ -39,13 +40,17 @@ final readonly class AuthorizationRequestParser
 
     private RequestedAuthorizationDetails $authorizationDetails;
 
+    private RequestedCodeChallenge $codeChallenge;
+
     public function __construct(
         private ClientRepositoryInterface $clients,
         ServedResponseModesInterface $responseModes,
         AuthorizationDetailsReaderInterface $authorizationDetailTypes,
+        CodeChallengeMethodsInterface $codeChallengeMethods,
     ) {
         $this->responseMode = new RequestedResponseMode($responseModes);
         $this->authorizationDetails = new RequestedAuthorizationDetails($authorizationDetailTypes);
+        $this->codeChallenge = new RequestedCodeChallenge($codeChallengeMethods);
     }
 
     /**
@@ -127,7 +132,7 @@ final readonly class AuthorizationRequestParser
             $target->client,
             $target->redirectUri,
             RequestedScopes::of($target->client, $request->required('scope')),
-            RequestedCodeChallenge::of(
+            $this->codeChallenge->of(
                 $target->client,
                 $request->optional('code_challenge'),
                 $request->optional('code_challenge_method'),

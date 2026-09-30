@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Heidi\Oidc\Domain\Authorization;
 
-use Heidi\Oidc\Domain\Token\Base64Url;
-use function hash;
-use function hash_equals;
 use Heidi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use SensitiveParameter;
@@ -27,7 +24,7 @@ final readonly class CodeChallenge
 
     public function __construct(
         public string $value,
-        public CodeChallengeMethod $method,
+        public CodeChallengeMethodInterface $method,
     ) {
         if (! self::hasTheShape($value)) {
             throw new InvalidArgumentException(sprintf('The code challenge "%s" is not 43 to 128 unreserved characters (RFC 7636 §4.2).', $value));
@@ -44,12 +41,11 @@ final readonly class CodeChallenge
     }
 
     /**
-     * RFC 7636 §4.6, compared in constant time; the syntax of the verifier (§4.1) is the caller's check.
+     * RFC 7636 §4.6, asked of the method the challenge was made with: the transformation and the
+     * comparison are its, and the syntax of the verifier (§4.1) is the caller's check.
      */
     public function verifies(#[SensitiveParameter] string $codeVerifier): bool
     {
-        $computed = Base64Url::encode(hash('sha256', $codeVerifier, true));
-
-        return hash_equals($this->value, $computed);
+        return $this->method->verifies($this->value, $codeVerifier);
     }
 }
