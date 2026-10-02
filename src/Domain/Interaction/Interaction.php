@@ -44,7 +44,7 @@ final class Interaction implements ResolvesItsClientInterface
         public readonly string $id,
         public readonly Tenant $tenant,
         public readonly AuthorizationRequest $request,
-        public readonly ?string $locale,
+        public private(set) ?string $locale,
         public readonly DateTimeImmutable $createdAt,
         public readonly DateTimeImmutable $expiresAt,
         public readonly ?string $requestUriHash = null,
@@ -62,6 +62,22 @@ final class Interaction implements ResolvesItsClientInterface
             throw new InvalidArgumentException('An interaction expires after it was created.');
         }
         $this->clientId = $request->client->registration->clientId;
+    }
+
+    /**
+     * The language a visitor asked the pages of this journey to be read in, which outranks what the
+     * client hinted: "ui_locales" is what a client guesses of the preference of whoever it sends over
+     * (OIDC Core §3.1.2.1), and a visitor who asks is that person saying it. The caller has read the tag
+     * against the languages the deployment serves; an interaction that recorded none records this one.
+     *
+     * @throws InvalidArgumentException if the locale is empty
+     */
+    public function readIn(string $locale): void
+    {
+        if ($locale === '') {
+            throw new InvalidArgumentException('The locale of an interaction is either absent or non-empty.');
+        }
+        $this->locale = $locale;
     }
 
     /**
