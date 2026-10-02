@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Exchange;
+namespace Beffroi\Oidc\Domain\Exchange;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
 use function is_string;
 

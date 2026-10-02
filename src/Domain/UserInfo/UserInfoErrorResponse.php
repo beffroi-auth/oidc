@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\UserInfo;
+namespace Beffroi\Oidc\Domain\UserInfo;
 
-use Heidi\Oidc\Domain\Token\TokenResponse;
-use Heidi\Oidc\Exception\ChallengeInterface;
-use Heidi\Oidc\Exception\InsufficientScopeException;
-use Heidi\Oidc\Exception\MissingBearerTokenException;
-use Heidi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Exception\ChallengeInterface;
+use Beffroi\Oidc\Exception\InsufficientScopeException;
+use Beffroi\Oidc\Exception\MissingBearerTokenException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 use function implode;
 use function sprintf;
 

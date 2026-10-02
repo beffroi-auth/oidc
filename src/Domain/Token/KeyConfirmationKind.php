@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 /**
  * Binding to the key the client proved possession of (RFC 9449 §6.1). The token is presented under the

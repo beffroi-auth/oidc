@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
 
 /**
  * The rows of the clients the provider registered itself (RFC 7591 §3.2.1, RFC 7592): where such a client

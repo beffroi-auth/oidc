@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\EndSession;
+namespace Beffroi\Oidc\Domain\EndSession;
 
-use Heidi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
 
 /**
  * The session was ended now, or there was none to end (RP-Initiated Logout §4).

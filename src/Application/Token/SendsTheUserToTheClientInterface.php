@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 /**
  * A grant whose flow sends the user's browser back to the client (RFC 6749 §3.1.2): the authorization it

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use LogicException;
-use Heidi\Core\Domain\Session\AuthenticationMethod;
+use Beffroi\Core\Domain\Session\AuthenticationMethod;
 
 /**
  * What a login at this provider can prove, as "amr" values, every way of signing in together; the

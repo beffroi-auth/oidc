@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use SensitiveParameter;
 use function sprintf;

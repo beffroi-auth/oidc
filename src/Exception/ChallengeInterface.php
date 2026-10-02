@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * A refusal that says how the request should have been made: the scheme a protected resource names in

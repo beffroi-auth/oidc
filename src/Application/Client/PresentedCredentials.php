@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use function array_find;
-use Heidi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
+use Beffroi\Oidc\Domain\Client\Client;
 
 /**
  * What one request presents as its client authentication: the methods that read it, which are one

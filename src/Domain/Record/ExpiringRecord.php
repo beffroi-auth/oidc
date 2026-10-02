@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Record;
+namespace Beffroi\Oidc\Domain\Record;
 
 use DateTimeImmutable;
 

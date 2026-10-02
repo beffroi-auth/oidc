@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\EndSession;
+namespace Beffroi\Oidc\Application\EndSession;
 
 use DateTimeImmutable;
-use Heidi\Core\Application\Authentication\SessionTerminator;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Session\SessionEnd;
-use Heidi\Oidc\Application\Token\RefreshTokenRevocation;
-use Heidi\Oidc\Domain\EndSession\EndSessionDecision;
-use Heidi\Oidc\Domain\EndSession\EndSessionRequest;
-use Heidi\Oidc\Domain\EndSession\LoggedOut;
-use Heidi\Oidc\Domain\EndSession\LogoutConfirmationReason;
-use Heidi\Oidc\Domain\EndSession\LogoutConfirmationRequired;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
+use Beffroi\Core\Application\Authentication\SessionTerminator;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Session\SessionEnd;
+use Beffroi\Oidc\Application\Token\RefreshTokenRevocation;
+use Beffroi\Oidc\Domain\EndSession\EndSessionDecision;
+use Beffroi\Oidc\Domain\EndSession\EndSessionRequest;
+use Beffroi\Oidc\Domain\EndSession\LoggedOut;
+use Beffroi\Oidc\Domain\EndSession\LogoutConfirmationReason;
+use Beffroi\Oidc\Domain\EndSession\LogoutConfirmationRequired;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\AccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
 use Psr\Clock\ClockInterface;
 
 /**

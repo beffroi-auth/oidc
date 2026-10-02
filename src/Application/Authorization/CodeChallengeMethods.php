@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use function array_values;
-use Heidi\Oidc\Domain\Authorization\CodeChallengeMethodInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\CodeChallengeMethodsInterface;
+use Beffroi\Oidc\Domain\Authorization\CodeChallengeMethodInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\CodeChallengeMethodsInterface;
 use function sprintf;
 
 /**

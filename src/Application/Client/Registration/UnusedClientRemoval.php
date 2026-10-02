@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function count;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Port\ClientRegistrationPolicyInterface;
-use Heidi\Oidc\Port\UnusedClientsInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
+use Beffroi\Oidc\Port\UnusedClientsInterface;
 use Psr\Clock\ClockInterface;
 
 /**

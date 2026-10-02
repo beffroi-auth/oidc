@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
-use Heidi\Core\Domain\Event\DomainEventInterface;
+use Beffroi\Core\Domain\Event\DomainEventInterface;
 
 /**
  * An event that says somebody is using a client of this provider. There are two things that mean it, and

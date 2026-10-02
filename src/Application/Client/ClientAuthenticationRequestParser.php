@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Port\CompactJwtReaderInterface;
 use function is_string;
 use function sprintf;
 

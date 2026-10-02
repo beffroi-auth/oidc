@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Consent;
+namespace Beffroi\Oidc\Application\Consent;
 
 use function array_map;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Application\Token\RefreshTokenRevocation;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Event\ConsentRevoked;
-use Heidi\Oidc\Domain\Grant\GrantRecord;
-use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
-use Heidi\Oidc\Port\CanRevokeAccessTokensByConsentInterface;
-use Heidi\Oidc\Port\CanRevokeGrantsByConsentInterface;
-use Heidi\Oidc\Port\ConsentRepositoryInterface;
-use Heidi\Oidc\Port\RefreshTokensOfAConsentInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Application\Token\RefreshTokenRevocation;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Event\ConsentRevoked;
+use Beffroi\Oidc\Domain\Grant\GrantRecord;
+use Beffroi\Oidc\Domain\Token\RevokedTokenHashes;
+use Beffroi\Oidc\Port\CanRevokeAccessTokensByConsentInterface;
+use Beffroi\Oidc\Port\CanRevokeGrantsByConsentInterface;
+use Beffroi\Oidc\Port\ConsentRepositoryInterface;
+use Beffroi\Oidc\Port\RefreshTokensOfAConsentInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Uid\Uuid;

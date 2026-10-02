@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Authorization\RequestObject;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidRequestObjectException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Authorization\RequestObject;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidRequestObjectException;
 use function in_array;
 
 /**

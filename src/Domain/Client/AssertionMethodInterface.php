@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 /**
  * A method whose client proves itself with a JWT it signs (RFC 7523 §2.2, OIDC Core §9). What such an

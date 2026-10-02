@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * RFC 8628 §3.5 "authorization_pending": the user has not answered yet, and the client keeps polling. It

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidTargetException;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidTargetException;
 
 /**
  * What the "resource" parameter of an authorization request must be (RFC 8707 §2.1), judged against the

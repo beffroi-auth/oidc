@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Token\PresentedAccessToken;
-use Heidi\Oidc\Domain\Token\TokenResponse;
-use Heidi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Token\PresentedAccessToken;
+use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Exception\InvalidRequestException;
 use function preg_match;
-use Heidi\Oidc\Port\ServedTokenSchemesInterface;
+use Beffroi\Oidc\Port\ServedTokenSchemesInterface;
 use function strcasecmp;
 
 /**

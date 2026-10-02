@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Page\InlineScript;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Domain\Page\InlineScript;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**

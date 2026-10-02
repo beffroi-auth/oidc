@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Oidc\Domain\Event\ClientInUseInterface;
-use Heidi\Oidc\Port\ClientStoreInterface;
+use Beffroi\Oidc\Domain\Event\ClientInUseInterface;
+use Beffroi\Oidc\Port\ClientStoreInterface;
 
 /**
  * The date a stored client carries of its last use (decision 0009), written from the events that say

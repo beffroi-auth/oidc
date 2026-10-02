@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Issuer;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The claims of a signed authorization response (JARM §2.1): the parameters the answer would have

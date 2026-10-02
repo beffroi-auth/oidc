@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * The request presents nothing that authorises a registration on this tenant (RFC 7591 §1.2): no initial

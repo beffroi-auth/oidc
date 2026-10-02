@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 /**
  * One way a client proves who it is at an endpoint that authenticates it (RFC 6749 §2.3, OIDC Core §9).

@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Device;
+namespace Beffroi\Oidc\Domain\Device;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
-use Heidi\Oidc\Domain\Grant\GrantRecord;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ResolvesItsClientInterface;
+use Beffroi\Oidc\Domain\Grant\GrantRecord;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\LogicException;
 use function max;
 
 /**

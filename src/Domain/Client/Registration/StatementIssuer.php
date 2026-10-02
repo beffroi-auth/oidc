@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Registration;
+namespace Beffroi\Oidc\Domain\Client\Registration;
 
 use function array_any;
-use Heidi\Oidc\Domain\Client\ClientJwks;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use function sprintf;
 

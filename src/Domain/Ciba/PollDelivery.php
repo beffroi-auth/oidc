@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Ciba;
+namespace Beffroi\Oidc\Domain\Ciba;
 
 /**
  * CIBA Core §10.1: the client asks the token endpoint again and again until the request has been

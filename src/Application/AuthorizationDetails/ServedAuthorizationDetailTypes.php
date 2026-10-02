@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\AuthorizationDetails;
+namespace Beffroi\Oidc\Application\AuthorizationDetails;
 
 use function array_is_list;
 use function array_keys;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetail;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetailTypeInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
-use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetail;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetailTypeInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\AuthorizationDetailsReaderInterface;
+use Beffroi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 use function implode;
 use function is_array;
 use function is_string;

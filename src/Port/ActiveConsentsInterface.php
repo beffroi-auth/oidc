@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Consent\Consent;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Consent\Consent;
 
 /**
  * A companion of ConsentRepositoryInterface: what a user has agreed to, for the page of the account where

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
 use function array_any;
 use function array_filter;
 use function array_keys;
 use function array_values;
-use Heidi\Core\Domain\Credential\Credential;
-use Heidi\Core\Domain\Credential\ProvingCredentialInterface;
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
-use Heidi\Core\Domain\Session\AuthenticationMethod;
-use Heidi\Core\Domain\Session\AuthenticationProofs;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Credential\Credential;
+use Beffroi\Core\Domain\Credential\ProvingCredentialInterface;
+use Beffroi\Core\Domain\Session\AuthenticationContextClass;
+use Beffroi\Core\Domain\Session\AuthenticationMethod;
+use Beffroi\Core\Domain\Session\AuthenticationProofs;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * Why a signed-in user is sent to the login page again (decision 0010): the client asked for classes the

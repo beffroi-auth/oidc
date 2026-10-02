@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Domain\Interaction\LoginRequirement;
-use Heidi\Oidc\Domain\Interaction\StepUp;
+use Beffroi\Oidc\Domain\Interaction\LoginRequirement;
+use Beffroi\Oidc\Domain\Interaction\StepUp;
 
 /**
  * What the authentication of an interaction still needs (architecture §4.3): why a login page is asked for,

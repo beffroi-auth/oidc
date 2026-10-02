@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
 use function hash;
 use function hash_equals;
-use Heidi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Oidc\Domain\Token\Base64Url;
 use SensitiveParameter;
 
 /**

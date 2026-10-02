@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Certificate;
+namespace Beffroi\Oidc\Domain\Client\Certificate;
 
 /**
  * What a certificate says about who presented it (RFC 5280 §4.1.2.6, §4.2.1.6), read out of it by a

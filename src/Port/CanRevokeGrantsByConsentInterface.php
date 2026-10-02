@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Grant\GrantRecord;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Grant\GrantRecord;
 
 /**
  * A companion of RecordedGrantsInterface: the grants a user left to a client while that consent was in

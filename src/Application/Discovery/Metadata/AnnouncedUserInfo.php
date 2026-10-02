@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
-use Heidi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
  * OIDC Discovery §3 and OIDC Core §5.3.2: a client may have the UserInfo answer as a JWT signed by the

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Grant;
+namespace Beffroi\Oidc\Domain\Grant;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Record\RecordReadOnce;
+use Beffroi\Oidc\Domain\Record\RecordReadOnce;
 use Symfony\Component\Uid\Uuid;
 
 /**

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\JwtLibrary;
+namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
 use function base64_encode;
-use Heidi\Oidc\Domain\Client\SharedClientSecret;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Port\ClientAssertionSecretVerifierInterface;
+use Beffroi\Oidc\Domain\Client\SharedClientSecret;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Port\ClientAssertionSecretVerifierInterface;
 use function in_array;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;

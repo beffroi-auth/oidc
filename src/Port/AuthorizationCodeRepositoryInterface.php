@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationCode;
 
 /**
  * Where authorization codes wait for the token endpoint (architecture §4.4, §4.5). A used code stays, so

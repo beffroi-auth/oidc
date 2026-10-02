@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Registration;
+namespace Beffroi\Oidc\Domain\Client\Registration;
 
-use Heidi\Oidc\Exception\InvalidClientMetadataException;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use SensitiveParameter;
 
 /**

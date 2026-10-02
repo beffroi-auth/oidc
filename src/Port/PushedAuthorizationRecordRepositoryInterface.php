@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
+use Beffroi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
 
 /**
  * Where the record of a pushed authorization request waits for the authorization endpoint (RFC 9126

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Exchange\TokenTypeIdentifier;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The types of token the exchange is wired to read (RFC 8693 §3). What a client may register in its

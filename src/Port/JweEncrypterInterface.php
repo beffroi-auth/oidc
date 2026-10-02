@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\ResponseEncryption;
-use Heidi\Oidc\Exception\RuntimeException;
+use Beffroi\Oidc\Domain\Client\ResponseEncryption;
+use Beffroi\Oidc\Exception\RuntimeException;
 
 interface JweEncrypterInterface
 {

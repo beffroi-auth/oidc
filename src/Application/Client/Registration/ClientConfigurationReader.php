@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Registration\ClientInformationResponse;
-use Heidi\Oidc\Exception\UnauthorizedClientConfigurationException;
-use Heidi\Oidc\Port\ClientConfigurationEndpointInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Registration\ClientInformationResponse;
+use Beffroi\Oidc\Exception\UnauthorizedClientConfigurationException;
+use Beffroi\Oidc\Port\ClientConfigurationEndpointInterface;
 use SensitiveParameter;
 
 /**

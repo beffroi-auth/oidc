@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Exchange;
+namespace Beffroi\Oidc\Domain\Exchange;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\TokenAudience;
-use Heidi\Oidc\Domain\Token\TokenSignIn;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\TokenAudience;
+use Beffroi\Oidc\Domain\Token\TokenSignIn;
 use Symfony\Component\Uid\Uuid;
 
 /**

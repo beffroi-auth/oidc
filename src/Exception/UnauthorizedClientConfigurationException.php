@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * The request presents nothing that reads this client (RFC 7592 §2.3): no registration access token where

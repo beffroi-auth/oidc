@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\EndSession;
+namespace Beffroi\Oidc\Application\EndSession;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Authorization\IdTokenHintVerifier;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Authorization\IdTokenHint;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\EndSession\EndSessionRequest;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Authorization\IdTokenHintVerifier;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Authorization\IdTokenHint;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Domain\EndSession\EndSessionRequest;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
 
 /**
  * Reads a logout request (RP-Initiated Logout §2): the hint identifies the client, client_id must be

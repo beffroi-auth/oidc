@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Secret;
+namespace Beffroi\Oidc\Domain\Secret;
 
 use function hash;
 use function preg_match;

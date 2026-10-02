@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 /**
  * A grant that takes a token as its input and gives a token back (RFC 8693 §2.1): the client presents

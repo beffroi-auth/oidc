@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
 use function is_string;
 
 /**

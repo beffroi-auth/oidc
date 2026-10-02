@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 use function array_any;
 use function array_find;
 use function hash_equals;
-use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
-use Heidi\Core\Domain\Key\KeyUse;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
+use Beffroi\Core\Domain\Key\KeyUse;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
 use function is_string;
 

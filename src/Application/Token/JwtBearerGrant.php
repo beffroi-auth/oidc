@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Port\LinkedIdentityRepositoryInterface;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Application\Client\AuthenticatedClient;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Application\Trust\IssuerAssertionValidator;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\IssuedTokens;
-use Heidi\Oidc\Domain\Token\SubjectAuthorization;
-use Heidi\Oidc\Domain\Trust\VerifiedAssertion;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidGrantException;
-use Heidi\Oidc\Exception\InvalidScopeException;
-use Heidi\Oidc\Exception\InvalidTargetException;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Port\LinkedIdentityRepositoryInterface;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Application\Client\AuthenticatedClient;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Application\Trust\IssuerAssertionValidator;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Domain\Token\SubjectAuthorization;
+use Beffroi\Oidc\Domain\Trust\VerifiedAssertion;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidGrantException;
+use Beffroi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Exception\InvalidTargetException;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use Psr\Clock\ClockInterface;
 
 /**

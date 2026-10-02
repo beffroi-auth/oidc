@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Domain\Authorization\RequestObject;
+use Beffroi\Oidc\Domain\Authorization\RequestObject;
 
 /**
  * What an endpoint has in hand once a request arrived in a JWT (RFC 9101 §6.1): the parameters it reads

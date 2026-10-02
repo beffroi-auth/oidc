@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidAuthorizationDetailsException;
-use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidAuthorizationDetailsException;
+use Beffroi\Oidc\Port\AuthorizationDetailsReaderInterface;
 
 /**
  * What a token request asks its access token to carry beyond its scopes (RFC 9396 §7). Every grant that

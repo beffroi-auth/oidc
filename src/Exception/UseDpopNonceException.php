@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 
 /**
  * RFC 9449 §8 "use_dpop_nonce": the provider asks the client to make its proof again, with the nonce

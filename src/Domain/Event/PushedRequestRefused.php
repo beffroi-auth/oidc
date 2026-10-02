@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Event\DomainEventInterface;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Event\DomainEventInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
 
 /**
  * A "request_uri" was presented at the authorization endpoint and granted nothing (RFC 9126 §4). The

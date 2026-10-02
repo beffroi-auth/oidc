@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Revocation;
+namespace Beffroi\Oidc\Application\Revocation;
 
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Client\ClientAuthenticator;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Application\Token\AccessTokenVerifier;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Event\TokenRevoked;
-use Heidi\Oidc\Domain\Token\RefreshToken;
-use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
-use Heidi\Oidc\Domain\Token\StoredAccessToken;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\UnsupportedTokenTypeException;
-use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokenInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Client\ClientAuthenticator;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Application\Token\AccessTokenVerifier;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Event\TokenRevoked;
+use Beffroi\Oidc\Domain\Token\RefreshToken;
+use Beffroi\Oidc\Domain\Token\RevokedTokenHashes;
+use Beffroi\Oidc\Domain\Token\StoredAccessToken;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\UnsupportedTokenTypeException;
+use Beffroi\Oidc\Port\AccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokenInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
 

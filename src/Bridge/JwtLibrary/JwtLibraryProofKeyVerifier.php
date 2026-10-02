@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\JwtLibrary;
+namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
 use function array_key_exists;
-use Heidi\Oidc\Domain\Dpop\DpopProof;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Port\ProofKeyVerifierInterface;
+use Beffroi\Oidc\Domain\Dpop\DpopProof;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Port\ProofKeyVerifierInterface;
 use function in_array;
 use function is_array;
 use Jose\Component\Core\AlgorithmManager;

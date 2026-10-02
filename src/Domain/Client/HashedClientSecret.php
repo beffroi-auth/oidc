@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
-use Heidi\Core\Domain\Credential\PasswordHash;
+use Beffroi\Core\Domain\Credential\PasswordHash;
 use SensitiveParameter;
 
 /**

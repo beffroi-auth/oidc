@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Event\DomainEventInterface;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Core\Domain\Event\DomainEventInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Scope\Scopes;
 use Symfony\Component\Uid\Uuid;
 
 /**

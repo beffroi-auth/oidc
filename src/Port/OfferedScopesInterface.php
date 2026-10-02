@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Scope\Scope;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Scope\Scope;
 
 /**
  * Every scope a tenant hands out tokens for: what a client of it may ask for, what the discovery

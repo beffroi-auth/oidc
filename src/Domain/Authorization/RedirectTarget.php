@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
 
 /**
  * What the first stage of RFC 6749 §4.1.2.1 establishes; only once this exists may an error be sent back

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Domain\Authorization\CodeChallenge;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Port\CodeChallengeMethodsInterface;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Domain\Authorization\CodeChallenge;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Port\CodeChallengeMethodsInterface;
 use function implode;
 use function sprintf;
 

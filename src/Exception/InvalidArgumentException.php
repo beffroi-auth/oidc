@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * An argument of this package is not one. Not final: the refusal of a client registration is one of these

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Hint;
+namespace Beffroi\Oidc\Application\Hint;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Port\UserRepositoryInterface;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Port\UserRepositoryInterface;
+use Beffroi\Oidc\Domain\Client\Client;
 use SensitiveParameter;
 
 /**

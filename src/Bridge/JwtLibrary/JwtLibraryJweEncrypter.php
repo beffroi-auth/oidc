@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\JwtLibrary;
+namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
-use Heidi\Oidc\Domain\Client\ResponseEncryption;
-use Heidi\Oidc\Exception\RuntimeException;
-use Heidi\Oidc\Port\JweEncrypterInterface;
+use Beffroi\Oidc\Domain\Client\ResponseEncryption;
+use Beffroi\Oidc\Exception\RuntimeException;
+use Beffroi\Oidc\Port\JweEncrypterInterface;
 use function is_string;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;

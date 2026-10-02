@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Beffroi\Oidc\Application\Ciba;
 
-use Heidi\Oidc\Application\Authorization\ResolvedRequestObject;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\RequestObjectReplayGuardInterface;
+use Beffroi\Oidc\Application\Authorization\ResolvedRequestObject;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Port\RequestObjectReplayGuardInterface;
 
 /**
  * What the backchannel authentication endpoint asks of what carried a request, once the request itself

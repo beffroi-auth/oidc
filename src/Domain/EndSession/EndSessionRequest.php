@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\EndSession;
+namespace Beffroi\Oidc\Domain\EndSession;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Authorization\IdTokenHint;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Authorization\IdTokenHint;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * A logout request that passed validation (RP-Initiated Logout §2, architecture §4.9), typed. It may

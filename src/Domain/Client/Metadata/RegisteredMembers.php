@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Metadata;
+namespace Beffroi\Oidc\Domain\Client\Metadata;
 
 use function array_key_exists;
-use Heidi\Oidc\Exception\InvalidClientMetadataException;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use function sprintf;
 
 /**

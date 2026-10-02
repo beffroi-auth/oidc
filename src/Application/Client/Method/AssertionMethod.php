@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Oidc\Application\Client\ClientAssertionValidator;
-use Heidi\Oidc\Application\Client\ClientAuthenticationFailure;
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
-use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
-use Heidi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Application\Client\ClientAssertionValidator;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationFailure;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
+use Beffroi\Oidc\Domain\Client\AssertionMethodInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
+use Beffroi\Oidc\Exception\InvalidJwtException;
 use function in_array;
 
 /**

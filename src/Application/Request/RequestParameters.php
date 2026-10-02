@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Request;
+namespace Beffroi\Oidc\Application\Request;
 
 use function array_is_list;
 use function explode;
-use Heidi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
 use function in_array;
 use function is_array;
 use function is_string;

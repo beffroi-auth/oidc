@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use function array_values;
-use Heidi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
+use Beffroi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use function sprintf;
 
 /**

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Trust\TrustedIssuer;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
 
 /**
  * The third parties a tenant trusts the signature of (RFC 7523 §3). A closed registration read by the tenant

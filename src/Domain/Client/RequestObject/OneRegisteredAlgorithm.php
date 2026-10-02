@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\RequestObject;
+namespace Beffroi\Oidc\Domain\Client\RequestObject;
 
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
+use Beffroi\Core\Domain\Key\SignatureAlgorithmInterface;
 use function in_array;
 
 /**

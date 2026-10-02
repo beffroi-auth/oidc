@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 /**
  * A method whose client registers a shared secret (RFC 6749 §2.3.1, OIDC Core §9). The shape the secret

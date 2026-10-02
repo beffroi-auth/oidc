@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The types of authorization detail the wiring gave the provider (RFC 9396 §2), which is what a client

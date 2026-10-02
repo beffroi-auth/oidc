@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
 use function array_unique;
 use function array_values;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Authorization\ResponseModeNames;
-use Heidi\Oidc\Domain\Authorization\ResponseTypeNames;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\ServedResponseModesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Authorization\ResponseModeNames;
+use Beffroi\Oidc\Domain\Authorization\ResponseTypeNames;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\ServedResponseModesInterface;
 
 /**
  * OIDC Discovery §3 and Multiple Response Type Encoding Practices §2.1: the one response type this

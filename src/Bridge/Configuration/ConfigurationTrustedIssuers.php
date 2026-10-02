@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Configuration;
+namespace Beffroi\Oidc\Bridge\Configuration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Trust\TrustedIssuer;
-use Heidi\Oidc\Port\TrustedIssuersInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
+use Beffroi\Oidc\Port\TrustedIssuersInterface;
 
 /**
  * The third parties declared in the configuration (architecture §5.1), validated at boot. They belong to the

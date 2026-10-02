@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use function array_filter;
 use function array_map;
 use function array_unique;
 use function array_values;
 use function count;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Exception\LoadBudgetSpentException;
-use Heidi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
-use Heidi\Oidc\Application\Client\Method\ConfirmingMethodInterface;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailed;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\CertificateConfirmation;
-use Heidi\Oidc\Domain\Token\ConfirmationInterface;
-use Heidi\Oidc\Exception\InvalidClientException;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\ClientLoadBudgetInterface;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Exception\LoadBudgetSpentException;
+use Beffroi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
+use Beffroi\Oidc\Application\Client\Method\ConfirmingMethodInterface;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailed;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Domain\Token\CertificateConfirmation;
+use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Exception\InvalidClientException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\ClientLoadBudgetInterface;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
 use function implode;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;

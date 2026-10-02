@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_values;
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\AuthorizationInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\AccessTokenIssuerInterface;
-use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
-use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
+use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\AccessTokenIssuerInterface;
+use Beffroi\Oidc\Port\AccessTokenShapeIssuerInterface;
+use Beffroi\Oidc\Port\ServedAccessTokenShapesInterface;
 use function implode;
 use function sprintf;
 

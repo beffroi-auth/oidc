@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\OfferedScopesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\OfferedScopesInterface;
 
 /**
  * OIDC Discovery §3: the scopes a client may ask for, which are the scopes the tenant hands out tokens

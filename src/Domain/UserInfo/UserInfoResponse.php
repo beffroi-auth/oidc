@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\UserInfo;
+namespace Beffroi\Oidc\Domain\UserInfo;
 
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The successful answer of the UserInfo endpoint (OIDC Core §5.3.2): "sub" first, every claim a JSON value

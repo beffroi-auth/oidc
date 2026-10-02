@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Metadata;
+namespace Beffroi\Oidc\Domain\Client\Metadata;
 
 use function array_key_exists;
 use function array_keys;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\LogicException;
 use function in_array;
 use function sprintf;
 

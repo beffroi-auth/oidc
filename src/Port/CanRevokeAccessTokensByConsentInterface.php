@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Token\StoredAccessToken;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Token\StoredAccessToken;
 
 /**
  * A companion of AccessTokenRepositoryInterface: every token a client holds for a user, for the consent

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
 
 /**
  * Where the record of a backchannel authentication request waits for its user and for the client that

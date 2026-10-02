@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Key;
+namespace Beffroi\Oidc\Application\Key;
 
 use DateInterval;
-use Heidi\Core\Domain\Key\KeyUse;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\KeyBoundArtifactInterface;
-use Heidi\Oidc\Application\Authorization\ResponseDocumentIssuer;
-use Heidi\Oidc\Port\ServedResponseModesInterface;
+use Beffroi\Core\Domain\Key\KeyUse;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\KeyBoundArtifactInterface;
+use Beffroi\Oidc\Application\Authorization\ResponseDocumentIssuer;
+use Beffroi\Oidc\Port\ServedResponseModesInterface;
 
 /**
  * The signed authorization response (JARM §2.1, issue #163), issued only where the integration wires a

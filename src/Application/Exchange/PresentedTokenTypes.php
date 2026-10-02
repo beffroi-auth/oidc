@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Exchange;
+namespace Beffroi\Oidc\Application\Exchange;
 
 use function array_map;
 use function array_values;
-use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\PresentedTokenTypesInterface;
+use Beffroi\Oidc\Domain\Exchange\TokenTypeIdentifier;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\PresentedTokenTypesInterface;
 use function sprintf;
 
 /**

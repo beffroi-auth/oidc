@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Pki;
+namespace Beffroi\Oidc\Bridge\Pki;
 
 use function array_map;
 use function array_values;
-use Heidi\Oidc\Domain\Client\Certificate\CertificateSubject;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Exception\UnreadableCertificateException;
-use Heidi\Oidc\Port\CertificateReaderInterface;
+use Beffroi\Oidc\Domain\Client\Certificate\CertificateSubject;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Exception\UnreadableCertificateException;
+use Beffroi\Oidc\Port\CertificateReaderInterface;
 use SpomkyLabs\Pki\X501\ASN1\Name;
 use SpomkyLabs\Pki\X509\Certificate\Certificate;
 use SpomkyLabs\Pki\X509\GeneralName\GeneralName;

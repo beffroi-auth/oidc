@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\AuthorizationDetails;
+namespace Beffroi\Oidc\Domain\AuthorizationDetails;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**

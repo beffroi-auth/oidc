@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Ciba;
+namespace Beffroi\Oidc\Domain\Ciba;
 
 /**
  * CIBA Core §10.2: the provider posts the identifier of the request to the endpoint the client

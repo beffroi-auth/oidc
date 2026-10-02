@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 /**
  * A grant whose user is asked on a device they already hold, without the client ever having a browser in

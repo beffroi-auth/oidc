@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 use function in_array;
 
 /**

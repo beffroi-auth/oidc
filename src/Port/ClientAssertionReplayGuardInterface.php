@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\Client;
 
 /**
  * Remembers the "jti" of a client assertion until the assertion expires (RFC 7523 §3, §4), so that one

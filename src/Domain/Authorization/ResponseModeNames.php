@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
 /**
  * The two names of a response mode the specifications fix rather than the wiring (OAuth 2.0 Multiple

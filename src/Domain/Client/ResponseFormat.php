@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
+use Beffroi\Core\Domain\Key\SignatureAlgorithmInterface;
 
 /**
  * The shape a client registered for one kind of document the provider hands it (OIDC Registration §2):

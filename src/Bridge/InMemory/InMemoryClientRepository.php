@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\InventoriedClient;
-use Heidi\Oidc\Port\ClientInventoryInterface;
-use Heidi\Oidc\Port\ClientSourceInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\InventoriedClient;
+use Beffroi\Oidc\Port\ClientInventoryInterface;
+use Beffroi\Oidc\Port\ClientSourceInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process.

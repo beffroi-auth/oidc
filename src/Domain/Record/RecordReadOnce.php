@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Record;
+namespace Beffroi\Oidc\Domain\Record;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\LogicException;
 use function sprintf;
 
 /**

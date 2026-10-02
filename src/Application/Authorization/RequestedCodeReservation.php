@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
 
 /**
  * What the "dpop_jkt" parameter of an authorization request must be (RFC 9449 §10): the key the code is

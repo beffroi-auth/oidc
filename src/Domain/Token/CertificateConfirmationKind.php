@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 /**
  * Binding to the certificate the client presented at the TLS handshake (RFC 8705 §3.1). The token stays

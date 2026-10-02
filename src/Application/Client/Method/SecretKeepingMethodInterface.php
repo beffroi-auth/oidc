@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Client\SecretBearingMethodInterface;
+use Beffroi\Core\Port\PasswordHasherInterface;
+use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
+use Beffroi\Oidc\Domain\Client\SecretBearingMethodInterface;
 use SensitiveParameter;
 
 /**

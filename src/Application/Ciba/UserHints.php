@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Beffroi\Oidc\Application\Ciba;
 
 use function count;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Application\Hint\UserHintInterface;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Application\Hint\UserHintInterface;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 use function sprintf;
 
 /**

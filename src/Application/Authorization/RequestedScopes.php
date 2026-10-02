@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidScopeException;
 
 /**
  * What the "scope" parameter of an authorization request must be (RFC 6749 §3.3, OIDC Core §3.1.2.2

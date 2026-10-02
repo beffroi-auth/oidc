@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Core\Port\JwsSignerInterface;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ResponseEncryption;
-use Heidi\Oidc\Domain\Client\ResponseFormat;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Exception\ClientKeysUnavailableException;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\JweEncrypterInterface;
+use Beffroi\Core\Port\JwsSignerInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ResponseEncryption;
+use Beffroi\Oidc\Domain\Client\ResponseFormat;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Port\JweEncrypterInterface;
 use function sprintf;
 
 /**

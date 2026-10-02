@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\EndSession;
+namespace Beffroi\Oidc\Domain\EndSession;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Tenant\Issuer;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Tenant\Issuer;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
 

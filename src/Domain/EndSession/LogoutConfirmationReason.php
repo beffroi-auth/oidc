@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\EndSession;
+namespace Beffroi\Oidc\Domain\EndSession;
 
 /**
  * Why the user is asked before their session ends (RP-Initiated Logout §2, §6).

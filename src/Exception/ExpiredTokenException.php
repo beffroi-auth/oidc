@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * RFC 8628 §3.5 "expired_token": the device code is past its lifetime and the client starts over. Told

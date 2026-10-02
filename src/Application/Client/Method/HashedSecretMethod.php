@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Core\Application\Authentication\DecoyHash;
-use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Oidc\Application\Client\ClientAuthenticationFailure;
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Client\HashedClientSecret;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
+use Beffroi\Core\Application\Authentication\DecoyHash;
+use Beffroi\Core\Port\PasswordHasherInterface;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationFailure;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
+use Beffroi\Oidc\Domain\Client\HashedClientSecret;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use SensitiveParameter;
 
 /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\RequestObject;
+namespace Beffroi\Oidc\Domain\Client\RequestObject;
 
 /**
  * A client that registered "request_object_signing_alg": "none" (OIDC Registration §2): its request

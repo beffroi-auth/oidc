@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 use function array_any;
-use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Exchange\TokenTypeIdentifier;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * What a client may do at the token exchange (RFC 8693 §2.1), as it registered it. A grant that turns a

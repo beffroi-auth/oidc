@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
-use Heidi\Core\Domain\Session\AuthenticationContextPolicy;
-use Heidi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\AuthenticationContextClass;
+use Beffroi\Core\Domain\Session\AuthenticationContextPolicy;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
 use function is_string;
 
 /**

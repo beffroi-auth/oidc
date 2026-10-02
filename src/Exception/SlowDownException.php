@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * RFC 8628 §3.5 "slow_down": the same answer as "authorization_pending", for a client that polled sooner

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
-use Heidi\Oidc\Exception\ChallengeInterface;
-use Heidi\Oidc\Exception\InvalidClientException;
-use Heidi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\ChallengeInterface;
+use Beffroi\Oidc\Exception\InvalidClientException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 
 /**
  * An error of the token endpoint (RFC 6749 §5.2), and of the introspection (RFC 7662 §2.3) and revocation

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Token\CertificateConfirmation;
-use Heidi\Oidc\Domain\Token\ConfirmationInterface;
-use Heidi\Oidc\Exception\InvalidDpopProofException;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Token\CertificateConfirmation;
+use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Exception\InvalidDpopProofException;
 
 /**
  * The client of a request and what the request proved beyond it being that client (RFC 8705 §3,

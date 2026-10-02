@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Oidc\Domain\Exchange\Actor;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Oidc\Domain\Exchange\Actor;
 
 /**
  * An authorization whose subject is named by what the client presented, and not by a session this provider

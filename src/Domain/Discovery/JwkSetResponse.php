@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Discovery;
+namespace Beffroi\Oidc\Domain\Discovery;
 
-use Heidi\Core\Domain\Key\PublicKeySet;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Key\PublicKeySet;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**

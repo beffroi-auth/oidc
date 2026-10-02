@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\RegisteredResourcesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\RegisteredResourcesInterface;
 
 /**
  * RFC 9728 §4 "protected_resources": the resources a client of this tenant may name in a "resource"

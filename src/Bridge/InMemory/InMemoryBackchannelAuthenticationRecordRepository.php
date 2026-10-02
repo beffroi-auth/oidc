@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\User;
+use Beffroi\Core\Domain\Identity\User;
 use function array_find;
-use Heidi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Port\BackchannelAuthenticationRecordRepositoryInterface;
-use Heidi\Oidc\Port\CanRevokeGrantsByConsentInterface;
-use Heidi\Oidc\Port\RecordedGrantsInterface;
+use Beffroi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Port\BackchannelAuthenticationRecordRepositoryInterface;
+use Beffroi\Oidc\Port\CanRevokeGrantsByConsentInterface;
+use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Symfony\Component\Uid\Uuid;
 use function usort;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function end;
-use Heidi\Oidc\Domain\Interaction\Interaction;
-use Heidi\Oidc\Port\InteractionRepositoryInterface;
+use Beffroi\Oidc\Domain\Interaction\Interaction;
+use Beffroi\Oidc\Port\InteractionRepositoryInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process.

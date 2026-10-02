@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\RefreshToken;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Oidc\Domain\Token\RefreshToken;
+use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

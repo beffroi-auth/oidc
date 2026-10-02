@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 use function json_encode;
 use const JSON_PRESERVE_ZERO_FRACTION;

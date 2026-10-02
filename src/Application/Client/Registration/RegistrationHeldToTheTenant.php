@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function array_any;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Exception\InvalidClientMetadataException;
-use Heidi\Oidc\Port\OfferedScopesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
+use Beffroi\Oidc\Port\OfferedScopesInterface;
 use function sprintf;
 
 /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
 /**
  * Why the user has to consent; with prompt=none it becomes "consent_required".

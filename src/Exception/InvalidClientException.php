@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * RFC 6749 §5.2 "invalid_client": always 401 (architecture §4.10), with the WWW-Authenticate challenge

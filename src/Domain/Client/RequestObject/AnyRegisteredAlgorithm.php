@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\RequestObject;
+namespace Beffroi\Oidc\Domain\Client\RequestObject;
 
 use function in_array;
 

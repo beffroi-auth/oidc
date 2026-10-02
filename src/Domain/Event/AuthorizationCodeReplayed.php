@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Event\DomainEventInterface;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Event\DomainEventInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
 
 /**
  * An authorization code was presented a second time (RFC 6749 §4.1.2); the tokens issued from it are revoked.

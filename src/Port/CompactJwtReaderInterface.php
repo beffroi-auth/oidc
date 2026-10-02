@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
 
 /**
  * Reads a compact JWT a client sent, and verifies nothing (RFC 7519 §7.2): the header names the

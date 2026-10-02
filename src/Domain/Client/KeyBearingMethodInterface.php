@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 /**
  * A method that verifies a signature made by a key of the client (OIDC Core §9): the client publishes a

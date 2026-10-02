@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_map;
 use function array_values;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\ServedGrantsInterface;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\ServedGrantsInterface;
 use function sprintf;
 
 /**

@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Authorization\AuthorizationCode;
-use Heidi\Oidc\Domain\Authorization\AuthorizationResponse;
-use Heidi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
-use Heidi\Oidc\Domain\Event\AuthorizationCodeIssued;
-use Heidi\Oidc\Domain\Interaction\Granted;
-use Heidi\Oidc\Domain\Interaction\Interaction;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InvalidRequestUriException;
-use Heidi\Oidc\Port\AuthorizationCodeRepositoryInterface;
-use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationCode;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationResponse;
+use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
+use Beffroi\Oidc\Domain\Event\AuthorizationCodeIssued;
+use Beffroi\Oidc\Domain\Interaction\Granted;
+use Beffroi\Oidc\Domain\Interaction\Interaction;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InvalidRequestUriException;
+use Beffroi\Oidc\Port\AuthorizationCodeRepositoryInterface;
+use Beffroi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**

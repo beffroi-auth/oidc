@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 /**
  * The response modes the authorization endpoint can actually answer in (OAuth 2.0 Multiple Response Type

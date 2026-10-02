@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
 
 /**
  * The mode decision 0009 builds second and bounds hardest: a `POST` with no credential at all, which is

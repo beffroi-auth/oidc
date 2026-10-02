@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
-use Heidi\Oidc\Domain\Grant\GrantRecord;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Domain\Client\ResolvesItsClientInterface;
+use Beffroi\Oidc\Domain\Grant\GrantRecord;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**

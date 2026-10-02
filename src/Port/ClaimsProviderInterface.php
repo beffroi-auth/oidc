@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Authorization\ClaimRequest;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Authorization\ClaimRequest;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
 
 /**
  * The claims about a user (OIDC Core §5.1): those the scopes stand for (§5.4) and those asked for by name

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Exchange\Actor;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Exchange\Actor;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**

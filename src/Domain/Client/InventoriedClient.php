@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * A client of a tenant as whoever runs the deployment sees it (decision 0009): where it came from, what
@@ -14,7 +14,7 @@ use Heidi\Oidc\Exception\InvalidArgumentException;
  *
  * **The source names itself.** A client a deployment declared and one that registered itself are the same
  * client to every rule of the protocol, and are not the same thing at all to whoever answers for the
- * deployment: one is a line of `heidi.yaml` and is deleted by deleting that line, the other is a row and
+ * deployment: one is a line of `beffroi.yaml` and is deleted by deleting that line, the other is a row and
  * is deleted by deleting the row. So the source is carried here, as the source gives it, and a source
  * wired later appears in the list without anything learning that there are several.
  *

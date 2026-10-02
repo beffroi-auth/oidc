@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\ClientUri;
-use Heidi\Oidc\Exception\RequestObjectUnavailableException;
+use Beffroi\Oidc\Domain\Client\ClientUri;
+use Beffroi\Oidc\Exception\RequestObjectUnavailableException;
 
 /**
  * Reads back the request object a client publishes behind a "request_uri" (RFC 9101 §5.2, OIDC Core §6.2).

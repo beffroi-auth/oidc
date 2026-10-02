@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use function array_any;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Discovery\ProviderEndpoints;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\MutualTlsEndpointLocatorInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Discovery\ProviderEndpoints;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\MutualTlsEndpointLocatorInterface;
+use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
  * The names of this provider a client assertion may name in its "aud" (RFC 7523 §3, "a value that

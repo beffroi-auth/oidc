@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\Certificate\CertificateSubject;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Exception\UnreadableCertificateException;
+use Beffroi\Oidc\Domain\Client\Certificate\CertificateSubject;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Exception\UnreadableCertificateException;
 
 /**
  * What an X.509 certificate says about who presented it (RFC 5280 §4.1.2.6, §4.2.1.6), and how a name

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Registration;
+namespace Beffroi\Oidc\Domain\Client\Registration;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
 use SensitiveParameter;
 
 /**

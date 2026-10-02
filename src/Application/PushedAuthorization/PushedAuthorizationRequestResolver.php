@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\PushedAuthorization;
+namespace Beffroi\Oidc\Application\PushedAuthorization;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Event\PushedRequestRefusalReason;
-use Heidi\Oidc\Domain\Event\PushedRequestRefused;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
-use Heidi\Oidc\Domain\PushedAuthorization\RequestUri;
-use Heidi\Oidc\Exception\InvalidRequestUriException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Event\PushedRequestRefusalReason;
+use Beffroi\Oidc\Domain\Event\PushedRequestRefused;
+use Beffroi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
+use Beffroi\Oidc\Domain\PushedAuthorization\RequestUri;
+use Beffroi\Oidc\Exception\InvalidRequestUriException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 

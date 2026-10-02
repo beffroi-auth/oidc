@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
 /**
  * The client authentication methods the provider is wired with (OIDC Discovery §3), the one source of

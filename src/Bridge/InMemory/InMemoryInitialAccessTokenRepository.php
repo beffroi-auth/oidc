@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_find;
 use function array_reverse;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Registration\InitialAccessToken;
-use Heidi\Oidc\Port\InitialAccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\IssuedInitialAccessTokensInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Registration\InitialAccessToken;
+use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\IssuedInitialAccessTokensInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

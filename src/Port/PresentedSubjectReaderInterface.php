@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Client\Client;
 
 /**
  * The user a "sub" names, read back **for the client that presented it** (OIDC Core §8): the way in of what

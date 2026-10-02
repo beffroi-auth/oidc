@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Application\Client\AuthenticatedClient;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Event\RefreshTokenReuseDetected;
-use Heidi\Oidc\Domain\Event\RefreshTokenRotated;
-use Heidi\Oidc\Domain\Token\UserAuthorization;
-use Heidi\Oidc\Domain\Token\IssuedTokens;
-use Heidi\Oidc\Domain\Token\RefreshToken;
-use Heidi\Oidc\Domain\Token\RevokedTokenHashes;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidGrantException;
-use Heidi\Oidc\Exception\InvalidScopeException;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Application\Client\AuthenticatedClient;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Event\RefreshTokenReuseDetected;
+use Beffroi\Oidc\Domain\Event\RefreshTokenRotated;
+use Beffroi\Oidc\Domain\Token\UserAuthorization;
+use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Domain\Token\RefreshToken;
+use Beffroi\Oidc\Domain\Token\RevokedTokenHashes;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidGrantException;
+use Beffroi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 

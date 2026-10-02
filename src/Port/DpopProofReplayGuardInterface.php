@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 
 /**
  * Remembers the "jti" of a DPoP proof for as long as the proof may be presented (RFC 9449 §11.1), so

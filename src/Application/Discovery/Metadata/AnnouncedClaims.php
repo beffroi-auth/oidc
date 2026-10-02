@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
 use function in_array;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\ClaimsProviderInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
  * OIDC Discovery §3: the claims the provider may put in a token or a UserInfo answer, "sub" always among

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Configuration;
+namespace Beffroi\Oidc\Bridge\Configuration;
 
 use function array_key_exists;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Oidc\Application\Client\ClientMetadataReader;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Client\InventoriedClient;
-use Heidi\Oidc\Port\ClientInventoryInterface;
-use Heidi\Oidc\Port\ClientSourceInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\PasswordHasherInterface;
+use Beffroi\Oidc\Application\Client\ClientMetadataReader;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
+use Beffroi\Oidc\Domain\Client\InventoriedClient;
+use Beffroi\Oidc\Port\ClientInventoryInterface;
+use Beffroi\Oidc\Port\ClientSourceInterface;
 use WeakMap;
 
 /**
@@ -24,7 +24,7 @@ final class ConfigurationClientRepository implements ClientInventoryInterface, C
 {
     /**
      * What this source calls itself where a person is shown where a client came from: these are the
-     * clients of `heidi.yaml`, and one goes away when its block does.
+     * clients of `beffroi.yaml`, and one goes away when its block does.
      */
     public const string SOURCE = 'configuration';
 

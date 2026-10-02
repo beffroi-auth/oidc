@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**

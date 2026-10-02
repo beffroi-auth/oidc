@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Authorization\ClaimsRequest;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 
 /**
  * An authorization somebody signed in for (architecture §4.5): it descends from a session, so it names a

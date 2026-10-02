@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\EndSession;
+namespace Beffroi\Oidc\Domain\EndSession;
 
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\LogicException;
 use function sprintf;
 
 /**

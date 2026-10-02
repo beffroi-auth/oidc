@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Client\ClientAuthenticator;
-use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Token\TokenResponse;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\UnauthorizedClientException;
-use Heidi\Oidc\Exception\UnsupportedGrantTypeException;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Client\ClientAuthenticator;
+use Beffroi\Oidc\Application\Dpop\DpopProofVerifier;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\UnauthorizedClientException;
+use Beffroi\Oidc\Exception\UnsupportedGrantTypeException;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
 
 /**
  * The token endpoint (RFC 6749 §3.2, architecture §4.5): the client first, then what the request proved

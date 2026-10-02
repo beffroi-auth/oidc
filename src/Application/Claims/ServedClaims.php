@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims;
+namespace Beffroi\Oidc\Application\Claims;
 
 use function array_any;
 use function array_key_exists;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\ClaimsProviderInterface;
 use function in_array;
 use function sprintf;
 

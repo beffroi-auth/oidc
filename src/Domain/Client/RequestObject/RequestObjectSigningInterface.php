@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\RequestObject;
+namespace Beffroi\Oidc\Domain\Client\RequestObject;
 
 /**
  * What a client registered in "request_object_signing_alg" (OIDC Registration §2), which is what its

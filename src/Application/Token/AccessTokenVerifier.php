@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_any;
 use function array_keys;
 use function array_values;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
-use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Port\AccessTokenVerifierInterface;
-use Heidi\Oidc\Port\ServedAccessTokenShapesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
+use Beffroi\Oidc\Domain\Token\VerifiedAccessToken;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Port\AccessTokenVerifierInterface;
+use Beffroi\Oidc\Port\ServedAccessTokenShapesInterface;
 use function implode;
 use SensitiveParameter;
 use function sprintf;

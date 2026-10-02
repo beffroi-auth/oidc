@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\JwtLibrary;
+namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
-use Heidi\Oidc\Domain\Client\ClientJwks;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Port\JwtKeyVerifierInterface;
+use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Port\JwtKeyVerifierInterface;
 use function in_array;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;

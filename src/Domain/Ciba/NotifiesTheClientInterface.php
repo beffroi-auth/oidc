@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Ciba;
+namespace Beffroi\Oidc\Domain\Ciba;
 
 /**
  * A delivery mode where the provider calls the client back once the request has been answered (CIBA Core

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Metadata;
+namespace Beffroi\Oidc\Domain\Client\Metadata;
 
 /**
  * The members the provider itself wrote on a registration it created, which no client ever sends: what

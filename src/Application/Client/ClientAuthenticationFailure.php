@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use RuntimeException;
 use Throwable;
 

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_values;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Port\ActiveConsentsInterface;
-use Heidi\Oidc\Port\ConsentRepositoryInterface;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Port\ActiveConsentsInterface;
+use Beffroi\Oidc\Port\ConsentRepositoryInterface;
 use function usort;
 
 /**

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Hint;
+namespace Beffroi\Oidc\Application\Hint;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Exception\InvalidArgumentException;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use SensitiveParameter;
 
 /**

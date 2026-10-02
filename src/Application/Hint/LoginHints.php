@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Hint;
+namespace Beffroi\Oidc\Application\Hint;
 
 use function count;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 use function sprintf;
 
 /**

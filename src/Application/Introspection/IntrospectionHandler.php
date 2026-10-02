@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Introspection;
+namespace Beffroi\Oidc\Application\Introspection;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\JwsSignerInterface;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Client\ClientAuthenticator;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Application\Token\AccessTokenInspector;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Introspection\IntrospectionResponse;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Exception\InvalidClientException;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\JwsSignerInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Client\ClientAuthenticator;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Application\Token\AccessTokenInspector;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Introspection\IntrospectionResponse;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Exception\InvalidClientException;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
 
 /**
  * The introspection endpoint (RFC 7662 §2, architecture §4.12). The caller is a confidential client (§2.1);

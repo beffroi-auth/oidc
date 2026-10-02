@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Configuration;
+namespace Beffroi\Oidc\Bridge\Configuration;
 
 use function array_diff;
 use function array_keys;
 use function array_map;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Domain\Client\ClientJwks;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Trust\TrustedIssuer;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use function in_array;
 use function is_array;

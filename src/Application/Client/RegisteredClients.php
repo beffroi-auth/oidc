@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use function array_all;
 use function array_any;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Resource\ResourceIndicator;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
-use Heidi\Oidc\Port\ClientSourceInterface;
-use Heidi\Oidc\Port\PushedAuthorizationRequirementInterface;
-use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
-use Heidi\Oidc\Port\RegisteredResourcesInterface;
-use Heidi\Oidc\Port\RegisteredScopesInterface;
-use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Oidc\Port\ClientSourceInterface;
+use Beffroi\Oidc\Port\PushedAuthorizationRequirementInterface;
+use Beffroi\Oidc\Port\RegisteredAccessTokenShapesInterface;
+use Beffroi\Oidc\Port\RegisteredResourcesInterface;
+use Beffroi\Oidc\Port\RegisteredScopesInterface;
+use Beffroi\Oidc\Port\UnsignedRequestObjectsInterface;
 
 /**
  * The clients of a tenant, read from every source the wiring holds and answered as one (architecture

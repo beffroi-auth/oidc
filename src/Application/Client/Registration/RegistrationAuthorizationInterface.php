@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
-use Heidi\Oidc\Exception\UnauthorizedRegistrationException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
+use Beffroi\Oidc\Exception\UnauthorizedRegistrationException;
 
 /**
  * One way a registration request is authorised (decision 0009). One class per mode, wired into the

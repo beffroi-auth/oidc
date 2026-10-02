@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
 /**
  * The name of what an authorization request may ask for (RFC 6749 §3.1.1, OIDC Core §3.1.2.1): a code, and

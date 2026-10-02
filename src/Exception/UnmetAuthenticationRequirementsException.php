@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * OpenID Connect Core Error Code unmet_authentication_requirements 1.0 §1: an essential "acr" the

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
  * OIDC Discovery §3: who the provider is and where its four endpoints are. Every provider has these,

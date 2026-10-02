@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Exception\UnreadableClientMetadataException;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
 
 /**
  * One kind of "sub" (OIDC Core §8), both ways round: the identifier a client of this kind sees for a user,

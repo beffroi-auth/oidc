@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Dpop;
+namespace Beffroi\Oidc\Domain\Dpop;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidDpopProofException;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidDpopProofException;
 use function is_string;
 use function preg_match;
 use function sprintf;

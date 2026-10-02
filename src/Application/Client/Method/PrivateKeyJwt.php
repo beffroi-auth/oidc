@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Client\ClientAssertionValidator;
-use Heidi\Oidc\Application\Client\ClientKeySetProvider;
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Port\JwtKeyVerifierInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Client\ClientAssertionValidator;
+use Beffroi\Oidc\Application\Client\ClientKeySetProvider;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\KeyBearingMethodInterface;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Port\JwtKeyVerifierInterface;
 
 /**
  * "private_key_jwt" (OIDC Core §9, RFC 7523 §2.2): the client signs a JWT with a key of its own and the

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use DateInterval;
-use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
-use Heidi\Oidc\Domain\Authorization\AuthorizationAnswer;
-use Heidi\Oidc\Domain\Authorization\ResponseDocument;
+use Beffroi\Oidc\Application\Client\ClientDocumentIssuer;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationAnswer;
+use Beffroi\Oidc\Domain\Authorization\ResponseDocument;
 use Psr\Clock\ClockInterface;
 
 /**

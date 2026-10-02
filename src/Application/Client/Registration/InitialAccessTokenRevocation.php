@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Registration\InitialAccessToken;
-use Heidi\Oidc\Port\InitialAccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\IssuedInitialAccessTokensInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Registration\InitialAccessToken;
+use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\IssuedInitialAccessTokensInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 

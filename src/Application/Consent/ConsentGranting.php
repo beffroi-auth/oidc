@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Consent;
+namespace Beffroi\Oidc\Application\Consent;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Event\ConsentGranted;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Port\ConsentRepositoryInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Event\ConsentGranted;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Port\ConsentRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**

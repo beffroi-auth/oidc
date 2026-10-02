@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\PushedAuthorization;
+namespace Beffroi\Oidc\Application\PushedAuthorization;
 
-use Heidi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
 use DateInterval;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Authorization\AuthorizationRequestParser;
-use Heidi\Oidc\Application\Authorization\RequestObjectResolver;
-use Heidi\Oidc\Application\Client\ClientAuthenticator;
-use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationResponse;
-use Heidi\Oidc\Domain\PushedAuthorization\RequestUri;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Authorization\AuthorizationRequestParser;
+use Beffroi\Oidc\Application\Authorization\RequestObjectResolver;
+use Beffroi\Oidc\Application\Client\ClientAuthenticator;
+use Beffroi\Oidc\Application\Dpop\DpopProofVerifier;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
+use Beffroi\Oidc\Domain\PushedAuthorization\PushedAuthorizationResponse;
+use Beffroi\Oidc\Domain\PushedAuthorization\RequestUri;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use function array_all;
 use function array_is_list;
 use function is_array;

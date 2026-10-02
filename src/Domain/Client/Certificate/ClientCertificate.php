@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Certificate;
+namespace Beffroi\Oidc\Domain\Client\Certificate;
 
 use function base64_decode;
 use function hash;
 use function hash_equals;
-use Heidi\Oidc\Domain\Token\Base64Url;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use function preg_replace;
 use function sprintf;

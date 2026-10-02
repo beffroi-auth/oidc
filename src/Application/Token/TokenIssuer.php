@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Event\TokensIssued;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Token\AuthorizationInterface;
-use Heidi\Oidc\Domain\Token\IssuedRefreshToken;
-use Heidi\Oidc\Domain\Token\IssuedTokens;
-use Heidi\Oidc\Domain\Token\RefreshToken;
-use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
-use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
-use Heidi\Oidc\Port\AccessTokenIssuerInterface;
-use Heidi\Oidc\Port\IdTokenIssuerInterface;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Event\TokensIssued;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
+use Beffroi\Oidc\Domain\Token\IssuedRefreshToken;
+use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Domain\Token\RefreshToken;
+use Beffroi\Oidc\Domain\Token\RefreshTokenFamily;
+use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
+use Beffroi\Oidc\Port\AccessTokenIssuerInterface;
+use Beffroi\Oidc\Port\IdTokenIssuerInterface;
+use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**

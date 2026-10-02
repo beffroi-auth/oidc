@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Resource;
+namespace Beffroi\Oidc\Domain\Resource;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use function sprintf;
 use function str_contains;

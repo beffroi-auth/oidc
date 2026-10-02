@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Token\RefreshToken;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Token\RefreshToken;
 
 /**
  * A companion of RefreshTokenRepositoryInterface: what a client can still renew for a user, for the

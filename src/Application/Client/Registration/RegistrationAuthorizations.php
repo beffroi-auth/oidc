@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function array_keys;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\LogicException;
 use function implode;
 use function sprintf;
 

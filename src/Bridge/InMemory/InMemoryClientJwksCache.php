@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
-use Heidi\Oidc\Domain\Client\CachedClientJwks;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Port\ClientJwksCacheInterface;
+use Beffroi\Oidc\Domain\Client\CachedClientJwks;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Port\ClientJwksCacheInterface;
 use function sprintf;
 
 /**

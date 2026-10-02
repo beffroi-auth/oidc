@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Scope;
+namespace Beffroi\Oidc\Application\Scope;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Port\ClaimsProviderInterface;
-use Heidi\Oidc\Port\OfferedScopesInterface;
-use Heidi\Oidc\Port\RegisteredScopesInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Oidc\Port\OfferedScopesInterface;
+use Beffroi\Oidc\Port\RegisteredScopesInterface;
+use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
  * Every scope a tenant hands out tokens for, assembled where it is assembled once (issue #98):

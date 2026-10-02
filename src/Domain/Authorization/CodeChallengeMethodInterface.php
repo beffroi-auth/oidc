@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Core\Domain\Algorithm\NamedAlgorithmInterface;
+use Beffroi\Core\Domain\Algorithm\NamedAlgorithmInterface;
 use SensitiveParameter;
 
 /**

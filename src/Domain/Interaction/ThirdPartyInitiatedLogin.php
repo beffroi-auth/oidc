@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Domain\Client\InitiateLoginUri;
-use Heidi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Tenant\Issuer;
+use Beffroi\Oidc\Domain\Client\InitiateLoginUri;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
 
 /**
  * Where a browser goes when this provider begins a login at a client (OIDC Core §4): the

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\Subject;
 use function in_array;
 use Symfony\Component\Uid\Uuid;
 

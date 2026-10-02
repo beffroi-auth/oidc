@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function array_reverse;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Oidc\Application\Client\ClientMetadataReader;
-use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Client\Metadata\AssignedMembers;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
-use Heidi\Oidc\Domain\Client\Metadata\RegisteredMembers;
-use Heidi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Exception\UnreadableClientMetadataException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\PasswordHasherInterface;
+use Beffroi\Oidc\Application\Client\ClientMetadataReader;
+use Beffroi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
+use Beffroi\Oidc\Domain\Client\Metadata\AssignedMembers;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
+use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
+use Beffroi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
 
 /**
  * A registration the provider is about to write, read under the policy of its tenant: the creation of

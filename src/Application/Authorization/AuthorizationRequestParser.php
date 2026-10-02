@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
-use Heidi\Oidc\Domain\Authorization\RedirectTarget;
-use Heidi\Oidc\Domain\Authorization\ResponseTypeNames;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\UnsupportedResponseTypeException;
-use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
-use Heidi\Oidc\Port\CodeChallengeMethodsInterface;
-use Heidi\Oidc\Port\ServedResponseModesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Beffroi\Oidc\Domain\Authorization\RedirectTarget;
+use Beffroi\Oidc\Domain\Authorization\ResponseTypeNames;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\UnsupportedResponseTypeException;
+use Beffroi\Oidc\Port\AuthorizationDetailsReaderInterface;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Oidc\Port\CodeChallengeMethodsInterface;
+use Beffroi\Oidc\Port\ServedResponseModesInterface;
 use function sprintf;
 
 /**

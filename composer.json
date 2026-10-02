@@ -1,5 +1,5 @@
 {
-    "name": "heidi/oidc",
+    "name": "beffroi/oidc",
     "description": "OAuth 2.0 and OpenID Connect module of the IdP: clients, authorization requests, grants, tokens, discovery, JWKS, UserInfo, logout. Pure PHP.",
     "type": "library",
     "license": "MIT",
@@ -15,18 +15,18 @@
     ],
     "require": {
         "php": ">=8.4",
-        "heidi/core": "self.version",
+        "beffroi/core": "self.version",
         "spomky-labs/pki-framework": "^1.2.1",
         "web-token/jwt-library": "^4.2"
     },
     "autoload": {
         "psr-4": {
-            "Heidi\\Oidc\\": "src/"
+            "Beffroi\\Oidc\\": "src/"
         }
     },
     "extra": {
         "thanks": {
-            "name": "heidi/framework"
+            "name": "beffroi/framework"
         }
     }
 }

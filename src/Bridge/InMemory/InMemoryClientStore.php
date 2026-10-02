@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_find;
 use function array_values;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
 use function array_slice;
-use Heidi\Oidc\Domain\Client\Registration\ClientRetention;
-use Heidi\Oidc\Port\ClientStoreInterface;
-use Heidi\Oidc\Port\UnusedClientsInterface;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRetention;
+use Beffroi\Oidc\Port\ClientStoreInterface;
+use Beffroi\Oidc\Port\UnusedClientsInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process. A row written twice is one row, as it

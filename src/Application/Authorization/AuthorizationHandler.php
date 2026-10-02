@@ -2,30 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Application\Consent\ConsentGranting;
-use Heidi\Oidc\Application\Consent\RequiredConsent;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
-use Heidi\Oidc\Domain\Authorization\Prompt;
-use Heidi\Oidc\Domain\Interaction\AuthorizationDecision;
-use Heidi\Oidc\Domain\Interaction\ConsentRequired;
-use Heidi\Oidc\Domain\Interaction\Interaction;
-use Heidi\Oidc\Domain\Interaction\LoginRequired;
-use Heidi\Oidc\Domain\Interaction\LoginRequirement;
-use Heidi\Oidc\Domain\Interaction\StepUp;
-use Heidi\Oidc\Exception\AccessDeniedException;
-use Heidi\Oidc\Exception\ConsentRequiredException;
-use Heidi\Oidc\Exception\InteractionCompletedException;
-use Heidi\Oidc\Exception\InteractionExpiredException;
-use Heidi\Oidc\Exception\LoginRequiredException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\InteractionRepositoryInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Application\Consent\ConsentGranting;
+use Beffroi\Oidc\Application\Consent\RequiredConsent;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Beffroi\Oidc\Domain\Authorization\Prompt;
+use Beffroi\Oidc\Domain\Interaction\AuthorizationDecision;
+use Beffroi\Oidc\Domain\Interaction\ConsentRequired;
+use Beffroi\Oidc\Domain\Interaction\Interaction;
+use Beffroi\Oidc\Domain\Interaction\LoginRequired;
+use Beffroi\Oidc\Domain\Interaction\LoginRequirement;
+use Beffroi\Oidc\Domain\Interaction\StepUp;
+use Beffroi\Oidc\Exception\AccessDeniedException;
+use Beffroi\Oidc\Exception\ConsentRequiredException;
+use Beffroi\Oidc\Exception\InteractionCompletedException;
+use Beffroi\Oidc\Exception\InteractionExpiredException;
+use Beffroi\Oidc\Exception\LoginRequiredException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\InteractionRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**

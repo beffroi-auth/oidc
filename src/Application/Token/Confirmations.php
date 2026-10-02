@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_keys;
 use function array_values;
 use function count;
-use Heidi\Oidc\Domain\Token\ConfirmationInterface;
-use Heidi\Oidc\Domain\Token\ConfirmationKindInterface;
-use Heidi\Oidc\Domain\Token\TokenResponse;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Domain\Token\ConfirmationKindInterface;
+use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use function in_array;
 use function is_array;
 use function is_string;
-use Heidi\Oidc\Port\ConfirmationReaderInterface;
-use Heidi\Oidc\Port\ServedTokenSchemesInterface;
+use Beffroi\Oidc\Port\ConfirmationReaderInterface;
+use Beffroi\Oidc\Port\ServedTokenSchemesInterface;
 use function sprintf;
 
 /**

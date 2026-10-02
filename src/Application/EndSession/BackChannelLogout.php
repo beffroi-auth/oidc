@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\EndSession;
+namespace Beffroi\Oidc\Application\EndSession;
 
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Domain\Event\LogoutTokenIssued;
-use Heidi\Oidc\Port\LoggedInClientsInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Domain\Event\LogoutTokenIssued;
+use Beffroi\Oidc\Port\LoggedInClientsInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 

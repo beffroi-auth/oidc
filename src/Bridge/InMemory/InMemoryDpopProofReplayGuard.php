@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Port\DpopProofReplayGuardInterface;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Port\DpopProofReplayGuardInterface;
 use function sprintf;
 
 /**

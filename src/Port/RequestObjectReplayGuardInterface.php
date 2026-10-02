@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\Client;
 
 /**
  * Remembers the "jti" of a request object until the object expires (CIBA Core §7.1.1), so that one

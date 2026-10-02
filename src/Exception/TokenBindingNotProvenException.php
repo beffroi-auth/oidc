@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
-use Heidi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
 
 /**
  * RFC 8705 §3 and RFC 9449 §7.1 "invalid_token": the access token is bound to something this request did

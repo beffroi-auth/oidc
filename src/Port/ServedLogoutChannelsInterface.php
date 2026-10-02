@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\EndSession\LogoutChannel;
+use Beffroi\Oidc\Domain\EndSession\LogoutChannel;
 
 /**
  * The ways of telling a client that a session ended the provider actually serves; the integration wires

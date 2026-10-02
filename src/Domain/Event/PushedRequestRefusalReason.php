@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
 /**
  * Why a "request_uri" of RFC 9126 §2.2 granted nothing. For the audit trail; the client only reads

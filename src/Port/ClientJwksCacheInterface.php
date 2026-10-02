@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\CachedClientJwks;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\CachedClientJwks;
+use Beffroi\Oidc\Domain\Client\Client;
 
 /**
  * Where the keys read back from a client's "jwks_uri" are kept between requests, with the moment they

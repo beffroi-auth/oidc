@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Null;
+namespace Beffroi\Oidc\Bridge\Null;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Port\DpopNonceInterface;
+use Beffroi\Oidc\Port\DpopNonceInterface;
 
 /**
  * A provider that asks no nonce of a proof (RFC 9449 §8, which leaves it to the server): the window of

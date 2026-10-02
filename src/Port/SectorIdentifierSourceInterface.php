@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Claims\SectorIdentifier;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * One way a client says which sector it belongs to (OIDC Core §8.1, CIBA Core §4). A sector decides which

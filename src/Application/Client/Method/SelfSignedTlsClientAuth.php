@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
-use Heidi\Oidc\Application\Client\ClientKeySetProvider;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\KeyBearingMethodInterface;
-use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
+use Beffroi\Oidc\Application\Client\ClientKeySetProvider;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\KeyBearingMethodInterface;
+use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
 
 /**
  * "self_signed_tls_client_auth" (RFC 8705 §2.2): the client presents a certificate it signed itself, and

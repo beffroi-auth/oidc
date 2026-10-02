@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Core\Domain\Credential\Credential;
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
-use Heidi\Core\Domain\Session\AuthenticationMethod;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Interaction\StepUp;
-use Heidi\Oidc\Exception\UnmetAuthenticationRequirementsException;
+use Beffroi\Core\Domain\Credential\Credential;
+use Beffroi\Core\Domain\Session\AuthenticationContextClass;
+use Beffroi\Core\Domain\Session\AuthenticationMethod;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Interaction\StepUp;
+use Beffroi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 
 /**
  * What a request demands of the authentication, judged against what this provider can prove (decision

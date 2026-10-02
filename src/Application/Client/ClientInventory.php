@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\InventoriedClient;
-use Heidi\Oidc\Port\ClientInventoryInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\InventoriedClient;
+use Beffroi\Oidc\Port\ClientInventoryInterface;
 
 /**
  * Every client of a tenant, whatever holds it (decision 0009): the ones a deployment declared and the

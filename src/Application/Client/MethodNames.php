@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use function array_map;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
 /**
  * The names of client authentication methods, read from the methods themselves. Every place that has to

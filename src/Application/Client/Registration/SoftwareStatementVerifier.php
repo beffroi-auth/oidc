@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function count;
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Metadata\AttestedMembers;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Domain\Client\Registration\StatementIssuer;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\InvalidSoftwareStatementException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
-use Heidi\Oidc\Port\JwtKeyVerifierInterface;
-use Heidi\Oidc\Port\SoftwareStatementReplayGuardInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Metadata\AttestedMembers;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Domain\Client\Registration\StatementIssuer;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Exception\InvalidSoftwareStatementException;
+use Beffroi\Oidc\Port\CompactJwtReaderInterface;
+use Beffroi\Oidc\Port\JwtKeyVerifierInterface;
+use Beffroi\Oidc\Port\SoftwareStatementReplayGuardInterface;
 use function in_array;
 use SensitiveParameter;
 

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
 use function hash_equals;
-use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Oidc\Application\Client\ClientAssertionValidator;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Client\SharedClientSecret;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\ClientNotAuthenticatedHereException;
-use Heidi\Oidc\Port\ClientAssertionSecretVerifierInterface;
+use Beffroi\Core\Port\PasswordHasherInterface;
+use Beffroi\Oidc\Application\Client\ClientAssertionValidator;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
+use Beffroi\Oidc\Domain\Client\SharedClientSecret;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
+use Beffroi\Oidc\Port\ClientAssertionSecretVerifierInterface;
 use SensitiveParameter;
 
 /**

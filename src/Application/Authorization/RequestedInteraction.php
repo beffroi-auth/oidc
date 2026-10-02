@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use function count;
 use function explode;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Authorization\ClaimsRequest;
-use Heidi\Oidc\Domain\Authorization\Display;
-use Heidi\Oidc\Domain\Authorization\Prompt;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Authorization\ClaimsRequest;
+use Beffroi\Oidc\Domain\Authorization\Display;
+use Beffroi\Oidc\Domain\Authorization\Prompt;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
 use function in_array;
 use function preg_match;
 

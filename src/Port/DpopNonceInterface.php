@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Exception\UseDpopNonceException;
+use Beffroi\Oidc\Exception\UseDpopNonceException;
 
 /**
  * Whether a proof has to carry a value this provider handed out, and whether the one it carries is

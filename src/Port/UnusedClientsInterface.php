@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\ClientRecord;
-use Heidi\Oidc\Domain\Client\Registration\ClientRetention;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRetention;
 
 /**
  * What a source of clients may drop (decision 0009). A source that holds declarations implements none of

@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Application\Client\AuthenticatedClient;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\ClientAuthorization;
-use Heidi\Oidc\Domain\Token\IssuedTokens;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidClientException;
-use Heidi\Oidc\Exception\InvalidScopeException;
-use Heidi\Oidc\Exception\InvalidTargetException;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Application\Client\AuthenticatedClient;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\ClientAuthorization;
+use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidClientException;
+use Beffroi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Exception\InvalidTargetException;
 use Psr\Clock\ClockInterface;
 
 /**

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Issuer;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**

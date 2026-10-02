@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 use function array_is_list;
 use ArrayIterator;
 use function count;
 use Countable;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use function is_array;
 use function is_string;

@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use DateInterval;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Application\Client\AuthenticatedClient;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\IssuedTokens;
-use Heidi\Oidc\Domain\Token\RefreshTokenFamily;
-use Heidi\Oidc\Domain\Token\UserAuthorization;
-use Heidi\Oidc\Exception\AccessDeniedException;
-use Heidi\Oidc\Exception\AuthorizationPendingException;
-use Heidi\Oidc\Exception\ExpiredTokenException;
-use Heidi\Oidc\Exception\InvalidGrantException;
-use Heidi\Oidc\Exception\SlowDownException;
-use Heidi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Application\Client\AuthenticatedClient;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Domain\Token\RefreshTokenFamily;
+use Beffroi\Oidc\Domain\Token\UserAuthorization;
+use Beffroi\Oidc\Exception\AccessDeniedException;
+use Beffroi\Oidc\Exception\AuthorizationPendingException;
+use Beffroi\Oidc\Exception\ExpiredTokenException;
+use Beffroi\Oidc\Exception\InvalidGrantException;
+use Beffroi\Oidc\Exception\SlowDownException;
+use Beffroi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**

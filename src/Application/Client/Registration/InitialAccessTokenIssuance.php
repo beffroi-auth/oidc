@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use DateInterval;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Domain\Client\Registration\InitialAccessToken;
-use Heidi\Oidc\Domain\Client\Registration\IssuedInitialAccessToken;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\InitialAccessTokenRepositoryInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Client\Registration\InitialAccessToken;
+use Beffroi\Oidc\Domain\Client\Registration\IssuedInitialAccessToken;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 

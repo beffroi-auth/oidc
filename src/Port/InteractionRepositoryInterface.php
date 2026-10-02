@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Interaction\Interaction;
+use Beffroi\Oidc\Domain\Interaction\Interaction;
 
 interface InteractionRepositoryInterface
 {

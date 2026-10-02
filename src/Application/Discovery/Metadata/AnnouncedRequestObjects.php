@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
-use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\UnsignedRequestObjectsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
+use Beffroi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\UnsignedRequestObjectsInterface;
 
 /**
  * OIDC Discovery §3 and RFC 9101 §10.5: both ways in are served, and a "request_uri" is read back only

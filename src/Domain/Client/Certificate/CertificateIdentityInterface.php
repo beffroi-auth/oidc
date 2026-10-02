@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Certificate;
+namespace Beffroi\Oidc\Domain\Client\Certificate;
 
 /**
  * What a client registers to be recognised by the certificate it presents (RFC 8705 §2.1.2): exactly one

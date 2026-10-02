@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\RandomnessInterface;
-use Heidi\Oidc\Port\PairwiseSaltInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\RandomnessInterface;
+use Beffroi\Oidc\Port\PairwiseSaltInterface;
 
 /**
  * For tests and for the examples: a salt drawn once per tenant and written nowhere, so nothing here

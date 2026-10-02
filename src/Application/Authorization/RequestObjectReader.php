@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Exception\InvalidJweException;
-use Heidi\Core\Exception\KmsUnavailableException;
-use Heidi\Core\Port\JweDecrypterInterface;
-use Heidi\Oidc\Domain\Authorization\RequestObject;
-use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\InvalidRequestObjectException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Exception\InvalidJweException;
+use Beffroi\Core\Exception\KmsUnavailableException;
+use Beffroi\Core\Port\JweDecrypterInterface;
+use Beffroi\Oidc\Domain\Authorization\RequestObject;
+use Beffroi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Exception\InvalidRequestObjectException;
+use Beffroi\Oidc\Port\CompactJwtReaderInterface;
 use function is_array;
 use function json_decode;
 use const JSON_THROW_ON_ERROR;

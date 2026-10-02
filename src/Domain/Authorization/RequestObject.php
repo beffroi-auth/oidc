@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidRequestObjectException;
+use Beffroi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidRequestObjectException;
 use function array_all;
 use function array_is_list;
 use function in_array;

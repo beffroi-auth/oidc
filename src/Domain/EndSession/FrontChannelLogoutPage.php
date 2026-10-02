@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\EndSession;
+namespace Beffroi\Oidc\Domain\EndSession;
 
 use function array_unique;
 use function array_values;
-use Heidi\Oidc\Domain\Page\InlineScript;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Page\InlineScript;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use function sort;
 use function sprintf;

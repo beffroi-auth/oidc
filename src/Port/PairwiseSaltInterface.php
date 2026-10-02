@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Exception\KmsUnavailableException;
-use Heidi\Core\Exception\RuntimeException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Exception\KmsUnavailableException;
+use Beffroi\Core\Exception\RuntimeException;
 
 /**
  * The salt a tenant computes its pairwise identifiers with (OIDC Core §8.1). It is a secret of the

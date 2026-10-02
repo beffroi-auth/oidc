@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_is_list;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Exception\InvalidArgumentException;
-use Heidi\Core\Exception\InvalidJwsException;
-use Heidi\Core\Port\JwsVerifierInterface;
-use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Exchange\Actor;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\TokenAudience;
-use Heidi\Oidc\Domain\Token\TokenSignIn;
-use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
-use Heidi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Port\AccessTokenVerifierInterface;
-use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
-use Heidi\Oidc\Port\ConfirmationReaderInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Exception\InvalidArgumentException;
+use Beffroi\Core\Exception\InvalidJwsException;
+use Beffroi\Core\Port\JwsVerifierInterface;
+use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Exchange\Actor;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\TokenAudience;
+use Beffroi\Oidc\Domain\Token\TokenSignIn;
+use Beffroi\Oidc\Domain\Token\VerifiedAccessToken;
+use Beffroi\Oidc\Exception\InvalidArgumentException as OidcInvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Port\AccessTokenVerifierInterface;
+use Beffroi\Oidc\Port\AuthorizationDetailsReaderInterface;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Oidc\Port\ConfirmationReaderInterface;
 use function is_array;
 use function is_int;
 use function is_string;

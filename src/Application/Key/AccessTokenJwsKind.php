@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Key;
+namespace Beffroi\Oidc\Application\Key;
 
 use DateInterval;
-use Heidi\Core\Domain\Key\KeyUse;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\KeyBoundArtifactInterface;
-use Heidi\Oidc\Application\Token\JwtAccessTokenIssuer;
-use Heidi\Oidc\Port\RegisteredAccessTokenShapesInterface;
+use Beffroi\Core\Domain\Key\KeyUse;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\KeyBoundArtifactInterface;
+use Beffroi\Oidc\Application\Token\JwtAccessTokenIssuer;
+use Beffroi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 
 /**
  * The "at+jwt" access token (RFC 9068), issued only when a client of the tenant is registered for that

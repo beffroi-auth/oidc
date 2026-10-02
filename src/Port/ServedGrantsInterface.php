@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
 
 /**
  * The grants the token endpoint is wired with (OIDC Discovery §3), the one source of truth over them:

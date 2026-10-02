@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\AuthorizationDetails;
+namespace Beffroi\Oidc\Domain\AuthorizationDetails;
 
 use function array_all;
 use function array_any;
@@ -10,7 +10,7 @@ use function array_map;
 use ArrayIterator;
 use function count;
 use Countable;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use IteratorAggregate;
 use Traversable;

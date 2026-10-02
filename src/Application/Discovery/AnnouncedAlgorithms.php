@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery;
+namespace Beffroi\Oidc\Application\Discovery;
 
 use function array_merge;
 use function array_unique;
 use function array_values;
-use Heidi\Core\Port\ContentEncryptionAlgorithmsInterface;
-use Heidi\Core\Port\KeyEncryptionAlgorithmsInterface;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Core\Port\ContentEncryptionAlgorithmsInterface;
+use Beffroi\Core\Port\KeyEncryptionAlgorithmsInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Domain\Client\AssertionMethodInterface;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
 /**
  * How the document names the algorithms of the provider. Every member that lists algorithms says the

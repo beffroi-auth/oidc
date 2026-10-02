@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims;
+namespace Beffroi\Oidc\Application\Claims;
 
 use function array_keys;
-use Heidi\Oidc\Domain\Claims\SectorIdentifier;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\SectorIdentifiersInterface;
-use Heidi\Oidc\Port\SectorIdentifierSourceInterface;
+use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\SectorIdentifiersInterface;
+use Beffroi\Oidc\Port\SectorIdentifierSourceInterface;
 use function sprintf;
 
 /**

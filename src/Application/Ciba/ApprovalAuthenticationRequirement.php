@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Beffroi\Oidc\Application\Ciba;
 
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Port\CredentialRepositoryInterface;
-use Heidi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
-use Heidi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
-use Heidi\Oidc\Domain\Interaction\StepUp;
-use Heidi\Oidc\Port\ProvableMethodsInterface;
+use Beffroi\Core\Domain\Session\AuthenticationContextClass;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Port\CredentialRepositoryInterface;
+use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
+use Beffroi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
+use Beffroi\Oidc\Domain\Interaction\StepUp;
+use Beffroi\Oidc\Port\ProvableMethodsInterface;
 
 /**
  * What a backchannel authentication request asks of the authentication of the user who answers it (CIBA

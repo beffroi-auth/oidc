@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Scope;
+namespace Beffroi\Oidc\Domain\Scope;
 
 use function array_any;
 use function explode;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use function sprintf;
 use Stringable;

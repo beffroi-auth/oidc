@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Configuration;
+namespace Beffroi\Oidc\Bridge\Configuration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\PasswordHasherInterface;
-use Heidi\Oidc\Application\Client\ClientMetadataReader;
-use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Client\ClientSecretInterface;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Heidi\Oidc\Domain\Client\Metadata\DeclaredMembers;
-use Heidi\Oidc\Domain\Client\Metadata\DeploymentDefaults;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\PasswordHasherInterface;
+use Beffroi\Oidc\Application\Client\ClientMetadataReader;
+use Beffroi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Client\Metadata\DeclaredMembers;
+use Beffroi\Oidc\Domain\Client\Metadata\DeploymentDefaults;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\LogicException;
 use function is_string;
 use function preg_match;
 use SensitiveParameter;

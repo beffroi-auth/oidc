@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 /**
  * A grant whose user is asked somewhere other than in the client's own browser (RFC 8628 §3.3): the client

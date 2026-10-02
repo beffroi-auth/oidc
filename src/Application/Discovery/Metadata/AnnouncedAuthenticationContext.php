@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
 use function array_map;
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Port\AssignedSubjectTypesInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\ProvableMethodsInterface;
+use Beffroi\Core\Domain\Session\AuthenticationContextClass;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Port\AssignedSubjectTypesInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\ProvableMethodsInterface;
 
 /**
  * OIDC Discovery §3 and decision 0010: the classes of the tenant's policy that its wired logins can

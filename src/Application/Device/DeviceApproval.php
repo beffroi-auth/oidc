@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Device;
+namespace Beffroi\Oidc\Application\Device;
 
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Consent\ConsentGranting;
-use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Device\DeviceAuthorizationRecord;
-use Heidi\Oidc\Domain\Device\UserCode;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Consent\ConsentGranting;
+use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Device\DeviceAuthorizationRecord;
+use Beffroi\Oidc\Domain\Device\UserCode;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**

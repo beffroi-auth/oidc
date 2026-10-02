@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
-use Heidi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Core\Port\UuidGeneratorInterface;
 use function array_keys;
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Port\JwsSignerInterface;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\AuthorizationInterface;
-use Heidi\Oidc\Domain\Token\CarriedAuthorizationDetails;
-use Heidi\Oidc\Domain\Token\ClientSubject;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Domain\Token\NamesItsSubjectInterface;
-use Heidi\Oidc\Domain\Token\TokenSignIn;
-use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
-use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Port\JwsSignerInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
+use Beffroi\Oidc\Domain\Token\CarriedAuthorizationDetails;
+use Beffroi\Oidc\Domain\Token\ClientSubject;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Domain\Token\NamesItsSubjectInterface;
+use Beffroi\Oidc\Domain\Token\TokenSignIn;
+use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
+use Beffroi\Oidc\Port\AccessTokenShapeIssuerInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
  * RFC 9068 (architecture §4.6): "typ" is "at+jwt" (§2.1), the claims are those of §2.2 and §2.2.1, "scope"

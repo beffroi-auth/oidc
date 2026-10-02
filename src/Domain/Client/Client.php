@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 use function sprintf;
 

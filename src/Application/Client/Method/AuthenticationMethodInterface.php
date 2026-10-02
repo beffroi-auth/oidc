@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Oidc\Application\Client\ClientAuthenticationFailure;
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationFailure;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
 /**
  * A client authentication method as the endpoints run it: the name it answers to, whether the request

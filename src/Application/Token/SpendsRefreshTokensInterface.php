@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 /**
  * A grant that spends a refresh token (RFC 6749 §6): it issues nothing that was not obtained first, so

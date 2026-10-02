@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
-use Heidi\Core\Domain\Key\ContentEncryptionAlgorithmInterface;
-use Heidi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
+use Beffroi\Core\Domain\Key\ContentEncryptionAlgorithmInterface;
+use Beffroi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
 
 /**
  * What a client registered to have a document encrypted with (OIDC Registration §2, JARM §3): the "alg"

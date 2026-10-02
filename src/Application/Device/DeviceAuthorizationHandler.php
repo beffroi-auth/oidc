@@ -2,35 +2,35 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Device;
+namespace Beffroi\Oidc\Application\Device;
 
 use function array_any;
 use DateInterval;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Application\Client\ClientAuthenticator;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Application\Secret\UserCodeDrawer;
-use Heidi\Oidc\Application\Token\RequestedResources;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Device\DeviceAuthorizationRecord;
-use Heidi\Oidc\Domain\Device\DeviceAuthorizationResponse;
-use Heidi\Oidc\Domain\Device\UserCode;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidScopeException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\RuntimeException;
-use Heidi\Oidc\Exception\UnauthorizedClientException;
-use Heidi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Application\Client\ClientAuthenticator;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Application\Secret\UserCodeDrawer;
+use Beffroi\Oidc\Application\Token\RequestedResources;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Device\DeviceAuthorizationRecord;
+use Beffroi\Oidc\Domain\Device\DeviceAuthorizationResponse;
+use Beffroi\Oidc\Domain\Device\UserCode;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\RuntimeException;
+use Beffroi\Oidc\Exception\UnauthorizedClientException;
+use Beffroi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\ServedGrantsInterface;
 use Psr\Clock\ClockInterface;
 
 /**

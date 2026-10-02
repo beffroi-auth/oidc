@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\ServedAuthorizationDetailTypesInterface;
 
 /**
  * RFC 9396 §10 "authorization_details_types_supported": the types of authorization detail a client of this

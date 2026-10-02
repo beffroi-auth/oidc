@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Certificate;
+namespace Beffroi\Oidc\Domain\Client\Certificate;
 
 use function array_keys;
 use function array_values;
 use function count;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use function sprintf;
 

@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Trust;
+namespace Beffroi\Oidc\Application\Trust;
 
 use function count;
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Domain\Trust\TrustedIssuer;
-use Heidi\Oidc\Domain\Trust\VerifiedAssertion;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidGrantException;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
-use Heidi\Oidc\Port\IssuerAssertionReplayGuardInterface;
-use Heidi\Oidc\Port\JwtKeyVerifierInterface;
-use Heidi\Oidc\Port\TrustedIssuersInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
+use Beffroi\Oidc\Domain\Trust\VerifiedAssertion;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidGrantException;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Port\CompactJwtReaderInterface;
+use Beffroi\Oidc\Port\IssuerAssertionReplayGuardInterface;
+use Beffroi\Oidc\Port\JwtKeyVerifierInterface;
+use Beffroi\Oidc\Port\TrustedIssuersInterface;
 use function in_array;
 use SensitiveParameter;
 

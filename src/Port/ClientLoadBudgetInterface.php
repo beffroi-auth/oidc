@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Exception\LoadBudgetSpentException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Exception\LoadBudgetSpentException;
 
 /**
  * What a client may ask of the provider in a window (decision 0014): the share of the load a client

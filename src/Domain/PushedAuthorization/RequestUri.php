@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\PushedAuthorization;
+namespace Beffroi\Oidc\Domain\PushedAuthorization;
 
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use SensitiveParameter;
 

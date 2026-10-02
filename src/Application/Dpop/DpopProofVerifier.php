@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Dpop;
+namespace Beffroi\Oidc\Application\Dpop;
 
 use DateTimeImmutable;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Domain\Dpop\DpopProof;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidDpopProofException;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\UseDpopNonceException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
-use Heidi\Oidc\Port\ProofKeyVerifierInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Domain\Dpop\DpopProof;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidDpopProofException;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Exception\UseDpopNonceException;
+use Beffroi\Oidc\Port\CompactJwtReaderInterface;
+use Beffroi\Oidc\Port\ProofKeyVerifierInterface;
 use SensitiveParameter;
 
 /**

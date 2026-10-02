@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Ciba;
+namespace Beffroi\Oidc\Domain\Ciba;
 
 /**
  * How a client is told that the request it made on the back channel has been answered (CIBA Core §10).

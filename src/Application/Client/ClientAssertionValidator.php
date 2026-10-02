@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Client\AssertionMethodInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Port\ClientAssertionReplayGuardInterface;
+use Beffroi\Oidc\Domain\Client\AssertionMethodInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Port\ClientAssertionReplayGuardInterface;
 use function count;
 use function in_array;
 

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Ciba\DeliveryModeInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The ways the provider is wired to tell a client that a backchannel request has been answered (CIBA

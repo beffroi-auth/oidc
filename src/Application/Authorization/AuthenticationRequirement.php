@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Port\CredentialRepositoryInterface;
-use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
-use Heidi\Oidc\Domain\Authorization\Prompt;
-use Heidi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
-use Heidi\Oidc\Domain\Interaction\Interaction;
-use Heidi\Oidc\Domain\Interaction\LoginRequirement;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Port\ProvableMethodsInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Port\CredentialRepositoryInterface;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Beffroi\Oidc\Domain\Authorization\Prompt;
+use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
+use Beffroi\Oidc\Domain\Interaction\Interaction;
+use Beffroi\Oidc\Domain\Interaction\LoginRequirement;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\ProvableMethodsInterface;
 use function sprintf;
 
 /**

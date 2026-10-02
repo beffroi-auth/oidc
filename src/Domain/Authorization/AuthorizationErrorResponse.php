@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
-use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Core\Domain\Tenant\Issuer;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 use function sprintf;
 
 /**

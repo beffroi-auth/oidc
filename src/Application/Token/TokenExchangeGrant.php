@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Application\Client\AuthenticatedClient;
-use Heidi\Oidc\Application\Exchange\PresentedTokenTypes;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Client\TokenExchange;
-use Heidi\Oidc\Domain\Exchange\Actor;
-use Heidi\Oidc\Domain\Exchange\PresentedToken;
-use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\ClientSubject;
-use Heidi\Oidc\Domain\Token\IssuedTokens;
-use Heidi\Oidc\Domain\Token\SubjectAuthorization;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\InvalidScopeException;
-use Heidi\Oidc\Exception\InvalidTargetException;
-use Heidi\Oidc\Exception\UnauthorizedClientException;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Application\Client\AuthenticatedClient;
+use Beffroi\Oidc\Application\Exchange\PresentedTokenTypes;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Client\TokenExchange;
+use Beffroi\Oidc\Domain\Exchange\Actor;
+use Beffroi\Oidc\Domain\Exchange\PresentedToken;
+use Beffroi\Oidc\Domain\Exchange\TokenTypeIdentifier;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\ClientSubject;
+use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Domain\Token\SubjectAuthorization;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Exception\InvalidTargetException;
+use Beffroi\Oidc\Exception\UnauthorizedClientException;
 use Psr\Clock\ClockInterface;
 use function sprintf;
 

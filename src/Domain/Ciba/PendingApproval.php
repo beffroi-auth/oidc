@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Ciba;
+namespace Beffroi\Oidc\Domain\Ciba;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Tenant\Tenant;
 use Symfony\Component\Uid\Uuid;
 
 /**

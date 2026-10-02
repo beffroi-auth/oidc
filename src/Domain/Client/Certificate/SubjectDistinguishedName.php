@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Certificate;
+namespace Beffroi\Oidc\Domain\Client\Certificate;
 
 use function hash_equals;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * "tls_client_auth_subject_dn" (RFC 8705 §2.1.2): the expected subject distinguished name of the

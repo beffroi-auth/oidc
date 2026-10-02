@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Grant\GrantRecord;
+use Beffroi\Oidc\Domain\Grant\GrantRecord;
 use Symfony\Component\Uid\Uuid;
 
 /**

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Registration;
+namespace Beffroi\Oidc\Domain\Client\Registration;
 
 use function array_find;
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * What a tenant does with a client that registers itself (RFC 7591, decision 0009). A tenant that has no

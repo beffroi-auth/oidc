@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba\Hint;
+namespace Beffroi\Oidc\Application\Ciba\Hint;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Application\Authorization\IdTokenHintVerifier;
-use Heidi\Oidc\Application\Hint\UserHintInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Application\Authorization\IdTokenHintVerifier;
+use Beffroi\Oidc\Application\Hint\UserHintInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use SensitiveParameter;
 
 /**

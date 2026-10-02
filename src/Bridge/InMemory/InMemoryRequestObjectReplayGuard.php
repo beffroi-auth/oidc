@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Port\RequestObjectReplayGuardInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Port\RequestObjectReplayGuardInterface;
 use function sprintf;
 
 /**

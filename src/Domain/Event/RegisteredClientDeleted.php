@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Event\DomainEventInterface;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Event\DomainEventInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
 
 /**
  * A client this provider had registered itself is gone (RFC 7592 §2.3, decision 0009). One event for one

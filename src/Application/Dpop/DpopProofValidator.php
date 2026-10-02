@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Dpop;
+namespace Beffroi\Oidc\Application\Dpop;
 
 use DateInterval;
 use DateTimeImmutable;
 use function hash;
 use function hash_equals;
-use Heidi\Oidc\Domain\Dpop\DpopProof;
-use Heidi\Oidc\Domain\Token\Base64Url;
-use Heidi\Oidc\Domain\Token\KeyConfirmation;
-use Heidi\Oidc\Exception\InvalidDpopProofException;
-use Heidi\Oidc\Exception\UseDpopNonceException;
-use Heidi\Oidc\Port\DpopNonceInterface;
-use Heidi\Oidc\Port\DpopProofReplayGuardInterface;
+use Beffroi\Oidc\Domain\Dpop\DpopProof;
+use Beffroi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use Beffroi\Oidc\Exception\InvalidDpopProofException;
+use Beffroi\Oidc\Exception\UseDpopNonceException;
+use Beffroi\Oidc\Port\DpopNonceInterface;
+use Beffroi\Oidc\Port\DpopProofReplayGuardInterface;
 use SensitiveParameter;
 use function sprintf;
 use function str_ends_with;

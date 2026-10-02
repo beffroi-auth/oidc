@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Event;
+namespace Beffroi\Oidc\Domain\Event;
 
 /**
  * For the audit trail; the client only reads "invalid_request" or "invalid_client" (RFC 6749 §5.2).

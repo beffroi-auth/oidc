@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * OIDC Core §3.1.2.6 "login_required": prompt=none and the user is not authenticated as the request demands.

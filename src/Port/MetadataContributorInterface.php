@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * What one specification the provider implements adds to the document it publishes (OIDC Discovery §3,

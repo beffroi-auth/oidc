@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\AuthorizationInterface;
-use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\AccessTokenShapeIssuerInterface;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
+use Beffroi\Oidc\Port\AccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\AccessTokenShapeIssuerInterface;
 
 /**
  * The opaque shape of the access token (architecture §4.6): a random value, and a record kept under its

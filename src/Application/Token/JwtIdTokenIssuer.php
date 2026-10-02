@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use DateInterval;
 use DateTimeImmutable;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
-use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
-use Heidi\Oidc\Domain\Token\TokenHash;
-use Heidi\Oidc\Port\ClaimsProviderInterface;
-use Heidi\Oidc\Port\IdTokenIssuerInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Client\ClientDocumentIssuer;
+use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
+use Beffroi\Oidc\Domain\Token\TokenHash;
+use Beffroi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Oidc\Port\IdTokenIssuerInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
  * OIDC Core §2, §3.1.3.6 (architecture §4.6): signed in the algorithm the client registered for, or in the

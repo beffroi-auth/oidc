@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
 use function in_array;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\EndSession\LogoutChannel;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\ServedLogoutChannelsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\EndSession\LogoutChannel;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\ServedLogoutChannelsInterface;
 
 /**
  * RP-Initiated Logout §2.1, Back-Channel Logout 1.0 §3 and Front-Channel Logout 1.0 §3: where a client

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Beffroi\Oidc\Application\Ciba;
 
 use function array_map;
-use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
+use Beffroi\Oidc\Domain\Ciba\DeliveryModeInterface;
 
 /**
  * The names of delivery modes, read from the modes themselves. Every place that has to say them, the

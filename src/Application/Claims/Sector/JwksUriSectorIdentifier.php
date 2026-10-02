@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims\Sector;
+namespace Beffroi\Oidc\Application\Claims\Sector;
 
-use Heidi\Oidc\Domain\Claims\SectorIdentifier;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Port\SectorIdentifierSourceInterface;
+use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Port\SectorIdentifierSourceInterface;
 
 /**
  * CIBA Core §4: the sector of a client that registers no redirection URI at all, the host of its

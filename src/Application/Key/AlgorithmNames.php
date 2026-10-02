@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Key;
+namespace Beffroi\Oidc\Application\Key;
 
 use function array_map;
-use Heidi\Core\Domain\Algorithm\NamedAlgorithmInterface;
+use Beffroi\Core\Domain\Algorithm\NamedAlgorithmInterface;
 
 /**
  * The names of the algorithms the provider is wired with, whatever they are wired for. Every place that

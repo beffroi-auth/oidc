@@ -2,31 +2,31 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\UserInfo;
+namespace Beffroi\Oidc\Application\UserInfo;
 
 use function array_fill_keys;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Application\Client\ClientDocumentIssuer;
-use Heidi\Oidc\Application\Dpop\DpopProofVerifier;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Application\Token\AccessTokenInspector;
-use Heidi\Oidc\Application\Token\PresentedAccessTokenParser;
-use Heidi\Oidc\Domain\Authorization\ClaimRequest;
-use Heidi\Oidc\Domain\Client\Certificate\ClientCertificate;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Token\CertificateConfirmation;
-use Heidi\Oidc\Domain\Token\ProvenPossession;
-use Heidi\Oidc\Domain\UserInfo\UserInfoResponse;
-use Heidi\Oidc\Exception\InsufficientScopeException;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Exception\MissingBearerTokenException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\TokenBindingNotProvenException;
-use Heidi\Oidc\Port\ClaimsProviderInterface;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Application\Client\ClientDocumentIssuer;
+use Beffroi\Oidc\Application\Dpop\DpopProofVerifier;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Application\Token\AccessTokenInspector;
+use Beffroi\Oidc\Application\Token\PresentedAccessTokenParser;
+use Beffroi\Oidc\Domain\Authorization\ClaimRequest;
+use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Token\CertificateConfirmation;
+use Beffroi\Oidc\Domain\Token\ProvenPossession;
+use Beffroi\Oidc\Domain\UserInfo\UserInfoResponse;
+use Beffroi\Oidc\Exception\InsufficientScopeException;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Exception\MissingBearerTokenException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\TokenBindingNotProvenException;
+use Beffroi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
  * The UserInfo endpoint (OIDC Core §5.3, architecture §4.7): an access token (RFC 6750 §2, RFC 9449 §7.1)

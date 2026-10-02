@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
 use function array_filter;
 use function array_values;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Client\MethodNames;
-use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
-use Heidi\Oidc\Port\ClientAuthenticationMethodsInterface;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Client\MethodNames;
+use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
  * RFC 7662 §2 and RFC 9701 §6: where a token is introspected, how the caller authenticates there, and

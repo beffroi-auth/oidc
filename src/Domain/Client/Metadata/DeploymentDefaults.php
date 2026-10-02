@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Metadata;
+namespace Beffroi\Oidc\Domain\Client\Metadata;
 
 /**
  * What a deployment means when it declares a client and writes nothing: the browser flow and the renewal

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
-use Heidi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
+use Beffroi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
+use Beffroi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 
 /**
  * For tests and for the examples: nothing here survives the process, and one process claims a record

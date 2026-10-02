@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidAuthorizationDetailsException;
-use Heidi\Oidc\Port\AuthorizationDetailsReaderInterface;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidAuthorizationDetailsException;
+use Beffroi\Oidc\Port\AuthorizationDetailsReaderInterface;
 
 /**
  * What the "authorization_details" parameter of an authorization request must be (RFC 9396 §2), judged

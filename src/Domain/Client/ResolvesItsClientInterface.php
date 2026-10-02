@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
-use Heidi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Tenant\Tenant;
 
 /**
  * A record the provider keeps for a client it does not keep with it (architecture §4.1): what is stored

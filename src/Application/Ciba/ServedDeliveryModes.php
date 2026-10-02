@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Beffroi\Oidc\Application\Ciba;
 
 use function array_values;
-use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\ServedDeliveryModesInterface;
+use Beffroi\Oidc\Domain\Ciba\DeliveryModeInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\ServedDeliveryModesInterface;
 use function sprintf;
 
 /**

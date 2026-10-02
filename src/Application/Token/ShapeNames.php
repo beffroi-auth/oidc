@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_map;
-use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
+use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
 
 /**
  * The names of the shapes an access token is written in, read from the shapes themselves. Every place

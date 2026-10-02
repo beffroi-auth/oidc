@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Oidc\Domain\Client\ClientRecord;
-use Heidi\Oidc\Domain\Event\RegisteredClientDeleted;
-use Heidi\Oidc\Port\ClientStoreInterface;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Oidc\Domain\Event\RegisteredClientDeleted;
+use Beffroi\Oidc\Port\ClientStoreInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**

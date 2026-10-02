@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Ciba\DeliveryModeNames;
-use Heidi\Oidc\Application\Discovery\AnnouncedAlgorithms;
-use Heidi\Oidc\Port\EndpointLocatorInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
-use Heidi\Oidc\Port\ServedDeliveryModesInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Ciba\DeliveryModeNames;
+use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
+use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Oidc\Port\ServedDeliveryModesInterface;
+use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
  * CIBA Core §4: where a client starts a request for a user it names, and the ways it may be told that

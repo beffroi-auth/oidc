@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Authorization\ResponseModeNames;
-use Heidi\Oidc\Exception\UnsupportedResponseModeException;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Authorization\ResponseModeNames;
+use Beffroi\Oidc\Exception\UnsupportedResponseModeException;
 use function is_string;
-use Heidi\Oidc\Port\ServedResponseModesInterface;
+use Beffroi\Oidc\Port\ServedResponseModesInterface;
 
 /**
  * The mode the answer of an authorization request is delivered in (OAuth 2.0 Multiple Response Type

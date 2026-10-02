@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Application\Client\ClientKeySetProvider;
-use Heidi\Oidc\Application\Request\RequestParameters;
-use Heidi\Oidc\Domain\Authorization\RequestObject;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
-use Heidi\Oidc\Exception\ClientKeysUnavailableException;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Exception\InvalidRequestException;
-use Heidi\Oidc\Exception\InvalidRequestObjectException;
-use Heidi\Oidc\Exception\InvalidRequestUriException;
-use Heidi\Oidc\Exception\OAuth2Exception;
-use Heidi\Oidc\Exception\RequestObjectUnavailableException;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
-use Heidi\Oidc\Port\JwtKeyVerifierInterface;
-use Heidi\Oidc\Port\RequestObjectFetcherInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Application\Client\ClientKeySetProvider;
+use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Authorization\RequestObject;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Oidc\Exception\InvalidRequestObjectException;
+use Beffroi\Oidc\Exception\InvalidRequestUriException;
+use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Exception\RequestObjectUnavailableException;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Oidc\Port\JwtKeyVerifierInterface;
+use Beffroi\Oidc\Port\RequestObjectFetcherInterface;
 use Psr\Clock\ClockInterface;
 
 /**

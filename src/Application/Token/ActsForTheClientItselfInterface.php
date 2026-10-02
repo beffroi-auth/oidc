@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 /**
  * A grant a client uses for itself, with nobody signed in behind it (RFC 6749 §4.4): it authenticates the

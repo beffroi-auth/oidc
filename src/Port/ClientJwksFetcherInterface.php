@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\ClientJwks;
-use Heidi\Oidc\Domain\Client\ClientUri;
-use Heidi\Oidc\Exception\ClientKeysUnavailableException;
+use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Domain\Client\ClientUri;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
 
 /**
  * Reads back the JWK Set a client publishes (RFC 7591 §2). One GET over HTTPS, no redirect followed

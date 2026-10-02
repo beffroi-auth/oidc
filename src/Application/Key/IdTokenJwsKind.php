@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Key;
+namespace Beffroi\Oidc\Application\Key;
 
 use DateInterval;
-use Heidi\Core\Domain\Key\KeyUse;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\KeyBoundArtifactInterface;
-use Heidi\Oidc\Application\Token\JwtIdTokenIssuer;
+use Beffroi\Core\Domain\Key\KeyUse;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\KeyBoundArtifactInterface;
+use Beffroi\Oidc\Application\Token\JwtIdTokenIssuer;
 
 /**
  * The ID token (OIDC Core §2). The lifetime is read from the issuer so that the two cannot disagree.

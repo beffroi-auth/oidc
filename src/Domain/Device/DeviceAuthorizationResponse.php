@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Device;
+namespace Beffroi\Oidc\Domain\Device;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 use function str_contains;
 use function urlencode;

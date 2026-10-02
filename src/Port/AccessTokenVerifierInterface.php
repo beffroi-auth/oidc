@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
-use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
-use Heidi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
+use Beffroi\Oidc\Domain\Token\VerifiedAccessToken;
+use Beffroi\Oidc\Exception\InvalidTokenException;
 use SensitiveParameter;
 
 /**

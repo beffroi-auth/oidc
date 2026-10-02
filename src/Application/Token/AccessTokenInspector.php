@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\AuthenticationSessionRepositoryInterface;
-use Heidi\Oidc\Domain\Token\InspectedAccessToken;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
-use Heidi\Oidc\Port\RecordedGrantsInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\AuthenticationSessionRepositoryInterface;
+use Beffroi\Oidc\Domain\Token\InspectedAccessToken;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
+use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use SensitiveParameter;
 
 /**

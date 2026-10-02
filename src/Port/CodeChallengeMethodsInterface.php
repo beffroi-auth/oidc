@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Authorization\CodeChallengeMethodInterface;
+use Beffroi\Oidc\Domain\Authorization\CodeChallengeMethodInterface;
 
 /**
  * The PKCE methods the wiring gives the provider (RFC 7636 §4.2), the one source of truth over them: what

@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Ciba;
+namespace Beffroi\Oidc\Application\Ciba;
 
 use function array_find;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Session\RequestContext;
-use Heidi\Core\Port\SecretSealerInterface;
-use Heidi\Oidc\Application\Consent\ConsentGranting;
-use Heidi\Oidc\Domain\Authorization\AuthenticationSnapshot;
-use Heidi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
-use Heidi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
-use Heidi\Oidc\Domain\Event\BackchannelRequestAnswered;
-use Heidi\Oidc\Domain\Interaction\StepUp;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Port\SecretSealerInterface;
+use Beffroi\Oidc\Application\Consent\ConsentGranting;
+use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
+use Beffroi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
+use Beffroi\Oidc\Domain\Event\BackchannelRequestAnswered;
+use Beffroi\Oidc\Domain\Interaction\StepUp;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\LogicException;
 use function hash_equals;
-use Heidi\Oidc\Port\BackchannelAuthenticationRecordRepositoryInterface;
+use Beffroi\Oidc\Port\BackchannelAuthenticationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 

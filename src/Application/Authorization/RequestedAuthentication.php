@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
 
 /**
  * What a request demands of the authentication, read before any login (architecture §4.3): the rules of a

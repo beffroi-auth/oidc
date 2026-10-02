@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Exception;
+namespace Beffroi\Oidc\Exception;
 
 /**
  * OAuth 2.0 Multiple Response Type Encoding Practices §2.1 "unsupported_response_mode": a response mode

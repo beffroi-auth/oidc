@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_any;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
-use Heidi\Oidc\Port\ServedGrantsInterface;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
+use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
  * Whether a response carries a refresh token beside its access token (RFC 6749 §4.1.4, OIDC Core §11). Every

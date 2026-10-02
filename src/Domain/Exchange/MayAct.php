@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Exchange;
+namespace Beffroi\Oidc\Domain\Exchange;
 
-use Heidi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\Subject;
 
 /**
  * Who a token says may act for its subject (RFC 8693 §4.4, the "may_act" claim). It is a statement of the

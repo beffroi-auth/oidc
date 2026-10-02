@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Claims\PairwiseSubject;
-use Heidi\Oidc\Domain\Claims\SectorIdentifier;
-use Heidi\Oidc\Port\PairwiseSubjectRepositoryInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Claims\PairwiseSubject;
+use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
+use Beffroi\Oidc\Port\PairwiseSubjectRepositoryInterface;
 use function sprintf;
 
 /**

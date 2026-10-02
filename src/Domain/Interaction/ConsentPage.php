@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
-use Heidi\Oidc\Domain\Client\ClientPresentation;
-use Heidi\Oidc\Domain\Client\ClientUri;
+use Beffroi\Oidc\Domain\Client\ClientPresentation;
+use Beffroi\Oidc\Domain\Client\ClientUri;
 use function sprintf;
 
 /**

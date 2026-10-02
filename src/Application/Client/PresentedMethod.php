@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
-use Heidi\Oidc\Domain\Client\CertificateBindingMethodInterface;
+use Beffroi\Oidc\Application\Client\Method\AuthenticationMethodInterface;
+use Beffroi\Oidc\Domain\Client\CertificateBindingMethodInterface;
 
 /**
  * A method a request presents, and the client it names under it (RFC 6749 §2.3): what a method answers

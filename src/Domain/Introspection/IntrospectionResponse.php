@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Introspection;
+namespace Beffroi\Oidc\Domain\Introspection;
 
-use Heidi\Core\Domain\Tenant\Issuer;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Domain\Token\TokenResponse;
-use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Issuer;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Domain\Token\VerifiedAccessToken;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**

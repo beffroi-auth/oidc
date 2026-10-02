@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 use DateTimeImmutable;
 use function hash_equals;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Metadata\AssignedMembers;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Heidi\Oidc\Domain\Client\Metadata\RegisteredMembers;
-use Heidi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Metadata\AssignedMembers;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
+use Beffroi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 use function sprintf;
 use Symfony\Component\Uid\Uuid;

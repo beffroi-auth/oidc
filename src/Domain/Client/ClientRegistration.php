@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client;
+namespace Beffroi\Oidc\Domain\Client;
 
 use function array_all;
 use function array_any;
 use function array_find;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Ciba\DeliveryModeInterface;
-use Heidi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
-use Heidi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
-use Heidi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
-use Heidi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
-use Heidi\Oidc\Domain\Exchange\MayAct;
-use Heidi\Oidc\Domain\Resource\ResourceIndicator;
-use Heidi\Oidc\Domain\Resource\ResourceIndicators;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Token\TokenAudience;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Ciba\DeliveryModeInterface;
+use Beffroi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
+use Beffroi\Oidc\Domain\Client\Certificate\CertificateIdentityInterface;
+use Beffroi\Oidc\Domain\Client\RequestObject\AnyRegisteredAlgorithm;
+use Beffroi\Oidc\Domain\Client\RequestObject\RequestObjectSigningInterface;
+use Beffroi\Oidc\Domain\Exchange\MayAct;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\TokenAudience;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use function preg_match;
 use function sprintf;

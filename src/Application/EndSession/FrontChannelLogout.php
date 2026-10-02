@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\EndSession;
+namespace Beffroi\Oidc\Application\EndSession;
 
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Oidc\Domain\EndSession\FrontChannelLogoutFrame;
-use Heidi\Oidc\Domain\EndSession\FrontChannelLogoutPage;
-use Heidi\Oidc\Port\LoggedInClientsInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Oidc\Domain\EndSession\FrontChannelLogoutFrame;
+use Beffroi\Oidc\Domain\EndSession\FrontChannelLogoutPage;
+use Beffroi\Oidc\Port\LoggedInClientsInterface;
 
 /**
  * Front-Channel Logout 1.0 §2 and §3: once a session has ended, the browser that holds the cookies of

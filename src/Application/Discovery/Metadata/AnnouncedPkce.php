@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery\Metadata;
+namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Key\AlgorithmNames;
-use Heidi\Oidc\Port\CodeChallengeMethodsInterface;
-use Heidi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
+use Beffroi\Oidc\Port\CodeChallengeMethodsInterface;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
  * RFC 7636 §4.2: the methods the provider is wired to verify a challenge with, read from the wiring and

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims;
+namespace Beffroi\Oidc\Application\Claims;
 
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Port\UserRepositoryInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Port\SubjectIdentifierKindInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Port\UserRepositoryInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
 
 /**
  * OIDC Core §8 "public": every client sees the subject as the core keeps it (decision 0002).

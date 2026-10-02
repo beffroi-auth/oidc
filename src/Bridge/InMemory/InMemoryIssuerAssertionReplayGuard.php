@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Trust\TrustedIssuer;
-use Heidi\Oidc\Port\IssuerAssertionReplayGuardInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
+use Beffroi\Oidc\Port\IssuerAssertionReplayGuardInterface;
 use function sprintf;
 
 /**

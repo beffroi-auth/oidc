@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_map;
-use Heidi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Client\GrantTypeName;
 
 /**
  * The names of grant types, read from the names themselves. Every place that has to say them, the

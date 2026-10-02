@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Secret;
+namespace Beffroi\Oidc\Application\Secret;
 
-use Heidi\Core\Port\RandomnessInterface;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Core\Port\RandomnessInterface;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Token\Base64Url;
 
 /**
  * Draws the values this provider hands out and recognises again later: an authorization code, a refresh

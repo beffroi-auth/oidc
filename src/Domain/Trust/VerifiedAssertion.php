@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Trust;
+namespace Beffroi\Oidc\Domain\Trust;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * What an assertion of a trusted issuer says once its signature and its claims have been judged

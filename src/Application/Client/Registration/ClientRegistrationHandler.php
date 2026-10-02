@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Client\ClientIdentifierDrawer;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Domain\Client\ClientRecord;
-use Heidi\Oidc\Domain\Client\Registration\ClientInformationResponse;
-use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\ClientRegistrationNotOfferedException;
-use Heidi\Oidc\Exception\UnauthorizedRegistrationException;
-use Heidi\Oidc\Exception\UnreadableClientMetadataException;
-use Heidi\Oidc\Port\ClientConfigurationEndpointInterface;
-use Heidi\Oidc\Port\ClientRegistrationPolicyInterface;
-use Heidi\Oidc\Port\ClientStoreInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Client\ClientIdentifierDrawer;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Oidc\Domain\Client\Registration\ClientInformationResponse;
+use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\ClientRegistrationNotOfferedException;
+use Beffroi\Oidc\Exception\UnauthorizedRegistrationException;
+use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
+use Beffroi\Oidc\Port\ClientConfigurationEndpointInterface;
+use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
+use Beffroi\Oidc\Port\ClientStoreInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Metadata;
+namespace Beffroi\Oidc\Domain\Client\Metadata;
 
 use function array_diff_key;
 use function array_flip;

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Consent;
+namespace Beffroi\Oidc\Application\Consent;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Oidc\Domain\Authorization\Prompt;
-use Heidi\Oidc\Domain\Interaction\ConsentRequirement;
-use Heidi\Oidc\Domain\Interaction\Interaction;
-use Heidi\Oidc\Port\ConsentRepositoryInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Oidc\Domain\Authorization\Prompt;
+use Beffroi\Oidc\Domain\Interaction\ConsentRequirement;
+use Beffroi\Oidc\Domain\Interaction\Interaction;
+use Beffroi\Oidc\Port\ConsentRepositoryInterface;
 
 /**
  * Whether a consent page is still needed, and what for (architecture §4.3): the counterpart of

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims;
+namespace Beffroi\Oidc\Application\Claims;
 
 use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
-use Heidi\Core\Domain\Identity\Address;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Domain\Scope\Scope;
-use Heidi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Core\Domain\Identity\Address;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Scope\Scope;
+use Beffroi\Oidc\Port\ClaimsProviderInterface;
 use function in_array;
 
 /**

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
+use Beffroi\Oidc\Domain\Client\Client;
 
 /**
  * "none" (RFC 6749 §2.1, OIDC Core §9): a public client names itself and proves nothing. It is not an

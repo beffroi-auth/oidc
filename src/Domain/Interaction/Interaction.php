@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Authorization\AuthorizationRequest;
-use Heidi\Oidc\Domain\Client\ResolvesItsClientInterface;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\InteractionCompletedException;
-use Heidi\Oidc\Exception\InteractionExpiredException;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\LogicException;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
+use Beffroi\Oidc\Domain\Client\ResolvesItsClientInterface;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\InteractionCompletedException;
+use Beffroi\Oidc\Exception\InteractionExpiredException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\LogicException;
 
 /**
  * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier

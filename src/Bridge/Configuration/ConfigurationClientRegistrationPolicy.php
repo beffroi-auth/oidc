@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\Configuration;
+namespace Beffroi\Oidc\Bridge\Configuration;
 
 use DateInterval;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Domain\Client\Registration\StatementIssuer;
-use Heidi\Oidc\Domain\Scope\Scopes;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\ClientRegistrationPolicyInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Domain\Client\Registration\StatementIssuer;
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
 
 /**
  * What a deployment wrote about the clients that register themselves (architecture §5.1, decision 0009).

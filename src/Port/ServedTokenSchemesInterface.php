@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 /**
  * The schemes a protected resource of this provider reads an access token under (RFC 6750 §2.1,

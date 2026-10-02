@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\AuthorizationDetails;
+namespace Beffroi\Oidc\Domain\AuthorizationDetails;
 
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * One type of authorization detail this provider serves (RFC 9396 §2), as the wiring hands it over: the

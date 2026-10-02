@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Client\Registration;
+namespace Beffroi\Oidc\Domain\Client\Registration;
 
-use Heidi\Oidc\Exception\UnreadableClientMetadataException;
+use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
 use function preg_replace;
 use function str_replace;
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Authorization;
+namespace Beffroi\Oidc\Domain\Authorization;
 
 use function array_is_list;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationContextClass;
-use Heidi\Core\Domain\Session\AuthenticationMethod;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Session\AuthenticationContextClass;
+use Beffroi\Core\Domain\Session\AuthenticationMethod;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
 use function is_int;
 use function is_string;

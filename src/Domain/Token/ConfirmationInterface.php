@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 /**
  * What an access token is bound to (RFC 7800 §3.1): one member of the "cnf" claim of an "at+jwt", of the

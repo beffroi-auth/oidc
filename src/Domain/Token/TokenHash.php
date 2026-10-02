@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
 use function hash;
-use Heidi\Core\Domain\Key\SignatureAlgorithmInterface;
+use Beffroi\Core\Domain\Key\SignatureAlgorithmInterface;
 use function intdiv;
 use SensitiveParameter;
 use function strlen;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\Client;
 use Symfony\Component\Uid\Uuid;
 
 /**

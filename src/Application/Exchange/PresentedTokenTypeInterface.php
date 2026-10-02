@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Exchange;
+namespace Beffroi\Oidc\Application\Exchange;
 
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Exchange\PresentedToken;
-use Heidi\Oidc\Domain\Exchange\TokenTypeIdentifier;
-use Heidi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Exchange\PresentedToken;
+use Beffroi\Oidc\Domain\Exchange\TokenTypeIdentifier;
+use Beffroi\Oidc\Exception\InvalidRequestException;
 use SensitiveParameter;
 
 /**

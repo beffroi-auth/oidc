@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Grant;
+namespace Beffroi\Oidc\Application\Grant;
 
 use function array_merge;
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Grant\GrantRecord;
-use Heidi\Oidc\Port\CanRevokeGrantsByConsentInterface;
-use Heidi\Oidc\Port\RecordedGrantsInterface;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Grant\GrantRecord;
+use Beffroi\Oidc\Port\CanRevokeGrantsByConsentInterface;
+use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

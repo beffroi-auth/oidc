@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Token\AccessToken;
-use Heidi\Oidc\Domain\Token\UserAuthorizationInterface;
+use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
 
 /**
  * Mints the ID token of a response (OIDC Core §2, architecture §4.6); the access token is given for "at_hash".

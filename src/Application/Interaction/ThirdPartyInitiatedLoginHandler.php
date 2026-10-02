@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Interaction;
+namespace Beffroi\Oidc\Application\Interaction;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\RedirectUri;
-use Heidi\Oidc\Domain\Interaction\ThirdPartyInitiatedLogin;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\RedirectUri;
+use Beffroi\Oidc\Domain\Interaction\ThirdPartyInitiatedLogin;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
  * A login this provider begins at a client (OIDC Core §4): a caller names a client of the tenant, and

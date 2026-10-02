@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Method;
+namespace Beffroi\Oidc\Application\Client\Method;
 
-use Heidi\Oidc\Application\Client\ClientAuthenticationRequest;
-use Heidi\Oidc\Domain\Client\CertificateBindingMethodInterface;
-use Heidi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
+use Beffroi\Oidc\Domain\Client\CertificateBindingMethodInterface;
+use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
 
 /**
  * A method that proves more than who the client is: it proves the client holds a key, and the tokens

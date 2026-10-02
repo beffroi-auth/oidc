@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
 use DateInterval;
-use Heidi\Oidc\Domain\Client\CachedClientJwks;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
-use Heidi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
-use Heidi\Oidc\Domain\Client\ClientJwks;
-use Heidi\Oidc\Domain\Client\ClientUri;
-use Heidi\Oidc\Exception\ClientKeysUnavailableException;
-use Heidi\Oidc\Port\ClientJwksCacheInterface;
-use Heidi\Oidc\Port\ClientJwksFetcherInterface;
+use Beffroi\Oidc\Domain\Client\CachedClientJwks;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
+use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Domain\Client\ClientUri;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
+use Beffroi\Oidc\Port\ClientJwksCacheInterface;
+use Beffroi\Oidc\Port\ClientJwksFetcherInterface;
 use Psr\Clock\ClockInterface;
 use function sprintf;
 

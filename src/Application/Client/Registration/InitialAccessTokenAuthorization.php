@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
-use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Exception\UnauthorizedRegistrationException;
-use Heidi\Oidc\Port\InitialAccessTokenRepositoryInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Exception\UnauthorizedRegistrationException;
+use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
 use function preg_match;
 use Psr\Clock\ClockInterface;
 

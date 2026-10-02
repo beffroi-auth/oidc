@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
-use Heidi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Scope\Scopes;
 
 /**
  * Send the user to the consent page, which calls grantConsent() or deny(). It carries what the page shows:

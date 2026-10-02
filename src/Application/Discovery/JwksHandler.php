@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery;
+namespace Beffroi\Oidc\Application\Discovery;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\PublicKeySetProviderInterface;
-use Heidi\Oidc\Domain\Discovery\JwkSetResponse;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\PublicKeySetProviderInterface;
+use Beffroi\Oidc\Domain\Discovery\JwkSetResponse;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The JWK Set endpoint (RFC 7517 §5, architecture §4.8): the published keys of a tenant, those that

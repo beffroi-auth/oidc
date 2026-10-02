@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims;
+namespace Beffroi\Oidc\Application\Claims;
 
 use function base64_encode;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Core\Port\UuidGeneratorInterface;
-use Heidi\Oidc\Domain\Claims\PairwiseSubject;
-use Heidi\Oidc\Domain\Claims\SectorIdentifier;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Exception\InvalidClientMetadataException;
-use Heidi\Oidc\Port\PairwiseSaltInterface;
-use Heidi\Oidc\Port\PairwiseSubjectRepositoryInterface;
-use Heidi\Oidc\Port\SectorIdentifiersInterface;
-use Heidi\Oidc\Port\SubjectIdentifierKindInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Domain\Claims\PairwiseSubject;
+use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
+use Beffroi\Oidc\Port\PairwiseSaltInterface;
+use Beffroi\Oidc\Port\PairwiseSubjectRepositoryInterface;
+use Beffroi\Oidc\Port\SectorIdentifiersInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
 use function hash;
 use Psr\Clock\ClockInterface;
 use function rtrim;

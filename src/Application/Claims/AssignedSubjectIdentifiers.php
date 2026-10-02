@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Claims;
+namespace Beffroi\Oidc\Application\Claims;
 
 use function array_key_first;
 use function array_keys;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\AssignedSubjectTypesInterface;
-use Heidi\Oidc\Port\PresentedSubjectReaderInterface;
-use Heidi\Oidc\Port\SubjectIdentifierKindInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\AssignedSubjectTypesInterface;
+use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use function implode;
 use function sprintf;
 

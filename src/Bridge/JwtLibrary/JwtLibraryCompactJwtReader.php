@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\JwtLibrary;
+namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
-use Heidi\Oidc\Domain\Token\UnverifiedJwt;
-use Heidi\Oidc\Exception\InvalidJwtException;
-use Heidi\Oidc\Port\CompactJwtReaderInterface;
+use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidJwtException;
+use Beffroi\Oidc\Port\CompactJwtReaderInterface;
 use function is_array;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use function json_decode;

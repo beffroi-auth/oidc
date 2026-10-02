@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Secret;
+namespace Beffroi\Oidc\Application\Secret;
 
-use Heidi\Core\Port\RandomnessInterface;
-use Heidi\Oidc\Domain\Device\UserCode;
+use Beffroi\Core\Port\RandomnessInterface;
+use Beffroi\Oidc\Domain\Device\UserCode;
 use function ord;
 use function str_split;
 use function strlen;

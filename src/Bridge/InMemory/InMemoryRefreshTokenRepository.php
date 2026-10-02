@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_values;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Token\RefreshToken;
-use Heidi\Oidc\Port\RefreshTokenRepositoryInterface;
-use Heidi\Oidc\Port\RefreshTokensOfAConsentInterface;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Token\RefreshToken;
+use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Oidc\Port\RefreshTokensOfAConsentInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Token\StoredAccessToken;
+use Beffroi\Oidc\Domain\Token\StoredAccessToken;
 use SensitiveParameter;
 
 /**

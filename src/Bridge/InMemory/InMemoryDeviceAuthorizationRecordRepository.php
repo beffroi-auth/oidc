@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_find;
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Device\DeviceAuthorizationRecord;
-use Heidi\Oidc\Port\CanRevokeGrantsByConsentInterface;
-use Heidi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
-use Heidi\Oidc\Port\RecordedGrantsInterface;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Device\DeviceAuthorizationRecord;
+use Beffroi\Oidc\Port\CanRevokeGrantsByConsentInterface;
+use Beffroi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
+use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

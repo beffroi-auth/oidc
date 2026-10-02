@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
 use DateTimeImmutable;
-use Heidi\Oidc\Domain\Device\DeviceAuthorizationRecord;
+use Beffroi\Oidc\Domain\Device\DeviceAuthorizationRecord;
 
 /**
  * Where the record of a device authorization request waits for its user and for the client that polls for

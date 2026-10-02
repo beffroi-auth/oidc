@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Token\ConfirmationInterface;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * Reads back what a token is bound to (RFC 7800 §3.1), whatever kept it: the claims of an "at+jwt" this

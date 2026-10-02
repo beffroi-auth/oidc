@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Hint;
+namespace Beffroi\Oidc\Application\Hint;
 
-use Heidi\Core\Domain\Identity\User;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 use SensitiveParameter;
 
 /**

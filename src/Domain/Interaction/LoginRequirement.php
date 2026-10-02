@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Interaction;
+namespace Beffroi\Oidc\Domain\Interaction;
 
 /**
  * Why the user has to authenticate (OIDC Core §3.1.2.1); with prompt=none it becomes "login_required".

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\AccessTokenShapeInterface;
+use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
 
 /**
  * Writes the access tokens of one shape (architecture §4.6), the counterpart of the verifier that reads

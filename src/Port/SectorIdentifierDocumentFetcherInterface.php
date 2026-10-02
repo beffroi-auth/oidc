@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Oidc\Domain\Client\ClientUri;
-use Heidi\Oidc\Exception\SectorIdentifierUnavailableException;
+use Beffroi\Oidc\Domain\Client\ClientUri;
+use Beffroi\Oidc\Exception\SectorIdentifierUnavailableException;
 
 /**
  * Reads back the document a client publishes behind its "sector_identifier_uri" (OIDC Registration §5): a

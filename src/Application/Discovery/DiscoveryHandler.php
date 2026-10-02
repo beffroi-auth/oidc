@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Discovery;
+namespace Beffroi\Oidc\Application\Discovery;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Domain\Discovery\ProviderMetadata;
-use Heidi\Oidc\Exception\InvalidArgumentException;
-use Heidi\Oidc\Port\MetadataContributorInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Discovery\ProviderMetadata;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\MetadataContributorInterface;
 use function array_key_exists;
 use function sprintf;
 

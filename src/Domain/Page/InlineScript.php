@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Page;
+namespace Beffroi\Oidc\Domain\Page;
 
 use function base64_encode;
 use function hash;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
  * The one script a page of this provider runs, named by its hash so that the page can refuse every other

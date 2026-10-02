@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Port;
+namespace Beffroi\Oidc\Port;
 
-use Heidi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Tenant\Tenant;
 use LogicException;
-use Heidi\Oidc\Domain\Discovery\ProviderEndpoints;
+use Beffroi\Oidc\Domain\Discovery\ProviderEndpoints;
 
 /**
  * Where the endpoints of a tenant are served to a client that presents a certificate (RFC 8705 §5). A

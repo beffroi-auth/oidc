@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Bridge\InMemory;
+namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_values;
-use Heidi\Oidc\Domain\Consent\Consent;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\StoredAccessToken;
-use Heidi\Oidc\Domain\Token\StoredUserAccessToken;
-use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokenInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokensByConsentInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
-use Heidi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
+use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Token\StoredAccessToken;
+use Beffroi\Oidc\Domain\Token\StoredUserAccessToken;
+use Beffroi\Oidc\Port\AccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokenInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokensByConsentInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokensByGrantInterface;
+use Beffroi\Oidc\Port\CanRevokeAccessTokensBySessionInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**

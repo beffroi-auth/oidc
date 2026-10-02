@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function in_array;
-use Heidi\Oidc\Domain\Client\ClientRegistration;
-use Heidi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Heidi\Oidc\Exception\InvalidClientMetadataException;
-use Heidi\Oidc\Exception\SectorIdentifierUnavailableException;
-use Heidi\Oidc\Port\SectorIdentifierDocumentFetcherInterface;
-use Heidi\Oidc\Port\SectorIdentifiersInterface;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
+use Beffroi\Oidc\Exception\SectorIdentifierUnavailableException;
+use Beffroi\Oidc\Port\SectorIdentifierDocumentFetcherInterface;
+use Beffroi\Oidc\Port\SectorIdentifiersInterface;
 use function sprintf;
 
 /**

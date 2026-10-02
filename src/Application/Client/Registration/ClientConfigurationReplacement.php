@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client\Registration;
+namespace Beffroi\Oidc\Application\Client\Registration;
 
 use function array_key_exists;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Client\ClientMetadataReader;
-use Heidi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
-use Heidi\Oidc\Domain\Client\ClientRecord;
-use Heidi\Oidc\Domain\Client\Metadata\RegisteredMembers;
-use Heidi\Oidc\Domain\Client\Registration\ClientInformationResponse;
-use Heidi\Oidc\Domain\Client\Registration\RegistrationRequest;
-use Heidi\Oidc\Exception\InvalidClientMetadataException;
-use Heidi\Oidc\Exception\UnauthorizedClientConfigurationException;
-use Heidi\Oidc\Exception\UnreadableClientMetadataException;
-use Heidi\Oidc\Port\ClientConfigurationEndpointInterface;
-use Heidi\Oidc\Port\ClientRegistrationPolicyInterface;
-use Heidi\Oidc\Port\ClientStoreInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Client\ClientMetadataReader;
+use Beffroi\Oidc\Application\Client\Method\SecretKeepingMethodInterface;
+use Beffroi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
+use Beffroi\Oidc\Domain\Client\Registration\ClientInformationResponse;
+use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
+use Beffroi\Oidc\Exception\UnauthorizedClientConfigurationException;
+use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
+use Beffroi\Oidc\Port\ClientConfigurationEndpointInterface;
+use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
+use Beffroi\Oidc\Port\ClientStoreInterface;
 use function is_string;
 use function sprintf;
 

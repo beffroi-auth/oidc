@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Authorization;
+namespace Beffroi\Oidc\Application\Authorization;
 
 use function array_all;
 use function array_is_list;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Exception\InvalidArgumentException;
-use Heidi\Core\Exception\InvalidJwsException;
-use Heidi\Core\Port\JwsVerifierInterface;
-use Heidi\Oidc\Domain\Authorization\IdTokenHint;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Exception\InvalidRequestException;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Exception\InvalidArgumentException;
+use Beffroi\Core\Exception\InvalidJwsException;
+use Beffroi\Core\Port\JwsVerifierInterface;
+use Beffroi\Oidc\Domain\Authorization\IdTokenHint;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Exception\InvalidRequestException;
 use function is_array;
 use function is_string;
 use function json_decode;

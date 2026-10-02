@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Token;
+namespace Beffroi\Oidc\Application\Token;
 
 use function array_keys;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Domain\Identity\Subject;
-use Heidi\Oidc\Domain\Secret\DrawnSecret;
-use Heidi\Oidc\Domain\Token\ClientSubject;
-use Heidi\Oidc\Domain\Token\StoredAccessToken;
-use Heidi\Oidc\Domain\Token\StoredSubjectAccessToken;
-use Heidi\Oidc\Domain\Token\StoredUserAccessToken;
-use Heidi\Oidc\Domain\Token\TokenSignIn;
-use Heidi\Oidc\Domain\Token\VerifiedAccessToken;
-use Heidi\Oidc\Exception\InvalidTokenException;
-use Heidi\Oidc\Port\AccessTokenRepositoryInterface;
-use Heidi\Oidc\Port\AccessTokenVerifierInterface;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Oidc\Domain\Token\ClientSubject;
+use Beffroi\Oidc\Domain\Token\StoredAccessToken;
+use Beffroi\Oidc\Domain\Token\StoredSubjectAccessToken;
+use Beffroi\Oidc\Domain\Token\StoredUserAccessToken;
+use Beffroi\Oidc\Domain\Token\TokenSignIn;
+use Beffroi\Oidc\Domain\Token\VerifiedAccessToken;
+use Beffroi\Oidc\Exception\InvalidTokenException;
+use Beffroi\Oidc\Port\AccessTokenRepositoryInterface;
+use Beffroi\Oidc\Port\AccessTokenVerifierInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use SensitiveParameter;
 
 /**

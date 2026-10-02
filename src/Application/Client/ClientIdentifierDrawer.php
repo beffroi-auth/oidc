@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Client;
+namespace Beffroi\Oidc\Application\Client;
 
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Oidc\Application\Secret\SecretDrawer;
-use Heidi\Oidc\Exception\LogicException;
-use Heidi\Oidc\Port\ClientRepositoryInterface;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Exception\LogicException;
+use Beffroi\Oidc\Port\ClientRepositoryInterface;
 use function sprintf;
 
 /**

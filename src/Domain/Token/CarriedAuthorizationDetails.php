@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Token;
+namespace Beffroi\Oidc\Domain\Token;
 
-use Heidi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 
 /**
  * What a response carries beyond its scopes (RFC 9396 §2, §7), asked of an authorization of any kind: the

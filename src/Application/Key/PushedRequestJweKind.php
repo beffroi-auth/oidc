@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\Key;
+namespace Beffroi\Oidc\Application\Key;
 
 use DateInterval;
-use Heidi\Core\Domain\Key\KeyUse;
-use Heidi\Core\Domain\Tenant\Tenant;
-use Heidi\Core\Port\KeyBoundArtifactInterface;
-use Heidi\Oidc\Application\PushedAuthorization\PushedAuthorizationHandler;
+use Beffroi\Core\Domain\Key\KeyUse;
+use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Core\Port\KeyBoundArtifactInterface;
+use Beffroi\Oidc\Application\PushedAuthorization\PushedAuthorizationHandler;
 
 /**
  * A request a client pushes, encrypted to a key of the provider (RFC 9126 §2, RFC 9101 §6.1). A client

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Application\EndSession;
+namespace Beffroi\Oidc\Application\EndSession;
 
-use Heidi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Core\Port\UuidGeneratorInterface;
 use DateTimeImmutable;
-use Heidi\Core\Domain\Session\AuthenticationSession;
-use Heidi\Core\Port\JwsSignerInterface;
-use Heidi\Core\Port\SignatureAlgorithmsInterface;
-use Heidi\Oidc\Domain\Client\Client;
-use Heidi\Oidc\Domain\EndSession\LogoutToken;
-use Heidi\Oidc\Domain\Token\JwtPayload;
-use Heidi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
+use Beffroi\Core\Port\JwsSignerInterface;
+use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\EndSession\LogoutToken;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
+use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
  * Mints the logout token of one client of one ended session (Back-Channel Logout 1.0 §2.4, architecture

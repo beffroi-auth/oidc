@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Heidi\Oidc\Domain\Scope;
+namespace Beffroi\Oidc\Domain\Scope;
 
 use function array_all;
 use function array_any;
@@ -10,7 +10,7 @@ use function array_map;
 use function count;
 use ArrayIterator;
 use Countable;
-use Heidi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use IteratorAggregate;
 use Stringable;
