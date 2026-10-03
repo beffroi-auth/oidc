@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Beffroi\Core\Domain\Event\DomainEventInterface;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\ClientUri;
@@ -16,8 +15,13 @@ use Symfony\Component\Uid\Uuid;
  * Carrying it to the URI the client registered is the integration's, asynchronously (architecture §5.6):
  * a client that does not answer never keeps a session open at the provider.
  */
-final readonly class LogoutTokenIssued implements DomainEventInterface
+final readonly class LogoutTokenIssued implements ConcernsAClientInterface
 {
+    /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'logout_token.issued';
+
     /**
      * @param ClientUri $logoutUri the back-channel logout URI of the client, named here so that the sender has nothing to decide
      * @param string $token the compact JWS, the one parameter of the request to come
@@ -31,5 +35,10 @@ final readonly class LogoutTokenIssued implements DomainEventInterface
         public string $token,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

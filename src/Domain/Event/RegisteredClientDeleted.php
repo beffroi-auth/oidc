@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Beffroi\Core\Domain\Event\DomainEventInterface;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 
@@ -18,13 +17,23 @@ use Beffroi\Core\Domain\Tenant\Tenant;
  * It names the client by its identifier and carries nothing of the client itself: a client carries the
  * reader of its "jwks_uri", which no broker can be sent.
  */
-final readonly class RegisteredClientDeleted implements DomainEventInterface
+final readonly class RegisteredClientDeleted implements ConcernsAClientInterface
 {
+    /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'registered_client.deleted';
+
     public function __construct(
         public DateTimeImmutable $occurredAt,
         public Tenant $tenant,
         public string $clientId,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

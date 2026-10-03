@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Beffroi\Core\Domain\Event\DomainEventInterface;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Symfony\Component\Uid\Uuid;
@@ -16,8 +15,13 @@ use Symfony\Component\Uid\Uuid;
  * kept quiet: the session is closed here whatever the client does with it, and someone has to be able to
  * see that a relying party was left believing its user is signed in. The token itself is not carried.
  */
-final readonly class LogoutTokenGivenUp implements DomainEventInterface
+final readonly class LogoutTokenGivenUp implements ConcernsAClientInterface
 {
+    /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'logout_token.given_up';
+
     /**
      * @param string $clientId the client that was to be told, named as the grants name it
      * @param string $reason what the last attempt came back with
@@ -30,5 +34,10 @@ final readonly class LogoutTokenGivenUp implements DomainEventInterface
         public Uuid $sessionId,
         public string $reason,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

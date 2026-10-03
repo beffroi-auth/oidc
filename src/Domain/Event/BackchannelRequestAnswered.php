@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
-use Beffroi\Core\Domain\Event\DomainEventInterface;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\ClientUri;
@@ -25,8 +24,13 @@ use SensitiveParameter;
  * it could read back twice without asking the KMS again, and because what is on its way to one client is
  * of no use to anybody else.
  */
-final readonly class BackchannelRequestAnswered implements DomainEventInterface
+final readonly class BackchannelRequestAnswered implements ConcernsAClientInterface
 {
+    /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'backchannel_request.answered';
+
     /**
      * @param ClientUri $notificationEndpoint where the client registered to be called (§7.1)
      * @param string $authRequestId the identifier of the request, which is the whole body of that call (§10.2)
@@ -43,5 +47,10 @@ final readonly class BackchannelRequestAnswered implements DomainEventInterface
         public string $notificationToken,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

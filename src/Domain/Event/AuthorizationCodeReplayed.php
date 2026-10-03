@@ -15,6 +15,11 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 final readonly class AuthorizationCodeReplayed implements DomainEventInterface
 {
     /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'authorization_code.replayed';
+
+    /**
      * @param string $presentedBy not necessarily the client the code was issued to
      * @param list<string> $revokedTokenHashes
      */
@@ -27,5 +32,10 @@ final readonly class AuthorizationCodeReplayed implements DomainEventInterface
         public array $revokedTokenHashes,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

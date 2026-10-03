@@ -17,6 +17,11 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class TokenRevoked implements DomainEventInterface
 {
+    /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'token.revoked';
+
     public const string REFRESH_TOKEN = 'refresh_token';
 
     public const string ACCESS_TOKEN = 'access_token';
@@ -35,5 +40,10 @@ final readonly class TokenRevoked implements DomainEventInterface
         public array $revokedAccessTokenHashes,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

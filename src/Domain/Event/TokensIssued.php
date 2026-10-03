@@ -18,6 +18,11 @@ use Symfony\Component\Uid\Uuid;
 final readonly class TokensIssued implements ClientInUseInterface
 {
     /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'tokens.issued';
+
+    /**
      * @param ConfirmationInterface|null $confirmation what the tokens that left are bound to, null for bearer ones (RFC 9449 §6, RFC 8705 §3)
      * @param Uuid|null $sessionId the session the tokens descend from, null when nobody signed in for them (RFC 6749 §4.4)
      * @param string|null $refreshTokenHash the refresh token that left, by its hash, null when none did
@@ -36,5 +41,10 @@ final readonly class TokensIssued implements ClientInUseInterface
         public ?string $refreshTokenHash,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

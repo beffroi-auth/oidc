@@ -16,6 +16,11 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 final readonly class PushedRequestRefused implements DomainEventInterface
 {
     /**
+     * The name of the act, which is what the journal writes down (issue #454).
+     */
+    public const string NAME = 'pushed_request.refused';
+
+    /**
      * @param string|null $presentedBy the "client_id" of the authorization request, null when it carries none
      * @param string|null $pushedBy the client the record is bound to, null when no record was found
      */
@@ -27,5 +32,10 @@ final readonly class PushedRequestRefused implements DomainEventInterface
         public ?string $pushedBy,
         public RequestContext $context,
     ) {
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

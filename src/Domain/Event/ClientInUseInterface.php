@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Event;
 
-use Beffroi\Core\Domain\Event\DomainEventInterface;
-
 /**
  * An event that says somebody is using a client of this provider. There are two things that mean it, and
  * they are the two the event of each announces: an authorization granted for that client, and a request it
@@ -16,10 +14,6 @@ use Beffroi\Core\Domain\Event\DomainEventInterface;
  * (decision 0009). A third thing that came to mean the same would be this interface on one more event and
  * nothing else edited; what makes that safe is that the date only ever moves forward.
  */
-interface ClientInUseInterface extends DomainEventInterface
+interface ClientInUseInterface extends ConcernsAClientInterface
 {
-    /**
-     * The client that was used, by the identifier it was registered under.
-     */
-    public string $clientId { get; }
 }
