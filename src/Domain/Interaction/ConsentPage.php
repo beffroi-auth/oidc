@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Interaction;
 
+use function array_unique;
+use function array_values;
+use Beffroi\Core\Domain\Tenant\TenantLook;
 use Beffroi\Oidc\Domain\Client\ClientPresentation;
 use Beffroi\Oidc\Domain\Client\ClientUri;
+use function implode;
 use function sprintf;
 
 /**
@@ -43,8 +47,14 @@ final readonly class ConsentPage
      */
     public array $links;
 
+    /**
+     * @param TenantLook $look what the tenant shows of itself on every page of its provider (issue #449);
+     *                         its logo is on this one too, so the policy names where that one is served
+     *                         from as well
+     */
     public function __construct(
         public ClientPresentation $presentation,
+        public TenantLook $look = new TenantLook(),
     ) {
         $links = [];
         foreach ([
@@ -64,8 +74,9 @@ final readonly class ConsentPage
      * frames it (RFC 9700 §4.15). The origin is what a source expression names (RFC 6454 §3.2), never
      * the URL, and the provider's own origin is there for the images a deployment puts in its layout.
      *
-     * A client that registered no logo leaves a policy that names no origin at all, which is the page a
-     * deployment that declares its clients itself has always served.
+     * A client that registered no logo, for a tenant that declared none either, leaves a policy that
+     * names no origin at all, which is the page a deployment that declares its clients itself has always
+     * served.
      *
      * The links are not in it and cannot be: a Content-Security-Policy says what a page loads, and a
      * link the user follows loads nothing until they follow it, in a page of their own. What bounds
@@ -74,9 +85,17 @@ final readonly class ConsentPage
      */
     public function contentSecurityPolicy(): string
     {
-        return sprintf(
-            "img-src 'self'%s; frame-ancestors 'none'",
-            $this->presentation->logoUri === null ? '' : ' ' . $this->presentation->logoUri->origin,
-        );
+        $origins = [];
+        if ($this->presentation->logoUri !== null) {
+            $origins[] = $this->presentation->logoUri->origin;
+        }
+        if ($this->look->logoUri !== null) {
+            $origins[] = $this->look->logoUri->origin;
+        }
+        // a tenant that serves its logo from where the client serves its own names that origin once: a
+        // source expression repeated is the same source, and a policy says what it allows one time
+        $origins = array_values(array_unique($origins));
+
+        return sprintf("img-src 'self'%s; frame-ancestors 'none'", $origins === [] ? '' : ' ' . implode(' ', $origins));
     }
 }
