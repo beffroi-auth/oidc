@@ -15,8 +15,14 @@ use Symfony\Component\Uid\Uuid;
  * that says one session of one subject ended at the provider, and says nothing else. Both "sub" and
  * "sid" are sent, so that a client identifies the session whether it kept one or not (§2.4 requires one
  * of the two). No "nonce" (§2.4: a logout token that carries one is refused, which is how a client tells
- * it from an ID token) and no "exp" (RFC 8417 §2: a SET states what happened, it does not expire; what
- * bounds a delivery is the retries of the sender, not a claim).
+ * it from an ID token).
+ *
+ * **It expires**, §2.4 listing "exp" among the claims it requires and §2.6 asking a client to check it
+ * the way it checks the one of an ID token. RFC 8417 §2.2 does not recommend one on a security event
+ * token, which is the base specification; this profile requires it, and the profile is what a relying
+ * party implements. Which instant it is belongs to whoever mints the token (`LogoutTokenIssuer`): the end
+ * of the delivery this provider is willing to attempt, so the token stops being valid at the moment
+ * nobody is trying to deliver it any more.
  */
 final readonly class LogoutToken
 {
@@ -37,6 +43,7 @@ final readonly class LogoutToken
         public Uuid $sessionId,
         public Uuid $jti,
         public DateTimeImmutable $issuedAt,
+        public DateTimeImmutable $expiresAt,
     ) {
     }
 
@@ -52,6 +59,7 @@ final readonly class LogoutToken
             'sub' => $this->subject->value,
             'aud' => $this->audience,
             'iat' => $this->issuedAt->getTimestamp(),
+            'exp' => $this->expiresAt->getTimestamp(),
             'jti' => $this->jti->toRfc4122(),
             // an empty JSON object, which an empty PHP array would write as "[]"
             'events' => [
