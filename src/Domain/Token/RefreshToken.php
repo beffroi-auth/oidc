@@ -71,6 +71,9 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
         if (! $session->tenant->equals($client->tenant)) {
             throw new InvalidArgumentException('A refresh token binds a session and a client of the same tenant.');
         }
+        if (! $family->tenant->equals($client->tenant)) {
+            throw new InvalidArgumentException('A refresh token binds a family and a client of the same tenant.');
+        }
         if ($issuedAt < $family->startedAt) {
             throw new InvalidArgumentException('A refresh token is issued after its family started.');
         }
