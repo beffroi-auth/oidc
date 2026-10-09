@@ -66,7 +66,7 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
         $claims['at_hash'] = TokenHash::of($accessToken->value, $algorithm);
         $claims['sid'] = $authorization->session->id->toRfc4122();
 
-        $requested = $authorization->claimsRequest === null ? [] : $authorization->claimsRequest->idToken;
+        $requested = $authorization->claimsRequest->idToken ?? [];
         if ($requested !== []) {
             $claims += $this->claims->claims($authorization->user, null, $requested);
         }
