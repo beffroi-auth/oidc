@@ -128,6 +128,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
         if ($this->refreshTokenDue->forThe($authorization)) {
             $family = new RefreshTokenFamily(
                 $this->uuids->timeOrdered(),
+                $authorization->tenant,
                 $record->authRequestIdHash,
                 $authorization->grantId,
                 $now,

@@ -111,6 +111,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         if ($this->refreshTokenDue->forThe($authorization)) {
             $family = new RefreshTokenFamily(
                 $this->uuids->timeOrdered(),
+                $authorization->tenant,
                 $record->codeHash,
                 $record->grantId,
                 $now,

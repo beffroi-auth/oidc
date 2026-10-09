@@ -118,6 +118,7 @@ final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterf
         if ($this->refreshTokenDue->forThe($authorization)) {
             $family = new RefreshTokenFamily(
                 $this->uuids->timeOrdered(),
+                $authorization->tenant,
                 $record->deviceCodeHash,
                 $authorization->grantId,
                 $now,
