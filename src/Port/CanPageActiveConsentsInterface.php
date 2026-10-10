@@ -7,6 +7,7 @@ namespace Beffroi\Oidc\Port;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Listing\Listing;
 use Beffroi\Core\Domain\Listing\Pagination;
+use Beffroi\Core\Domain\Listing\Period;
 use Beffroi\Oidc\Domain\Consent\Consent;
 
 /**
@@ -16,8 +17,10 @@ use Beffroi\Oidc\Domain\Consent\Consent;
 interface CanPageActiveConsentsInterface
 {
     /**
+     * @param Period|null $period the stretch of time they were granted over, all of them when null
+     *
      * @return Listing<Consent> the ones in force, most recently granted first; one given to a client no
      *                          longer registered is not listed, as it is not in the whole list either
      */
-    public function pageOfActiveConsents(User $user, Pagination $pagination): Listing;
+    public function pageOfActiveConsents(User $user, Pagination $pagination, ?Period $period = null): Listing;
 }
