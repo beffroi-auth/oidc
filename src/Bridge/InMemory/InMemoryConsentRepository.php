@@ -8,14 +8,17 @@ use function array_values;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Core\Domain\Listing\Listing;
+use Beffroi\Core\Domain\Listing\Pagination;
 use Beffroi\Oidc\Port\ActiveConsentsInterface;
+use Beffroi\Oidc\Port\CanPageActiveConsentsInterface;
 use Beffroi\Oidc\Port\ConsentRepositoryInterface;
 use function usort;
 
 /**
  * For tests and for the examples: nothing here survives the process.
  */
-final class InMemoryConsentRepository implements ConsentRepositoryInterface, ActiveConsentsInterface
+final class InMemoryConsentRepository implements ConsentRepositoryInterface, ActiveConsentsInterface, CanPageActiveConsentsInterface
 {
     /**
      * @var array<string, Consent>
@@ -40,6 +43,14 @@ final class InMemoryConsentRepository implements ConsentRepositoryInterface, Act
         }
 
         return $found;
+    }
+
+    /**
+     * @return Listing<Consent>
+     */
+    public function pageOfActiveConsents(User $user, Pagination $pagination): Listing
+    {
+        return Listing::of($this->activeOf($user), $pagination);
     }
 
     /**
