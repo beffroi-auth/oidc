@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use function hash;
+use Beffroi\Core\Domain\Encoding\Base64Url;
 use Beffroi\Core\Domain\Key\SignatureAlgorithmInterface;
 use function intdiv;
 use SensitiveParameter;

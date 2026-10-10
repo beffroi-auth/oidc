@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Claims;
 
-use function base64_encode;
+use Beffroi\Core\Domain\Encoding\Base64Url;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Port\UuidGeneratorInterface;
@@ -20,8 +20,6 @@ use Beffroi\Oidc\Port\SectorIdentifiersInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
 use function hash;
 use Psr\Clock\ClockInterface;
-use function rtrim;
-use function strtr;
 
 /**
  * OIDC Core §8.1 "pairwise": each sector sees a user under an identifier of its own, and no two sectors can
@@ -106,6 +104,6 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
     {
         $digest = hash('sha256', $sector->host . $user->subject->value . $salt, true);
 
-        return new Subject(rtrim(strtr(base64_encode($digest), '+/', '-_'), '='));
+        return new Subject(Base64Url::encode($digest));
     }
 }

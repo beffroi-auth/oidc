@@ -7,7 +7,7 @@ namespace Beffroi\Oidc\Domain\Client\Certificate;
 use function base64_decode;
 use function hash;
 use function hash_equals;
-use Beffroi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Core\Domain\Encoding\Base64Url;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
 use function preg_replace;

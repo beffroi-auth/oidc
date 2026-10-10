@@ -9,7 +9,7 @@ use DateTimeImmutable;
 use function hash;
 use function hash_equals;
 use Beffroi\Oidc\Domain\Dpop\DpopProof;
-use Beffroi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Core\Domain\Encoding\Base64Url;
 use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 use Beffroi\Oidc\Exception\InvalidDpopProofException;
 use Beffroi\Oidc\Exception\UseDpopNonceException;

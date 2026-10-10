@@ -6,7 +6,7 @@ namespace Beffroi\Oidc\Domain\Authorization;
 
 use function hash;
 use function hash_equals;
-use Beffroi\Oidc\Domain\Token\Base64Url;
+use Beffroi\Core\Domain\Encoding\Base64Url;
 use SensitiveParameter;
 
 /**

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
-use function base64_encode;
+use Beffroi\Core\Domain\Encoding\Base64Url;
 use Beffroi\Oidc\Domain\Client\SharedClientSecret;
 use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
 use Beffroi\Oidc\Exception\InvalidJwtException;
@@ -14,9 +14,7 @@ use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use function rtrim;
 use function sprintf;
-use function strtr;
 use Throwable;
 
 /**
@@ -51,7 +49,7 @@ final readonly class JwtLibraryClientAssertionSecretVerifier implements ClientAs
         }
         $key = new JWK([
             'kty' => 'oct',
-            'k' => rtrim(strtr(base64_encode($secret->value), '+/', '-_'), '='),
+            'k' => Base64Url::encode($secret->value),
         ]);
         if (! $this->verifier->verifyWithKey($jws, $key, 0)) {
             throw new InvalidJwtException('The MAC of the client assertion does not verify against the secret of the client.');
