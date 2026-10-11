@@ -10,6 +10,8 @@ use function array_map;
 use ArrayIterator;
 use function count;
 use Countable;
+use function explode;
+use function implode;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use IteratorAggregate;
 use Traversable;
@@ -26,6 +28,12 @@ use Traversable;
  */
 final readonly class ResourceIndicators implements Countable, IteratorAggregate
 {
+    /**
+     * What delimits two resources where a column holds the set, as a space delimits two scopes on the
+     * wire (RFC 6749 §3.3).
+     */
+    private const string SEPARATOR = ' ';
+
     /**
      * @var non-empty-list<ResourceIndicator> in the order they were first seen
      */
@@ -82,6 +90,24 @@ final readonly class ResourceIndicators implements Countable, IteratorAggregate
     public function values(): array
     {
         return array_map(static fn (ResourceIndicator $resource): string => $resource->value, $this->all);
+    }
+
+    /**
+     * The value a column holds a set of resources as, space delimited: a resource indicator is an
+     * absolute URI and carries no space, so the set writes itself and reads itself back exactly as a set
+     * of scopes does.
+     */
+    public function toDocument(): string
+    {
+        return implode(self::SEPARATOR, $this->values());
+    }
+
+    /**
+     * @throws InvalidArgumentException when a value is not an absolute URI, or when there is none
+     */
+    public static function fromDocument(string $document): self
+    {
+        return self::of(explode(self::SEPARATOR, $document));
     }
 
     public function equals(self $other): bool

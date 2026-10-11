@@ -49,12 +49,17 @@ final readonly class CertificateConfirmation implements ConfirmationInterface
         return TokenResponse::BEARER;
     }
 
+    public function toMembers(): array
+    {
+        return [
+            self::MEMBER => $this->thumbprint,
+        ];
+    }
+
     public function toClaims(): array
     {
         return [
-            ConfirmationInterface::CLAIM => [
-                self::MEMBER => $this->thumbprint,
-            ],
+            ConfirmationInterface::CLAIM => $this->toMembers(),
         ];
     }
 
