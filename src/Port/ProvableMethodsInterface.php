@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Port;
 
 use LogicException;
 use Beffroi\Core\Domain\Session\AuthenticationMethod;
+use Beffroi\Core\Domain\Tenant\Tenant;
 
 /**
  * What a login at this provider can prove, as "amr" values, every way of signing in together; the
@@ -16,10 +17,11 @@ use Beffroi\Core\Domain\Session\AuthenticationMethod;
 interface ProvableMethodsInterface
 {
     /**
-     * @throws LogicException when the integration wires no login at all, or one it cannot read: what a
-     *                        provider announces it can prove is read from its logins, so having none is
-     *                        a provider that cannot answer, not a provider that proves nothing
+     * @throws LogicException when the integration wires no login at all, or one it cannot read, or when the
+     *                        floor of this tenant admits none of the logins it wires: what a provider
+     *                        announces it can prove is read from its logins, so having none left is a
+     *                        provider nobody can sign in to, not a provider that proves nothing
      * @return non-empty-list<AuthenticationMethod>
      */
-    public function provableMethods(): array;
+    public function provableMethods(Tenant $tenant): array;
 }

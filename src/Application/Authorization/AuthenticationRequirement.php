@@ -47,7 +47,7 @@ final readonly class AuthenticationRequirement
     public function beforeAnyLogin(AuthorizationRequest $request): RequestedAuthentication
     {
         $hinted = $request->idTokenHint === null ? null : $this->idTokenHints->verify($request->client, $request->idTokenHint);
-        $context = RequestedAuthenticationContext::of($request, $this->provable->provableMethods());
+        $context = RequestedAuthenticationContext::of($request, $this->provable->provableMethods($request->client->tenant));
         $context->assertTheProviderCanProveOne();
 
         return new RequestedAuthentication($context, $hinted);

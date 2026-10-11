@@ -26,7 +26,7 @@ final readonly class AnnouncedAuthenticationContext implements MetadataContribut
 
     public function metadata(Tenant $tenant): array
     {
-        $classes = $tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods());
+        $classes = $tenant->authenticationContextPolicy->provableWith($this->provable->provableMethods($tenant));
 
         return [
             'acr_values_supported' => array_map(

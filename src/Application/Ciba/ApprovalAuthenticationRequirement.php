@@ -69,7 +69,7 @@ final readonly class ApprovalAuthenticationRequirement
         return RequestedAuthenticationContext::against(
             $record->requestedAuthenticationContext(),
             $record->tenant,
-            $this->provable->provableMethods(),
+            $this->provable->provableMethods($record->tenant),
         );
     }
 }

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Authorization;
 
+use function array_filter;
+use function array_values;
 use Beffroi\Core\Domain\Credential\Credential;
+use Beffroi\Core\Domain\Credential\ProvingCredentialInterface;
 use Beffroi\Core\Domain\Session\AuthenticationContextClass;
 use Beffroi\Core\Domain\Session\AuthenticationMethod;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
@@ -39,6 +42,7 @@ final readonly class RequestedAuthenticationContext
      */
     private function __construct(
         public AuthenticationContextRequest $requested,
+        public Tenant $tenant,
         public array $provable,
     ) {
     }
@@ -63,7 +67,7 @@ final readonly class RequestedAuthenticationContext
      */
     public static function against(AuthenticationContextRequest $requested, Tenant $tenant, array $provableMethods): self
     {
-        return new self($requested, $requested->among($tenant->authenticationContextPolicy->provableWith($provableMethods)));
+        return new self($requested, $tenant, $requested->among($tenant->authenticationContextPolicy->provableWith($provableMethods)));
     }
 
     /**
@@ -92,6 +96,9 @@ final readonly class RequestedAuthenticationContext
      * Decision 0010: the client asked for classes the provider can prove, the session satisfies none and a
      * credential of the user would, so the login page asks for what is missing rather than for a new login.
      *
+     * What the floor of the tenant forbids is not offered (issue #327): a credential a hardening has not
+     * swept away yet would be a kind named on the page that no login here would accept.
+     *
      * @param list<Credential> $credentials the credentials of the user of the session, whatever their kind
      */
     public function stepUpFor(AuthenticationSession $session, array $credentials): ?StepUp
@@ -100,7 +107,15 @@ final readonly class RequestedAuthenticationContext
             return null;
         }
 
-        return StepUp::towards($session->proofs, $this->provable, $credentials);
+        return StepUp::towards(
+            $session->proofs,
+            $this->provable,
+            array_values(array_filter(
+                $credentials,
+                fn (Credential $credential): bool => ! $credential instanceof ProvingCredentialInterface
+                || $this->tenant->loginFloor->admits($credential->provableMethods()),
+            )),
+        );
     }
 
     /**
