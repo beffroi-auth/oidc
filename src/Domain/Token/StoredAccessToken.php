@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -25,7 +29,7 @@ use Symfony\Component\Uid\Uuid;
  * neither (StoredClientAccessToken); each kind has a table of its own, so that a row never carries a
  * column its kind has nothing to write in.
  */
-abstract readonly class StoredAccessToken implements HashedTokenInterface, ResolvesItsClientInterface
+abstract readonly class StoredAccessToken implements HashedTokenInterface, ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
     public Tenant $tenant;
 
@@ -85,5 +89,26 @@ abstract readonly class StoredAccessToken implements HashedTokenInterface, Resol
     public function clientHolder(): object
     {
         return $this;
+    }
+
+    /**
+     * What every access token of this provider holds, whoever it was issued for: the lines the tables of the
+     * three kinds share are declared here once, as their mapping is.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'grantId' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'resources' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'confirmation' => new NoPersonalDatum(Reason::WHAT_A_TOKEN_IS_BOUND_TO),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'tokenHash' => new NoPersonalDatum(Reason::HASHED),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+        ];
     }
 }

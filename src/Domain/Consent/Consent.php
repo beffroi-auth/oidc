@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Consent;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
@@ -19,7 +23,7 @@ use Symfony\Component\Uid\Uuid;
  * What a user agreed to let a client obtain about them (architecture §4.3). A new grant to the same client
  * supersedes the previous one, which is revoked.
  */
-final class Consent implements ResolvesItsClientInterface
+final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
     public readonly Tenant $tenant;
 
@@ -144,5 +148,24 @@ final class Consent implements ResolvesItsClientInterface
     public function clientHolder(): object
     {
         return $this;
+    }
+
+    /**
+     * A permission one person gave one client: what was permitted, and the instants it was given and taken back at.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'authorizationDetails' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'grantedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'revokedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'user' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

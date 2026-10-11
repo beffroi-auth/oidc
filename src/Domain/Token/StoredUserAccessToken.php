@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
@@ -84,5 +87,22 @@ final readonly class StoredUserAccessToken extends StoredAccessToken
             $expiresAt,
             $authorization->confirmation,
         );
+    }
+
+    /**
+     * What a token issued on a login adds: what the request asked, and what the session proved, which the token
+     * itself carries in the clear.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            ...parent::classifiedFields(),
+            'authorizationDetails' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'claimsRequest' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'authentication' => new NoPersonalDatum(Reason::WHAT_THE_SESSION_PROVED),
+            'session' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

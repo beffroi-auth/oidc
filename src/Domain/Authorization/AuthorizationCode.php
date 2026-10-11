@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Authorization;
 
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -85,5 +88,34 @@ final class AuthorizationCode extends GrantRecord implements ResolvesItsClientIn
     public function clientHolder(): object
     {
         return $this;
+    }
+
+    /**
+     * The code is held as a digest; what the request asked and what the session proved are what every token issued
+     * from it carries in the clear.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            ...parent::classifiedFields(),
+            'grantId' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'redirectUri' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'resources' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'authorizationDetails' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'nonce' => new NoPersonalDatum(Reason::DRAWN_BY_THE_CLIENT),
+            'codeChallenge' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'dpopKey' => new NoPersonalDatum(Reason::WHAT_A_TOKEN_IS_BOUND_TO),
+            'claimsRequest' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'authentication' => new NoPersonalDatum(Reason::WHAT_THE_SESSION_PROVED),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'codeHash' => new NoPersonalDatum(Reason::HASHED),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'session' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

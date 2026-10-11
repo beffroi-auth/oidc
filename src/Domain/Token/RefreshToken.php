@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -30,7 +34,7 @@ use function min;
  * whoever took a copy. One issued to a confidential client keeps none: what it authenticates with is
  * what it is asked for again, at every refresh.
  */
-final class RefreshToken extends ExpiringRecord implements HashedTokenInterface, ResolvesItsClientInterface
+final class RefreshToken extends ExpiringRecord implements HashedTokenInterface, ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
     public readonly Tenant $tenant;
 
@@ -175,5 +179,32 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     public function clientHolder(): object
     {
         return $this;
+    }
+
+    /**
+     * The token is held as a digest; what is left is what the request asked, what the session proved and the
+     * instants of the rotation.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'resources' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'authorizationDetails' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'claimsRequest' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'authentication' => new NoPersonalDatum(Reason::WHAT_THE_SESSION_PROVED),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'rotatedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'confirmation' => new NoPersonalDatum(Reason::WHAT_A_TOKEN_IS_BOUND_TO),
+            'revokedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'tokenHash' => new NoPersonalDatum(Reason::HASHED),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'family' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'session' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

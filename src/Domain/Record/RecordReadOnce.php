@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Record;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Oidc\Exception\LogicException;
 use function sprintf;
@@ -19,7 +23,7 @@ use function sprintf;
  * Consuming one twice is a programming error and not a replay: whoever consumes reads isUsed() first, and
  * the refusal names the record and that reader, which is what it is for.
  */
-abstract class RecordReadOnce extends ExpiringRecord
+abstract class RecordReadOnce extends ExpiringRecord implements ClassifiedFieldsInterface
 {
     public private(set) ?DateTimeImmutable $usedAt = null;
 
@@ -58,4 +62,16 @@ abstract class RecordReadOnce extends ExpiringRecord
      * authorization endpoint".
      */
     abstract protected function readerThatChecks(): string;
+
+    /**
+     * The instant a record was read at.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'usedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+        ];
+    }
 }

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Ciba;
 
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
+use Beffroi\Core\Domain\PersonalData\Sealed;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
@@ -259,5 +263,38 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
         if ($this->isAnswered()) {
             throw new LogicException('A backchannel authentication request is answered once; the page that answers it reads isAnswered() first.');
         }
+    }
+
+    /**
+     * The message the person will read and the provenance of the request are sealed; the identifier of the request
+     * and the token the notification is sent with are envelopes.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            ...parent::classifiedFields(),
+            'grantId' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'resources' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'bindingMessage' => new Sealed('backchannel_authentication_request'),
+            'acrValues' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'sealedAuthRequestId' => new NoPersonalDatum(Reason::AN_ENVELOPE),
+            'sealedNotificationToken' => new NoPersonalDatum(Reason::AN_ENVELOPE),
+            'requestedFrom' => new Sealed('backchannel_authentication_request'),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'interval' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'lastPolledAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'approvedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'deniedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'authentication' => new NoPersonalDatum(Reason::WHAT_THE_SESSION_PROVED),
+            'authRequestIdHash' => new NoPersonalDatum(Reason::HASHED),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'user' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'session' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Interaction;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -20,7 +24,7 @@ use Beffroi\Oidc\Exception\LogicException;
  * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier
  * is 256 random bits and the bundle binds it to the browser session; an interaction is completed once.
  */
-final class Interaction implements ResolvesItsClientInterface
+final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
     /**
      * What a store keeps; the object is what the client repository resolved for it.
@@ -153,5 +157,26 @@ final class Interaction implements ResolvesItsClientInterface
     public function clientHolder(): object
     {
         return $this->request;
+    }
+
+    /**
+     * What the interaction itself holds; the fields of the authorization request it carries are that object's own.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'locale' => new NoPersonalDatum(Reason::THE_LANGUAGE_ASKED_FOR),
+            'createdAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'completedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'requestUriHash' => new NoPersonalDatum(Reason::HASHED),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'session' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'consent' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }
