@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Domain\Authorization;
 
 use function array_is_list;
 use function array_key_exists;
+use function array_keys;
 use function count;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
@@ -60,6 +61,20 @@ final readonly class ClaimsRequest
     public function isEmpty(): bool
     {
         return $this->userinfo === [] && $this->idToken === [];
+    }
+
+    /**
+     * The names it asks for, by the place they were asked of: what a person reads of a request made about
+     * them (issue #590), where what each name asks of its claim is for whoever serves it.
+     *
+     * @return array{userinfo: list<string>, id_token: list<string>}
+     */
+    public function names(): array
+    {
+        return [
+            'userinfo' => array_keys($this->userinfo),
+            'id_token' => array_keys($this->idToken),
+        ];
     }
 
     /**

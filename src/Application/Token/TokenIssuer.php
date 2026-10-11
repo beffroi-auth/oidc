@@ -77,6 +77,11 @@ final readonly class TokenIssuer
             $idToken !== null,
             $authorization->confirmation,
             $refreshToken?->token->tokenHash,
+            // what the client is given of the person, which the row beside the act holds (issue #590): a
+            // grant nobody was asked for carries neither a request by name nor details anybody agreed to
+            $authorization instanceof UserAuthorizationInterface ? $authorization->claimsRequest : null,
+            $authorization instanceof UserAuthorizationInterface ? $authorization->authorizationDetails : null,
+            $authorization->client->registration->accessTokenShape->name(),
             $context,
         ));
 
