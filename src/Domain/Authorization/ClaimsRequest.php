@@ -51,11 +51,40 @@ final readonly class ClaimsRequest
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('The claims request is not valid JSON.', previous: $exception);
         }
-        if (! is_array($decoded) || $decoded !== [] && array_is_list($decoded)) {
+        if (! is_array($decoded)) {
             throw new InvalidArgumentException('The claims request must be a JSON object (OIDC Core §5.5).');
         }
 
-        return new self(self::member($decoded, 'userinfo'), self::member($decoded, 'id_token'));
+        return self::fromDocument($decoded);
+    }
+
+    /**
+     * The document the request is kept as, which is the form of the wire (OIDC Core §5.5): the two
+     * members, each a document of the claims asked of it by name, and an empty object where nothing is
+     * asked, since an empty PHP array would be written as a JSON list.
+     *
+     * @return array<string, array<string, array<string, mixed>|null>|object>
+     */
+    public function toDocument(): array
+    {
+        return [
+            'userinfo' => self::asked($this->userinfo),
+            'id_token' => self::asked($this->idToken),
+        ];
+    }
+
+    /**
+     * @param array<array-key, mixed> $document
+     *
+     * @throws InvalidArgumentException when the document is not a claims request
+     */
+    public static function fromDocument(array $document): self
+    {
+        if ($document !== [] && array_is_list($document)) {
+            throw new InvalidArgumentException('The claims request must be a JSON object (OIDC Core §5.5).');
+        }
+
+        return new self(self::member($document, 'userinfo'), self::member($document, 'id_token'));
     }
 
     public function isEmpty(): bool
@@ -75,6 +104,38 @@ final readonly class ClaimsRequest
             'userinfo' => array_keys($this->userinfo),
             'id_token' => array_keys($this->idToken),
         ];
+    }
+
+    /**
+     * What one of the two members holds, each claim under its name and the members §5.5.1 gives it, a
+     * claim that asks for nothing at all being written null as the specification writes it.
+     *
+     * @param array<string, ClaimRequest> $claims
+     *
+     * @return array<string, array<string, mixed>|null>|object an empty object, which decodes as an object
+     *                                                         and not as a list
+     */
+    private static function asked(array $claims): array|object
+    {
+        if ($claims === []) {
+            return (object) [];
+        }
+        $member = [];
+        foreach ($claims as $name => $claim) {
+            $request = [];
+            if ($claim->essential) {
+                $request['essential'] = true;
+            }
+            if ($claim->value !== null) {
+                $request['value'] = $claim->value;
+            }
+            if ($claim->values !== null) {
+                $request['values'] = $claim->values;
+            }
+            $member[$name] = $request === [] ? null : $request;
+        }
+
+        return $member;
     }
 
     /**

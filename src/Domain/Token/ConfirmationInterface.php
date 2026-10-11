@@ -46,6 +46,15 @@ interface ConfirmationInterface
     public function scheme(): string;
 
     /**
+     * The members of the "cnf" this confirmation writes (RFC 7800 §3.1), which is also the document the
+     * column of an opaque token holds it as: the row says the same thing an "at+jwt" says of the same
+     * token, and a confirmation of another kind is another member and not another column.
+     *
+     * @return non-empty-array<string, mixed>
+     */
+    public function toMembers(): array;
+
+    /**
      * @return array<string, mixed> the "cnf" claim, to merge into the claims of a token or into the
      *                              members of an introspection response
      */
