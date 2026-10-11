@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
@@ -72,6 +73,14 @@ final readonly class ClientAuthorization implements AuthorizationInterface
     public function audience(): TokenAudience
     {
         return TokenAudience::of($this->client, $this->resources);
+    }
+
+    /**
+     * RFC 6749 §4.4: nobody is behind it, so the acts it produces are in nobody's name.
+     */
+    public function person(): ?Subject
+    {
+        return null;
     }
 
     public function storedUnder(string $tokenHash, DateTimeImmutable $now, DateTimeImmutable $expiresAt): StoredClientAccessToken

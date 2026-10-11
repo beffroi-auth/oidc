@@ -59,7 +59,7 @@ final readonly class ConsentGranting
             $consent->tenant,
             $consent->id,
             $consent->clientId,
-            $consent->user->id,
+            $consent->user->subject,
             $consent->scopes,
             $consent->authorizationDetails,
             $previous?->id,

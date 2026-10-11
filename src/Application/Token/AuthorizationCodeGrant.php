@@ -160,6 +160,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             $now,
             $code->tenant,
             $code->codeHash,
+            $code->session->user->subject,
             $code->clientId,
             $presentedBy->registration->clientId,
             RevokedTokenHashes::of($revoked),

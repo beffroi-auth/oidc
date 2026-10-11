@@ -61,7 +61,7 @@ final readonly class ConsentRevocation
             $consent->tenant,
             $consent->id,
             $consent->clientId,
-            $consent->user->id,
+            $consent->user->subject,
             array_map(static fn (GrantRecord $grant): Uuid => $grant->grantId, $grants),
             RevokedTokenHashes::of($refreshTokens),
             RevokedTokenHashes::of($accessTokens),

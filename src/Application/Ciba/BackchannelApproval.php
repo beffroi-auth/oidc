@@ -150,6 +150,7 @@ final readonly class BackchannelApproval
             $now,
             $record->tenant,
             $registration->clientId,
+            $record->user?->subject,
             $endpoint,
             $this->sealer->unseal($record->tenant, $sealedAuthRequestId),
             $this->sealer->unseal($record->tenant, $sealedNotificationToken),

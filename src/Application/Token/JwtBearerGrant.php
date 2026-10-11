@@ -91,6 +91,9 @@ final readonly class JwtBearerGrant implements GrantInterface
             $resources,
             $registered,
             confirmation: $client->confirmation,
+            // the assertion was validated for a user of this tenant, so what it gets is written in the
+            // journal of that person and not under the "sub" this client is answered (issue #588)
+            person: $user->subject,
         );
 
         return $this->issuer->issue($authorization, null, $context, $now);

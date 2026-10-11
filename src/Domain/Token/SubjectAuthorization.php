@@ -47,6 +47,7 @@ final readonly class SubjectAuthorization implements NamesItsSubjectInterface
      * @param TokenSignIn|null $signIn the sign-in the presented token descended from, null when it descended from none
      * @param Actor|null $actor who acts for the subject (RFC 8693 §4.1), null for an impersonation and for a grant where nobody acts
      * @param ConfirmationInterface|null $confirmation what the access token of this response is bound to (RFC 8705 §3, RFC 9449 §6.1), null when it is a bearer token
+     * @param Subject|null $person the person the acts of this authorization are in the name of (issue #588), null when nothing read the subject back as one
      *
      * @throws InvalidArgumentException when the client could not have been granted this
      */
@@ -62,6 +63,7 @@ final readonly class SubjectAuthorization implements NamesItsSubjectInterface
         public ?TokenSignIn $signIn = null,
         public ?Actor $actor = null,
         public ?ConfirmationInterface $confirmation = null,
+        public ?Subject $person = null,
     ) {
         $registration = $client->registration;
         if ($registration->isPublic()) {
@@ -88,6 +90,11 @@ final readonly class SubjectAuthorization implements NamesItsSubjectInterface
     public function audience(): TokenAudience
     {
         return TokenAudience::of($this->client, $this->resources);
+    }
+
+    public function person(): ?Subject
+    {
+        return $this->person;
     }
 
     public function storedUnder(string $tokenHash, DateTimeImmutable $now, DateTimeImmutable $expiresAt): StoredSubjectAccessToken

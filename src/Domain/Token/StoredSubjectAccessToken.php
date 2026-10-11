@@ -62,6 +62,17 @@ final readonly class StoredSubjectAccessToken extends StoredAccessToken
     }
 
     /**
+     * Nobody, as far as the journal is concerned (issue #588): the "sub" this row keeps is the one whoever
+     * named it named, a pairwise subject of another client (OIDC Core §8.1) or a name an issuer somebody
+     * else runs vouched for, and reading it back as a person is a question for the kind that client
+     * registered (PresentedSubjectReaderInterface) and not a column of this row (issue #593).
+     */
+    public function person(): ?Subject
+    {
+        return null;
+    }
+
+    /**
      * The sign-in the token descends from, null when it descends from none: the pair the issuers write and
      * the introspection renders, read back from the two columns that keep it.
      */

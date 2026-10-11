@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\ResolvesItsClientInterface;
@@ -73,6 +74,13 @@ abstract readonly class StoredAccessToken implements HashedTokenInterface, Resol
     {
         return $now >= $this->expiresAt;
     }
+
+    /**
+     * The person the token was issued in the name of, by the subject their account carries, which is the
+     * name the journal of a person is read under (issue #588); null when the record names nobody that
+     * journal can find. Each kind answers for itself, there being nothing to recognise a kind by.
+     */
+    abstract public function person(): ?Subject;
 
     public function clientHolder(): object
     {

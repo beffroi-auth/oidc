@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Beffroi\Oidc\Domain\Authorization\ClaimsRequest;
@@ -50,6 +51,14 @@ final readonly class StoredUserAccessToken extends StoredAccessToken
             throw new InvalidArgumentException('An access token binds a session and a client of the same tenant.');
         }
         parent::__construct($tokenHash, $grantId, $client, $scopes, $resources, $issuedAt, $expiresAt, $confirmation);
+    }
+
+    /**
+     * The user of the session it descends from (issue #588).
+     */
+    public function person(): Subject
+    {
+        return $this->session->user->subject;
     }
 
     /**

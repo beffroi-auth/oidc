@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
 use Beffroi\Oidc\Domain\Scope\Scopes;
@@ -43,6 +44,14 @@ final readonly class StoredClientAccessToken extends StoredAccessToken
     /**
      * @throws InvalidArgumentException
      */
+    /**
+     * RFC 6749 §4.4: there is nobody behind it, so what it is revoked or spent for is in nobody's name.
+     */
+    public function person(): ?Subject
+    {
+        return null;
+    }
+
     public static function fromAuthorization(string $tokenHash, ClientAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self
     {
         return new self(

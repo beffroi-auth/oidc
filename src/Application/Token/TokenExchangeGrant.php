@@ -93,6 +93,7 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
             $subjectToken->signIn,
             $actor,
             $client->confirmation,
+            $subjectToken->person,
         );
 
         return $this->issuer->issue($authorization, null, $context, $now)->withIssuedTokenType(TokenTypeIdentifier::accessToken());

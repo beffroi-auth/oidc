@@ -87,6 +87,7 @@ final readonly class AuthorizationCodeIssuer
             $record->issuedAt,
             $record->tenant,
             $record->clientId,
+            $record->session->user->subject,
             $record->grantId,
             $record->session->id,
             $record->codeHash,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
@@ -64,6 +65,17 @@ interface AuthorizationInterface
      * access token and rendered by the introspection of the opaque one.
      */
     public function audience(): TokenAudience;
+
+    /**
+     * The person this authorization is for, by the subject their account carries, which is the name the
+     * journal of a person is read under (issue #588); null when it is for nobody.
+     *
+     * It is never the "sub" the client is answered, which the issuers resolve for that client
+     * (OIDC Core §8.1) and which names nobody anywhere else. Each kind of authorization answers for
+     * itself: a client acting for itself is for nobody (RFC 6749 §4.4), and a subject named by what a
+     * client presented is for whoever the provider read it back as (RFC 8693 §2.2.1, RFC 7523 §2.1).
+     */
+    public function person(): ?Subject;
 
     /**
      * The record the access token of this response is kept as when its shape is the opaque one

@@ -40,6 +40,7 @@ final readonly class BackChannelLogout
                 $now,
                 $client->tenant,
                 $client->registration->clientId,
+                $session->user->subject,
                 $logoutUri,
                 $session->id,
                 $this->tokens->issue($client, $session, $now),

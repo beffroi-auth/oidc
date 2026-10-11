@@ -70,6 +70,7 @@ final readonly class TokenIssuer
             $authorization->grantType,
             $authorization->grantId,
             $authorization->client->registration->clientId,
+            $authorization->person(),
             $authorization instanceof UserAuthorizationInterface ? $authorization->session->id : null,
             $authorization->grantedScopes,
             $accessToken->expiresAt,

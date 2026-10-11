@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Event;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Event\ConcernsAPersonInterface;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Symfony\Component\Uid\Uuid;
@@ -12,7 +14,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * A rotated refresh token was presented again (RFC 9700 §4.13.2); the whole family is revoked.
  */
-final readonly class RefreshTokenReuseDetected implements ConcernsAClientInterface
+final readonly class RefreshTokenReuseDetected implements ConcernsAClientInterface, ConcernsAPersonInterface
 {
     /**
      * The name of the act, which is what the journal writes down (issue #454).
@@ -20,12 +22,14 @@ final readonly class RefreshTokenReuseDetected implements ConcernsAClientInterfa
     public const string NAME = 'refresh_token.reuse_detected';
 
     /**
+     * @param Subject $subject the person whose session the family descends from, by the subject their account carries (issue #588)
      * @param list<string> $revokedTokenHashes
      */
     public function __construct(
         public DateTimeImmutable $occurredAt,
         public Tenant $tenant,
         public string $clientId,
+        public Subject $subject,
         public Uuid $familyId,
         public string $presentedTokenHash,
         public array $revokedTokenHashes,
@@ -36,5 +40,10 @@ final readonly class RefreshTokenReuseDetected implements ConcernsAClientInterfa
     public function name(): string
     {
         return self::NAME;
+    }
+
+    public function subject(): Subject
+    {
+        return $this->subject;
     }
 }

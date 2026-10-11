@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -101,6 +102,14 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
     public function audience(): TokenAudience
     {
         return TokenAudience::of($this->client, $this->resources);
+    }
+
+    /**
+     * The user of the session it descends from, by the subject their account carries (issue #588).
+     */
+    public function person(): Subject
+    {
+        return $this->user->subject;
     }
 
     public function storedUnder(string $tokenHash, DateTimeImmutable $now, DateTimeImmutable $expiresAt): StoredUserAccessToken

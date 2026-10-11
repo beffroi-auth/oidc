@@ -30,6 +30,7 @@ final readonly class PresentedToken
      * @param TokenSignIn|null $signIn the sign-in the token descends from, null when nobody signed in for it (RFC 6749 §4.4)
      * @param Actor|null $actor who already acts for the subject (RFC 8693 §4.1), null when nobody does; a further exchange adds its actor around this one
      * @param MayAct|null $mayAct who may act for the subject (RFC 8693 §4.4), null when nothing says
+     * @param Subject|null $person the person the token was issued in the name of, as the type that read it resolved its "sub" (OIDC Core §8.1, issue #588); null when nobody signed in for it
      */
     public function __construct(
         public Subject $subject,
@@ -40,6 +41,7 @@ final readonly class PresentedToken
         public ?TokenSignIn $signIn = null,
         public ?Actor $actor = null,
         public ?MayAct $mayAct = null,
+        public ?Subject $person = null,
     ) {
     }
 

@@ -58,6 +58,9 @@ final readonly class PresentedAccessTokenType implements PresentedTokenTypeInter
             // RFC 8693 §4.4: who may act for the subject of a token of this client, as its registration
             // says it; one place decides, and the claim the self-contained shape carries is written from it
             $verified->client->registration->mayAct,
+            // the user the inspection read the "sub" back as, so that what the exchange issues is written
+            // in the journal of that person and not under a name only the first client holds (issue #588)
+            $inspected->user?->subject,
         );
     }
 }
