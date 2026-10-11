@@ -17,9 +17,10 @@ use Symfony\Component\Uid\Uuid;
  * revoked, so nothing here reads a class name to find out.
  *
  * It names the person the token was issued in the name of, which the record of that token answers for
- * (issue #588). Two records name nobody: one a client held for itself (RFC 6749 §4.4), and one whose
- * subject was named by what a client presented, the "sub" it keeps being a name only that client holds
- * (RFC 8693 §2.2.1, issue #593).
+ * (issue #588), the record of a subject a client named as much as the others: the "sub" such a token keeps
+ * is a name only the client it descends from holds (RFC 8693 §2.2.1), so what the exchange resolved of the
+ * presented token is kept beside it and read off the row (issue #593). One record names nobody, the one a
+ * client held for itself (RFC 6749 §4.4), and so does an exchange of one: there was never a person.
  */
 final readonly class TokenRevoked implements ConcernsAPersonInterface
 {

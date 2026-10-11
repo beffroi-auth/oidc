@@ -26,6 +26,15 @@ use Symfony\Component\Uid\Uuid;
  * keeps asking of it whether that session has ended. It keeps the chain of actors, which is what makes a
  * delegation visible where an impersonation shows nothing (§4.1).
  *
+ * **It keeps the person beside the subject it was named by** (issue #593), when whoever read the presented
+ * token resolved one: the "sub" above means something for the client that token was written for and for no
+ * other, where this row names the client that asked, so a lookup under that client would find nobody under
+ * a pairwise kind (OIDC Core §8.1) and the wrong certainty under a public one. The exchange had the person
+ * at hand when it read what was presented (AccessTokenInspector); keeping it is what lets the acts of this
+ * token be written in the journal of that person, the revocation as much as the issuance. It is null when
+ * nothing read the subject back as somebody this provider serves, which is what a token a client holds for
+ * itself is (RFC 6749 §4.4) and what an assertion about nobody known here would be.
+ *
  * The session is kept as its identifier and not as the row of one: what named it is a token, which carries
  * a "sid" and not a session. Ending that session does not remove this row, as it does for a token granted
  * under it; every resource of this provider refuses the token all the same (AccessTokenInspector), and the
@@ -34,6 +43,7 @@ use Symfony\Component\Uid\Uuid;
 final readonly class StoredSubjectAccessToken extends StoredAccessToken
 {
     /**
+     * @param Subject|null $person the person this token is in the name of, by the subject their account carries, null when nothing read the named subject back as one (issue #593)
      * @param ResourceIndicators $resources the resources this token is addressed to, at least one
      * @param Uuid|null $sessionId the session the presented token named (OIDC Front-Channel Logout §3), null when it named none
      * @param AuthenticationSnapshot|null $authentication what that session had proven, null when there was none
@@ -46,6 +56,7 @@ final readonly class StoredSubjectAccessToken extends StoredAccessToken
         Uuid $grantId,
         Client $client,
         public Subject $subject,
+        public ?Subject $person,
         Scopes $scopes,
         ResourceIndicators $resources,
         public ?Uuid $sessionId,
@@ -62,14 +73,12 @@ final readonly class StoredSubjectAccessToken extends StoredAccessToken
     }
 
     /**
-     * Nobody, as far as the journal is concerned (issue #588): the "sub" this row keeps is the one whoever
-     * named it named, a pairwise subject of another client (OIDC Core §8.1) or a name an issuer somebody
-     * else runs vouched for, and reading it back as a person is a question for the kind that client
-     * registered (PresentedSubjectReaderInterface) and not a column of this row (issue #593).
+     * The person this token is in the name of, read off the row and asked of nobody: it was resolved once,
+     * where the presented token was read, by the client that token had been written for.
      */
     public function person(): ?Subject
     {
-        return null;
+        return $this->person;
     }
 
     /**
@@ -99,6 +108,7 @@ final readonly class StoredSubjectAccessToken extends StoredAccessToken
             $authorization->grantId,
             $authorization->client,
             $authorization->subject,
+            $authorization->person,
             $authorization->scopes,
             $authorization->resources,
             $signIn?->sessionId,
