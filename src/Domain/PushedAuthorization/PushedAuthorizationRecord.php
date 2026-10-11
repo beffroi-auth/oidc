@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\PushedAuthorization;
 
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
+use Beffroi\Core\Domain\PersonalData\Sealed;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\Client;
@@ -89,5 +93,25 @@ final class PushedAuthorizationRecord extends RecordReadOnce implements Resolves
     public function clientHolder(): object
     {
         return $this;
+    }
+
+    /**
+     * The parameters are sealed whole: they carry the hints of the request they stand for, word for word
+     * (RFC 9126 §2.2).
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            ...parent::classifiedFields(),
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'parameters' => new Sealed('pushed_authorization_request'),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'carriedBySignedObject' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'requestUriHash' => new NoPersonalDatum(Reason::HASHED),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+        ];
     }
 }

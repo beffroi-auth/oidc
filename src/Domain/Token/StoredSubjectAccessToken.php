@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
@@ -118,5 +121,23 @@ final readonly class StoredSubjectAccessToken extends StoredAccessToken
             $expiresAt,
             $authorization->confirmation,
         );
+    }
+
+    /**
+     * A token this provider issued for a subject it was given: the subject, the person behind it and the actor
+     * that acts on their behalf, which is a client (RFC 8693 §4.1).
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            ...parent::classifiedFields(),
+            'subject' => new NoPersonalDatum(Reason::THE_SUBJECT),
+            'person' => new NoPersonalDatum(Reason::THE_SUBJECT),
+            'sessionId' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'authentication' => new NoPersonalDatum(Reason::WHAT_THE_SESSION_PROVED),
+            'actor' => new NoPersonalDatum('the actor a delegated token names, which is a client and never a person (RFC 8693 §4.1)'),
+        ];
     }
 }

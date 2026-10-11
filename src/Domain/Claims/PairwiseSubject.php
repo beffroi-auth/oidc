@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Claims;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Identity\User;
@@ -19,7 +23,7 @@ use Symfony\Component\Uid\Uuid;
  * back: a "sub" a client presents is a string no other table carries, and hashing is one way, so the one way
  * to answer "who is this, to this client" is to have written it down.
  */
-final class PairwiseSubject
+final class PairwiseSubject implements ClassifiedFieldsInterface
 {
     public readonly Tenant $tenant;
 
@@ -35,5 +39,23 @@ final class PairwiseSubject
         public readonly DateTimeImmutable $assignedAt,
     ) {
         $this->tenant = $user->tenant;
+    }
+
+    /**
+     * The sector a client registered and the pseudonym one person is to it: the pseudonym designates nobody
+     * without this very row.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'sector' => new NoPersonalDatum('the sector a client registered, a host or the URL of a document, not a person'),
+            'subject' => new NoPersonalDatum(Reason::THE_SUBJECT),
+            'assignedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'user' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

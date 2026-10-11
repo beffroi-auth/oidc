@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client\Registration;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Record\ExpiringRecord;
@@ -26,7 +30,7 @@ use Symfony\Component\Uid\Uuid;
  * metadata. Refusing it is one refusal whatever gave it away, unknown, spent, expired or revoked: a
  * caller learns nothing about a token it does not hold (decision 0006).
  */
-final class InitialAccessToken extends ExpiringRecord
+final class InitialAccessToken extends ExpiringRecord implements ClassifiedFieldsInterface
 {
     public private(set) int $registrationsServed = 0;
 
@@ -120,5 +124,26 @@ final class InitialAccessToken extends ExpiringRecord
     public function revoke(DateTimeImmutable $now): void
     {
         $this->revokedAt ??= $now;
+    }
+
+    /**
+     * A credential an operator of the tenant holds: its digest, the name it is told from another by, and what it
+     * is allowed to register and has registered.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'digest' => new NoPersonalDatum(Reason::HASHED),
+            'name' => new NoPersonalDatum('the name an operator gave a token, so that one can be told from another'),
+            'registrationsAllowed' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'registrationsServed' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'revokedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+        ];
     }
 }

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Device;
 
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
+use Beffroi\Core\Domain\PersonalData\Sealed;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Session\RequestContext;
@@ -217,5 +221,34 @@ final class DeviceAuthorizationRecord extends GrantRecord implements ResolvesIts
         if ($this->isAnswered()) {
             throw new LogicException('A device authorization request is answered once; the page that answers it reads isAnswered() first.');
         }
+    }
+
+    /**
+     * Both codes are held as digests and the provenance of the request is sealed; what is left is what the request
+     * asked and the instants of the polling.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            ...parent::classifiedFields(),
+            'userCodeHash' => new NoPersonalDatum(Reason::HASHED),
+            'grantId' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'resources' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'requestedFrom' => new Sealed('device_authorization_request'),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'interval' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'lastPolledAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'approvedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'deniedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'authentication' => new NoPersonalDatum(Reason::WHAT_THE_SESSION_PROVED),
+            'deviceCodeHash' => new NoPersonalDatum(Reason::HASHED),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+            'session' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+        ];
     }
 }

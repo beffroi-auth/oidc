@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
+use Beffroi\Core\Domain\PersonalData\Sealed;
 use DateTimeImmutable;
 use function hash_equals;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -43,7 +48,7 @@ use Symfony\Component\Uid\Uuid;
  * with. An update is whole and never a patch, which is why what changes is given all at once. The date of
  * the last use is not part of a registration either: replacing one is not using the client.
  */
-final class ClientRecord
+final class ClientRecord implements ClassifiedFieldsInterface
 {
     /**
      * When somebody last used this client (decision 0009): an authorization granted for it, a request it
@@ -162,5 +167,28 @@ final class ClientRecord
         if ($this->secretExpiresAt !== null && $this->secretExpiresAt <= $this->issuedAt) {
             throw new InvalidArgumentException(sprintf('The secret of the client "%s" expires after it was issued.', $this->clientId));
         }
+    }
+
+    /**
+     * What a client inscribed of itself, what the registration policy of its tenant wrote on that inscription and
+     * its secret are sealed: a secret a method signs with cannot be hashed (OIDC Core §9), so it is sealed
+     * instead, and a dump of this table then holds no usable credential of a client either.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'metadata' => new Sealed('client'),
+            'assigned' => new Sealed('client'),
+            'registrationAccessTokenDigest' => new NoPersonalDatum(Reason::HASHED),
+            'secret' => new Sealed('client'),
+            'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'lastUsedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'secretExpiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+        ];
     }
 }

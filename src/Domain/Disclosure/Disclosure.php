@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Disclosure;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
+use Beffroi\Core\Domain\PersonalData\Sealed;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Authorization\ClaimsRequest;
@@ -43,7 +48,7 @@ use Symfony\Component\Uid\Uuid;
  * **The identifier is a UUIDv7**, so a register sorts chronologically by its primary key and the last
  * disclosures of a person are a lookup rather than a sort.
  */
-final class Disclosure
+final class Disclosure implements ClassifiedFieldsInterface
 {
     /**
      * @param string $act the act this belongs to, by the name the event gave itself
@@ -75,5 +80,28 @@ final class Disclosure
         if ($tokenShape === '') {
             throw new InvalidArgumentException('What a client was given names the shape the access token was written in.');
         }
+    }
+
+    /**
+     * What a client was given of a person, at one act, sealed: a consent is a permission and holds the same values
+     * in the clear, one row per client, where this is one row per act, so a dump of this table is what an
+     * application obtained of somebody day by day.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'subject' => new NoPersonalDatum(Reason::THE_SUBJECT),
+            'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
+            'act' => new NoPersonalDatum('the name of the act it left with, which an event gives itself and which names no person'),
+            'handedOverAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'scopes' => new Sealed('disclosure'),
+            'claims' => new Sealed('disclosure'),
+            'details' => new Sealed('disclosure'),
+            'tokenShape' => new NoPersonalDatum('the shape the access token was written in, which names no person'),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+        ];
     }
 }

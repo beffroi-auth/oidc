@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
+use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
+use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
+use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -16,7 +20,7 @@ use Symfony\Component\Uid\Uuid;
  * lineage is revoked at once on a reuse or a replay (RFC 6749 §4.1.2, RFC 9700 §4.13.2), and it carries
  * the absolute lifetime no rotation extends.
  */
-final class RefreshTokenFamily
+final class RefreshTokenFamily implements ClassifiedFieldsInterface
 {
     /**
      * @param Uuid $id not readonly, and the one property of this class that is not: a row every token of
@@ -51,5 +55,22 @@ final class RefreshTokenFamily
     public function isExpired(DateTimeImmutable $now): bool
     {
         return $now >= $this->expiresAt;
+    }
+
+    /**
+     * A lineage of refresh tokens: the record it was granted on as a digest, and the two instants that bound it.
+     *
+     * @return array<string, FieldClassificationInterface>
+     */
+    public static function classifiedFields(): array
+    {
+        return [
+            'grantingRecordHash' => new NoPersonalDatum(Reason::HASHED),
+            'grantId' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'startedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
+            'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
+        ];
     }
 }
