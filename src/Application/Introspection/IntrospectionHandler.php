@@ -13,12 +13,15 @@ use Beffroi\Oidc\Application\Request\RequestParameters;
 use Beffroi\Oidc\Application\Token\AccessTokenInspector;
 use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Event\IntrospectionAnswered;
 use Beffroi\Oidc\Domain\Introspection\IntrospectionResponse;
+use Beffroi\Oidc\Domain\Token\InspectedAccessToken;
 use Beffroi\Oidc\Domain\Token\JwtPayload;
 use Beffroi\Oidc\Exception\InvalidClientException;
 use Beffroi\Oidc\Exception\InvalidTokenException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use Beffroi\Oidc\Port\EndpointLocatorInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * The introspection endpoint (RFC 7662 §2, architecture §4.12). The caller is a confidential client (§2.1);
@@ -28,6 +31,11 @@ use Beffroi\Oidc\Port\EndpointLocatorInterface;
  * A token bound to a certificate (RFC 8705 §3) is described here whatever the caller presented: the
  * answer carries the "cnf" the resource server needs to make its own check (§3.2), and the client that
  * was issued the token is entitled to read it back whichever way it authenticated itself today.
+ *
+ * **An answer that describes a person is an act** (`IntrospectionAnswered`, issue #589): it is one of the
+ * two requests where a personal datum leaves this provider, so the journal of that person says that this
+ * client read them. What describes nobody writes nothing: an inactive answer, and a token a client holds
+ * for itself (RFC 6749 §4.4).
  */
 final readonly class IntrospectionHandler
 {
@@ -37,6 +45,7 @@ final readonly class IntrospectionHandler
         private AccessTokenInspector $tokens,
         private JwsSignerInterface $signer,
         private SignatureAlgorithmsInterface $algorithms,
+        private EventDispatcherInterface $events,
     ) {
     }
 
@@ -69,23 +78,40 @@ final readonly class IntrospectionHandler
         $request = RequestParameters::of($parameters);
         $token = $request->required('token');
         $request->optional('token_type_hint');
-        $response = $this->describe($tenant, $caller, $token, $context);
+        $described = $this->tokenOfTheCaller($tenant, $caller, $token, $context);
+        $response = $described === null
+            ? IntrospectionResponse::inactive()
+            : IntrospectionResponse::active($described->token, $tenant->issuer);
+        $response = $signed ? $this->sign($tenant, $caller, $response, $context) : $response;
+        // the act is written once the answer exists, and only of an answer that describes a person: what
+        // the journal of a person holds is a read that reached that client (issue #589)
+        $person = $described?->user;
+        if ($person !== null) {
+            $this->events->dispatch(new IntrospectionAnswered(
+                $context->receivedAt,
+                $tenant,
+                $caller->registration->clientId,
+                $person->subject,
+                $context,
+            ));
+        }
 
-        return $signed ? $this->sign($tenant, $caller, $response, $context) : $response;
+        return $response;
     }
 
-    private function describe(Tenant $tenant, Client $caller, string $token, RequestContext $context): IntrospectionResponse
+    /**
+     * The token this caller may be told about, null when there is none: a token this provider does not
+     * honour, and a token of another client, which are one answer and not two (RFC 7662 §2.2, §4).
+     */
+    private function tokenOfTheCaller(Tenant $tenant, Client $caller, string $token, RequestContext $context): ?InspectedAccessToken
     {
         try {
             $inspected = $this->tokens->inspect($tenant, $token, $context->receivedAt);
         } catch (InvalidTokenException) {
-            return IntrospectionResponse::inactive();
-        }
-        if (! $inspected->token->client->equals($caller)) {
-            return IntrospectionResponse::inactive();
+            return null;
         }
 
-        return IntrospectionResponse::active($inspected->token, $tenant->issuer);
+        return $inspected->token->client->equals($caller) ? $inspected : null;
     }
 
     private function sign(Tenant $tenant, Client $caller, IntrospectionResponse $response, RequestContext $context): IntrospectionResponse

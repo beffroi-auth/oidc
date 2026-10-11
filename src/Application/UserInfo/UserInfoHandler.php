@@ -15,6 +15,8 @@ use Beffroi\Oidc\Application\Token\AccessTokenInspector;
 use Beffroi\Oidc\Application\Token\PresentedAccessTokenParser;
 use Beffroi\Oidc\Domain\Authorization\ClaimRequest;
 use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
+use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Event\UserInfoAnswered;
 use Beffroi\Oidc\Domain\Scope\Scope;
 use Beffroi\Oidc\Domain\Token\CertificateConfirmation;
 use Beffroi\Oidc\Domain\Token\ProvenPossession;
@@ -27,6 +29,7 @@ use Beffroi\Oidc\Exception\TokenBindingNotProvenException;
 use Beffroi\Oidc\Port\ClaimsProviderInterface;
 use Beffroi\Oidc\Port\EndpointLocatorInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * The UserInfo endpoint (OIDC Core §5.3, architecture §4.7): an access token (RFC 6750 §2, RFC 9449 §7.1)
@@ -55,6 +58,11 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
  * The answer is the plain JSON unless the client registered a signature or an encryption for it (§5.3.2),
  * in which case it is a JWT carrying the same claims plus the "iss" and the "aud" that tell a client who
  * wrote them and for whom. Signed then encrypted, as an ID token is and in the same place.
+ *
+ * **An answer is an act** (`UserInfoAnswered`, issue #589): this is one of the two requests where a
+ * personal datum leaves this provider, and the one where what leaves is the person themselves, so the
+ * journal of that person says that this client read them. A refusal writes nothing, nothing of anybody
+ * having left.
  */
 final readonly class UserInfoHandler
 {
@@ -66,6 +74,7 @@ final readonly class UserInfoHandler
         private SubjectIdentifierResolverInterface $subjects,
         private ClaimsProviderInterface $claims,
         private PresentedAccessTokenParser $presentedTokens,
+        private EventDispatcherInterface $events,
     ) {
     }
 
@@ -123,6 +132,27 @@ final readonly class UserInfoHandler
         $client = $token->client;
         $subject = $this->subjects->resolve($user, $client)->value;
         $claims = UserInfoResponse::claimsOf($subject, $this->claims->claims($user, $token->scopes, $requested));
+        $response = $this->answer($tenant, $client, $subject, $claims);
+        // the act is written once the answer exists: what the journal of a person says is what was served
+        // to that client and never what this provider set out to serve (issue #589)
+        $this->events->dispatch(new UserInfoAnswered(
+            $context->receivedAt,
+            $tenant,
+            $client->registration->clientId,
+            $user->subject,
+            $context,
+        ));
+
+        return $response;
+    }
+
+    /**
+     * The answer in the shape the client registered for it (OIDC Core §5.3.2).
+     *
+     * @param array<string, mixed> $claims
+     */
+    private function answer(Tenant $tenant, Client $client, string $subject, array $claims): UserInfoResponse
+    {
         $format = $client->registration->userInfo;
         if ($format->isPlain()) {
             return UserInfoResponse::json($subject, $claims);
