@@ -4,36 +4,38 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Interaction;
 
-use function array_unique;
-use function array_values;
 use Beffroi\Core\Domain\Tenant\TenantLook;
 use Beffroi\Oidc\Domain\Client\ClientPresentation;
 use Beffroi\Oidc\Domain\Client\ClientUri;
-use function implode;
-use function sprintf;
+use function in_array;
 
 /**
  * What the consent page shows of the client that is asking (OIDC Registration §2): the logo, the pages
- * the user may read before deciding, and the Content-Security-Policy that goes with them. The name is
- * shown whatever the client registered, so it is read from the presentation and needs nothing here.
+ * the user may read before deciding, and the origins those images are served from. The name is shown
+ * whatever the client registered, so it is read from the presentation and needs nothing here.
  *
- * What the page is made of is fixed in the module, because the policy is part of the answer, as it is
- * for the two pages that carry a step of the protocol (FormPostResponse, FrontChannelLogoutPage). Here
- * what it is part of is what a stranger costs: the image is served by a host the client named, so the
- * browser of the user fetches it and that host learns the address of the user and the moment the page
- * was shown, whether or not consent follows. That is the price of showing a logo at all, and it is
- * bounded rather than removed: the policy names the origin of that one image and no other, so nothing a
- * client registers makes the page load anything else.
+ * What the page is made of is fixed in the module, and what it costs is a stranger: the image is served
+ * by a host the client named, so the browser of the user fetches it and that host learns the address of
+ * the user and the moment the page was shown, whether or not consent follows. That is the price of
+ * showing a logo at all, and it is bounded rather than removed: the origins below are the origin of that
+ * one image and the one of the tenant's, so nothing a client registers makes the page load anything else.
  *
  * The provider fetches none of it. A logo read and cached here would be an outbound request on a URL a
  * client wrote, which is what the "sector_identifier_uri" and the "jwks_uri" rules bound so carefully
  * and what decision 0006 does not spend on a picture. The page names the URL; the browser loads it or
  * does not, and the provider learns nothing either way.
  *
- * Unlike those two pages, this one is a page of the product: it extends the layout an application
- * overrides (architecture §5.2), so the policy says what may be loaded on the client's behalf and leaves
- * the rest to the application, where "default-src 'none'" would block the stylesheet that gives every
- * page of the deployment its look.
+ * The links are in no policy and cannot be: a Content-Security-Policy says what a page loads, and a link
+ * the user follows loads nothing until they follow it, in a page of their own. What bounds those is that
+ * the URLs are HTTPS, read at the registration like every other URL a client registers, and that the page
+ * sends no referrer with them.
+ *
+ * The page says what it adds and not what the whole policy is, because it is a page of the product: it
+ * extends the layout an application overrides (architecture §5.2), so the policy its answer carries is
+ * the one of its deployment, completed with these origins and with the origin the submission of the page
+ * may end at (Beffroi\Bundle\Http\ImageSource, FormTarget). The two pages that carry a step of the
+ * protocol are the ones that write a whole policy, "default-src 'none'" and a named script hash being
+ * what they mean (FormPostResponse, FrontChannelLogoutPage).
  */
 final readonly class ConsentPage
 {
@@ -48,9 +50,19 @@ final readonly class ConsentPage
     public array $links;
 
     /**
+     * @var list<string> where the images of this page are served from, each one once: the logo of the
+     *                   client and the logo of the tenant, as origins and never as URLs, which is what a
+     *                   source expression names (RFC 6454 §3.2, CSP Level 3 §2.3). A client that
+     *                   registered no logo, for a tenant that declared none either, leaves a page that
+     *                   loads no image of anybody's and names nothing, which is the page a deployment
+     *                   that declares its clients itself has always served
+     */
+    public array $imageOrigins;
+
+    /**
      * @param TenantLook $look what the tenant shows of itself on every page of its provider (issue #449);
-     *                         its logo is on this one too, so the policy names where that one is served
-     *                         from as well
+     *                         its logo is on this one too, so the origin that one is served from is named
+     *                         here as well
      */
     public function __construct(
         public ClientPresentation $presentation,
@@ -67,35 +79,15 @@ final readonly class ConsentPage
             }
         }
         $this->links = $links;
-    }
 
-    /**
-     * CSP Level 3 §6.1, §6.3.2: the page loads the logo of this client and no other image, and nothing
-     * frames it (RFC 9700 §4.15). The origin is what a source expression names (RFC 6454 §3.2), never
-     * the URL, and the provider's own origin is there for the images a deployment puts in its layout.
-     *
-     * A client that registered no logo, for a tenant that declared none either, leaves a policy that
-     * names no origin at all, which is the page a deployment that declares its clients itself has always
-     * served.
-     *
-     * The links are not in it and cannot be: a Content-Security-Policy says what a page loads, and a
-     * link the user follows loads nothing until they follow it, in a page of their own. What bounds
-     * those is that the URLs are HTTPS, read at the registration like every other URL a client
-     * registers, and that the page sends no referrer with them.
-     */
-    public function contentSecurityPolicy(): string
-    {
         $origins = [];
-        if ($this->presentation->logoUri !== null) {
-            $origins[] = $this->presentation->logoUri->origin;
+        foreach ([$presentation->logoUri, $look->logoUri] as $logoUri) {
+            // a tenant that serves its logo from where the client serves its own names that origin once: a
+            // source expression repeated is the same source, and a policy says what it allows one time
+            if ($logoUri !== null && ! in_array($logoUri->origin, $origins, true)) {
+                $origins[] = $logoUri->origin;
+            }
         }
-        if ($this->look->logoUri !== null) {
-            $origins[] = $this->look->logoUri->origin;
-        }
-        // a tenant that serves its logo from where the client serves its own names that origin once: a
-        // source expression repeated is the same source, and a policy says what it allows one time
-        $origins = array_values(array_unique($origins));
-
-        return sprintf("img-src 'self'%s; frame-ancestors 'none'", $origins === [] ? '' : ' ' . implode(' ', $origins));
+        $this->imageOrigins = $origins;
     }
 }
