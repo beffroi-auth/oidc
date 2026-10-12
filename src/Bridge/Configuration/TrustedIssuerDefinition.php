@@ -10,6 +10,7 @@ use function array_map;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
 use Beffroi\Oidc\Application\Key\AlgorithmNames;
 use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Domain\Client\ClientUri;
 use Beffroi\Oidc\Domain\Scope\Scope;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
@@ -25,14 +26,15 @@ use function sprintf;
  * validated at boot, so a tenant that declares an issuer it cannot read, an algorithm nothing verifies or a
  * client that does not exist learns it when the deployment starts and not when an assertion arrives.
  *
- * The keys are declared inline. A set behind a URL is a fetch and a cache of its own, keyed by the issuer and
- * not by a client, which is what federation needs and which no tenant declaring the issuers it trusts by hand
- * needs today.
+ * The keys are declared inline or behind a URL, one or the other and never both, as a client declares its own
+ * (RFC 7591 §2): a declaration that carries both, and one that carries neither, is an issuer nothing could be
+ * verified against, and it fails at boot.
  */
 final readonly class TrustedIssuerDefinition
 {
     private const array KEYS = [
         'jwks',
+        'jwks_uri',
         'signing_algorithms',
         'clients',
         'identity_provider',
@@ -59,7 +61,7 @@ final readonly class TrustedIssuerDefinition
 
         return new self(new TrustedIssuer(
             $issuer,
-            self::jwks($issuer, $definition),
+            self::publishedKeys($issuer, $definition),
             self::signingAlgorithms($issuer, $definition, $algorithms),
             self::stringList($issuer, 'clients', $definition['clients'] ?? []),
             self::text($issuer, 'identity_provider', $definition),
@@ -68,21 +70,40 @@ final readonly class TrustedIssuerDefinition
     }
 
     /**
-     * RFC 7517 §5: the keys the tenant trusts this issuer by, inline. Public keys only, which ClientJwks is
-     * the invariant behind.
+     * RFC 7517 §5: the keys the tenant trusts this issuer by, written down in "jwks" or read back from the
+     * "jwks_uri" it publishes them behind, one or the other and never both (RFC 7591 §2). Public keys only,
+     * which ClientJwks is the invariant behind, and a URL this provider is willing to call, which ClientUri
+     * is the invariant behind.
      *
      * @param array<string, mixed> $definition
      *
      * @throws InvalidArgumentException
      */
-    private static function jwks(string $issuer, array $definition): ClientJwks
+    private static function publishedKeys(string $issuer, array $definition): ClientJwks|ClientUri
     {
         $jwks = $definition['jwks'] ?? null;
-        if (! is_array($jwks)) {
-            throw new InvalidArgumentException(sprintf('The trusted issuer "%s" publishes the keys it signs with in "jwks" (RFC 7517 section 5).', $issuer));
+        $jwksUri = $definition['jwks_uri'] ?? null;
+        if ($jwks !== null && $jwksUri !== null) {
+            throw new InvalidArgumentException(sprintf(
+                'The trusted issuer "%s" publishes the keys it signs with either in "jwks" or behind a "jwks_uri", never both (RFC 7517 section 5).',
+                $issuer,
+            ));
+        }
+        if ($jwks !== null) {
+            if (! is_array($jwks)) {
+                throw new InvalidArgumentException(sprintf('The jwks option of the trusted issuer "%s" must be a JWK Set (RFC 7517 section 5).', $issuer));
+            }
+
+            return ClientJwks::fromDocument($jwks);
+        }
+        if ($jwksUri === null) {
+            throw new InvalidArgumentException(sprintf(
+                'The trusted issuer "%s" publishes the keys it signs with in "jwks" or behind a "jwks_uri" (RFC 7517 section 5).',
+                $issuer,
+            ));
         }
 
-        return ClientJwks::fromDocument($jwks);
+        return new ClientUri(self::text($issuer, 'jwks_uri', $definition));
     }
 
     /**

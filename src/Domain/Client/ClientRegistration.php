@@ -300,6 +300,15 @@ final readonly class ClientRegistration
     }
 
     /**
+     * What the client publishes, as what reads a published key set takes it (RFC 7591 §2): the set it
+     * wrote down, or the URL it is read back from, never both, and null when it publishes neither.
+     */
+    public function publishedKeys(): ClientJwks|ClientUri|null
+    {
+        return $this->jwks ?? $this->jwksUri;
+    }
+
+    /**
      * @throws InvalidArgumentException
      */
     private function assertHoldsTogether(): void
