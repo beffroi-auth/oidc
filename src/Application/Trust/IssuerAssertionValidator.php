@@ -8,10 +8,12 @@ use function count;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Key\PublishedKeySetProvider;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
 use Beffroi\Oidc\Domain\Trust\TrustedIssuer;
 use Beffroi\Oidc\Domain\Trust\VerifiedAssertion;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\InvalidGrantException;
 use Beffroi\Oidc\Exception\InvalidJwtException;
@@ -43,12 +45,16 @@ final readonly class IssuerAssertionValidator
     private const string REFUSED = 'The assertion is not one this provider accepts as an authorization (RFC 7523 section 3).';
 
     /**
+     * @param PublishedKeySetProvider $publishedKeys what reads the keys of the issuers, with a pool of its own:
+     *                                               an issuer that publishes them behind a URL has them read
+     *                                               once and kept, as a client that does has (RFC 7591 §2)
      * @param DateInterval $maximumLifetime how far ahead of the request an "exp" may be
      * @param DateInterval $leeway what is allowed of the clock of the issuer, both ways
      */
     public function __construct(
         private CompactJwtReaderInterface $jwts,
         private JwtKeyVerifierInterface $keys,
+        private PublishedKeySetProvider $publishedKeys,
         private TrustedIssuersInterface $issuers,
         private IssuerAssertionReplayGuardInterface $replays,
         private DateInterval $maximumLifetime,
@@ -70,10 +76,13 @@ final readonly class IssuerAssertionValidator
         }
         $issuer = $this->trusting($tenant, $client, $jwt);
         try {
-            // RFC 8725 §3.10: the key is one the tenant registered for this issuer, chosen by the "kid" of
-            // the header among those and by nothing the assertion carries otherwise
-            $this->keys->verify($jwt, $issuer->keys, $issuer->signingAlgorithms);
-        } catch (InvalidJwtException $exception) {
+            // RFC 8725 §3.10: the key is one the tenant registered for this issuer, or one published behind
+            // the URL it registered, chosen by the "kid" of the header among those and by nothing the
+            // assertion carries otherwise. An issuer whose keys cannot be read is this one refusal too: a
+            // client learns that the assertion was not accepted, and not that the tenant trusts somebody
+            // whose keys are down.
+            $this->keys->verify($jwt, $this->publishedKeys->keysOf($issuer->keys, $jwt->keyId()), $issuer->signingAlgorithms);
+        } catch (ClientKeysUnavailableException|InvalidJwtException $exception) {
             throw new InvalidGrantException(self::REFUSED, previous: $exception);
         }
         $this->assertItIsStillGood($tenant, $issuer, $jwt, $now);

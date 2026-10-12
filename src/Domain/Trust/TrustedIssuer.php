@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Domain\Trust;
 
 use function array_any;
 use Beffroi\Oidc\Domain\Client\ClientJwks;
+use Beffroi\Oidc\Domain\Client\ClientUri;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
@@ -17,8 +18,9 @@ use function sprintf;
  * of that tenant and be answered with an access token, so what it may do is written down in full and nothing
  * about it is inferred.
  *
- * Everything here is a closed list. The keys are the ones the tenant put in the registration, and no key a
- * token names is ever read (RFC 8725 §3.10). The algorithms are the ones it signs with, so a key of one kind
+ * Everything here is a closed list. The keys are the ones the tenant wrote down, or the ones published behind
+ * the URL it wrote down, and no key a token names is ever read (RFC 8725 §3.10). The algorithms are the ones
+ * it signs with, so a key of one kind
  * cannot be used with another. The clients are the ones that may present its assertions, because an issuer
  * trusted for a gateway is not thereby trusted for every client of the tenant. The scopes are what it is
  * trusted for, which the scopes of a response are a subset of. And the subjects of its assertions name users
@@ -47,7 +49,8 @@ final readonly class TrustedIssuer
 
     /**
      * @param string $issuer the "iss" of the assertions this issuer signs (RFC 7523 §3), compared byte for byte
-     * @param ClientJwks $keys the public keys the tenant trusts this issuer by
+     * @param ClientJwks|ClientUri $keys the public keys the tenant trusts this issuer by, written down or
+     *                                    read back from the URL it publishes them behind (RFC 7517 §5)
      * @param list<non-empty-string> $signingAlgorithms the "alg" an assertion of this issuer may carry, at least one
      * @param list<string> $clientIds the clients that may present an assertion of this issuer, at least one
      * @param string $identityProvider the source of the linked identities the subjects of its assertions name (decision 0002)
@@ -57,7 +60,7 @@ final readonly class TrustedIssuer
      */
     public function __construct(
         public string $issuer,
-        public ClientJwks $keys,
+        public ClientJwks|ClientUri $keys,
         array $signingAlgorithms,
         array $clientIds,
         public string $identityProvider,
