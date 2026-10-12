@@ -31,6 +31,11 @@ use SensitiveParameter;
  * that client and no sign-in (RFC 6749 §4.4, RFC 9068 §2.2), and the one kept for a subject somebody else
  * named keeps what was named, the "sub" and the sign-in of the token it descends from and the chain of actors
  * that holds it (RFC 8693 §2.2.1, §4.1).
+ *
+ * It also says who the token is about, which the record answers for and nothing here resolves again
+ * (issue #601): each kind of record names its person or names nobody (StoredAccessToken::person()), so a
+ * token whose "sub" was written for another client is read as being about the person the exchange resolved
+ * when it read what was presented, and not by looking that "sub" up under the client that asked for it.
  */
 final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInterface
 {
@@ -87,6 +92,9 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
             $token instanceof StoredSubjectAccessToken ? $token->actor : null,
             // RFC 9396 §7: only a record of a grant somebody agreed to carries details
             $signedIn ? $token->authorizationDetails : null,
+            // issue #601: who the token is about, as the record names them, which is the one reading that
+            // does not go through the "sub" of a client
+            $token->person(),
         );
     }
 

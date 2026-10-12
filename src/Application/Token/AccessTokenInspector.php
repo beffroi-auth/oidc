@@ -9,7 +9,6 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Core\Port\AuthenticationSessionRepositoryInterface;
 use Beffroi\Oidc\Domain\Token\InspectedAccessToken;
 use Beffroi\Oidc\Exception\InvalidTokenException;
-use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use SensitiveParameter;
 
@@ -30,9 +29,11 @@ use SensitiveParameter;
  * grant is looked for among the records every flow of this provider writes (RecordedGrantsInterface), so a
  * token of a flow that draws no authorization code answers for its grant as an ordinary one does.
  *
- * The user is read from the "sub" **for the client the token was written for** and never as a key of a row
- * (OIDC Core §8): under a pairwise kind (§8.1) that string is the one that client sees, so a token of one
- * client inspected as if its "sub" were the provider's own identifier would find nobody, or worse, somebody.
+ * The person is asked of the token and never read off its "sub" here (PersonOfAnAccessToken): a token the
+ * provider keeps a record of says who it is about, resolved once where it was resolvable, and a token that
+ * says nobody is the one whose "sub" is read, for the client it was written for. Which it is is the token's
+ * business and not this one's, so a token whose subject another client named is answered for by the person
+ * the exchange that issued it had at hand (RFC 8693 §2.2.1, issue #601).
  */
 final readonly class AccessTokenInspector
 {
@@ -40,7 +41,7 @@ final readonly class AccessTokenInspector
         private AccessTokenVerifier $tokens,
         private AuthenticationSessionRepositoryInterface $sessions,
         private RecordedGrantsInterface $grants,
-        private PresentedSubjectReaderInterface $subjects,
+        private PersonOfAnAccessToken $persons,
     ) {
     }
 
@@ -62,7 +63,7 @@ final readonly class AccessTokenInspector
         if ($grant === null || $grant->isRevoked()) {
             throw new InvalidTokenException('The access token descends from a grant this provider revoked.');
         }
-        $user = $this->subjects->findUser($token->client, $token->subject);
+        $user = $this->persons->of($token);
         if ($user === null || ! $user->isEnabled()) {
             throw new InvalidTokenException('The access token names a user this provider no longer serves.');
         }

@@ -24,6 +24,12 @@ use Symfony\Component\Uid\Uuid;
  * A token somebody else holds for the subject says who (RFC 8693 §4.1): the chain of actors is what makes a
  * delegation visible where an impersonation shows nothing, and it is read back as it was written, the actor
  * about to use the token outermost.
+ *
+ * **It says who it is about where whoever read it back knew** (issue #601): the "sub" above means something
+ * for the client the token was written for and for no other (OIDC Core §8.1), so a token whose subject
+ * another client named keeps a name the client holding it never sees (RFC 8693 §2.2.1). A shape the provider
+ * keeps a record of answers for the person off that record, where it was resolved once; a shape that carries
+ * its own claims says nobody, and the "sub" is then all there is to read.
  */
 final readonly class VerifiedAccessToken
 {
@@ -35,6 +41,7 @@ final readonly class VerifiedAccessToken
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      * @param Actor|null $actor who holds the token on behalf of its subject (RFC 8693 §4.1), null when nobody does and the holder is the subject
      * @param AuthorizationDetails|null $authorizationDetails what the token carries beyond its scopes (RFC 9396 §7), null when it carries none
+     * @param Subject|null $person the person the token is about, by the subject their account carries (issue #588), null when whatever read the token resolved nobody
      */
     public function __construct(
         public Client $client,
@@ -49,6 +56,7 @@ final readonly class VerifiedAccessToken
         public ?ConfirmationInterface $confirmation = null,
         public ?Actor $actor = null,
         public ?AuthorizationDetails $authorizationDetails = null,
+        public ?Subject $person = null,
     ) {
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An access token expires after it was issued.');
