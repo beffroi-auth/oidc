@@ -47,6 +47,12 @@ use Symfony\Component\Uid\Uuid;
  * The chain of actors is read as it was written, the most recent actor outermost (RFC 8693 §4.1), so that a
  * delegation stays a delegation on the way back and a resource server of the provider reads what a resource
  * server verifying offline reads.
+ *
+ * A token whose subject a client named says who it is about, sealed (SealedPerson, issue #641), and this is
+ * where that is opened: the record the opaque shape reads the person off has no counterpart here, the token
+ * being its own record, so what the exchange resolved once travels in the token and is read back by the one
+ * party that can open it. A token that carries no such claim is about whoever its "sub" names for the client
+ * it was written for, and a claim this provider did not write there is refused like every other.
  */
 final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterface
 {
@@ -62,6 +68,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         private ClientRepositoryInterface $clients,
         private ConfirmationReaderInterface $confirmations,
         private AuthorizationDetailsReaderInterface $authorizationDetailTypes,
+        private SealedPerson $persons,
     ) {
     }
 
@@ -141,6 +148,9 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw InvalidTokenException::notIssuedHere($exception);
         }
+        // issue #641: who the token is about, opened under the KMS of the tenant, null when it carries
+        // nobody and its "sub" is all there is to read
+        $person = $this->persons->of($tenant, $claims[JwtAccessTokenIssuer::PERSON] ?? null);
 
         return new VerifiedAccessToken(
             $client,
@@ -155,6 +165,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
             $confirmation,
             $actor,
             $details,
+            $person,
         );
     }
 

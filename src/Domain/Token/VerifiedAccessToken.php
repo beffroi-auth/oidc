@@ -27,9 +27,10 @@ use Symfony\Component\Uid\Uuid;
  *
  * **It says who it is about where whoever read it back knew** (issue #601): the "sub" above means something
  * for the client the token was written for and for no other (OIDC Core §8.1), so a token whose subject
- * another client named keeps a name the client holding it never sees (RFC 8693 §2.2.1). A shape the provider
- * keeps a record of answers for the person off that record, where it was resolved once; a shape that carries
- * its own claims says nobody, and the "sub" is then all there is to read.
+ * another client named keeps a name the client holding it never sees (RFC 8693 §2.2.1). Each shape answers
+ * for the person out of what it has: the one the provider keeps a record of off that record, where it was
+ * resolved once, and the one that carries its own claims off a claim it carries sealed (issue #641). A token
+ * nothing resolved a person for says nobody, and the "sub" is then all there is to read.
  */
 final readonly class VerifiedAccessToken
 {

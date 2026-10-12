@@ -29,11 +29,12 @@ use SensitiveParameter;
  * grant is looked for among the records every flow of this provider writes (RecordedGrantsInterface), so a
  * token of a flow that draws no authorization code answers for its grant as an ordinary one does.
  *
- * The person is asked of the token and never read off its "sub" here (PersonOfAnAccessToken): a token the
- * provider keeps a record of says who it is about, resolved once where it was resolvable, and a token that
- * says nobody is the one whose "sub" is read, for the client it was written for. Which it is is the token's
- * business and not this one's, so a token whose subject another client named is answered for by the person
- * the exchange that issued it had at hand (RFC 8693 §2.2.1, issue #601).
+ * The person is asked of the token and never read off its "sub" here (PersonOfAnAccessToken): a token says
+ * who it is about where that was resolved once, off the record the provider keeps of it or off a claim it
+ * carries sealed, and a token that says nobody is the one whose "sub" is read, for the client it was written
+ * for. Which it is is the token's business and not this one's, so a token whose subject another client named
+ * is answered for by the person the exchange that issued it had at hand, in either shape
+ * (RFC 8693 §2.2.1, issues #601 and #641).
  */
 final readonly class AccessTokenInspector
 {

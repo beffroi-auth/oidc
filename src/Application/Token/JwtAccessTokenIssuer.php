@@ -33,8 +33,10 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
  * (NamesItsSubjectInterface): the "sub" and the sign-in of the token it descends from, as they stood, plus the
  * "act" of whoever acts for that subject (RFC 8693 §4.1). "may_act" says who may act for the subject of a
  * token of this client (§4.4), which its registration decides and which is written so that a resource server
- * verifying the token offline reads the same rule the provider applies. Two private claims (RFC 7519 §4.3): "grant_id"
- * names the code the token descends from, "userinfo_claims" what the client asked for by name (OIDC Core §5.5).
+ * verifying the token offline reads the same rule the provider applies. Three private claims (RFC 7519 §4.3): "grant_id"
+ * names the code the token descends from, "userinfo_claims" what the client asked for by name (OIDC Core §5.5), and
+ * "person" who the token is about when its "sub" says that to nobody but another client, sealed under the KMS of the
+ * tenant (SealedPerson).
  * Nothing is stored: the token is its own record. An access token is read by resource servers, not by the
  * client, so it is signed with the algorithm the provider signs with by default, never the one the client
  * registered for its ID tokens. A token issued on a request that proved a key carries the "cnf" of
@@ -47,6 +49,12 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
     public const string USERINFO_CLAIMS = 'userinfo_claims';
 
     public const string GRANT_ID = 'grant_id';
+
+    /**
+     * Issue #641: the person the token is about, sealed, for the one shape of authorization whose "sub"
+     * names nobody to the client that holds the token (RFC 8693 §2.2.1).
+     */
+    public const string PERSON = 'person';
 
     /**
      * RFC 8693 §4.1.
@@ -68,6 +76,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         private SubjectIdentifierResolverInterface $subjects,
         private SignatureAlgorithmsInterface $algorithms,
         private UuidGeneratorInterface $uuids,
+        private SealedPerson $persons,
         public DateInterval $lifetime = new DateInterval('PT10M'),
     ) {
     }
@@ -119,6 +128,14 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         $actor = $authorization instanceof NamesItsSubjectInterface ? $authorization->actor : null;
         if ($actor !== null) {
             $claims[self::ACTOR] = $actor->toClaim();
+        }
+        // issue #641: who the token is about, where the "sub" above says it to another client and to
+        // nobody else (RFC 8693 §2.2.1, OIDC Core §8.1). A token somebody signed in for carries a "sub"
+        // the client it was written for reads back, so there is nothing there this would add; a token a
+        // client holds for itself is about nobody (RFC 6749 §4.4) and says so by carrying none
+        $person = $authorization instanceof NamesItsSubjectInterface ? $authorization->person() : null;
+        if ($person !== null) {
+            $claims[self::PERSON] = $this->persons->claim($authorization->tenant, $person);
         }
         // RFC 8693 §4.4: who may act for the subject of a token of this client, as its registration says it
         $mayAct = $authorization->client->registration->mayAct;
