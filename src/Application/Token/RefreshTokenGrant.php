@@ -11,6 +11,7 @@ use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Application\Client\AuthenticatedClient;
 use Beffroi\Oidc\Application\Request\RequestParameters;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
+use Beffroi\Oidc\Domain\Event\RefreshTokenOutlivedItsSession;
 use Beffroi\Oidc\Domain\Event\RefreshTokenReuseDetected;
 use Beffroi\Oidc\Domain\Event\RefreshTokenRotated;
 use Beffroi\Oidc\Domain\Token\UserAuthorization;
@@ -31,7 +32,11 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * rotated on every use, its successor in the same family with the same scopes, and presented again it
  * revokes the family; a token that is protected otherwise stands, because replacing it would add
  * nothing and would lock out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9).
- * The session may have expired, not have been ended (architecture §4.9).
+ * The session may have expired, not have been ended (architecture §4.9). A token of a session that has ended is
+ * refused, and announced (RefreshTokenOutlivedItsSession): the tokens of a session are revoked on the lane of the
+ * events, so a refresh in flight when it ended may have saved its successor after they were, and that successor is
+ * revoked once its first use is handled. A token revoked is refused before its session is read, so a row is no
+ * longer announced once that revocation has run, and announcing it again before is harmless.
  *
  * What the request may narrow it narrows and never widens: the scopes of the response (RFC 6749 §6), the
  * resources its access token is addressed to (RFC 8707 §2.2) and the details it carries (RFC 9396 §7), the
@@ -75,7 +80,21 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 
             throw new InvalidGrantException(self::INVALID);
         }
-        if ($token->isExpired($now) || $token->session->hasEnded() || ! $token->isRefreshedBy($client->confirmation)) {
+        $sessionEndedAt = $token->session->endedAt;
+        if ($sessionEndedAt !== null) {
+            $this->events->dispatch(new RefreshTokenOutlivedItsSession(
+                $now,
+                $token->tenant,
+                $token->clientId,
+                $token->session->user->subject,
+                $token->session->id,
+                $sessionEndedAt,
+                $context,
+            ));
+
+            throw new InvalidGrantException(self::INVALID);
+        }
+        if ($token->isExpired($now) || ! $token->isRefreshedBy($client->confirmation)) {
             throw new InvalidGrantException(self::INVALID);
         }
         if ($scopes !== null && ! $token->scopes->covers($scopes)) {
