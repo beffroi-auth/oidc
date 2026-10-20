@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client;
 
+use Beffroi\Core\Domain\Encoding\Host;
 use Beffroi\Core\Domain\Tenant\Issuer;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function http_build_query;
@@ -18,8 +19,11 @@ use function strtolower;
 /**
  * A URI a client registers with the provider, whatever the provider does with it: send a browser to it
  * (RFC 6749 §3.1.2, RP-Initiated Logout §2), or post to it from the provider itself (Back-Channel Logout
- * 1.0 §2.2). Absolute, no fragment, no credentials, HTTPS; plain HTTP on a loopback host only. No custom
- * scheme (RFC 8252 §7.1). What it is for is the class that holds it, and what comparing two of them means
+ * 1.0 §2.2). Absolute, no fragment, no credentials, a host of letters, digits, hyphens and dots or an IP
+ * address (the core's Host), HTTPS; plain HTTP on a loopback host only. No custom scheme (RFC 8252 §7.1).
+ * The host is named in the Content-Security-Policy of the pages that send a browser to the URI, frame it or
+ * show the image behind it, so nothing a policy would split, a ";" or a "," that RFC 3986 §3.2.2 admits in a
+ * registered name, is one. What it is for is the class that holds it, and what comparing two of them means
  * is that class's too: this one parses, once, and answers what it has parsed.
  */
 final readonly class ClientUri implements Stringable
@@ -58,6 +62,12 @@ final readonly class ClientUri implements Stringable
         }
         if (isset($parts['user']) || isset($parts['pass'])) {
             throw new InvalidArgumentException(sprintf('The URI "%s" registered for a client must not carry credentials.', $value));
+        }
+        if (! Host::isHost($parts['host'])) {
+            throw new InvalidArgumentException(sprintf(
+                'The URI "%s" registered for a client must name a host of letters, digits, hyphens and dots, or an IP address (RFC 3986 §3.2.2).',
+                $value,
+            ));
         }
         $scheme = strtolower($parts['scheme']);
         if ($scheme !== 'https' && ! ($scheme === 'http' && Issuer::isLoopbackHost(strtolower($parts['host'])))) {
