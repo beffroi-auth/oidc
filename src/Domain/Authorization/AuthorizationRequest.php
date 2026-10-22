@@ -9,13 +9,16 @@ use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
 use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
 use Beffroi\Core\Domain\PersonalData\Reason;
 use Beffroi\Core\Domain\PersonalData\Sealed;
+use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\RedirectUri;
 use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Domain\Token\KeyConfirmation;
+use DateTimeImmutable;
 use function in_array;
+use function sprintf;
 
 /**
  * An authorization request that passed both stages of validation (RFC 6749 §4.1.1, OIDC Core §3.1.2.1,
@@ -64,6 +67,17 @@ final readonly class AuthorizationRequest implements ClassifiedFieldsInterface
     public function hasPrompt(Prompt $prompt): bool
     {
         return in_array($prompt, $this->prompts, true);
+    }
+
+    /**
+     * OIDC Core §3.1.2.1 max_age: whether the latest proof of the session is older than the request allows, its
+     * "auth_time" plus max_age seconds before now; never when the request names no max_age. The login page asks for a
+     * new login on it (AuthenticationRequirement), and the service provider of a tenant asks an upstream identity
+     * provider for one (beffroi/saml, spec/saml.md S-49).
+     */
+    public function maxAgeExceededBy(AuthenticationSession $session, DateTimeImmutable $now): bool
+    {
+        return $this->maxAge !== null && $session->authenticatedAt()->modify(sprintf('+%d seconds', $this->maxAge)) < $now;
     }
 
     /**

@@ -15,7 +15,6 @@ use Beffroi\Oidc\Domain\Interaction\Interaction;
 use Beffroi\Oidc\Domain\Interaction\LoginRequirement;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use Beffroi\Oidc\Port\ProvableMethodsInterface;
-use function sprintf;
 
 /**
  * What the authentication of an interaction still needs, at the two moments it is asked (architecture §4.3):
@@ -104,7 +103,7 @@ final readonly class AuthenticationRequirement
         if ($request->hasPrompt(Prompt::SelectAccount)) {
             return LoginRequirement::AccountSelectionRequested;
         }
-        if ($request->maxAge !== null && $session->authenticatedAt()->modify(sprintf('+%d seconds', $request->maxAge)) < $now) {
+        if ($request->maxAgeExceededBy($session, $now)) {
             return LoginRequirement::MaxAgeExceeded;
         }
 
