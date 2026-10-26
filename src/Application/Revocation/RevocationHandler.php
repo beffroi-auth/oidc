@@ -10,6 +10,7 @@ use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Client\ClientAuthenticator;
 use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Application\Token\AccessTokenInspector;
 use Beffroi\Oidc\Application\Token\AccessTokenVerifier;
 use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Beffroi\Oidc\Domain\Client\Client;
@@ -33,6 +34,10 @@ use SensitiveParameter;
  * issued to the caller is revoked, a refresh token taking the access tokens of its grant with it (§2.1).
  * An unknown token or another client's is answered 200 without a word (§2.2); an access token the
  * provider cannot take back is unsupported_token_type (§2.2.1). "token_type_hint" is ignored.
+ *
+ * A self-contained token is unsupported only while the provider honours it, which is asked as its own
+ * resources ask it (AccessTokenInspector): a token whose session ended, whose grant was revoked or whose
+ * person is no longer served is invalid there, and an invalid token is answered 200 here too (§2.2).
  */
 final readonly class RevocationHandler
 {
@@ -40,6 +45,7 @@ final readonly class RevocationHandler
         private ClientAuthenticator $clients,
         private EndpointLocatorInterface $endpoints,
         private AccessTokenVerifier $verifier,
+        private AccessTokenInspector $inspector,
         private AccessTokenRepositoryInterface $accessTokens,
         private RefreshTokenRepositoryInterface $refreshTokens,
         private EventDispatcherInterface $events,
@@ -89,12 +95,13 @@ final readonly class RevocationHandler
     }
 
     /**
-     * A JWS that verifies cannot be revoked; one that does not is an invalid token, answered 200.
+     * A JWS the provider honours cannot be revoked; one it refuses, because it does not verify or because
+     * what it descends from or names is gone, is an invalid token, answered 200.
      */
     private function refuseSelfContained(Tenant $tenant, #[SensitiveParameter] string $token, DateTimeImmutable $now): void
     {
         try {
-            $this->verifier->verify($tenant, $token, $now);
+            $this->inspector->inspect($tenant, $token, $now);
         } catch (InvalidTokenException) {
             return;
         }
