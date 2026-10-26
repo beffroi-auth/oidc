@@ -25,7 +25,13 @@ use function sprintf;
  * being the two the field sends; each is written back as the query would have carried it. A list of
  * strings is a parameter given several values, which is how RFC 8707 §2.1 says "resource" travels in an
  * object, and it reaches the parser as the repeated parameter it is. A boolean, a fraction or a null is
- * no parameter of an authorization request and is refused rather than cast (decision 0006).
+ * no parameter of an authorization request and is refused rather than cast (decision 0006). The refusal
+ * names the rule and never the claim: its name is a string the client chose, where an error description
+ * is the ASCII RFC 6749 §5.2 bounds.
+ *
+ * RFC 9101 §4 lets an object carry any extension parameter, and RFC 6749 §3.1 has the authorization
+ * server ignore one it does not recognise. A claim named by a number is one, whatever it holds: no
+ * parameter this provider reads is named so, and decoding the JSON made that name an integer.
  */
 final readonly class RequestObject
 {
@@ -65,13 +71,16 @@ final readonly class RequestObject
     {
         $parameters = [];
         foreach ($this->jwt->claims as $name => $value) {
+            if (! is_string($name)) {
+                continue;
+            }
             if (in_array($name, self::REGISTERED_CLAIMS, true)) {
                 continue;
             }
             if (in_array($name, self::NESTED_PARAMETERS, true)) {
                 throw new InvalidRequestObjectException(sprintf('A request object carries no %s parameter of its own (RFC 9101 section 4).', $name));
             }
-            $parameters[$name] = $this->parameter($name, $value);
+            $parameters[$name] = $this->parameter($value);
         }
 
         return $parameters;
@@ -82,7 +91,7 @@ final readonly class RequestObject
      *
      * @return string|list<string>
      */
-    private function parameter(string $name, mixed $value): string|array
+    private function parameter(mixed $value): string|array
     {
         if (is_string($value)) {
             return $value;
@@ -99,9 +108,6 @@ final readonly class RequestObject
             return JwtPayload::encode($value);
         }
 
-        throw new InvalidRequestObjectException(sprintf(
-            'The %s claim of a request object is not a value an authorization request carries (OIDC Core section 6.1).',
-            $name,
-        ));
+        throw new InvalidRequestObjectException('A claim of the request object holds a value no authorization request carries (OIDC Core section 6.1).');
     }
 }
