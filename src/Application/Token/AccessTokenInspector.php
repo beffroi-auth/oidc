@@ -23,11 +23,15 @@ use SensitiveParameter;
  * has that excuse.
  *
  * Each question is asked of the tokens that can answer it. A token somebody signed in for answers for its
- * session and for its user; a token a client holds for itself descends from no sign-in and names nobody
- * (RFC 6749 §4.4), so neither question is asked of it and neither is answered in its favour by default.
- * What the token says it descends from is what decides, never the name of the grant that issued it: the
- * grant is looked for among the records every flow of this provider writes (RecordedGrantsInterface), so a
- * token of a flow that draws no authorization code answers for its grant as an ordinary one does.
+ * session, its grant and its person. A token issued for a person nobody signed in for here, on the
+ * assertion of an issuer the tenant trusts (RFC 7523 §2.1) or by the exchange of such a token
+ * (RFC 8693 §2.1), descends from no sign-in and answers for its person all the same (issue #831): a person
+ * this provider no longer serves is refused wherever a token names them. A token a client holds for itself
+ * descends from no sign-in and names nobody (RFC 6749 §4.4), so none of the three is asked of it and none
+ * is answered in its favour by default. What the token says, the sign-in it descends from and the person it
+ * is about, is what decides, never the name of the grant that issued it: the grant is looked for among the
+ * records every flow of this provider writes (RecordedGrantsInterface), so a token of a flow that draws no
+ * authorization code answers for its grant as an ordinary one does.
  *
  * The person is asked of the token and never read off its "sub" here (PersonOfAnAccessToken): a token says
  * who it is about where that was resolved once, off the record the provider keeps of it or off a claim it
@@ -53,16 +57,18 @@ final readonly class AccessTokenInspector
     {
         $token = $this->tokens->verify($tenant, $accessToken, $now);
         $signIn = $token->signIn;
-        if ($signIn === null) {
+        if ($signIn !== null) {
+            $session = $this->sessions->find($signIn->sessionId);
+            if ($session === null || $session->hasEnded()) {
+                throw new InvalidTokenException('The access token descends from a session this provider ended.');
+            }
+            $grant = $this->grants->findByGrantId($token->grantId);
+            if ($grant === null || $grant->isRevoked()) {
+                throw new InvalidTokenException('The access token descends from a grant this provider revoked.');
+            }
+        }
+        if (! $token->namesAPerson()) {
             return new InspectedAccessToken($token, null);
-        }
-        $session = $this->sessions->find($signIn->sessionId);
-        if ($session === null || $session->hasEnded()) {
-            throw new InvalidTokenException('The access token descends from a session this provider ended.');
-        }
-        $grant = $this->grants->findByGrantId($token->grantId);
-        if ($grant === null || $grant->isRevoked()) {
-            throw new InvalidTokenException('The access token descends from a grant this provider revoked.');
         }
         $user = $this->persons->of($token);
         if ($user === null || ! $user->isEnabled()) {

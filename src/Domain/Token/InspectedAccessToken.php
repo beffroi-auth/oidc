@@ -16,7 +16,7 @@ use Beffroi\Core\Domain\Identity\User;
 final readonly class InspectedAccessToken
 {
     /**
-     * @param User|null $user the user the token names, null when nobody signed in for it
+     * @param User|null $user the user the token names, null when it names nobody (VerifiedAccessToken::namesAPerson())
      */
     public function __construct(
         public VerifiedAccessToken $token,

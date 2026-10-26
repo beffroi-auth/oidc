@@ -18,8 +18,11 @@ use Symfony\Component\Uid\Uuid;
  * user nor the grant is looked up here.
  *
  * A token somebody signed in for says which sign-in it descends from; a token a client holds for itself
- * says none, and names that client in its "sub" (RFC 6749 §4.4, RFC 9068 §2.2). What the provider asks of
- * a session and of a user it asks of the first and never of the second.
+ * says none, and names that client in its "sub" (RFC 6749 §4.4, RFC 9068 §2.2); a token issued for a person
+ * nobody signed in for here, on the assertion of an issuer the tenant trusts (RFC 7523 §2.1) or by the
+ * exchange of such a token (RFC 8693 §2.1), says none either and says who it is about. What the provider
+ * asks of a session it asks of the first alone, and what it asks of a person it asks of every token that
+ * names one (namesAPerson()), never of the second.
  *
  * A token somebody else holds for the subject says who (RFC 8693 §4.1): the chain of actors is what makes a
  * delegation visible where an impersonation shows nothing, and it is read back as it was written, the actor
@@ -36,8 +39,8 @@ final readonly class VerifiedAccessToken
 {
     /**
      * @param TokenAudience $audience who the token is addressed to (RFC 8707 §2), the client itself when the request that got it named no resource
-     * @param Subject $subject the "sub" of the token: the pairwise subject of the user who signed in (OIDC Core §8), or the client itself when nobody did (RFC 9068 §2.2)
-     * @param TokenSignIn|null $signIn the sign-in the token descends from, null for a token a client holds for itself
+     * @param Subject $subject the "sub" of the token: the name a client knows its person by (OIDC Core §8), or the client itself when the token is nobody's (RFC 9068 §2.2)
+     * @param TokenSignIn|null $signIn the sign-in the token descends from, null when nobody signed in for it here
      * @param list<string> $userinfoClaims the names of OIDC Core §5.5, empty when the client asked for none
      * @param ConfirmationInterface|null $confirmation what the token is bound to (RFC 8705 §3, RFC 9449 §6.1), null for a bearer token
      * @param Actor|null $actor who holds the token on behalf of its subject (RFC 8693 §4.1), null when nobody does and the holder is the subject
@@ -62,5 +65,15 @@ final readonly class VerifiedAccessToken
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('An access token expires after it was issued.');
         }
+    }
+
+    /**
+     * Whether the token is somebody's (issue #831): it descends from a sign-in, or it says who it is about
+     * where nobody signed in for it here (RFC 7523 §2.1, RFC 8693 §2.1). A token a client holds for itself
+     * is nobody's (RFC 6749 §4.4).
+     */
+    public function namesAPerson(): bool
+    {
+        return $this->signIn !== null || $this->person !== null;
     }
 }
