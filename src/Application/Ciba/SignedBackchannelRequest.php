@@ -48,7 +48,7 @@ final readonly class SignedBackchannelRequest
     {
         if ($resolved === null || ! $resolved->object->isSigned()) {
             if ($client->registration->requiresSignedRequestObject) {
-                throw new InvalidRequestException('This client makes a backchannel authentication request with a request object it signed and no other way (OIDC Registration, require_signed_request_object; FAPI-CIBA section 5.2.2).');
+                throw new InvalidRequestException('This client makes a backchannel authentication request with a request object it signed and no other way (RFC 9101 section 10.5, require_signed_request_object; FAPI-CIBA section 5.2.2).');
             }
 
             return;
