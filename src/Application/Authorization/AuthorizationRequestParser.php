@@ -62,7 +62,8 @@ final readonly class AuthorizationRequestParser
      *                     §2), which is the only way a client that requires it may start one
      * @param bool $signed whether they are the ones of a request object the client signed (RFC 9101
      *                     §6.1), directly or inside the record it pushed, which is the only way a client
-     *                     that requires it may start one
+     *                     that requires it may start one. For such a client, an object read at all is
+     *                     one it signed: its registration reads no object unsigned (RFC 9101 §10.5)
      *
      * @throws OAuth2Exception never redirectable
      */
