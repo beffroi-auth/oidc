@@ -125,7 +125,7 @@ final readonly class ClientAuthenticationRequestParser
                 ClientAuthenticationFailureReason::MalformedCredentials,
                 $clientId,
                 null,
-                sprintf('The client_assertion_type parameter must be "%s" (RFC 7523 section 2.2).', self::ASSERTION_TYPE),
+                sprintf('The client_assertion_type parameter must be %s (RFC 7523 section 2.2).', self::ASSERTION_TYPE),
             );
         }
 

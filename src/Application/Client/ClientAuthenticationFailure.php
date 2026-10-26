@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Client;
 
 use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
+use Beffroi\Oidc\Exception\OAuth2Exception;
 use RuntimeException;
 use Throwable;
 
@@ -23,7 +24,7 @@ final class ClientAuthenticationFailure extends RuntimeException
 
     /**
      * @param string|null $method the name of the method that refused, null when no method did
-     * @param string $description what the client reads back
+     * @param string $description what the client reads back, held here to the rule of an "error_description"
      * @param bool $malformedRequest "invalid_request" rather than "invalid_client" (RFC 6749 §5.2)
      * @param string|null $detail why it was refused, for the logs alone
      */
@@ -36,6 +37,7 @@ final class ClientAuthenticationFailure extends RuntimeException
         ?string $detail = null,
         ?Throwable $previous = null,
     ) {
+        OAuth2Exception::assertDescription($description);
         parent::__construct($detail ?? $description, 0, $previous);
     }
 

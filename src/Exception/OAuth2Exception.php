@@ -30,9 +30,19 @@ abstract class OAuth2Exception extends RuntimeException implements ExceptionInte
         public readonly bool $redirectable,
         ?Throwable $previous = null,
     ) {
-        if (preg_match(self::DESCRIPTION_PATTERN, $errorDescription) !== 1) {
-            throw new InvalidArgumentException(sprintf('The error description "%s" is not the ASCII text RFC 6749 §5.2 allows.', $errorDescription));
-        }
+        self::assertDescription($errorDescription);
         parent::__construct(sprintf('%s: %s', $error, $errorDescription), 0, $previous);
+    }
+
+    /**
+     * What an "error_description" may be. A description that becomes one later is held to it where it is written
+     * (ClientAuthenticationFailure), so that it is refused by a test of what writes it rather than by the endpoint
+     * that would answer with it.
+     */
+    public static function assertDescription(string $description): void
+    {
+        if (preg_match(self::DESCRIPTION_PATTERN, $description) !== 1) {
+            throw new InvalidArgumentException(sprintf('The error description "%s" is not the ASCII text RFC 6749 §5.2 allows.', $description));
+        }
     }
 }
