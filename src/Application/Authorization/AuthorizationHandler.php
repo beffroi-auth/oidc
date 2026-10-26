@@ -32,7 +32,10 @@ use Psr\Clock\ClockInterface;
  * Decides what a validated authorization request still needs (architecture §4.3): a login, a consent, or
  * nothing, in which case the code is issued. begin() parks the request in an Interaction; resume(),
  * grantConsent() and deny() apply the same rules at every step. With prompt=none a needed page is the
- * redirected error login_required or consent_required (OIDC Core §3.1.2.6).
+ * redirected error login_required or consent_required (OIDC Core §3.1.2.6). A login page asked for again after a
+ * login done during the interaction is login_required too, whatever the prompt: that login answers whatever the
+ * request asks of a login but the person an id_token_hint names, and the page would ask whoever signs in next the
+ * same thing (§3.1.2.1).
  *
  * It orchestrates and decides nothing on its own: what the authentication still needs is
  * AuthenticationRequirement's, the rules of a requested "acr" are the request's own
@@ -42,6 +45,8 @@ use Psr\Clock\ClockInterface;
 final readonly class AuthorizationHandler
 {
     private const string LOGIN_REQUIRED = 'The end user is not authenticated as the request demands and prompt=none forbids asking.';
+
+    private const string UNMET_BY_THE_LOGIN = 'The end user signed in during this interaction and is still not authenticated as the request demands.';
 
     private const string CONSENT_REQUIRED = 'No consent covers the request and prompt=none forbids asking.';
 
@@ -157,6 +162,11 @@ final readonly class AuthorizationHandler
             }
             $login = $this->authentication->of($requested, $interaction, $session, $now);
             if ($login !== null) {
+                // no login page after a login done during this interaction: it would ask whoever signs in next the same thing
+                if ($interaction->sawTheLoginOf($session)) {
+                    throw new LoginRequiredException(self::UNMET_BY_THE_LOGIN);
+                }
+
                 return $this->loginRequired($interaction, $login->requirement, $login->stepUp);
             }
             $requested->context->assertMetBy($session);

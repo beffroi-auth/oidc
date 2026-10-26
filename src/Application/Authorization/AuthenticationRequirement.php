@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Authorization;
 
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Port\CredentialRepositoryInterface;
 use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
@@ -12,6 +13,7 @@ use Beffroi\Oidc\Domain\Authorization\Prompt;
 use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
 use Beffroi\Oidc\Domain\Interaction\Interaction;
 use Beffroi\Oidc\Domain\Interaction\LoginRequirement;
+use Beffroi\Oidc\Exception\LoginRequiredException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Beffroi\Oidc\Port\ProvableMethodsInterface;
@@ -23,14 +25,17 @@ use Beffroi\Oidc\Port\ProvableMethodsInterface;
  *
  * The rules of the "acr" are the request's own (RequestedAuthenticationContext, decision 0010); what is here
  * is the reading they need, the methods the provider is wired to prove and the credentials of the user, plus
- * the rules of OIDC Core §3.1.2.1 that are not about a class: a forged hint, prompt=login, prompt=select_account
- * and max_age. A login done during this interaction satisfies all three of the last, whatever it proved.
+ * the rules of OIDC Core §3.1.2.1 that are not about a class: a forged hint, a hint that names nobody or another
+ * person than the one of the session, prompt=login, prompt=select_account and max_age. A login done during this
+ * interaction satisfies all three of the last, whatever it proved.
  *
  * The "sub" of a hint is the one its client was given, so it is read back for that client (OIDC Core §8) and
  * never compared with the subject the core keeps: under a pairwise kind the two are never the same string.
  */
 final readonly class AuthenticationRequirement
 {
+    private const string HINTS_NOBODY = 'The id_token_hint parameter names no end user of this client.';
+
     public function __construct(
         private ProvableMethodsInterface $provable,
         private CredentialRepositoryInterface $credentials,
@@ -41,15 +46,15 @@ final readonly class AuthenticationRequirement
 
     /**
      * What the request demands of the authentication, established before a session is looked at: an essential
-     * "acr" this provider can prove none of is refused here, and so is a hint whose signature is not ours.
-     * Neither is something a user could do anything about on a page, so no page is shown for them
+     * "acr" this provider can prove none of is refused here, and so is a hint whose signature is not ours or that
+     * names nobody. None is something a user could do anything about on a page, so no page is shown for them
      * (OIDC Core §3.1.2.1, §5.5.1.1).
      *
      * @throws OAuth2Exception
      */
     public function beforeAnyLogin(AuthorizationRequest $request): RequestedAuthentication
     {
-        $hinted = $request->idTokenHint === null ? null : $this->idTokenHints->verify($request->client, $request->idTokenHint);
+        $hinted = $this->hintedPerson($request);
         $context = RequestedAuthenticationContext::of($request, $this->provable->provableMethods($request->client->tenant));
         $context->assertTheProviderCanProveOne();
 
@@ -71,7 +76,7 @@ final readonly class AuthenticationRequirement
         $context = $requested->context;
         $stepUp = $context->stepUpFor($session, $context->isInQuestion() ? $this->credentials->findByUser($session->user) : []);
         $context->assertTheUserCouldMeetIt($session, $stepUp);
-        $requirement = self::requirement($interaction, $session, $this->hintsAnotherUser($requested, $interaction, $session), $stepUp !== null, $now);
+        $requirement = self::requirement($interaction, $session, self::hintsAnotherUser($requested, $session), $stepUp !== null, $now);
         if ($requirement === null) {
             return null;
         }
@@ -80,17 +85,28 @@ final readonly class AuthenticationRequirement
     }
 
     /**
-     * OIDC Core §3.1.2.1 id_token_hint: the hint names somebody other than the user of the session, which a "sub"
-     * that names nobody for the client of the request does too.
+     * OIDC Core §3.1.2.1 id_token_hint: the person the hint names, its "sub" read back for the client of the request.
+     * A "sub" that names nobody for that client, as the one a client was given does once it registers another kind of
+     * subject (§8), is met by no login, so the client is answered login_required (§3.1.2.6).
+     *
+     * @throws OAuth2Exception
      */
-    private function hintsAnotherUser(RequestedAuthentication $requested, Interaction $interaction, AuthenticationSession $session): bool
+    private function hintedPerson(AuthorizationRequest $request): ?User
     {
-        if ($requested->hinted === null) {
-            return false;
+        if ($request->idTokenHint === null) {
+            return null;
         }
-        $named = $this->subjects->findUser($interaction->request->client, $requested->hinted);
+        $subject = $this->idTokenHints->verify($request->client, $request->idTokenHint);
 
-        return $named === null || ! $named->id->equals($session->user->id);
+        return $this->subjects->findUser($request->client, $subject) ?? throw new LoginRequiredException(self::HINTS_NOBODY);
+    }
+
+    /**
+     * OIDC Core §3.1.2.1 id_token_hint: the hint names somebody other than the user of the session.
+     */
+    private static function hintsAnotherUser(RequestedAuthentication $requested, AuthenticationSession $session): bool
+    {
+        return $requested->hinted !== null && ! $requested->hinted->id->equals($session->user->id);
     }
 
     /**
@@ -109,7 +125,7 @@ final readonly class AuthenticationRequirement
         if ($anotherUserHinted) {
             return LoginRequirement::DifferentUser;
         }
-        if ($session->authenticatedAt() >= $interaction->createdAt) {
+        if ($interaction->sawTheLoginOf($session)) {
             return null;
         }
         if ($stepUp) {

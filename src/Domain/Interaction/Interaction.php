@@ -137,6 +137,16 @@ final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsI
     }
 
     /**
+     * Whether the latest proof of the session was given during this interaction, at or after the instant it began
+     * (OIDC Core §3.1.2.1): the login it asked for, which answers prompt=login, a max_age and a step-up whatever it
+     * proved, and after which the login page is not asked for again.
+     */
+    public function sawTheLoginOf(AuthenticationSession $session): bool
+    {
+        return $session->authenticatedAt() >= $this->createdAt;
+    }
+
+    /**
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
      */
