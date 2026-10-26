@@ -15,6 +15,7 @@ use Beffroi\Oidc\Domain\EndSession\LoggedOut;
 use Beffroi\Oidc\Domain\EndSession\LogoutConfirmationReason;
 use Beffroi\Oidc\Domain\EndSession\LogoutConfirmationRequired;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -28,6 +29,7 @@ final readonly class EndSessionHandler
 {
     public function __construct(
         private SessionTerminator $sessions,
+        private PresentedSubjectReaderInterface $subjects,
         private ClockInterface $clock,
     ) {
     }
@@ -39,7 +41,7 @@ final readonly class EndSessionHandler
         if ($session === null) {
             return new LoggedOut($request, null, $request->redirect());
         }
-        $reason = self::confirmationReason($request, $session);
+        $reason = $this->confirmationReason($request, $session);
         if ($reason !== null) {
             return new LogoutConfirmationRequired($request, $session, $reason);
         }
@@ -62,15 +64,19 @@ final readonly class EndSessionHandler
     }
 
     /**
-     * §2: no hint, an unverifiable one, or one that does not belong to the current session and user.
+     * §2: no hint, an unverifiable one, or one that does not belong to the current session and user. The "sub"
+     * of the hint is the one the client of the request was given, so it is read back for that client (OIDC
+     * Core §8): under a pairwise kind it is never the subject the core keeps.
      */
-    private static function confirmationReason(EndSessionRequest $request, AuthenticationSession $session): ?LogoutConfirmationReason
+    private function confirmationReason(EndSessionRequest $request, AuthenticationSession $session): ?LogoutConfirmationReason
     {
         $hint = $request->idTokenHint;
         if ($hint === null) {
             return $request->invalidIdTokenHint ? LogoutConfirmationReason::InvalidHint : LogoutConfirmationReason::NoHint;
         }
-        if (! $session->user->subject->equals($hint->subject)) {
+        // a request that carries a hint names the client it was issued to (EndSessionRequest)
+        $named = $request->client === null ? null : $this->subjects->findUser($request->client, $hint->subject);
+        if ($named === null || ! $named->id->equals($session->user->id)) {
             return LogoutConfirmationReason::DifferentUser;
         }
         if ($hint->sessionId === null || ! $hint->sessionId->equals($session->id)) {

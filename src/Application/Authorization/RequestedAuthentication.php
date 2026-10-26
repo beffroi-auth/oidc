@@ -9,7 +9,7 @@ use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
 
 /**
  * What a request demands of the authentication, read before any login (architecture §4.3): the rules of a
- * requested "acr" (decision 0010), and the user an "id_token_hint" names.
+ * requested "acr" (decision 0010), and the "sub" an "id_token_hint" carries.
  *
  * Both are established before a session is looked at, and for the same reason: an essential "acr" this provider
  * can prove none of, and a hint whose signature is not ours, are refusals the user could do nothing about on a
@@ -18,7 +18,8 @@ use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
 final readonly class RequestedAuthentication
 {
     /**
-     * @param Subject|null $hinted the user the "id_token_hint" names, null when the request carries none
+     * @param Subject|null $hinted the "sub" the "id_token_hint" carries, as the client of the request was given
+     *                           it (OIDC Core §8), null when the request carries none
      */
     public function __construct(
         public RequestedAuthenticationContext $context,

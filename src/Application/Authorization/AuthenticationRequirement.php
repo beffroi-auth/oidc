@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Authorization;
 
 use DateTimeImmutable;
-use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Port\CredentialRepositoryInterface;
 use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
@@ -14,6 +13,7 @@ use Beffroi\Oidc\Domain\Authorization\RequestedAuthenticationContext;
 use Beffroi\Oidc\Domain\Interaction\Interaction;
 use Beffroi\Oidc\Domain\Interaction\LoginRequirement;
 use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Beffroi\Oidc\Port\ProvableMethodsInterface;
 
 /**
@@ -25,6 +25,9 @@ use Beffroi\Oidc\Port\ProvableMethodsInterface;
  * is the reading they need, the methods the provider is wired to prove and the credentials of the user, plus
  * the rules of OIDC Core §3.1.2.1 that are not about a class: a forged hint, prompt=login, prompt=select_account
  * and max_age. A login done during this interaction satisfies all three of the last, whatever it proved.
+ *
+ * The "sub" of a hint is the one its client was given, so it is read back for that client (OIDC Core §8) and
+ * never compared with the subject the core keeps: under a pairwise kind the two are never the same string.
  */
 final readonly class AuthenticationRequirement
 {
@@ -32,6 +35,7 @@ final readonly class AuthenticationRequirement
         private ProvableMethodsInterface $provable,
         private CredentialRepositoryInterface $credentials,
         private IdTokenHintVerifier $idTokenHints,
+        private PresentedSubjectReaderInterface $subjects,
     ) {
     }
 
@@ -67,12 +71,26 @@ final readonly class AuthenticationRequirement
         $context = $requested->context;
         $stepUp = $context->stepUpFor($session, $context->isInQuestion() ? $this->credentials->findByUser($session->user) : []);
         $context->assertTheUserCouldMeetIt($session, $stepUp);
-        $requirement = self::requirement($interaction, $session, $requested->hinted, $stepUp !== null, $now);
+        $requirement = self::requirement($interaction, $session, $this->hintsAnotherUser($requested, $interaction, $session), $stepUp !== null, $now);
         if ($requirement === null) {
             return null;
         }
 
         return new RequiredLogin($requirement, $requirement === LoginRequirement::StrongerFactorRequired ? $stepUp : null);
+    }
+
+    /**
+     * OIDC Core §3.1.2.1 id_token_hint: the hint names somebody other than the user of the session, which a "sub"
+     * that names nobody for the client of the request does too.
+     */
+    private function hintsAnotherUser(RequestedAuthentication $requested, Interaction $interaction, AuthenticationSession $session): bool
+    {
+        if ($requested->hinted === null) {
+            return false;
+        }
+        $named = $this->subjects->findUser($interaction->request->client, $requested->hinted);
+
+        return $named === null || ! $named->id->equals($session->user->id);
     }
 
     /**
@@ -83,12 +101,12 @@ final readonly class AuthenticationRequirement
     private static function requirement(
         Interaction $interaction,
         AuthenticationSession $session,
-        ?Subject $hinted,
+        bool $anotherUserHinted,
         bool $stepUp,
         DateTimeImmutable $now,
     ): ?LoginRequirement {
         $request = $interaction->request;
-        if ($hinted !== null && ! $session->user->subject->equals($hinted)) {
+        if ($anotherUserHinted) {
             return LoginRequirement::DifferentUser;
         }
         if ($session->authenticatedAt() >= $interaction->createdAt) {
