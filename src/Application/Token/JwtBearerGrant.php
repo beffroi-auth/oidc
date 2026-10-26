@@ -139,7 +139,7 @@ final readonly class JwtBearerGrant implements GrantInterface
             throw new InvalidScopeException('The openid scope asks for an authentication, and this grant authenticates nobody: the assertion says somebody else did (OIDC Core section 2).');
         }
         if (! $registration->allowedScopes->covers($scopes)) {
-            throw new InvalidScopeException('The requested scope is not allowed for this client.');
+            throw InvalidScopeException::notRegistered();
         }
         if (! $verified->issuer->isTrustedFor($scopes)) {
             throw new InvalidScopeException('The requested scope is not one the issuer of the assertion is trusted for.');

@@ -27,4 +27,15 @@ final class InvalidScopeException extends OAuth2Exception
     {
         return new self('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', $redirectable, $previous);
     }
+
+    /**
+     * RFC 6749 §3.3: what a client may be granted is among what it registered, wherever a request is read
+     * for it: the authorization request, the endpoints where a flow on another device or through a
+     * backchannel starts, and every grant with nobody's browser in it. The description names no scope: what
+     * the client registered is not something an error response teaches whoever sent the request.
+     */
+    public static function notRegistered(bool $redirectable = false): self
+    {
+        return new self('The requested scope is not allowed for this client.', $redirectable);
+    }
 }

@@ -92,7 +92,7 @@ final readonly class ClientCredentialsGrant implements ActsForTheClientItselfInt
             throw new InvalidScopeException('The openid scope asks for an authentication, and this grant has no user to authenticate (OIDC Core section 2).');
         }
         if (! $registration->allowedScopes->covers($scopes)) {
-            throw new InvalidScopeException('The requested scope is not allowed for this client.');
+            throw InvalidScopeException::notRegistered();
         }
 
         return $scopes;

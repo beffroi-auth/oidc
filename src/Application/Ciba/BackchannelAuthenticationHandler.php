@@ -232,7 +232,7 @@ final readonly class BackchannelAuthenticationHandler
             throw new InvalidScopeException('A backchannel authentication request asks for the openid scope (CIBA Core section 7.1).');
         }
         if (! $registration->allowedScopes->covers($scopes)) {
-            throw new InvalidScopeException('The requested scope is not allowed for this client.');
+            throw InvalidScopeException::notRegistered();
         }
 
         return $scopes;

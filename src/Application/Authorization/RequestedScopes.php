@@ -34,7 +34,7 @@ final readonly class RequestedScopes
         }
         foreach ($scopes->all as $candidate) {
             if (! $client->registration->allowedScopes->has($candidate)) {
-                throw new InvalidScopeException('The requested scope is not allowed for this client.', true);
+                throw InvalidScopeException::notRegistered(true);
             }
         }
         if (! $scopes->has(Scope::openid())) {

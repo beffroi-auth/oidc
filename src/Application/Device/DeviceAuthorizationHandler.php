@@ -149,7 +149,7 @@ final readonly class DeviceAuthorizationHandler
             throw InvalidScopeException::notASpaceSeparatedList(previous: $exception);
         }
         if (! $registration->allowedScopes->covers($scopes)) {
-            throw new InvalidScopeException('The requested scope is not allowed for this client.');
+            throw InvalidScopeException::notRegistered();
         }
 
         return $scopes;
