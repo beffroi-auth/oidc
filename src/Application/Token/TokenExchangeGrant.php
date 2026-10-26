@@ -9,6 +9,7 @@ use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Oidc\Application\Client\AuthenticatedClient;
 use Beffroi\Oidc\Application\Exchange\PresentedTokenTypes;
 use Beffroi\Oidc\Application\Request\RequestParameters;
+use Beffroi\Oidc\Domain\Client\ClientRegistration;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
 use Beffroi\Oidc\Domain\Client\TokenExchange;
 use Beffroi\Oidc\Domain\Exchange\Actor;
@@ -44,8 +45,10 @@ use function sprintf;
  * Nothing widens. The scopes of the new token are a subset of the ones the presented token carried, the
  * resources are a subset of the ones it was addressed to, and a token addressed to its own client is not
  * exchangeable at all: there would be nothing to narrow, and the new token could only be addressed outside
- * what the old one covered. The new token descends from the grant the old one descended from, so taking that
- * grant back takes both, and a session that ended refuses both.
+ * what the old one covered. Both are also among the ones the client that asks registered, as in every other
+ * grant: the presented token was issued to somebody else, who may have registered more. The new token
+ * descends from the grant the old one descended from, so taking that grant back takes both, and a session
+ * that ended refuses both.
  *
  * "may_act" is the subject's word on the matter (§4.4): when the token says who may act for its subject,
  * whoever asks is compared with it and refused when it is somebody else, the registration of the asking
@@ -80,15 +83,16 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
         $actor = $this->actorOf($client, $request, $registered, $subjectToken, $now);
         self::assertTheSubjectAllows($client, $subjectToken, $actor);
 
+        $registration = $client->client->registration;
         $granted = self::grantedResources($subjectToken);
         $authorization = new SubjectAuthorization(
             $this->grantType(),
             $subjectToken->grantId,
             $client->client,
             $subjectToken->subject,
-            self::scopes($request, $subjectToken),
+            self::scopes($request, $subjectToken, $registration),
             $subjectToken->scopes,
-            RequestedResources::of($request, $granted) ?? $granted,
+            self::resources($request, $granted, $registration),
             $granted,
             $subjectToken->signIn,
             $actor,
@@ -208,28 +212,50 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §2.1: the scopes of the new token are a subset of the ones the presented token carried. A
-     * request that names none narrows nothing and is served what it already held, which grants it nothing it
-     * did not have; a request that names more is refused rather than served less than it asked for.
+     * RFC 8693 §2.1, RFC 6749 §3.3: the scopes of the new token are a subset of the ones the presented token
+     * carried, among the ones the client that asks registered. A request that names none narrows nothing and
+     * takes all of the presented token's; a request that names more, or that takes a scope its client never
+     * registered, is refused rather than served less than it asked for.
      *
      * @throws InvalidScopeException
      */
-    private static function scopes(RequestParameters $request, PresentedToken $subjectToken): Scopes
+    private static function scopes(RequestParameters $request, PresentedToken $subjectToken, ClientRegistration $registration): Scopes
     {
+        $scopes = $subjectToken->scopes;
         $scope = $request->optional('scope');
-        if ($scope === null) {
-            return $subjectToken->scopes;
+        if ($scope !== null) {
+            try {
+                $scopes = Scopes::parse($scope);
+            } catch (InvalidArgumentException $exception) {
+                throw InvalidScopeException::notASpaceSeparatedList(previous: $exception);
+            }
+            if (! $subjectToken->scopes->covers($scopes)) {
+                throw new InvalidScopeException('The requested scope is not among the ones the presented token carries (RFC 8693 section 2.1).');
+            }
         }
-        try {
-            $scopes = Scopes::parse($scope);
-        } catch (InvalidArgumentException $exception) {
-            throw InvalidScopeException::notASpaceSeparatedList(previous: $exception);
-        }
-        if (! $subjectToken->scopes->covers($scopes)) {
-            throw new InvalidScopeException('The requested scope is not among the ones the presented token carries (RFC 8693 section 2.1).');
+        if (! $registration->allowedScopes->covers($scopes)) {
+            throw InvalidScopeException::notRegistered();
         }
 
         return $scopes;
+    }
+
+    /**
+     * RFC 8707 §2, RFC 8693 §2.1: the resources the new token is addressed to, a subset of the ones the
+     * presented token was addressed to, among the ones the client that asks registered. A request that names
+     * none takes all of the presented token's, and is refused as a request naming them would be when its
+     * client did not register them all.
+     *
+     * @throws InvalidTargetException
+     */
+    private static function resources(RequestParameters $request, ResourceIndicators $granted, ClientRegistration $registration): ResourceIndicators
+    {
+        $resources = RequestedResources::of($request, $granted) ?? $granted;
+        if (! $registration->allowsResources($resources)) {
+            throw InvalidTargetException::notRegistered();
+        }
+
+        return $resources;
     }
 
     /**
