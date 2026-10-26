@@ -38,13 +38,16 @@ use Psr\Clock\ClockInterface;
  *
  * The assertion is the authorization and not the client authentication (RFC 7523 §2.1, last paragraph): the
  * client authenticates beside it as it does for every other grant, and the two readings of an assertion share
- * no validator, no registration and no replay guard, so that one cannot be taken for the other.
+ * no validator, no registration and no replay guard, so that one cannot be taken for the other. §2.1 leaves
+ * that authentication optional and this provider requires it, since whoever held the assertion would
+ * otherwise be served the user it names: a public client is refused this grant
+ * (RequiresClientAuthenticationInterface).
  *
  * No ID token, and "openid" refused with it: the user was authenticated somewhere else and this provider has
  * nothing to say about how, neither an "acr" nor an "amr" nor an "auth_time" being ours to claim (OIDC Core
  * §2). A client that wants a document describing a user signs that user in.
  */
-final readonly class JwtBearerGrant implements GrantInterface
+final readonly class JwtBearerGrant implements RequiresClientAuthenticationInterface
 {
     public const string GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 

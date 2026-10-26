@@ -40,6 +40,14 @@ interface ServedGrantsInterface
     public function actingForTheClientItself(): array;
 
     /**
+     * Those of them served only to a client that authenticates itself (RFC 6749 §2.1), the ones a
+     * client uses for itself among them.
+     *
+     * @return list<GrantTypeName>
+     */
+    public function requiringClientAuthentication(): array;
+
+    /**
      * Those of them whose flow sends the user's browser back to the client (RFC 6749 §3.1.2).
      *
      * @return list<GrantTypeName>

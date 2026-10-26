@@ -578,10 +578,11 @@ final readonly class ClientMetadataReader
      * sends nobody anywhere and registers none, a URI nothing can redirect to being a promise the provider
      * would keep for nobody. The response types it registers answer the same question from the other side
      * (OIDC Registration §2), so a client that asks for a code and registers no grant that answers with one,
-     * or the other way round, is refused rather than believed by halves. A grant a client uses for itself
-     * authenticates that client (RFC 6749 §4.4), so a public client is refused it here rather than at its
-     * first request, and the client is named in the "sub" of the tokens it gets, so an identifier no subject
-     * can be is refused with it.
+     * or the other way round, is refused rather than believed by halves. A grant served only to a client
+     * that authenticates itself, a grant a client uses for itself (RFC 6749 §4.4) among them, is refused to a
+     * public client here rather than at its first request (RFC 6749 §2.1), and a client using a grant for
+     * itself is named in the "sub" of the tokens it gets, so an identifier no subject can be is refused with
+     * it.
      *
      * @param list<GrantTypeName> $registered
      * @param list<RedirectUri> $redirectUris
@@ -670,23 +671,22 @@ final readonly class ClientMetadataReader
             // is refused here rather than at the first exchange
             self::asASubject($clientId);
         }
-        $actsForItself = array_find($this->grants->actingForTheClientItself(), $isRegistered);
-        if ($actsForItself === null) {
-            return;
-        }
-        if (! $method->authenticatesClient()) {
+        $authenticated = array_find($this->grants->requiringClientAuthentication(), $isRegistered);
+        if ($authenticated !== null && ! $method->authenticatesClient()) {
             throw new InvalidClientMetadataException(
                 'token_endpoint_auth_method',
                 null,
                 sprintf(
-                    'The client "%s" is registered for "%s", which requires client authentication, and authenticates with %s, which proves nothing (RFC 6749 section 4.4).',
+                    'The client "%s" is registered for "%s", which requires client authentication, and authenticates with %s, which proves nothing (RFC 6749 section 2.1).',
                     $clientId,
-                    $actsForItself->value,
+                    $authenticated->value,
                     $method->name(),
                 ),
             );
         }
-        self::asASubject($clientId);
+        if (array_find($this->grants->actingForTheClientItself(), $isRegistered) !== null) {
+            self::asASubject($clientId);
+        }
     }
 
     /**

@@ -16,7 +16,6 @@ use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Domain\Token\ClientAuthorization;
 use Beffroi\Oidc\Domain\Token\IssuedTokens;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
-use Beffroi\Oidc\Exception\InvalidClientException;
 use Beffroi\Oidc\Exception\InvalidScopeException;
 use Beffroi\Oidc\Exception\InvalidTargetException;
 use Psr\Clock\ClockInterface;
@@ -26,12 +25,13 @@ use Psr\Clock\ClockInterface;
  * send anywhere. The answer is an access token and nothing else, no ID token and no refresh token (§4.4.3),
  * and what the token stands on is the registration of the client itself.
  *
- * The client authenticates itself (§4.4), so a public client is refused here as it is refused a
- * registration for this grant. What the token is addressed to is asked for and never assumed: a request
- * that names no resource is refused rather than answered with a token addressed to the client that asked
- * for it (RFC 8707 §2, and the rule of TokenAudience), because a token no resource server is meant to
- * accept is the one thing this grant must not hand out. The scopes are asked for the same way and for the
- * same reason: what a request does not name, it is not granted.
+ * The client authenticates itself (§4.4), which this grant declares (ActsForTheClientItselfInterface): a
+ * public client is refused it by the token endpoint and by its registration, and never reaches it. What the
+ * token is addressed to is asked for and never assumed: a request that names no resource is refused rather
+ * than answered with a token addressed to the client that asked for it (RFC 8707 §2, and the rule of
+ * TokenAudience), because a token no resource server is meant to accept is the one thing this grant must not
+ * hand out. The scopes are asked for the same way and for the same reason: what a request does not name, it
+ * is not granted.
  *
  * "openid" is refused: there is no ID token to issue and nobody to describe (OIDC Core §2), so a request
  * that asks for it asks for something this grant cannot answer, and it is told so rather than served a
@@ -58,9 +58,6 @@ final readonly class ClientCredentialsGrant implements ActsForTheClientItselfInt
     public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens
     {
         $registration = $client->client->registration;
-        if ($registration->isPublic()) {
-            throw new InvalidClientException('This grant type requires client authentication, and the client authenticated as a public client (RFC 6749 section 4.4).');
-        }
         $authorization = new ClientAuthorization(
             $this->grantType(),
             $this->uuids->timeOrdered(),

@@ -67,6 +67,11 @@ final readonly class ServedGrants implements ServedGrantsInterface
         return $this->grantTypesOf(static fn (GrantInterface $grant): bool => $grant instanceof ActsForTheClientItselfInterface);
     }
 
+    public function requiringClientAuthentication(): array
+    {
+        return $this->grantTypesOf(static fn (GrantInterface $grant): bool => $grant instanceof RequiresClientAuthenticationInterface);
+    }
+
     public function sendingTheUserToTheClient(): array
     {
         return $this->grantTypesOf(static fn (GrantInterface $grant): bool => $grant instanceof SendsTheUserToTheClientInterface);

@@ -11,6 +11,7 @@ use Beffroi\Oidc\Application\Dpop\DpopProofVerifier;
 use Beffroi\Oidc\Application\Request\RequestParameters;
 use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Exception\InvalidClientException;
 use Beffroi\Oidc\Exception\InvalidRequestException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use Beffroi\Oidc\Exception\UnauthorizedClientException;
@@ -82,6 +83,12 @@ final readonly class TokenHandler
         }
         if (! $client->client->registration->allowsGrant($grant->grantType())) {
             throw new UnauthorizedClientException('The client is not registered for this grant type.');
+        }
+        // RFC 6749 §2.1: a public client cannot authenticate, and a grant served only to a client that does
+        // is refused here, before it reads anything of the request, as such a registration is refused where
+        // a registration meets the wiring
+        if ($grant instanceof RequiresClientAuthenticationInterface && $client->client->registration->isPublic()) {
+            throw new InvalidClientException('This grant type requires client authentication, and the client authenticated as a public client (RFC 6749 section 2.1).');
         }
 
         return $grant->grant($client, $request, $context)->toResponse();
