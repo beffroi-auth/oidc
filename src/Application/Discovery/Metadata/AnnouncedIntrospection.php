@@ -15,9 +15,12 @@ use Beffroi\Oidc\Port\EndpointLocatorInterface;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * RFC 7662 §2 and RFC 9701 §6: where a token is introspected, how the caller authenticates there, and
+ * RFC 7662 §2 and RFC 9701 §7: where a token is introspected, how the caller authenticates there, and
  * what a signed introspection response is signed with. Only the methods that authenticate the caller are
  * announced: an endpoint that answers about somebody else's token tells no anonymous caller anything.
+ *
+ * A signed response is signed with the default algorithm of the wiring, no client registering another
+ * (IntrospectionHandler), so that one is the algorithm announced.
  */
 final readonly class AnnouncedIntrospection implements MetadataContributorInterface
 {
@@ -39,7 +42,7 @@ final readonly class AnnouncedIntrospection implements MetadataContributorInterf
             'introspection_endpoint' => $this->endpoints->locate($tenant)->introspection,
             'introspection_endpoint_auth_methods_supported' => MethodNames::of($methods),
             'introspection_endpoint_auth_signing_alg_values_supported' => $this->algorithms->assertionSigning($methods),
-            'introspection_signing_alg_values_supported' => $this->algorithms->signing(),
+            'introspection_signing_alg_values_supported' => $this->algorithms->defaultSigning(),
         ];
     }
 }

@@ -29,14 +29,26 @@ final readonly class AnnouncedAlgorithms
     }
 
     /**
-     * What the provider signs every JWS with: an ID token, a UserInfo answer, an introspection
-     * response, a signed authorization response, and what it verifies a DPoP proof with.
+     * What the provider signs a JWS with, whichever a client registered: an ID token, a UserInfo answer,
+     * a signed authorization response, and what it verifies a DPoP proof with.
      *
      * @return non-empty-list<string>
      */
     public function signing(): array
     {
         return AlgorithmNames::of($this->signature->all());
+    }
+
+    /**
+     * What the provider signs a JWS with where no client registers a choice: a signed introspection
+     * response, whose algorithm the provider determines (RFC 9701 §6). The one it signs with, and not
+     * every one it could.
+     *
+     * @return non-empty-list<string>
+     */
+    public function defaultSigning(): array
+    {
+        return AlgorithmNames::of([$this->signature->defaultAlgorithm()]);
     }
 
     /**
