@@ -163,6 +163,6 @@ final readonly class UserInfoHandler
             'aud' => $client->registration->clientId,
         ];
 
-        return UserInfoResponse::jwt($subject, $claims, $this->documents->issue($client, $format, $claims));
+        return UserInfoResponse::jwt($subject, $claims, $this->documents->issue($client, $this->documents->address($client, $format), $claims));
     }
 }

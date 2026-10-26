@@ -11,6 +11,7 @@ use Beffroi\Oidc\Application\Dpop\DpopProofVerifier;
 use Beffroi\Oidc\Application\Request\RequestParameters;
 use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Beffroi\Oidc\Domain\Token\TokenResponse;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
 use Beffroi\Oidc\Exception\InvalidClientException;
 use Beffroi\Oidc\Exception\InvalidRequestException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
@@ -46,6 +47,7 @@ final readonly class TokenHandler
      * @param string|null $dpopProof the DPoP header of the request, null when it carries none (RFC 9449 §4.1)
      *
      * @throws OAuth2Exception
+     * @throws ClientKeysUnavailableException when the keys of the client its ID token is encrypted to cannot be read, before anything the request presented is spent
      */
     public function handle(
         Tenant $tenant,
