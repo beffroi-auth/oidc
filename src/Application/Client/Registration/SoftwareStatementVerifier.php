@@ -12,6 +12,7 @@ use Beffroi\Oidc\Domain\Client\Metadata\AttestedMembers;
 use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
 use Beffroi\Oidc\Domain\Client\Registration\StatementIssuer;
 use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use Beffroi\Oidc\Exception\InvalidJwtException;
 use Beffroi\Oidc\Exception\InvalidSoftwareStatementException;
 use Beffroi\Oidc\Port\CompactJwtReaderInterface;
@@ -32,7 +33,9 @@ use SensitiveParameter;
  *
  * Every refusal is the same refusal, `invalid_software_statement`, and whoever presents a statement learns
  * that it was not accepted and nothing else: not whether the authority is pinned, not whether the
- * signature verified, not whether the identifier had been seen (decision 0006).
+ * signature verified, not whether the identifier had been seen (decision 0006). What a statement that
+ * verified says is then client metadata, and a member of it that no client registers is refused as the
+ * same member of a request body is (`AttestedMembers`).
  *
  * It shares nothing with the two readings of an assertion (RFC 7523 §2.1, §3): different registrations,
  * different keys, different rules and a replay guard of its own.
@@ -56,6 +59,7 @@ final readonly class SoftwareStatementVerifier
      * @param string $statement the compact JWS the registration carried
      *
      * @throws InvalidSoftwareStatementException whenever the statement is not accepted, whatever the reason
+     * @throws InvalidClientMetadataException when the statement it accepts carries a member of this provider alone
      */
     public function verify(
         Tenant $tenant,

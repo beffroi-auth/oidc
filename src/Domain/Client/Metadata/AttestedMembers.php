@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Domain\Client\Metadata;
 
 use function array_diff_key;
 use function array_flip;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 
 /**
  * The members of a software statement an authority the tenant pinned signed (RFC 7591 §2.3), once the
@@ -21,6 +22,11 @@ use function array_flip;
  * RFC 7519 §4.1 are not: "iss" says who signed, "exp" until when, and neither describes a client. They
  * are dropped here rather than refused by the reader, because a statement that carries them is a
  * statement of the ordinary shape and not a registration with unknown keys.
+ *
+ * Those members are held to what a client registers: a member of this provider alone is refused here as
+ * it is refused of the body (`MembersOfTheDeployment`), a statement saying what the client is and never
+ * what it may have (decision 0009). What a statement signed is kept among what the client sent, so a member
+ * let through here would be read back from that row as one the client sent, and refused there.
  */
 final readonly class AttestedMembers implements ClientMetadataSourceInterface
 {
@@ -38,10 +44,13 @@ final readonly class AttestedMembers implements ClientMetadataSourceInterface
 
     /**
      * @param array<string, mixed> $claims the claims of the verified statement, as its issuer signed them
+     *
+     * @throws InvalidClientMetadataException when the statement carries a member of this provider alone
      */
     public function __construct(array $claims)
     {
         $this->members = array_diff_key($claims, array_flip(self::ABOUT_THE_STATEMENT));
+        MembersOfTheDeployment::refuseIn($this);
     }
 
     public function source(): string

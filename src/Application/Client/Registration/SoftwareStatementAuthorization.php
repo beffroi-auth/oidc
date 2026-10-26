@@ -7,6 +7,7 @@ namespace Beffroi\Oidc\Application\Client\Registration;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
 use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use Beffroi\Oidc\Exception\InvalidSoftwareStatementException;
 use Beffroi\Oidc\Exception\UnauthorizedRegistrationException;
 use function is_string;
@@ -31,7 +32,8 @@ use Psr\Clock\ClockInterface;
  *
  * What a statement says is what the client **is**; what it **may have** is the policy's, and a statement
  * naming a scope, a grant or an authentication method the tenant does not offer is refused by the same
- * rule and the same code path as a request body naming it. This class grants nothing.
+ * rule and the same code path as a request body naming it, as is one carrying a member of this provider
+ * alone (`MembersOfTheDeployment`). This class grants nothing.
  */
 final readonly class SoftwareStatementAuthorization implements RegistrationAuthorizationInterface
 {
@@ -60,6 +62,7 @@ final readonly class SoftwareStatementAuthorization implements RegistrationAutho
      * @throws UnauthorizedRegistrationException when the body carries no statement at all, which is a
      *                                           request that presents nothing this mode acts on
      * @throws InvalidSoftwareStatementException when it carries one this tenant does not accept
+     * @throws InvalidClientMetadataException when the one it accepts carries a member of this provider alone
      */
     public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): array
     {

@@ -9,6 +9,7 @@ use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
 use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
 use Beffroi\Oidc\Domain\Client\Registration\RegistrationRequest;
 use Beffroi\Oidc\Exception\UnauthorizedRegistrationException;
+use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
 
 /**
  * One way a registration request is authorised (decision 0009). One class per mode, wired into the
@@ -39,6 +40,10 @@ interface RegistrationAuthorizationInterface
      * mode itself is. A mode that needs nothing of it reads nothing of it.
      *
      * @throws UnauthorizedRegistrationException when the request presents nothing this mode acts on
+     * @throws UnreadableClientMetadataException when what the request presents is a member of the
+     *                                           registration and does not hold: a software statement this
+     *                                           tenant does not accept, or one that carries what no client
+     *                                           registers
      *
      * @return list<ClientMetadataSourceInterface> what this mode puts in front of the members the client
      *                                             sent, in the order they win; empty for a mode that
