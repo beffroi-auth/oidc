@@ -62,7 +62,8 @@ final readonly class AuthorizationRequestParser
      *                     §2), which is the only way a client that requires it may start one
      * @param bool $signed whether they are the ones of a request object the client signed (RFC 9101
      *                     §6.1), directly or inside the record it pushed, which is the only way a client
-     *                     that requires it may start one
+     *                     that requires it may start one. For such a client, an object read at all is
+     *                     one it signed: its registration reads no object unsigned (RFC 9101 §10.5)
      *
      * @throws OAuth2Exception never redirectable
      */
@@ -79,11 +80,11 @@ final readonly class AuthorizationRequestParser
         if (! $pushed && $client->registration->requiresPushedAuthorizationRequests) {
             throw new InvalidRequestException('The client only starts an authorization request by pushing it (RFC 9126 section 6).');
         }
-        // OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1: read here
+        // RFC 9101 §10.5 "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1: read here
         // for the same reason, so that a client held to signing its requests is told so on a page and
         // nothing of the request reaches the browser it came from
         if (! $signed && $client->registration->requiresSignedRequestObject) {
-            throw new InvalidRequestException('The client only starts an authorization request with a request object it signed (OIDC Registration, require_signed_request_object).');
+            throw new InvalidRequestException('The client only starts an authorization request with a request object it signed (RFC 9101 section 10.5, require_signed_request_object).');
         }
         $redirectUri = $request->required('redirect_uri');
         if (! $client->registration->hasRedirectUri($redirectUri)) {

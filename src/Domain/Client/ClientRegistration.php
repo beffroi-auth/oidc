@@ -98,7 +98,7 @@ final readonly class ClientRegistration
      * @param bool $requiresPkce false only for a confidential client (decision 0008)
      * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
      * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
-     * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (OIDC Registration "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2)
+     * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (RFC 9101 §10.5 "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2); never beside a $requestObjectSigning under which an unsigned object is read, so that every object read for such a client is one it signed
      * @param non-empty-string|null $subjectType the kind of "sub" this client registered ("subject_type", OIDC Core §8), under the name the resolver of that kind gives itself; which kinds the provider assigns one for is read where a registration meets the wiring, as for a grant and for an authentication method. Null for a client that registered none, which sees the kind the provider assigns by default
      * @param ClientUri|null $sectorIdentifierUri the document naming every redirection URI of the clients that share a "sub" with this one (OIDC Core §8.1); null for a client that registered none, which is every client whose sector is its own host
      * @param InitiateLoginUri|null $initiateLoginUri where a third party sends a user to have this provider begin a login at this client (OIDC Core §4, OIDC Registration §2), an HTTPS URL whatever the host; null for a client no third party starts a login at
@@ -355,6 +355,12 @@ final readonly class ClientRegistration
         if ($this->requestObjectSigning->needsPublishedKeys() && ! $this->publishesKeys()) {
             throw new InvalidArgumentException(sprintf(
                 'The client "%s" registers a request_object_signing_alg, whose signature is verified against a key of the client, and therefore publishes its keys in "jwks" or behind a "jwks_uri" (RFC 7591 section 2).',
+                $this->clientId,
+            ));
+        }
+        if ($this->requiresSignedRequestObject && $this->requestObjectSigning->acceptsUnsigned()) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" has its requests read only from a request object it signed (require_signed_request_object), and therefore registers no request_object_signing_alg under which an unsigned one is read (RFC 9101 section 10.5).',
                 $this->clientId,
             ));
         }
