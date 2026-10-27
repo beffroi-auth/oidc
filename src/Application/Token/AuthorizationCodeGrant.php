@@ -35,11 +35,12 @@ use SensitiveParameter;
  * the grant and every token descending from it are revoked (RFC 6749 §4.1.2).
  *
  * What the response reads from outside the provider is read before the code is consumed (architecture
- * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, and the key the ID token is
- * encrypted to (OIDC Core §3.1.3.7). A KMS that does not answer, or keys the client cannot serve right now,
- * leave the code to its next presentation, where a code consumed and then left unanswered would make that
- * presentation a replay. Nothing is read for a code presented already, which goes straight to the claim
- * that tells it is replayed.
+ * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, the key the ID token is
+ * encrypted to (OIDC Core §3.1.3.7), and the session the code descends from, which a store reads with the
+ * person it names and opens under the data keys of the tenant (decision 0018). A KMS that does not answer,
+ * or keys the client cannot serve right now, leave the code to its next presentation, where a code consumed
+ * and then left unanswered would make that presentation a replay. Nothing is read for a code presented
+ * already, which goes straight to the claim that tells it is replayed.
  *
  * A code reserved for a key (RFC 9449 §10) is exchanged by a request that proves that key and by no
  * other: the authorization request said which key would come and collect it, and a code intercepted on
@@ -87,6 +88,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             throw new InvalidGrantException(self::INVALID);
         }
         $addressed = $record->isUsed() ? null : $this->issuer->address($record->client, $record->scopes);
+        $sessionActive = ! $record->isUsed() && $record->session->isActive($now);
         // atomic: of the requests presenting this code at once, exactly one is the first
         if (! $this->codes->consume($record, $now)) {
             $this->replayed($record, $client->client, $context, $now);
@@ -100,7 +102,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             || ! $record->redirectUri->matches($redirectUri)
             || ! self::pkceSatisfied($record, $codeVerifier)
             || ! self::reservationSatisfied($record, $client)
-            || ! $record->session->isActive($now)
+            || ! $sessionActive
         ) {
             throw new InvalidGrantException(self::INVALID);
         }

@@ -47,10 +47,12 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * it from whoever took a copy of the token.
  *
  * What the response reads from outside the provider is read before the token is rotated (architecture
- * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, and the key the ID token is
- * encrypted to (OIDC Core §3.1.3.7). A KMS that does not answer, or keys the client cannot serve right now,
- * leave the token as it was, where a token rotated and then left unanswered would make the next
- * presentation a reuse, and revoke the family.
+ * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, the key the ID token is
+ * encrypted to (OIDC Core §3.1.3.7), and the session the token descends from and the person it names, rows
+ * a store opens under the data keys of the tenant (decision 0018), the person being what the announcement of
+ * the rotation names. A KMS that does not answer, or keys the client cannot serve right now, leave the token
+ * as it was, where a token rotated and then left unanswered would make the next presentation a reuse, and
+ * revoke the family.
  */
 final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
@@ -116,6 +118,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             $this->authorizationDetails->of($request, $token->authorizationDetails),
         );
         $addressed = $this->issuer->address($authorization->client, $authorization->scopes);
+        $person = $authorization->person();
         if (! $token->rotatesOnUse()) {
             return $this->issuer->issue($authorization, null, $context, $now, $addressed);
         }
@@ -126,7 +129,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             $successor->token->issuedAt,
             $successor->token->tenant,
             $successor->token->clientId,
-            $successor->token->session->user->subject,
+            $person,
             $successor->token->family->id,
             $token->tokenHash,
             $successor->token->tokenHash,

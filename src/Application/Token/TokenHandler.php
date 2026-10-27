@@ -49,7 +49,7 @@ final readonly class TokenHandler
      *
      * @throws OAuth2Exception
      * @throws ClientKeysUnavailableException when the keys of the client its ID token is encrypted to cannot be read, before anything the request presented is spent
-     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, or to seal the person an access token is about, which a grant that spends what the request presented reads before it spends it
+     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, or the session the response descends from and the person it names, or to seal the person an access token is about, which a grant that spends what the request presented reads before it spends it
      */
     public function handle(
         Tenant $tenant,
