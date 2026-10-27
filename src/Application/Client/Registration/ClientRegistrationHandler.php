@@ -37,7 +37,7 @@ use Symfony\Component\Uid\Uuid;
  * answered once, and kept only as what recognises it again.
  *
  * The write is synchronous and the reason is the protocol's: the client leaves with the identifier the
- * provider drew for it, so the row exists before the answer does (apps/op/config/packages/messenger.yaml).
+ * provider drew for it, so the row exists before the answer does (architecture §5.6).
  */
 final readonly class ClientRegistrationHandler
 {
