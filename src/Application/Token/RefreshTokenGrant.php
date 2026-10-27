@@ -46,9 +46,11 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * nobody else: the client that holds it is a public client, and the binding is the whole of what tells
  * it from whoever took a copy of the token.
  *
- * The key the ID token is encrypted to is read before the token is rotated (OIDC Core §3.1.3.7): keys the
- * client cannot serve right now leave the token as it was, where a token rotated and then left unanswered
- * would make the next presentation a reuse, and revoke the family.
+ * What the response reads from outside the provider is read before the token is rotated (architecture
+ * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, and the key the ID token is
+ * encrypted to (OIDC Core §3.1.3.7). A KMS that does not answer, or keys the client cannot serve right now,
+ * leave the token as it was, where a token rotated and then left unanswered would make the next
+ * presentation a reuse, and revoke the family.
  */
 final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
@@ -113,9 +115,9 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             RequestedResources::of($request, $token->resources),
             $this->authorizationDetails->of($request, $token->authorizationDetails),
         );
-        $idTokenFormat = $this->issuer->addressIdToken($authorization->client, $authorization->scopes);
+        $addressed = $this->issuer->address($authorization->client, $authorization->scopes);
         if (! $token->rotatesOnUse()) {
-            return $this->issuer->issue($authorization, null, $context, $now, $idTokenFormat);
+            return $this->issuer->issue($authorization, null, $context, $now, $addressed);
         }
         $token->rotate($now);
         $this->refreshTokens->save($token);
@@ -132,7 +134,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             $context,
         ));
 
-        return $this->issuer->issue($authorization, $successor, $context, $now, $idTokenFormat);
+        return $this->issuer->issue($authorization, $successor, $context, $now, $addressed);
     }
 
     /**

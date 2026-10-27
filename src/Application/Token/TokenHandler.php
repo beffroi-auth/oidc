@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Token;
 
 use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Exception\KmsUnavailableException;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Client\ClientAuthenticator;
 use Beffroi\Oidc\Application\Dpop\DpopProofVerifier;
@@ -48,6 +49,7 @@ final readonly class TokenHandler
      *
      * @throws OAuth2Exception
      * @throws ClientKeysUnavailableException when the keys of the client its ID token is encrypted to cannot be read, before anything the request presented is spent
+     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which a grant somebody signed in for opens before anything the request presented is spent
      */
     public function handle(
         Tenant $tenant,

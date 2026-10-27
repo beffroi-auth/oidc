@@ -6,7 +6,9 @@ namespace Beffroi\Oidc\Application\Token;
 
 use function array_values;
 use DateTimeImmutable;
+use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AddressedAccessToken;
 use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\AccessTokenIssuerInterface;
@@ -43,21 +45,37 @@ final readonly class ServedAccessTokenShapes implements AccessTokenIssuerInterfa
     }
 
     /**
+     * @throws InvalidArgumentException when the wiring does not hold together
+     */
+    public function address(Client $client): AddressedAccessToken
+    {
+        return $this->issuerOf($client)->address($client);
+    }
+
+    /**
+     * @throws InvalidArgumentException when the wiring does not hold together
+     */
+    public function issue(AuthorizationInterface $authorization, AddressedAccessToken $addressed, DateTimeImmutable $now): AccessToken
+    {
+        return $this->issuerOf($authorization->client)->issue($authorization, $addressed, $now);
+    }
+
+    /**
      * Architecture §4.6: the shape the client registered says who writes the token, and that issuer
-     * alone mints it.
+     * alone addresses it and mints it.
      *
      * @throws InvalidArgumentException when the wiring does not hold together
      */
-    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken
+    private function issuerOf(Client $client): AccessTokenShapeIssuerInterface
     {
-        $shape = $authorization->client->registration->accessTokenShape->name();
+        $shape = $client->registration->accessTokenShape->name();
         $wired = $this->wired();
 
-        return ($wired[$shape] ?? throw new InvalidArgumentException(sprintf(
+        return $wired[$shape] ?? throw new InvalidArgumentException(sprintf(
             'No issuer writes access tokens in the "%s" shape; the wired shapes are %s.',
             $shape,
             implode(', ', ShapeNames::of(array_values($wired))),
-        )))->issue($authorization, $now);
+        ));
     }
 
     /**

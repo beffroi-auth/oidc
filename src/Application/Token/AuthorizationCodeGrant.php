@@ -34,10 +34,12 @@ use SensitiveParameter;
  * with one description. The code is consumed by its first presentation (RFC 9700 §4.5); presented again,
  * the grant and every token descending from it are revoked (RFC 6749 §4.1.2).
  *
- * The key the ID token is encrypted to is read before the code is consumed (OIDC Core §3.1.3.7): keys the
- * client cannot serve right now leave the code to its next presentation, where a code consumed and then
- * left unanswered would make that presentation a replay. Nothing is read for a code presented already,
- * which goes straight to the claim that tells it is replayed.
+ * What the response reads from outside the provider is read before the code is consumed (architecture
+ * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, and the key the ID token is
+ * encrypted to (OIDC Core §3.1.3.7). A KMS that does not answer, or keys the client cannot serve right now,
+ * leave the code to its next presentation, where a code consumed and then left unanswered would make that
+ * presentation a replay. Nothing is read for a code presented already, which goes straight to the claim
+ * that tells it is replayed.
  *
  * A code reserved for a key (RFC 9449 §10) is exchanged by a request that proves that key and by no
  * other: the authorization request said which key would come and collect it, and a code intercepted on
@@ -84,7 +86,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         if ($record === null) {
             throw new InvalidGrantException(self::INVALID);
         }
-        $idTokenFormat = $record->isUsed() ? null : $this->issuer->addressIdToken($record->client, $record->scopes);
+        $addressed = $record->isUsed() ? null : $this->issuer->address($record->client, $record->scopes);
         // atomic: of the requests presenting this code at once, exactly one is the first
         if (! $this->codes->consume($record, $now)) {
             $this->replayed($record, $client->client, $context, $now);
@@ -126,7 +128,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             $refreshToken = $this->issuer->refreshToken($family, $authorization, $now);
         }
 
-        return $this->issuer->issue($authorization, $refreshToken, $context, $now, $idTokenFormat);
+        return $this->issuer->issue($authorization, $refreshToken, $context, $now, $addressed);
     }
 
     /**

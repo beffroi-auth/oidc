@@ -6,12 +6,15 @@ namespace Beffroi\Oidc\Application\Token;
 
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Core\Exception\KeyNotFoundException;
+use Beffroi\Core\Exception\KmsUnavailableException;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Oidc\Domain\Client\AddressedFormat;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AddressedResponse;
 use Beffroi\Oidc\Domain\Event\TokensIssued;
 use Beffroi\Oidc\Domain\Scope\Scope;
 use Beffroi\Oidc\Domain\Scope\Scopes;
@@ -37,11 +40,14 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * nothing else (RFC 6749 §4.4.3). The authorization says which it is by what it is, never by the name of
  * the grant that produced it.
  *
- * An ID token is addressed by the grant before it spends what the request presented, and struck here for
- * what was read (OIDC Core §3.1.3.7): the key of the client it is encrypted to is the one thing of the
- * response read from outside the provider, so a set the client cannot serve right now is an error the
- * same request is served past once it can, where read after the spending it would cost the client its
- * code, or the family of its refresh token.
+ * A response is addressed before it is struck, and struck here for what was read (OIDC Core §3.1.3.7,
+ * architecture §4.5). What it reads from outside the provider is the key of the tenant each of its tokens is
+ * signed with, opened by the KMS, and the key of the client its ID token is encrypted to, read from what the
+ * client publishes. A grant whose authorization somebody signed in for addresses the response before it spends
+ * what the request presented: a KMS that does not answer and a set the client cannot serve right now are then
+ * errors the same request is served past once they answer, where read after the spending they would cost the
+ * client its code, or the family of its refresh token. A response to an authorization nobody signed in for
+ * carries an access token and nothing else, and is addressed here when its grant did not address it.
  */
 final readonly class TokenIssuer
 {
@@ -65,40 +71,43 @@ final readonly class TokenIssuer
     }
 
     /**
-     * The shape of the ID token a response to an authorization somebody signed in for carries, with the key
-     * of the client it is encrypted to when it registered an encryption, read now: what a grant asks before
-     * it spends what the request presented.
+     * What a response to an authorization of that client somebody signed in for needs from outside the provider,
+     * read now: the key of the tenant its access token is signed with, opened, and, when "openid" is among the
+     * scopes (OIDC Core §3.1.3.3), the shape of its ID token with the key of the tenant it is signed with and the
+     * key of the client it is encrypted to. What a grant asks before it spends what the request presented.
      *
-     * @return AddressedFormat|null null when the response carries no ID token, "openid" not among the scopes (OIDC Core §3.1.3.3)
-     *
+     * @throws KeyNotFoundException when the tenant has no active key for an algorithm the response is signed with
+     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which is not open yet
      * @throws ClientKeysUnavailableException when the set the client publishes cannot be read, or holds no key its ID tokens can be encrypted to
      */
-    public function addressIdToken(Client $client, Scopes $scopes): ?AddressedFormat
+    public function address(Client $client, Scopes $scopes): AddressedResponse
     {
-        if (! $scopes->has(Scope::openid())) {
-            return null;
-        }
-
-        return $this->idTokens->address($client);
+        return new AddressedResponse(
+            $this->accessTokens->address($client),
+            $scopes->has(Scope::openid()) ? $this->idTokens->address($client) : null,
+        );
     }
 
     /**
      * The ID token is issued when "openid" is among the scopes (OIDC Core §3.1.3.3, §12.2), for the shape
      * the grant addressed.
      *
-     * @param AddressedFormat|null $idTokenFormat what addressIdToken() answered before the grant spent anything; null for an authorization nobody signed in for
+     * @param AddressedResponse|null $addressed what address() answered before the grant spent anything; null for an authorization nobody signed in for whose grant did not address it
      *
-     * @throws LogicException when the response carries an ID token the grant did not address first
+     * @throws KeyNotFoundException when the response is addressed here and the tenant has no active key for the algorithm its access token is signed with
+     * @throws KmsUnavailableException when the response is addressed here and the KMS does not answer to open the key its access token is signed with
+     * @throws LogicException when the response to an authorization somebody signed in for, or the ID token it carries, was not addressed by the grant first
      */
     public function issue(
         AuthorizationInterface $authorization,
         ?IssuedRefreshToken $refreshToken,
         RequestContext $context,
         DateTimeImmutable $now,
-        ?AddressedFormat $idTokenFormat = null,
+        ?AddressedResponse $addressed = null,
     ): IssuedTokens {
-        $accessToken = $this->accessTokens->issue($authorization, $now);
-        $idToken = $this->idToken($authorization, $accessToken, $idTokenFormat, $now);
+        $addressed ??= $this->addressedHere($authorization);
+        $accessToken = $this->accessTokens->issue($authorization, $addressed->accessToken, $now);
+        $idToken = $this->idToken($authorization, $accessToken, $addressed->idToken, $now);
         $this->events->dispatch(new TokensIssued(
             $now,
             $authorization->tenant,
@@ -121,6 +130,24 @@ final readonly class TokenIssuer
         ));
 
         return new IssuedTokens($authorization, $accessToken, $idToken, $refreshToken);
+    }
+
+    /**
+     * The response to an authorization nobody signed in for, addressed right before it is struck: an access token
+     * and nothing else (RFC 6749 §4.4.3). One somebody signed in for is addressed by its grant, which may spend
+     * what the request presented before it asks for the tokens.
+     *
+     * @throws KeyNotFoundException when the tenant has no active key for the algorithm the access token is signed with
+     * @throws KmsUnavailableException when the KMS does not answer to open that key, which is not open yet
+     * @throws LogicException when somebody signed in for the authorization, so that its grant was to address the response
+     */
+    private function addressedHere(AuthorizationInterface $authorization): AddressedResponse
+    {
+        if ($authorization instanceof UserAuthorizationInterface) {
+            throw new LogicException('The response to an authorization somebody signed in for was not addressed before the grant spent what the request presented (architecture section 4.5).');
+        }
+
+        return new AddressedResponse($this->accessTokens->address($authorization->client));
     }
 
     /**

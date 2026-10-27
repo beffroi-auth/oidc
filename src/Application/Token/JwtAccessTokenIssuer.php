@@ -9,9 +9,11 @@ use function array_keys;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\Subject;
-use Beffroi\Core\Port\JwsSignerInterface;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Core\Port\SigningKeyOpenerInterface;
+use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AddressedAccessToken;
 use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
 use Beffroi\Oidc\Domain\Token\CarriedAuthorizationDetails;
 use Beffroi\Oidc\Domain\Token\ClientSubject;
@@ -40,7 +42,9 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
  * Nothing is stored: the token is its own record. An access token is read by resource servers, not by the
  * client, so it is signed with the algorithm the provider signs with by default, never the one the client
  * registered for its ID tokens. A token issued on a request that proved a key carries the "cnf" of
- * RFC 7800 §3.1, which is what binds it to that key (RFC 8705 §3).
+ * RFC 7800 §3.1, which is what binds it to that key (RFC 8705 §3). The key it is signed with is opened when
+ * the token is addressed, which a grant somebody signed in for does before it spends what the request
+ * presented, and the token is signed under the key that was opened.
  */
 final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInterface
 {
@@ -72,7 +76,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
     public const string AUTHORIZATION_DETAILS = 'authorization_details';
 
     public function __construct(
-        private JwsSignerInterface $signer,
+        private SigningKeyOpenerInterface $signer,
         private SubjectIdentifierResolverInterface $subjects,
         private SignatureAlgorithmsInterface $algorithms,
         private UuidGeneratorInterface $uuids,
@@ -90,7 +94,12 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         return 'jwt';
     }
 
-    public function issue(AuthorizationInterface $authorization, DateTimeImmutable $now): AccessToken
+    public function address(Client $client): AddressedAccessToken
+    {
+        return new AddressedAccessToken($this->signer->open($client->tenant, $this->algorithms->defaultAlgorithm()));
+    }
+
+    public function issue(AuthorizationInterface $authorization, AddressedAccessToken $addressed, DateTimeImmutable $now): AccessToken
     {
         $expiresAt = $now->add($this->lifetime);
         $signIn = self::signInOf($authorization);
@@ -146,7 +155,7 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         // server verifying the token offline knows what to ask its caller to present again
         $claims = [...$claims, ...($authorization->confirmation?->toClaims() ?? [])];
 
-        $jws = $this->signer->sign($authorization->tenant, $this->algorithms->defaultAlgorithm(), JwtPayload::encode($claims), [
+        $jws = $addressed->signingKey()->sign(JwtPayload::encode($claims), [
             'typ' => self::TYPE,
         ]);
 

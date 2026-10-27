@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Token;
 
 use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Core\Exception\KmsUnavailableException;
 use Beffroi\Oidc\Application\Client\AuthenticatedClient;
 use Beffroi\Oidc\Application\Request\RequestParameters;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
@@ -34,6 +35,7 @@ interface GrantInterface
     /**
      * @throws OAuth2Exception an error of RFC 6749 §5.2, answered as JSON
      * @throws ClientKeysUnavailableException when the keys of the client its ID token is encrypted to cannot be read, before anything the request presented is spent
+     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which a grant somebody signed in for opens before anything the request presented is spent
      */
     public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens;
 }

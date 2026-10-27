@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Client;
 
-use Beffroi\Core\Port\JwsSignerInterface;
+use Beffroi\Core\Exception\KeyNotFoundException;
+use Beffroi\Core\Exception\KmsUnavailableException;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
+use Beffroi\Core\Port\SigningKeyOpenerInterface;
 use Beffroi\Oidc\Domain\Client\AddressedFormat;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\ResponseFormat;
@@ -26,11 +28,12 @@ use function sprintf;
  * the document and it travels inside what hides it, so that a client that opens a JWE finds something to
  * verify rather than something to trust. A nested JWT says so in its "cty" (RFC 7519 §5.2).
  *
- * **Addressed, then struck.** The key the JWE goes to is read back from what the client publishes, which is
- * the one step that depends on the client serving it right now: address() reads it, and issue() strikes the
- * document for the shape it is handed without reading anything of the client. A caller that spends nothing
- * on the way does both at once; the token endpoint addresses the ID token before the grant spends what the
- * request presented, so that a set that cannot be read costs the client nothing.
+ * **Addressed, then struck.** Two steps depend on something outside the provider answering right now: the key
+ * of the tenant the JWS is signed with is opened by the KMS, and the key the JWE goes to is read back from what
+ * the client publishes. address() does both, and issue() strikes the document for the shape it is handed
+ * without asking anything of either. A caller that spends nothing on the way does both at once; the token
+ * endpoint addresses the ID token before the grant spends what the request presented, so that a KMS that does
+ * not answer and a set that cannot be read cost the client nothing.
  */
 final readonly class ClientDocumentIssuer
 {
@@ -40,7 +43,7 @@ final readonly class ClientDocumentIssuer
     private const string NESTED = 'JWT';
 
     public function __construct(
-        private JwsSignerInterface $signer,
+        private SigningKeyOpenerInterface $signer,
         private SignatureAlgorithmsInterface $algorithms,
         private ClientKeySetProvider $keys,
         private JweEncrypterInterface $encrypter,
@@ -48,22 +51,26 @@ final readonly class ClientDocumentIssuer
     }
 
     /**
-     * The shape, with the key of the client a JWE under its algorithm is addressed to when it encrypts. A
-     * registration is checked when it is read, so a client whose published set holds nothing usable is a
-     * client that changed its keys since: it is said plainly, with the client and the algorithm, and no
-     * document leaves.
+     * The shape, with the key of the tenant its JWS is signed with, opened, when it signs, and the key of the
+     * client a JWE under its algorithm is addressed to when it encrypts. A registration is checked when it is
+     * read, so a client whose published set holds nothing usable is a client that changed its keys since: it
+     * is said plainly, with the client and the algorithm, and no document leaves.
      *
+     * @throws KeyNotFoundException when the tenant has no active key for the algorithm the document is signed with
+     * @throws KmsUnavailableException when the KMS does not answer to open that key, which is not open yet
      * @throws ClientKeysUnavailableException when the set the client publishes cannot be read, or holds no key a JWE under that algorithm can be addressed to
      */
     public function address(Client $client, ResponseFormat $format): AddressedFormat
     {
+        $signingKey = $format->isSigned ? $this->signer->open($client->tenant, $format->signature ?? $this->algorithms->defaultAlgorithm()) : null;
         $encryption = $format->encryption;
         if ($encryption === null) {
-            return new AddressedFormat($format);
+            return new AddressedFormat($format, $signingKey);
         }
 
         return new AddressedFormat(
             $format,
+            $signingKey,
             $this->keys->keysOf($client, null)->encryptionKeyFor($encryption->algorithm) ?? throw new ClientKeysUnavailableException(sprintf(
                 'The client "%s" publishes no key a document encrypted under "%s" can be addressed to.',
                 $client->registration->clientId,
@@ -92,7 +99,7 @@ final readonly class ClientDocumentIssuer
         $payload = JwtPayload::encode($claims);
         $header = [];
         if ($format->isSigned) {
-            $payload = $this->signer->sign($client->tenant, $format->signature ?? $this->algorithms->defaultAlgorithm(), $payload);
+            $payload = $addressed->signingKey()->sign($payload);
             $header = [
                 'cty' => self::NESTED,
             ];
