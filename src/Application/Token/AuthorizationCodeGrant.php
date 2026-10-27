@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Token;
 
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Core\Port\SubjectsOfSessionsInterface;
 use Beffroi\Core\Port\UuidGeneratorInterface;
 use DateInterval;
 use DateTimeImmutable;
@@ -40,7 +41,9 @@ use SensitiveParameter;
  * person it names and opens under the data keys of the tenant (decision 0018). A KMS that does not answer,
  * or keys the client cannot serve right now, leave the code to its next presentation, where a code consumed
  * and then left unanswered would make that presentation a replay. Nothing is read for a code presented
- * already, which goes straight to the claim that tells it is replayed.
+ * already, which goes straight to the claim that tells it is replayed, and the replay is announced with the
+ * person named by the subject the store of sessions keeps in the clear (decision 0011): the grant is revoked,
+ * and its revocation announced, whatever the KMS answers.
  *
  * A code reserved for a key (RFC 9449 §10) is exchanged by a request that proves that key and by no
  * other: the authorization request said which key would come and collect it, and a code intercepted on
@@ -58,6 +61,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         private AuthorizationCodeRepositoryInterface $codes,
         private RefreshTokenRevocation $refreshTokens,
         private AccessTokenRepositoryInterface $accessTokens,
+        private SubjectsOfSessionsInterface $subjects,
         private TokenIssuer $issuer,
         private UuidGeneratorInterface $uuids,
         private ClockInterface $clock,
@@ -156,7 +160,9 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
     }
 
     /**
-     * RFC 6749 §4.1.2: every token issued from the code is revoked.
+     * RFC 6749 §4.1.2: every token issued from the code is revoked, and the replay announced with them. The person
+     * is named by the subject the store of sessions keeps in the clear and not read from the session, which a store
+     * that has not opened it yet would open under the data keys of the tenant (issue #884).
      */
     private function replayed(AuthorizationCode $code, Client $presentedBy, RequestContext $context, DateTimeImmutable $now): void
     {
@@ -170,7 +176,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             $now,
             $code->tenant,
             $code->codeHash,
-            $code->session->user->subject,
+            $this->subjects->of($code->session->id),
             $code->clientId,
             $presentedBy->registration->clientId,
             RevokedTokenHashes::of($revoked),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Token;
 
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Core\Port\SubjectsOfSessionsInterface;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Oidc\Domain\Scope\Scopes;
@@ -52,7 +53,9 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * a store opens under the data keys of the tenant (decision 0018), the person being what the announcement of
  * the rotation names. A KMS that does not answer, or keys the client cannot serve right now, leave the token
  * as it was, where a token rotated and then left unanswered would make the next presentation a reuse, and
- * revoke the family.
+ * revoke the family. A rotated token presented again reads nothing before its family is revoked, and the reuse
+ * is announced with the person named by the subject the store of sessions keeps in the clear (decision 0011):
+ * the family is revoked, and its revocation announced, whatever the KMS answers.
  */
 final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
@@ -61,6 +64,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
     public function __construct(
         private RefreshTokenRepositoryInterface $refreshTokens,
         private RefreshTokenRevocation $revocation,
+        private SubjectsOfSessionsInterface $subjects,
         private TokenIssuer $issuer,
         private RequestedAuthorizationDetails $authorizationDetails,
         private ClockInterface $clock,
@@ -160,7 +164,9 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
     }
 
     /**
-     * RFC 9700 §4.13.2.
+     * RFC 9700 §4.13.2: the family is revoked, and the reuse announced with it. The person is named by the subject
+     * the store of sessions keeps in the clear and not read from the session, which a store that has not opened it
+     * yet would open under the data keys of the tenant (issue #884).
      */
     private function reused(RefreshToken $presented, RequestContext $context, DateTimeImmutable $now): void
     {
@@ -169,7 +175,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             $now,
             $presented->tenant,
             $presented->clientId,
-            $presented->session->user->subject,
+            $this->subjects->of($presented->session->id),
             $presented->family->id,
             $presented->tokenHash,
             RevokedTokenHashes::of($revoked),
