@@ -48,7 +48,7 @@ final readonly class DpopProofValidator
     ];
 
     /**
-     * @param DateInterval $maximumAge how long a proof stands, from its "iat"
+     * @param DateInterval $maximumAge how long a proof stands, from its "iat", before the leeway is added
      * @param DateInterval $leeway what is allowed of the clock of the client, both ways
      */
     public function __construct(

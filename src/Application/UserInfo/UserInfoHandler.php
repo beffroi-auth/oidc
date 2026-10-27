@@ -51,8 +51,10 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * This is a protected resource of the provider, and the first one: a bound token (RFC 8705 §3,
  * RFC 9449 §6.1) is honoured here only when the request proves again what it is bound to, the
  * certificate of its connection or the key of the proof it carries, and refused with invalid_token when
- * it proves another or nothing. A token bound to a key is refused as soon as it is presented as a bearer
- * token, before anything of it is read: the scheme is part of how it is presented (RFC 9449 §7.1).
+ * it proves another or nothing. A token bound to a key is refused when it is presented as a bearer token:
+ * the scheme is part of how it is presented (RFC 9449 §7.1, §7.2). What a token is bound to is read from
+ * the token, so the scheme is judged once the token has been verified: a bound token that does not hold,
+ * an expired one for instance, is refused for that first, with the Bearer challenge any such token gets.
  * Whoever steals a bound token holds bytes that open nothing.
  *
  * The answer is the plain JSON unless the client registered a signature or an encryption for it (§5.3.2),
