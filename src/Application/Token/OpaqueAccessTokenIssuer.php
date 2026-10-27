@@ -17,8 +17,8 @@ use Beffroi\Oidc\Port\AccessTokenShapeIssuerInterface;
 
 /**
  * The opaque shape of the access token (architecture §4.6): a random value, and a record kept under its
- * hash with everything the JWT shape would carry. Same lifetime as the JWT shape. Nothing signs it, so
- * nothing is opened when it is addressed.
+ * hash with everything the JWT shape would carry. Same lifetime as the JWT shape. Nothing signs it and
+ * nothing of it is sealed, so nothing is opened when it is addressed.
  */
 final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerInterface
 {
@@ -39,6 +39,11 @@ final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerIn
     }
 
     public function address(Client $client): AddressedAccessToken
+    {
+        return new AddressedAccessToken();
+    }
+
+    public function addressFor(AuthorizationInterface $authorization): AddressedAccessToken
     {
         return new AddressedAccessToken();
     }

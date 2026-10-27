@@ -36,6 +36,11 @@ use SensitiveParameter;
  * It shares nothing with the reading of the assertion that authenticates a client (ClientAssertionValidator,
  * RFC 7523 §2.2): different registrations, different keys, different rules and a replay guard of its own, so
  * that an assertion accepted here is not thereby accepted there, nor the other way round (§2.1).
+ *
+ * Judging an assertion and spending it are two steps (issue #876): validate() judges it and remembers nothing,
+ * spend() remembers its "jti", which is what refuses it the next time. A grant reads what its response needs
+ * from outside the provider between the two, so that an outage met on the way leaves the assertion to the same
+ * request presented again, where spent first it would send the client back to its issuer for another one.
  */
 final readonly class IssuerAssertionValidator
 {
@@ -63,6 +68,8 @@ final readonly class IssuerAssertionValidator
     }
 
     /**
+     * The assertion judged, and nothing of it remembered: a "jti" seen before is refused by spend().
+     *
      * @param string $assertion the compact JWS the request presented
      *
      * @throws InvalidGrantException whenever the assertion is not accepted, whatever the reason
@@ -85,12 +92,21 @@ final readonly class IssuerAssertionValidator
         } catch (ClientKeysUnavailableException|InvalidJwtException $exception) {
             throw new InvalidGrantException(self::REFUSED, previous: $exception);
         }
-        $this->assertItIsStillGood($tenant, $issuer, $jwt, $now);
 
-        try {
-            return new VerifiedAssertion($issuer, $jwt->claim('sub') ?? '');
-        } catch (InvalidArgumentException $exception) {
-            throw new InvalidGrantException(self::REFUSED, previous: $exception);
+        return $this->verified($tenant, $issuer, $jwt, $now);
+    }
+
+    /**
+     * RFC 7523 §3: the assertion spent, its "jti" remembered until it expires, so that it is exchanged once. What
+     * a grant does last, right before it strikes its response, once everything that response reads from outside
+     * the provider has been read (issue #876).
+     *
+     * @throws InvalidGrantException when the assertion was spent already, which is the one refusal too
+     */
+    public function spend(Tenant $tenant, VerifiedAssertion $verified): void
+    {
+        if (! $this->replays->remember($tenant, $verified->issuer, $verified->jti, $verified->expiresAt)) {
+            throw new InvalidGrantException(self::REFUSED);
         }
     }
 
@@ -114,13 +130,13 @@ final readonly class IssuerAssertionValidator
 
     /**
      * RFC 7523 §3: addressed to this provider, once and by its issuer identifier; expired or not yet issued,
-     * refused; and bounded, so that an assertion is not a bearer token for a year. FAPI 2.0 Security Profile
-     * §5.3.2.1 clause 8 makes the issuer identifier the one name accepted, which is the rule this provider
-     * holds every assertion to (#267).
+     * refused; bounded, so that an assertion is not a bearer token for a year; and named by a "jti", which is
+     * what spending it remembers. FAPI 2.0 Security Profile §5.3.2.1 clause 8 makes the issuer identifier the
+     * one name accepted, which is the rule this provider holds every assertion to (#267).
      *
      * @throws InvalidGrantException
      */
-    private function assertItIsStillGood(Tenant $tenant, TrustedIssuer $issuer, UnverifiedJwt $jwt, DateTimeImmutable $now): void
+    private function verified(Tenant $tenant, TrustedIssuer $issuer, UnverifiedJwt $jwt, DateTimeImmutable $now): VerifiedAssertion
     {
         $audiences = $jwt->audiences();
         if (count($audiences) !== 1 || ! in_array($tenant->issuer->value, $audiences, true)) {
@@ -135,8 +151,14 @@ final readonly class IssuerAssertionValidator
             throw new InvalidGrantException(self::REFUSED);
         }
         $jti = $jwt->claim('jti');
-        if ($jti === null || ! $this->replays->remember($tenant, $issuer, $jti, $expiresAt)) {
+        if ($jti === null) {
             throw new InvalidGrantException(self::REFUSED);
+        }
+
+        try {
+            return new VerifiedAssertion($issuer, $jwt->claim('sub') ?? '', $jti, $expiresAt);
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidGrantException(self::REFUSED, previous: $exception);
         }
     }
 }

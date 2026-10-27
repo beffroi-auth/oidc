@@ -35,7 +35,7 @@ interface GrantInterface
     /**
      * @throws OAuth2Exception an error of RFC 6749 §5.2, answered as JSON
      * @throws ClientKeysUnavailableException when the keys of the client its ID token is encrypted to cannot be read, before anything the request presented is spent
-     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which a grant somebody signed in for opens before anything the request presented is spent
+     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, or to seal the person an access token is about, which a grant that spends what the request presented reads before it spends it
      */
     public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens;
 }

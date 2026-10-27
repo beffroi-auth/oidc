@@ -55,6 +55,14 @@ final readonly class ServedAccessTokenShapes implements AccessTokenIssuerInterfa
     /**
      * @throws InvalidArgumentException when the wiring does not hold together
      */
+    public function addressFor(AuthorizationInterface $authorization): AddressedAccessToken
+    {
+        return $this->issuerOf($authorization->client)->addressFor($authorization);
+    }
+
+    /**
+     * @throws InvalidArgumentException when the wiring does not hold together
+     */
     public function issue(AuthorizationInterface $authorization, AddressedAccessToken $addressed, DateTimeImmutable $now): AccessToken
     {
         return $this->issuerOf($authorization->client)->issue($authorization, $addressed, $now);

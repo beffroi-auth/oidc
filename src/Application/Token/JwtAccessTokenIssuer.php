@@ -9,6 +9,9 @@ use function array_keys;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Key\OpenedSigningKeyInterface;
+use Beffroi\Core\Exception\KeyNotFoundException;
+use Beffroi\Core\Exception\KmsUnavailableException;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
 use Beffroi\Core\Port\SigningKeyOpenerInterface;
 use Beffroi\Oidc\Domain\Client\Client;
@@ -44,9 +47,10 @@ use Beffroi\Oidc\Port\SubjectIdentifierOpenerInterface;
  * client, so it is signed with the algorithm the provider signs with by default, never the one the client
  * registered for its ID tokens. A token issued on a request that proved a key carries the "cnf" of
  * RFC 7800 §3.1, which is what binds it to that key (RFC 8705 §3). The key it is signed with is opened when
- * the token is addressed, and so is the kind of "sub" its client registered, whose pairwise kind unseals a salt
- * of the tenant (OIDC Core §8.1), which a grant somebody signed in for does before it spends what the request
- * presented: the token is signed under the key that was opened and names whoever signed in by what was opened.
+ * the token is addressed, and so is the kind of "sub" its client registered when somebody signed in for it, whose
+ * pairwise kind unseals a salt of the tenant (OIDC Core §8.1), and the person it carries is sealed then too, which
+ * a grant does before it spends what the request presented: the token is struck with what was read then and asks
+ * nothing of the KMS.
  */
 final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInterface
 {
@@ -98,9 +102,22 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
 
     public function address(Client $client): AddressedAccessToken
     {
+        return new AddressedAccessToken($this->signingKeyOf($client), subjectIdentifier: $this->subjects->open($client));
+    }
+
+    /**
+     * The person is sealed here, each envelope asking the KMS for a data key of its own, and the kind of "sub" of
+     * the client is opened when somebody signed in for the authorization, so that striking the token asks nothing
+     * of the KMS (issues #876 and #880).
+     */
+    public function addressFor(AuthorizationInterface $authorization): AddressedAccessToken
+    {
+        $person = self::personOf($authorization);
+
         return new AddressedAccessToken(
-            $this->signer->open($client->tenant, $this->algorithms->defaultAlgorithm()),
-            $this->subjects->open($client),
+            $this->signingKeyOf($authorization->client),
+            $person === null ? null : $this->persons->claim($authorization->tenant, $person),
+            $authorization instanceof UserAuthorizationInterface ? $this->subjects->open($authorization->client) : null,
         );
     }
 
@@ -143,13 +160,9 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         if ($actor !== null) {
             $claims[self::ACTOR] = $actor->toClaim();
         }
-        // issue #641: who the token is about, where the "sub" above says it to another client and to
-        // nobody else (RFC 8693 §2.2.1, OIDC Core §8.1). A token somebody signed in for carries a "sub"
-        // the client it was written for reads back, so there is nothing there this would add; a token a
-        // client holds for itself is about nobody (RFC 6749 §4.4) and says so by carrying none
-        $person = $authorization instanceof NamesItsSubjectInterface ? $authorization->person() : null;
-        if ($person !== null) {
-            $claims[self::PERSON] = $this->persons->claim($authorization->tenant, $person);
+        // issue #641: who the token is about, sealed when the token was addressed
+        if (self::personOf($authorization) !== null) {
+            $claims[self::PERSON] = $addressed->person();
         }
         // RFC 8693 §4.4: who may act for the subject of a token of this client, as its registration says it
         $mayAct = $authorization->client->registration->mayAct;
@@ -165,6 +178,29 @@ final readonly class JwtAccessTokenIssuer implements AccessTokenShapeIssuerInter
         ]);
 
         return new AccessToken($jws, $now, $expiresAt);
+    }
+
+    /**
+     * The key of the tenant the tokens of that client are signed with, opened: the one the provider signs with
+     * by default.
+     *
+     * @throws KeyNotFoundException when the tenant has no active key for that algorithm
+     * @throws KmsUnavailableException when the KMS does not answer to open it, which is not open yet
+     */
+    private function signingKeyOf(Client $client): OpenedSigningKeyInterface
+    {
+        return $this->signer->open($client->tenant, $this->algorithms->defaultAlgorithm());
+    }
+
+    /**
+     * Issue #641: the person a token says it is about beside its "sub", for the one shape of authorization whose
+     * "sub" names nobody to the client that holds the token (RFC 8693 §2.2.1, OIDC Core §8.1). A token somebody
+     * signed in for carries a "sub" the client it was written for reads back, so there is nothing there this
+     * would add; a token a client holds for itself is about nobody (RFC 6749 §4.4) and says so by carrying none.
+     */
+    private static function personOf(AuthorizationInterface $authorization): ?Subject
+    {
+        return $authorization instanceof NamesItsSubjectInterface ? $authorization->person() : null;
     }
 
     /**
