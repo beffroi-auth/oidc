@@ -40,6 +40,9 @@ use Psr\Clock\ClockInterface;
  * is what a client called back needs, §10.2 telling it to come when it is notified, which is sooner than
  * the interval it was given to poll at.
  *
+ * The key the ID token is encrypted to is read before the record is spent (OIDC Core §3.1.3.7): keys the
+ * client cannot serve right now leave the auth_req_id to its next presentation.
+ *
  * What comes out is an authorization of the ordinary kind, descending from the session the user approved
  * with: the same scopes, the same consent, the same session rules, and an ID token, "openid" being
  * required of every request of this flow (§7.1). The tokens are bound to what this request proved and
@@ -100,6 +103,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
 
             throw new AuthorizationPendingException('The end user has not answered the request yet (CIBA Core section 11).');
         }
+        $idTokenFormat = $this->issuer->addressIdToken($record->client, $record->scopes);
         // atomic: of the requests presenting this auth_req_id at once, exactly one is the first
         if (! $this->records->consume($record, $now)) {
             throw new InvalidGrantException(self::INVALID);
@@ -137,6 +141,6 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
             $refreshToken = $this->issuer->refreshToken($family, $authorization, $now);
         }
 
-        return $this->issuer->issue($authorization, $refreshToken, $context, $now);
+        return $this->issuer->issue($authorization, $refreshToken, $context, $now, $idTokenFormat);
     }
 }

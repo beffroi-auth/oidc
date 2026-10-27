@@ -9,6 +9,7 @@ use Beffroi\Oidc\Application\Client\AuthenticatedClient;
 use Beffroi\Oidc\Application\Request\RequestParameters;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
 use Beffroi\Oidc\Domain\Token\IssuedTokens;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 
 /**
@@ -32,6 +33,7 @@ interface GrantInterface
 
     /**
      * @throws OAuth2Exception an error of RFC 6749 §5.2, answered as JSON
+     * @throws ClientKeysUnavailableException when the keys of the client its ID token is encrypted to cannot be read, before anything the request presented is spent
      */
     public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens;
 }

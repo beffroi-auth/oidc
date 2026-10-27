@@ -45,6 +45,10 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * A token bound to a key (RFC 9449 §5) is refreshed by a request that proves that key again, and by
  * nobody else: the client that holds it is a public client, and the binding is the whole of what tells
  * it from whoever took a copy of the token.
+ *
+ * The key the ID token is encrypted to is read before the token is rotated (OIDC Core §3.1.3.7): keys the
+ * client cannot serve right now leave the token as it was, where a token rotated and then left unanswered
+ * would make the next presentation a reuse, and revoke the family.
  */
 final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
@@ -109,8 +113,9 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             RequestedResources::of($request, $token->resources),
             $this->authorizationDetails->of($request, $token->authorizationDetails),
         );
+        $idTokenFormat = $this->issuer->addressIdToken($authorization->client, $authorization->scopes);
         if (! $token->rotatesOnUse()) {
-            return $this->issuer->issue($authorization, null, $context, $now);
+            return $this->issuer->issue($authorization, null, $context, $now, $idTokenFormat);
         }
         $token->rotate($now);
         $this->refreshTokens->save($token);
@@ -127,7 +132,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             $context,
         ));
 
-        return $this->issuer->issue($authorization, $successor, $context, $now);
+        return $this->issuer->issue($authorization, $successor, $context, $now, $idTokenFormat);
     }
 
     /**

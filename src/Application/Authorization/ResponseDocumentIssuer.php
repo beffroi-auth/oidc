@@ -47,6 +47,6 @@ final readonly class ResponseDocumentIssuer
             $this->clock->now()->add($this->lifetime),
         );
 
-        return $this->documents->issue($client, $client->registration->authorizationResponse, $document->claims());
+        return $this->documents->issue($client, $this->documents->address($client, $client->registration->authorizationResponse), $document->claims());
     }
 }

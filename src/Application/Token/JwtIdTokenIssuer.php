@@ -8,6 +8,8 @@ use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
 use Beffroi\Oidc\Application\Client\ClientDocumentIssuer;
+use Beffroi\Oidc\Domain\Client\AddressedFormat;
+use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
 use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Beffroi\Oidc\Domain\Token\TokenHash;
@@ -32,7 +34,8 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
  *
  * A client that registered an encryption receives the signed token inside a JWE addressed to one of its
  * keys (§3.1.3.7), which is the same two steps as for the UserInfo answer and the signed authorization
- * response and is written once, in ClientDocumentIssuer.
+ * response and is written once, in ClientDocumentIssuer. The key is read when the token is addressed, which
+ * the grant does before it spends anything, and the token is struck for the key that was read.
  */
 final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 {
@@ -45,10 +48,14 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
     ) {
     }
 
-    public function issue(UserAuthorizationInterface $authorization, AccessToken $accessToken, DateTimeImmutable $now): string
+    public function address(Client $client): AddressedFormat
     {
-        $format = $authorization->client->registration->idToken;
-        $algorithm = $format->signature ?? $this->algorithms->defaultAlgorithm();
+        return $this->documents->address($client, $client->registration->idToken);
+    }
+
+    public function issue(UserAuthorizationInterface $authorization, AccessToken $accessToken, AddressedFormat $addressed, DateTimeImmutable $now): string
+    {
+        $algorithm = $addressed->format->signature ?? $this->algorithms->defaultAlgorithm();
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
             'sub' => $this->subjects->resolve($authorization->user, $authorization->client)->value,
@@ -71,6 +78,6 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
             $claims += $this->claims->claims($authorization->user, null, $requested);
         }
 
-        return $this->documents->issue($authorization->client, $format, $claims);
+        return $this->documents->issue($authorization->client, $addressed, $claims);
     }
 }
