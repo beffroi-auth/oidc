@@ -14,7 +14,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 /**
  * Back-Channel Logout 1.0 §2.6: a session that ended is announced to every client it signed in that
  * registered a back-channel logout URI, once each, whatever ended it (the user, a relying party, an
- * administrator, the expiry) since the announcement is made on the end and not on the request that
+ * administrator) since the announcement is made on the end and not on the request that
  * asked for it. Minting is here, delivery is not (architecture §5.6): a client that cannot be reached
  * must not hold a logout back, and a retry must not ask the KMS to sign again.
  */

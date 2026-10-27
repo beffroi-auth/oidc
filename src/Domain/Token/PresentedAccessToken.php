@@ -13,7 +13,8 @@ use SensitiveParameter;
  *
  * The scheme comes with the token, because a token is presented the way it was issued: one bound to a
  * key is sent under "DPoP" with a proof beside it (RFC 9449 §7.1), and whoever stole it and sends it as
- * a bearer token is refused before anything else is read.
+ * a bearer token is refused. What it is bound to is read from the token, so that refusal comes once the
+ * token has been verified.
  */
 final readonly class PresentedAccessToken
 {
