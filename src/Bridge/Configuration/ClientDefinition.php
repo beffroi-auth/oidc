@@ -36,7 +36,7 @@ final readonly class ClientDefinition
     /**
      * RFC 6749 appendix A.2, at least 32 characters (RFC 6819 §5.1.4.2.2).
      */
-    private const string SECRET_PATTERN = '/^[\x21-\x7E]{32,}$/';
+    private const string SECRET_PATTERN = '/^[\x21-\x7E]{32,}$/D';
 
     private function __construct(
         #[SensitiveParameter]

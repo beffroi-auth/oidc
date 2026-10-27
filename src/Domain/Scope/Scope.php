@@ -16,7 +16,7 @@ use Stringable;
  */
 final readonly class Scope implements Stringable
 {
-    private const string PATTERN = '/^[\x21\x23-\x5B\x5D-\x7E]+$/';
+    private const string PATTERN = '/^[\x21\x23-\x5B\x5D-\x7E]+$/D';
 
     public function __construct(
         public string $value,

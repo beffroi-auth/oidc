@@ -20,7 +20,7 @@ final readonly class CodeChallenge
      * against this. It is written here, where the challenge lives, and the token endpoint asks rather
      * than writing it again.
      */
-    private const string PATTERN = '/^[A-Za-z0-9\-._~]{43,128}$/';
+    private const string PATTERN = '/^[A-Za-z0-9\-._~]{43,128}$/D';
 
     public function __construct(
         public string $value,

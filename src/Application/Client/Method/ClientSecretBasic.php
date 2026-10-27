@@ -54,7 +54,7 @@ final readonly class ClientSecretBasic extends HashedSecretMethod
     private function credentials(ClientAuthenticationRequest $request): ?array
     {
         $header = $request->authorizationHeader;
-        if ($header === null || preg_match('/^Basic[ \t]+(\S*)$/i', $header, $matches) !== 1) {
+        if ($header === null || preg_match('/^Basic[ \t]+(\S*)$/Di', $header, $matches) !== 1) {
             return null;
         }
         $decoded = base64_decode($matches[1], true);

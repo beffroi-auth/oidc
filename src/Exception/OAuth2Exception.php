@@ -18,7 +18,7 @@ abstract class OAuth2Exception extends RuntimeException implements ExceptionInte
     /**
      * RFC 6749 §5.2: ASCII without double quote nor backslash.
      */
-    private const string DESCRIPTION_PATTERN = '/^[\x20\x21\x23-\x5B\x5D-\x7E]+$/';
+    private const string DESCRIPTION_PATTERN = '/^[\x20\x21\x23-\x5B\x5D-\x7E]+$/D';
 
     /**
      * @param Throwable|null $previous for the logs; it never reaches the client

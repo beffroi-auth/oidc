@@ -20,12 +20,12 @@ final readonly class GrantTypeName implements Stringable
     /**
      * RFC 6749 appendix A.10: grant-name = 1*name-char.
      */
-    private const string NAME_PATTERN = '/^[A-Za-z0-9._-]+$/';
+    private const string NAME_PATTERN = '/^[A-Za-z0-9._-]+$/D';
 
     /**
      * RFC 3986 §4.3: a scheme, a colon and something after it, no fragment.
      */
-    private const string ABSOLUTE_URI_PATTERN = '/^[A-Za-z][A-Za-z0-9+.-]*:[^\s#]+$/';
+    private const string ABSOLUTE_URI_PATTERN = '/^[A-Za-z][A-Za-z0-9+.-]*:[^\s#]+$/D';
 
     public function __construct(
         public string $value,

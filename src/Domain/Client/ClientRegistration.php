@@ -48,7 +48,7 @@ final readonly class ClientRegistration
     /**
      * RFC 6749 appendix A.1, without leading nor trailing space.
      */
-    private const string CLIENT_ID_PATTERN = '/^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$/';
+    private const string CLIENT_ID_PATTERN = '/^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$/D';
 
     /**
      * @var list<RedirectUri>

@@ -40,9 +40,9 @@ final readonly class PresentedAccessTokenParser
      */
     private const string SCHEME = '/^([!#$%&\'*+\-.^_`|~0-9A-Za-z]+)(?![!#$%&\'*+\-.^_`|~0-9A-Za-z])/';
 
-    private const string CREDENTIALS = '/^[^ ]+ +(' . self::B64TOKEN . ')$/';
+    private const string CREDENTIALS = '/^[^ ]+ +(' . self::B64TOKEN . ')$/D';
 
-    private const string PARAMETER = '/^' . self::B64TOKEN . '$/';
+    private const string PARAMETER = '/^' . self::B64TOKEN . '$/D';
 
     public function __construct(
         private ServedTokenSchemesInterface $schemes,
