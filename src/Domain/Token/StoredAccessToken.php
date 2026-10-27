@@ -86,6 +86,14 @@ abstract readonly class StoredAccessToken implements HashedTokenInterface, Resol
      */
     abstract public function person(): ?Subject;
 
+    /**
+     * The session that names the person the token was issued in the name of, by its identifier, null when the record
+     * keeps that person itself or names nobody, which person() then answers. The identifier is what a store hands over
+     * of a session it has not opened yet, so whoever must not open that session reads the person where the store of
+     * sessions keeps their subject in the clear (decision 0011, issue #888).
+     */
+    abstract public function sessionNamingItsPerson(): ?Uuid;
+
     public function clientHolder(): object
     {
         return $this;

@@ -85,6 +85,15 @@ final readonly class StoredSubjectAccessToken extends StoredAccessToken
     }
 
     /**
+     * None: the row keeps its person itself, and the session it names is the sign-in of the token it came from,
+     * not who it is in the name of (issue #593).
+     */
+    public function sessionNamingItsPerson(): ?Uuid
+    {
+        return null;
+    }
+
+    /**
      * The sign-in the token descends from, null when it descends from none: the pair the issuers write and
      * the introspection renders, read back from the two columns that keep it.
      */

@@ -52,6 +52,14 @@ final readonly class StoredClientAccessToken extends StoredAccessToken
         return null;
     }
 
+    /**
+     * RFC 6749 §4.4: it descends from no session, and nobody is behind it.
+     */
+    public function sessionNamingItsPerson(): ?Uuid
+    {
+        return null;
+    }
+
     public static function fromAuthorization(string $tokenHash, ClientAuthorization $authorization, DateTimeImmutable $now, DateTimeImmutable $expiresAt): self
     {
         return new self(

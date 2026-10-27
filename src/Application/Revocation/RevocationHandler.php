@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Revocation;
 
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
+use Beffroi\Core\Port\SubjectsOfSessionsInterface;
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Client\ClientAuthenticator;
@@ -38,6 +40,12 @@ use SensitiveParameter;
  * A self-contained token is unsupported only while the provider honours it, which is asked as its own
  * resources ask it (AccessTokenInspector): a token whose session ended, whose grant was revoked or whose
  * person is no longer served is invalid there, and an invalid token is answered 200 here too (§2.2).
+ *
+ * A revocation is announced with the person the token was issued in the name of, never read from the session the
+ * token descends from, which a store that has not opened it yet would open under the data keys of the tenant
+ * (decision 0018): a token that names its person through a session names them by the subject the store of sessions
+ * keeps in the clear (decision 0011), so a token taken back is announced whether or not the KMS opens the data keys
+ * of its session and of its person (issue #888).
  */
 final readonly class RevocationHandler
 {
@@ -48,6 +56,7 @@ final readonly class RevocationHandler
         private AccessTokenInspector $inspector,
         private AccessTokenRepositoryInterface $accessTokens,
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private SubjectsOfSessionsInterface $subjects,
         private EventDispatcherInterface $events,
     ) {
     }
@@ -121,7 +130,7 @@ final readonly class RevocationHandler
             $now,
             $caller->tenant,
             $caller->registration->clientId,
-            $token->person(),
+            $this->personOf($token),
             TokenRevoked::ACCESS_TOKEN,
             $token->tokenHash,
             $token->grantId,
@@ -142,12 +151,23 @@ final readonly class RevocationHandler
             $now,
             $caller->tenant,
             $caller->registration->clientId,
-            $token->session->user->subject,
+            $this->subjects->of($token->session->id),
             TokenRevoked::REFRESH_TOKEN,
             $token->tokenHash,
             $token->family->grantId,
             RevokedTokenHashes::of($accessTokens),
             $context,
         ));
+    }
+
+    /**
+     * The person the token was issued in the name of, as its record names them: through the session it descends
+     * from, whose subject the store of sessions keeps in the clear, or by what the record keeps itself.
+     */
+    private function personOf(StoredAccessToken $token): ?Subject
+    {
+        $session = $token->sessionNamingItsPerson();
+
+        return $session === null ? $token->person() : $this->subjects->of($session);
     }
 }

@@ -65,6 +65,15 @@ final readonly class StoredUserAccessToken extends StoredAccessToken
     }
 
     /**
+     * The session it descends from, whose user is its person (issue #888), by an identifier a store hands over
+     * without opening that session.
+     */
+    public function sessionNamingItsPerson(): Uuid
+    {
+        return $this->session->id;
+    }
+
+    /**
      * @throws InvalidArgumentException
      */
     public static function fromAuthorization(
