@@ -59,7 +59,9 @@ final readonly class DeviceAuthorizationHandler
 
     /**
      * @param DateInterval $lifetime how long both codes live (RFC 8628 §3.2)
-     * @param positive-int $interval the seconds a client is asked to wait between two polls (§3.5)
+     * @param positive-int $interval the seconds a client is asked to wait between two polls (§3.5), held to the bound of a record when the handler is built rather than at the first request
+     *
+     * @throws InvalidArgumentException when the interval is one no request may be made with (DeviceAuthorizationRecord::assertInterval())
      */
     public function __construct(
         private ClientAuthenticator $clients,
@@ -73,6 +75,7 @@ final readonly class DeviceAuthorizationHandler
         public DateInterval $lifetime = new DateInterval('PT10M'),
         public int $interval = DeviceAuthorizationRecord::DEFAULT_INTERVAL,
     ) {
+        DeviceAuthorizationRecord::assertInterval($interval);
     }
 
     /**

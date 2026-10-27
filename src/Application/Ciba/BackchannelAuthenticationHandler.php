@@ -79,7 +79,9 @@ final readonly class BackchannelAuthenticationHandler
     /**
      * @param DateInterval $lifetime how long a request lives when the client asks for nothing (§7.3)
      * @param DateInterval $maxRequestedExpiry the longest this provider serves, whatever a client asks for (§7.1)
-     * @param positive-int $interval the seconds a client is asked to wait between two polls (§7.3)
+     * @param positive-int $interval the seconds a client is asked to wait between two polls (§7.3), held to the bound of a record when the handler is built rather than at the first request
+     *
+     * @throws InvalidArgumentException when the interval is one no request may be made with (BackchannelAuthenticationRecord::assertInterval())
      */
     public function __construct(
         private ClientAuthenticator $clients,
@@ -98,6 +100,7 @@ final readonly class BackchannelAuthenticationHandler
         public DateInterval $maxRequestedExpiry = new DateInterval('PT30M'),
         public int $interval = BackchannelAuthenticationRecord::DEFAULT_INTERVAL,
     ) {
+        BackchannelAuthenticationRecord::assertInterval($interval);
     }
 
     /**

@@ -25,6 +25,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\LogicException;
 use Symfony\Component\Uid\Uuid;
 use function max;
+use function sprintf;
 
 /**
  * What the provider keeps of a backchannel authentication request (CIBA Core §7): the SHA-256 of the
@@ -62,6 +63,13 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
      * CIBA Core §7.3: the seconds a client waits between two polls when the response names none.
      */
     public const int DEFAULT_INTERVAL = 5;
+
+    /**
+     * CIBA Core §11: the longest interval a request is made with. An interval a client is asked to respect
+     * is one it can respect, as for the device grant, and for the same reason. What "slow_down" adds
+     * afterwards is the client's doing and not bounded by this.
+     */
+    public const int MAX_INTERVAL = 30;
 
     /**
      * CIBA Core §11: what "slow_down" adds to the interval, for that request and every one after it.
@@ -104,7 +112,7 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
      * @param string|null $sealedAuthRequestId the identifier itself, sealed, for a client this provider has to call back with it (§10.2); null for a client that only polls, which is then the only holder of it
      * @param string|null $sealedNotificationToken the token such a client sent to recognise that call (§7.1), sealed the same way
      * @param RequestContext $requestedFrom where the client asked from, which the approval page shows (BCP 10027 §5.2)
-     * @param int $interval the seconds between two polls the response announced, at least one (§7.3)
+     * @param int $interval the seconds between two polls the response announced, from one to MAX_INTERVAL (§7.3)
      *
      * @throws InvalidArgumentException when the record does not hold together
      */
@@ -133,12 +141,32 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('A backchannel authentication request expires after it was asked for.');
         }
-        if ($interval < 1) {
-            throw new InvalidArgumentException('A backchannel authentication request announces a polling interval of at least one second (CIBA Core section 7.3).');
-        }
+        self::assertInterval($interval);
         $this->interval = $interval;
         $this->tenant = $client->tenant;
         $this->clientId = $client->registration->clientId;
+    }
+
+    /**
+     * The interval a request may be made with, which the handler that makes them holds the interval it is
+     * configured with to when it is built, and every record to when it is made.
+     *
+     * @phpstan-assert positive-int $interval
+     *
+     * @throws InvalidArgumentException when the interval is below one second or above MAX_INTERVAL
+     */
+    public static function assertInterval(int $interval): void
+    {
+        if ($interval < 1) {
+            throw new InvalidArgumentException('A backchannel authentication request announces a polling interval of at least one second (CIBA Core section 7.3).');
+        }
+        if ($interval > self::MAX_INTERVAL) {
+            throw new InvalidArgumentException(sprintf(
+                'A backchannel authentication request announces a polling interval of at most %d seconds, a client respecting it (CIBA Core section 11); %d given.',
+                self::MAX_INTERVAL,
+                $interval,
+            ));
+        }
     }
 
     /**

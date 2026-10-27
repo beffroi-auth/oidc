@@ -23,6 +23,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 use Beffroi\Oidc\Exception\LogicException;
 use function max;
+use function sprintf;
 
 /**
  * What the provider keeps of a device authorization request (RFC 8628 §3.1, §3.2): the SHA-256 of the
@@ -49,6 +50,13 @@ final class DeviceAuthorizationRecord extends GrantRecord implements ResolvesIts
      * RFC 8628 §3.2: the seconds a client waits between two polls when the response names none.
      */
     public const int DEFAULT_INTERVAL = 5;
+
+    /**
+     * RFC 8628 §3.5: the longest interval a request is made with. An interval a client is asked to respect
+     * is one it can respect; a minute between two polls would make the flow slower than the code lives.
+     * What "slow_down" adds afterwards is the client's doing and not bounded by this.
+     */
+    public const int MAX_INTERVAL = 30;
 
     /**
      * RFC 8628 §3.5: what "slow_down" adds to the interval, for that request and every one after it.
@@ -87,7 +95,7 @@ final class DeviceAuthorizationRecord extends GrantRecord implements ResolvesIts
      * @param Scopes $scopes what the request asked for, among the ones the client registered
      * @param ResourceIndicators|null $resources what the access token will be addressed to (RFC 8707 §2), null when the request named none
      * @param RequestContext $requestedFrom where the appliance asked from, which the approval page shows (BCP 10027 §2)
-     * @param int $interval the seconds between two polls the response announced, at least one (RFC 8628 §3.2)
+     * @param int $interval the seconds between two polls the response announced, from one to MAX_INTERVAL (RFC 8628 §3.2)
      *
      * @throws InvalidArgumentException when the record does not hold together
      */
@@ -112,12 +120,32 @@ final class DeviceAuthorizationRecord extends GrantRecord implements ResolvesIts
         if ($expiresAt <= $issuedAt) {
             throw new InvalidArgumentException('A device authorization request expires after it was asked for.');
         }
-        if ($interval < 1) {
-            throw new InvalidArgumentException('A device authorization request announces a polling interval of at least one second (RFC 8628 section 3.2).');
-        }
+        self::assertInterval($interval);
         $this->interval = $interval;
         $this->tenant = $client->tenant;
         $this->clientId = $client->registration->clientId;
+    }
+
+    /**
+     * The interval a request may be made with, which the handler that makes them holds the interval it is
+     * configured with to when it is built, and every record to when it is made.
+     *
+     * @phpstan-assert positive-int $interval
+     *
+     * @throws InvalidArgumentException when the interval is below one second or above MAX_INTERVAL
+     */
+    public static function assertInterval(int $interval): void
+    {
+        if ($interval < 1) {
+            throw new InvalidArgumentException('A device authorization request announces a polling interval of at least one second (RFC 8628 section 3.2).');
+        }
+        if ($interval > self::MAX_INTERVAL) {
+            throw new InvalidArgumentException(sprintf(
+                'A device authorization request announces a polling interval of at most %d seconds, a client respecting it (RFC 8628 section 3.5); %d given.',
+                self::MAX_INTERVAL,
+                $interval,
+            ));
+        }
     }
 
     /**
