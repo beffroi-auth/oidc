@@ -46,6 +46,12 @@ use Psr\Clock\ClockInterface;
  * No ID token, and "openid" refused with it: the user was authenticated somewhere else and this provider has
  * nothing to say about how, neither an "acr" nor an "amr" nor an "auth_time" being ours to claim (OIDC Core
  * §2). A client that wants a document describing a user signs that user in.
+ *
+ * The assertion is spent last, right before the response is struck (issue #876): its "jti" is remembered once
+ * the user it names, the scopes, the resources and the subject the client is answered are settled, and once
+ * the response is addressed, the key its token is signed with opened and the person it is about sealed. A KMS
+ * that does not answer, or a request refused on the way, leaves the assertion to the next presentation, where
+ * spent first it would send the client back to its issuer for another one.
  */
 final readonly class JwtBearerGrant implements RequiresClientAuthenticationInterface
 {
@@ -98,8 +104,10 @@ final readonly class JwtBearerGrant implements RequiresClientAuthenticationInter
             // journal of that person and not under the "sub" this client is answered (issue #588)
             person: $user->subject,
         );
+        $addressed = $this->issuer->addressFor($authorization);
+        $this->assertions->spend($tenant, $verified);
 
-        return $this->issuer->issue($authorization, null, $context, $now);
+        return $this->issuer->issue($authorization, null, $context, $now, $addressed);
     }
 
     /**

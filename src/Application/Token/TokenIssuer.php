@@ -42,12 +42,13 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  *
  * A response is addressed before it is struck, and struck here for what was read (OIDC Core §3.1.3.7,
  * architecture §4.5). What it reads from outside the provider is the key of the tenant each of its tokens is
- * signed with, opened by the KMS, and the key of the client its ID token is encrypted to, read from what the
- * client publishes. A grant whose authorization somebody signed in for addresses the response before it spends
- * what the request presented: a KMS that does not answer and a set the client cannot serve right now are then
- * errors the same request is served past once they answer, where read after the spending they would cost the
- * client its code, or the family of its refresh token. A response to an authorization nobody signed in for
- * carries an access token and nothing else, and is addressed here when its grant did not address it.
+ * signed with, opened by the KMS, the person an access token whose subject the client named is about, sealed
+ * under the KMS, and the key of the client its ID token is encrypted to, read from what the client publishes.
+ * A grant addresses the response before it spends what the request presented: a KMS that does not answer and a
+ * set the client cannot serve right now are then errors the same request is served past once they answer, where
+ * read after the spending they would cost the client its code, the family of its refresh token, or the assertion
+ * its issuer signed. A response to an authorization nobody signed in for carries an access token and nothing
+ * else, and is addressed here when its grant spends nothing.
  */
 final readonly class TokenIssuer
 {
@@ -89,13 +90,35 @@ final readonly class TokenIssuer
     }
 
     /**
+     * What the response to an authorization nobody signed in for needs from outside the provider, read now. That
+     * response is an access token and nothing else (RFC 6749 §4.4.3): the key it is signed with is opened and,
+     * when its subject was named by what the client presented, the person it is about is sealed (issue #641). A
+     * grant of that kind asks it before it spends what the request presented, as the assertion grant does before
+     * it remembers its assertion (issue #876); one that spends nothing leaves it to issue(). The response to an
+     * authorization somebody signed in for is addressed by address(), its grant addressing it before the
+     * authorization exists.
+     *
+     * @throws KeyNotFoundException when the tenant has no active key for the algorithm the access token is signed with
+     * @throws KmsUnavailableException when the KMS does not answer to open that key, which is not open yet, or to seal the person the token is about
+     * @throws LogicException when somebody signed in for the authorization, so that its grant was to address the response
+     */
+    public function addressFor(AuthorizationInterface $authorization): AddressedResponse
+    {
+        if ($authorization instanceof UserAuthorizationInterface) {
+            throw new LogicException('The response to an authorization somebody signed in for was not addressed before the grant spent what the request presented (architecture section 4.5).');
+        }
+
+        return new AddressedResponse($this->accessTokens->addressFor($authorization));
+    }
+
+    /**
      * The ID token is issued when "openid" is among the scopes (OIDC Core §3.1.3.3, §12.2), for the shape
      * the grant addressed.
      *
-     * @param AddressedResponse|null $addressed what address() answered before the grant spent anything; null for an authorization nobody signed in for whose grant did not address it
+     * @param AddressedResponse|null $addressed what address() or addressFor() answered before the grant spent anything; null for an authorization nobody signed in for whose grant spends nothing
      *
      * @throws KeyNotFoundException when the response is addressed here and the tenant has no active key for the algorithm its access token is signed with
-     * @throws KmsUnavailableException when the response is addressed here and the KMS does not answer to open the key its access token is signed with
+     * @throws KmsUnavailableException when the response is addressed here and the KMS does not answer to open the key its access token is signed with, or to seal the person it is about
      * @throws LogicException when the response to an authorization somebody signed in for, or the ID token it carries, was not addressed by the grant first
      */
     public function issue(
@@ -105,7 +128,7 @@ final readonly class TokenIssuer
         DateTimeImmutable $now,
         ?AddressedResponse $addressed = null,
     ): IssuedTokens {
-        $addressed ??= $this->addressedHere($authorization);
+        $addressed ??= $this->addressFor($authorization);
         $accessToken = $this->accessTokens->issue($authorization, $addressed->accessToken, $now);
         $idToken = $this->idToken($authorization, $accessToken, $addressed->idToken, $now);
         $this->events->dispatch(new TokensIssued(
@@ -130,24 +153,6 @@ final readonly class TokenIssuer
         ));
 
         return new IssuedTokens($authorization, $accessToken, $idToken, $refreshToken);
-    }
-
-    /**
-     * The response to an authorization nobody signed in for, addressed right before it is struck: an access token
-     * and nothing else (RFC 6749 §4.4.3). One somebody signed in for is addressed by its grant, which may spend
-     * what the request presented before it asks for the tokens.
-     *
-     * @throws KeyNotFoundException when the tenant has no active key for the algorithm the access token is signed with
-     * @throws KmsUnavailableException when the KMS does not answer to open that key, which is not open yet
-     * @throws LogicException when somebody signed in for the authorization, so that its grant was to address the response
-     */
-    private function addressedHere(AuthorizationInterface $authorization): AddressedResponse
-    {
-        if ($authorization instanceof UserAuthorizationInterface) {
-            throw new LogicException('The response to an authorization somebody signed in for was not addressed before the grant spent what the request presented (architecture section 4.5).');
-        }
-
-        return new AddressedResponse($this->accessTokens->address($authorization->client));
     }
 
     /**
