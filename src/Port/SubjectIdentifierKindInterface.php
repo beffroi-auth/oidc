@@ -9,13 +9,13 @@ use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
 
 /**
  * One kind of "sub" (OIDC Core §8), both ways round: the identifier a client of this kind sees for a user,
- * and the user a "sub" of this kind names for that client. It names itself, which is the name a client
- * registers in "subject_type" (OIDC Registration §2) and the name the discovery document announces.
+ * in one step or in two, and the user a "sub" of this kind names for that client. It names itself, which is the
+ * name a client registers in "subject_type" (OIDC Registration §2) and the name the discovery document announces.
  *
  * What picks it for a client is AssignedSubjectIdentifiers, and it is picked by that name alone: nothing
  * reads a class, and a kind added to a deployment is a class and one line in the wiring.
  */
-interface SubjectIdentifierKindInterface extends SubjectIdentifierResolverInterface, PresentedSubjectReaderInterface
+interface SubjectIdentifierKindInterface extends SubjectIdentifierResolverInterface, SubjectIdentifierOpenerInterface, PresentedSubjectReaderInterface
 {
     /**
      * @return non-empty-string

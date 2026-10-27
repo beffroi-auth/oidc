@@ -8,12 +8,14 @@ use function array_key_first;
 use function array_keys;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Claims\OpenedSubjectIdentifierInterface;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\ClientRegistration;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\AssignedSubjectTypesInterface;
 use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierOpenerInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use function implode;
 use function sprintf;
@@ -21,7 +23,8 @@ use function sprintf;
 /**
  * The kinds of "sub" the wiring gave the provider, in the order they are wired. The one source of truth over
  * them (OIDC Core §8): the discovery document announces this list, a registration reads it to know what a
- * client may name, and both ways of a "sub" go through it, out to the client and back from it.
+ * client may name, and both ways of a "sub" go through it, out to the client, in one step or in two, and back
+ * from it.
  *
  * It demands no kind in particular, so a deployment that wires one boots, and it refuses two resolvers of
  * the same kind, which is a wiring where the identifier a client receives depends on an order nobody wrote
@@ -31,7 +34,11 @@ use function sprintf;
  * The list is read when a question is asked of it and never at construction, because a client registration
  * asks it what a client may name while the clients are themselves being built.
  */
-final readonly class AssignedSubjectIdentifiers implements AssignedSubjectTypesInterface, PresentedSubjectReaderInterface, SubjectIdentifierResolverInterface
+final readonly class AssignedSubjectIdentifiers implements
+    AssignedSubjectTypesInterface,
+    PresentedSubjectReaderInterface,
+    SubjectIdentifierOpenerInterface,
+    SubjectIdentifierResolverInterface
 {
     /**
      * @param iterable<SubjectIdentifierKindInterface> $kinds at least one, each naming the kind it assigns
@@ -54,6 +61,11 @@ final readonly class AssignedSubjectIdentifiers implements AssignedSubjectTypesI
     public function resolve(User $user, Client $client): Subject
     {
         return $this->of($client->registration)->resolve($user, $client);
+    }
+
+    public function open(Client $client): OpenedSubjectIdentifierInterface
+    {
+        return $this->of($client->registration)->open($client);
     }
 
     public function findUser(Client $client, Subject $subject): ?User

@@ -8,14 +8,14 @@ use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
 use Beffroi\Oidc\Application\Client\ClientDocumentIssuer;
-use Beffroi\Oidc\Domain\Client\AddressedFormat;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AddressedIdToken;
 use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Beffroi\Oidc\Domain\Token\TokenHash;
 use Beffroi\Oidc\Port\ClaimsProviderInterface;
 use Beffroi\Oidc\Port\IdTokenIssuerInterface;
-use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
+use Beffroi\Oidc\Port\SubjectIdentifierOpenerInterface;
 
 /**
  * OIDC Core §2, §3.1.3.6 (architecture §4.6): signed in the algorithm the client registered for, or in the
@@ -34,31 +34,33 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
  *
  * A client that registered an encryption receives the signed token inside a JWE addressed to one of its
  * keys (§3.1.3.7), which is the same two steps as for the UserInfo answer and the signed authorization
- * response and is written once, in ClientDocumentIssuer. The key is read when the token is addressed, which
- * the grant does before it spends anything, and the token is struck for the key that was read.
+ * response and is written once, in ClientDocumentIssuer. The key is read when the token is addressed, and so is
+ * the kind of "sub" the client registered, whose pairwise kind unseals a salt of the tenant (OIDC Core §8.1),
+ * which the grant does before it spends anything: the token is struck for the key that was read and names whoever
+ * signed in by what was opened.
  */
 final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 {
     public function __construct(
         private ClientDocumentIssuer $documents,
-        private SubjectIdentifierResolverInterface $subjects,
+        private SubjectIdentifierOpenerInterface $subjects,
         private ClaimsProviderInterface $claims,
         private SignatureAlgorithmsInterface $algorithms,
         public DateInterval $lifetime = new DateInterval('PT10M'),
     ) {
     }
 
-    public function address(Client $client): AddressedFormat
+    public function address(Client $client): AddressedIdToken
     {
-        return $this->documents->address($client, $client->registration->idToken);
+        return new AddressedIdToken($this->documents->address($client, $client->registration->idToken), $this->subjects->open($client));
     }
 
-    public function issue(UserAuthorizationInterface $authorization, AccessToken $accessToken, AddressedFormat $addressed, DateTimeImmutable $now): string
+    public function issue(UserAuthorizationInterface $authorization, AccessToken $accessToken, AddressedIdToken $addressed, DateTimeImmutable $now): string
     {
-        $algorithm = $addressed->format->signature ?? $this->algorithms->defaultAlgorithm();
+        $algorithm = $addressed->format->format->signature ?? $this->algorithms->defaultAlgorithm();
         $claims = [
             'iss' => (string) $authorization->tenant->issuer,
-            'sub' => $this->subjects->resolve($authorization->user, $authorization->client)->value,
+            'sub' => $addressed->subjectIdentifier->subjectOf($authorization->user)->value,
             'aud' => $authorization->client->registration->clientId,
             'exp' => $now->add($this->lifetime)->getTimestamp(),
             'iat' => $now->getTimestamp(),
@@ -78,6 +80,6 @@ final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
             $claims += $this->claims->claims($authorization->user, null, $requested);
         }
 
-        return $this->documents->issue($authorization->client, $addressed, $claims);
+        return $this->documents->issue($authorization->client, $addressed->format, $claims);
     }
 }

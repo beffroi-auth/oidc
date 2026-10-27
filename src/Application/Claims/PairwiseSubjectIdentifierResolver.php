@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Claims;
 
-use Beffroi\Core\Domain\Encoding\Base64Url;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Port\UuidGeneratorInterface;
-use Beffroi\Oidc\Domain\Claims\PairwiseSubject;
-use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\ClientRegistration;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
@@ -18,7 +15,6 @@ use Beffroi\Oidc\Port\PairwiseSaltInterface;
 use Beffroi\Oidc\Port\PairwiseSubjectRepositoryInterface;
 use Beffroi\Oidc\Port\SectorIdentifiersInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
-use function hash;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -37,6 +33,12 @@ use Psr\Clock\ClockInterface;
  * protocol needs its result in the same request as often as not, an access token issued at the token
  * endpoint being introspected at a resource of the provider a moment later, and it costs one statement that
  * does nothing when the row is already there.
+ *
+ * An identifier is assigned in two steps (SubjectIdentifierOpenerInterface): the client is opened, which reads
+ * its sector and unseals the salt of its tenant under the KMS, and the identifier of a user is then computed from
+ * what was opened (OpenedPairwiseSubjectIdentifier), asking nothing of the KMS. A grant that spends what the
+ * request presented has the client opened when its response is addressed, before the spending (architecture
+ * §4.5); resolve() runs both steps at once.
  */
 final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentifierKindInterface
 {
@@ -58,11 +60,24 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
 
     public function resolve(User $user, Client $client): Subject
     {
-        $sector = $this->sectors->sectorOf($client->registration);
-        $subject = self::identifier($sector, $user, $this->salts->saltOf($user->tenant));
-        $this->assigned->record(new PairwiseSubject($this->uuids->timeOrdered(), $user, $sector, $subject, $this->clock->now()));
+        return $this->open($client)->subjectOf($user);
+    }
 
-        return $subject;
+    /**
+     * The sector of the client and the salt of its tenant, read now: the salt is the step that asks the KMS.
+     */
+    public function open(Client $client): OpenedPairwiseSubjectIdentifier
+    {
+        $sector = $this->sectors->sectorOf($client->registration);
+
+        return new OpenedPairwiseSubjectIdentifier(
+            $client->tenant,
+            $sector,
+            $this->salts->saltOf($client->tenant),
+            $this->assigned,
+            $this->uuids,
+            $this->clock,
+        );
     }
 
     /**
@@ -94,16 +109,5 @@ final readonly class PairwiseSubjectIdentifierResolver implements SubjectIdentif
         } catch (InvalidArgumentException $exception) {
             throw new InvalidClientMetadataException('sector_identifier_uri', null, $exception->getMessage(), $exception);
         }
-    }
-
-    /**
-     * OIDC Core §8.1: the SHA-256 of the sector, the local account identifier and the salt, written in
-     * base64url as every other value this provider hands out is.
-     */
-    private static function identifier(SectorIdentifier $sector, User $user, string $salt): Subject
-    {
-        $digest = hash('sha256', $sector->host . $user->subject->value . $salt, true);
-
-        return new Subject(Base64Url::encode($digest));
     }
 }

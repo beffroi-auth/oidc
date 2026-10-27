@@ -11,9 +11,9 @@ use Beffroi\Core\Exception\KmsUnavailableException;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\RequestContext;
-use Beffroi\Oidc\Domain\Client\AddressedFormat;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
+use Beffroi\Oidc\Domain\Token\AddressedIdToken;
 use Beffroi\Oidc\Domain\Token\AddressedResponse;
 use Beffroi\Oidc\Domain\Event\TokensIssued;
 use Beffroi\Oidc\Domain\Scope\Scope;
@@ -25,6 +25,7 @@ use Beffroi\Oidc\Domain\Token\RefreshToken;
 use Beffroi\Oidc\Domain\Token\RefreshTokenFamily;
 use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
+use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\LogicException;
 use Beffroi\Oidc\Port\AccessTokenIssuerInterface;
 use Beffroi\Oidc\Port\IdTokenIssuerInterface;
@@ -42,8 +43,9 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  *
  * A response is addressed before it is struck, and struck here for what was read (OIDC Core §3.1.3.7,
  * architecture §4.5). What it reads from outside the provider is the key of the tenant each of its tokens is
- * signed with, opened by the KMS, and the key of the client its ID token is encrypted to, read from what the
- * client publishes. A grant whose authorization somebody signed in for addresses the response before it spends
+ * signed with, opened by the KMS, the salt of the tenant the "sub" of a pairwise client is computed with, unsealed
+ * by the KMS (OIDC Core §8.1), and the key of the client its ID token is encrypted to, read from what the client
+ * publishes. A grant whose authorization somebody signed in for addresses the response before it spends
  * what the request presented: a KMS that does not answer and a set the client cannot serve right now are then
  * errors the same request is served past once they answer, where read after the spending they would cost the
  * client its code, or the family of its refresh token. A response to an authorization nobody signed in for
@@ -74,11 +76,14 @@ final readonly class TokenIssuer
      * What a response to an authorization of that client somebody signed in for needs from outside the provider,
      * read now: the key of the tenant its access token is signed with, opened, and, when "openid" is among the
      * scopes (OIDC Core §3.1.3.3), the shape of its ID token with the key of the tenant it is signed with and the
-     * key of the client it is encrypted to. What a grant asks before it spends what the request presented.
+     * key of the client it is encrypted to; and the kind of "sub" the client registered, opened for each token that
+     * names the person, which for a pairwise client unseals the salt of its tenant (OIDC Core §8.1). What a grant
+     * asks before it spends what the request presented.
      *
      * @throws KeyNotFoundException when the tenant has no active key for an algorithm the response is signed with
-     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which is not open yet
+     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which is not open yet, or the salt of a pairwise client
      * @throws ClientKeysUnavailableException when the set the client publishes cannot be read, or holds no key its ID tokens can be encrypted to
+     * @throws InvalidArgumentException when the wiring assigns no identifier of the kind the client registered
      */
     public function address(Client $client, Scopes $scopes): AddressedResponse
     {
@@ -156,7 +161,7 @@ final readonly class TokenIssuer
      *
      * @throws LogicException when the token is due and the grant did not address it
      */
-    private function idToken(AuthorizationInterface $authorization, AccessToken $accessToken, ?AddressedFormat $format, DateTimeImmutable $now): ?string
+    private function idToken(AuthorizationInterface $authorization, AccessToken $accessToken, ?AddressedIdToken $addressed, DateTimeImmutable $now): ?string
     {
         if (! $authorization instanceof UserAuthorizationInterface || ! $authorization->scopes->has(Scope::openid())) {
             return null;
@@ -165,7 +170,7 @@ final readonly class TokenIssuer
         return $this->idTokens->issue(
             $authorization,
             $accessToken,
-            $format ?? throw new LogicException('The ID token of this response was not addressed before the grant spent what the request presented (OIDC Core section 3.1.3.7).'),
+            $addressed ?? throw new LogicException('The ID token of this response was not addressed before the grant spent what the request presented (OIDC Core section 3.1.3.7).'),
             $now,
         );
     }

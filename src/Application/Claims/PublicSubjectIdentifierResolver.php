@@ -34,7 +34,12 @@ final readonly class PublicSubjectIdentifierResolver implements SubjectIdentifie
 
     public function resolve(User $user, Client $client): Subject
     {
-        return $user->subject;
+        return $this->open($client)->subjectOf($user);
+    }
+
+    public function open(Client $client): OpenedPublicSubjectIdentifier
+    {
+        return new OpenedPublicSubjectIdentifier();
     }
 
     public function findUser(Client $client, Subject $subject): ?User
