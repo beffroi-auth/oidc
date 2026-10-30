@@ -53,7 +53,9 @@ final readonly class RegistrationUnderThePolicy
      * it (`AssignedMembers`) and what a specification defaults is derived, neither being anything a client
      * registered.
      *
-     * For a mode that puts nothing in front of the body, this is the body.
+     * For a mode that puts nothing in front of the body, this is the body. For a mode that does, what it put
+     * there is kept apart as well, described by this alone: a replacement is read from what the client
+     * sends (RFC 7592 §2.2), and what was in front of the registration is read in front of it again.
      *
      * @param list<ClientMetadataSourceInterface> $sources the one that wins first
      *
@@ -70,7 +72,7 @@ final readonly class RegistrationUnderThePolicy
     }
 
     /**
-     * @param list<ClientMetadataSourceInterface> $inFront what an authorisation puts in front of the members the client sent, empty for a mode that puts nothing there
+     * @param list<ClientMetadataSourceInterface> $inFront what an authorisation puts in front of the members the client sent, or what a replacement reads there again from the row (`ClientRecord::attestation()`); empty for a mode that puts nothing there
      * @param array<string, mixed> $members the members the client sent
      * @param ClientRegistrationPolicy|null $policy null for a tenant that has none, which writes nothing on this registration
      * @param ClientSecretInterface|null $kept the secret this client already holds, null at a registration and for a client that holds none
@@ -111,6 +113,12 @@ final readonly class RegistrationUnderThePolicy
         $this->tenantOffer->assertHolds($tenant, $registration, $metadata);
         $this->sector->assertHolds($registration, $metadata);
 
-        return new KeptRegistration(self::described($sent), $assigned->members(), $secret, $drawn);
+        return new KeptRegistration(
+            self::described($sent),
+            $assigned->members(),
+            $inFront === [] ? null : self::described($inFront),
+            $secret,
+            $drawn,
+        );
     }
 }
