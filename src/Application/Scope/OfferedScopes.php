@@ -8,6 +8,7 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Scope\Scope;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Port\ClaimsProviderInterface;
+use Beffroi\Oidc\Port\DeclaredScopesInterface;
 use Beffroi\Oidc\Port\OfferedScopesInterface;
 use Beffroi\Oidc\Port\RegisteredScopesInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
@@ -17,9 +18,10 @@ use Beffroi\Oidc\Port\ServedGrantsInterface;
  *
  * - "openid", always, this being an OpenID provider;
  * - what the wired claims providers serve, which stand for claims (OIDC Core §5.4);
- * - what the clients of the tenant registered, which is where a scope that stands for no claim comes
- *   from, an API being protected by one and a registration being the only thing that says it exists
- *   (issue #278);
+ * - what the deployment declares for the tenant, which is where a scope that stands for no claim comes
+ *   from before any client exists, an API being protected by one (issue #920);
+ * - what the clients of the tenant registered, which is the other place such a scope comes from, a
+ *   declared client saying it exists by registering it (issue #278);
  * - "offline_access", where the provider can make it good (OIDC Core §11), which is where a wired grant
  *   issues a refresh token and a wired grant spends one. A registration alone never puts it here: a
  *   client that registered it on a deployment whose grants do not make it good would have the provider
@@ -35,13 +37,14 @@ final readonly class OfferedScopes implements OfferedScopesInterface
         private ClaimsProviderInterface $claims,
         private ServedGrantsInterface $grants,
         private RegisteredScopesInterface $registered,
+        private DeclaredScopesInterface $declared,
     ) {
     }
 
     public function scopesOfferedIn(Tenant $tenant): array
     {
         $offlineAccess = Scope::offlineAccess();
-        $offered = [Scope::openid(), ...$this->claims->supportedScopes()];
+        $offered = [Scope::openid(), ...$this->claims->supportedScopes(), ...$this->declared->scopesDeclaredFor($tenant)];
         foreach ($this->registered->scopesRegisteredIn($tenant) as $scope) {
             if (! $scope->equals($offlineAccess)) {
                 $offered[] = $scope;

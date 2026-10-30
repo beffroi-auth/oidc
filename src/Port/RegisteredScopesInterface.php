@@ -8,11 +8,11 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Scope\Scope;
 
 /**
- * Which scopes a tenant hands out tokens for beyond those a wired claims provider serves, which is what
- * the clients registered for it registered and nothing kept beside them (issue #98). A scope that stands
- * for no claim, the one an API is protected by, exists because a client of this tenant was registered for
- * it and for no other reason: the provider has nothing else to learn it from, the "scope" a client registers
- * being a closed list it is held to.
+ * Which scopes the clients registered for a tenant registered, read from them and kept nowhere beside them
+ * (issue #98). It is one of the two places a scope that stands for no claim, the one an API is protected by,
+ * comes from: a client of the tenant registered for it (issue #278), or the deployment declares it for the
+ * tenant (`DeclaredScopesInterface`, issue #920). The provider has nothing else to learn one from, the "scope"
+ * a client registers being a closed list it is held to.
  *
  * What reads it is the document the provider publishes: a client learns there which "scope" values exist
  * at all, a typo in a registration being announced rather than granted in silence.

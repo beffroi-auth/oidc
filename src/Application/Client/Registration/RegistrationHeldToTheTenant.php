@@ -27,7 +27,7 @@ use function sprintf;
  *
  * It is read here for a registration the provider is about to write, the creation of RFC 7591 §3.1 and
  * the replacement of RFC 7592 §2.2: a declaration is read at a boot that has no tenant instance, and
- * what a tenant offers is what its own clients have made of it.
+ * what a tenant offers is what its deployment declares for it and what its own clients have made of it.
  */
 final readonly class RegistrationHeldToTheTenant
 {

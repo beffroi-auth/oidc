@@ -80,6 +80,7 @@ final readonly class ClientRegistrationHandler
             $kept->secret,
             DrawnSecret::digestOf($registrationAccessToken),
             $this->clock->now(),
+            attested: $kept->attested,
         );
         $this->clients->save($record);
 

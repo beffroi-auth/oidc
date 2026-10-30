@@ -28,6 +28,13 @@ use function sprintf;
  * (`RegistrationUnderThePolicy`). An update therefore cannot reach what a registration could not: the same
  * wiring, the same policy of the same tenant, the same refusals.
  *
+ * Nor can it undo what outranked the registration. What a software statement signed of the client is read
+ * in front of what the client sends, as it was read in front of what the client sent (RFC 7591 §3.1.1),
+ * RFC 7592 §3 letting the provider substitute values of its own for the ones an update asks for: whatever
+ * the replacement says of its name or its logo, an attested client keeps the ones an authority signed,
+ * which are the ones the consent page shows. A statement the replacement carries is a member the reader does not
+ * read, the registration access token being what authorises a replacement (§2.2).
+ *
  * Three members of the request are not metadata. §2.2 requires the `client_id`, and it must be the one the
  * URI names: a client may not rename itself, and a request that names another client is refused rather
  * than arbitrated. `client_id_issued_at`, `client_secret_expires_at`, `registration_access_token` and
@@ -88,7 +95,7 @@ final readonly class ClientConfigurationReplacement
         $kept = $this->registrations->read(
             $tenant,
             $record->clientId,
-            [],
+            $record->attestation(),
             $members,
             $this->policies->policyFor($tenant),
             $record->secret,
