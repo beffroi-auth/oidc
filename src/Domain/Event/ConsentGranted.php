@@ -10,12 +10,13 @@ use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A user agreed, on the consent page, to let a client obtain the scopes of a request and whatever that
- * request asked for beyond them (RFC 9396 §2).
+ * A user agreed, on the consent page, to let a client obtain the scopes of a request, whatever that request
+ * asked for beyond them (RFC 9396 §2) and the claims it asked for by name (OIDC Core §5.5).
  */
 final readonly class ConsentGranted implements ConcernsAClientInterface, ConcernsAPersonInterface
 {
@@ -27,6 +28,7 @@ final readonly class ConsentGranted implements ConcernsAClientInterface, Concern
     /**
      * @param Subject $subject the person who agreed, by the subject their account carries (issue #588)
      * @param AuthorizationDetails|null $authorizationDetails what the consent carries beyond its scopes, null when it carries none
+     * @param ClaimNames $claims the claims the consent carries by name, none when it carries none
      * @param Uuid|null $supersedes the consent this one takes over from, null when the user had granted nothing yet
      */
     public function __construct(
@@ -37,6 +39,7 @@ final readonly class ConsentGranted implements ConcernsAClientInterface, Concern
         public Subject $subject,
         public Scopes $scopes,
         public ?AuthorizationDetails $authorizationDetails,
+        public ClaimNames $claims,
         public ?Uuid $supersedes,
         public RequestContext $context,
     ) {

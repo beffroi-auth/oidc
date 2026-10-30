@@ -7,6 +7,7 @@ namespace Beffroi\Oidc\Application\Claims;
 use function array_any;
 use function array_key_exists;
 use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Domain\Scope\Scope;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
@@ -58,6 +59,20 @@ final readonly class ServedClaims implements ClaimsProviderInterface
         }
 
         return $claims;
+    }
+
+    /**
+     * What each provider puts under these scopes, as one list: a scope two providers serve stands for the
+     * claims of both.
+     */
+    public function claimsOf(Scopes $scopes): array
+    {
+        $claims = new ClaimNames();
+        foreach ($this->providers as $provider) {
+            $claims = $claims->with(new ClaimNames($provider->claimsOf($scopes)));
+        }
+
+        return $claims->all;
     }
 
     public function supportedScopes(): array

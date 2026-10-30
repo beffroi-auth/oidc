@@ -9,6 +9,7 @@ use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Consent\ConsentGranting;
 use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Domain\Device\DeviceAuthorizationRecord;
 use Beffroi\Oidc\Domain\Device\UserCode;
 use Beffroi\Oidc\Exception\LogicException;
@@ -67,8 +68,9 @@ final readonly class DeviceApproval
     public function approve(DeviceAuthorizationRecord $record, AuthenticationSession $session, RequestContext $context): void
     {
         $now = $this->clock->now();
-        // RFC 9396 §2 is not read at the endpoint this record was drawn at, so there is no detail to agree to
-        $this->consents->grant($session, $record->client, $record->scopes, null, $context, $now);
+        // neither RFC 9396 §2 nor OIDC Core §5.5 is read at the endpoint this record was drawn at, so there is no
+        // detail and no claim asked for by name to agree to
+        $this->consents->grant($session, $record->client, $record->scopes, null, new ClaimNames(), $context, $now);
         $record->approve($session, AuthenticationSnapshot::ofSession($session, $session->authenticationContextClass()), $now);
         $this->records->save($record);
     }

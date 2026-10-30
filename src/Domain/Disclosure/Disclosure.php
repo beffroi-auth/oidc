@@ -53,7 +53,7 @@ final class Disclosure implements ClassifiedFieldsInterface
     /**
      * @param string $act the act this belongs to, by the name the event gave itself
      * @param Scopes $scopes what the client was given of that person at that act
-     * @param ClaimsRequest|null $claims what it had asked for by name (OIDC Core §5.5), null when it asked for none
+     * @param ClaimsRequest|null $claims what it asked for by name and may be told (OIDC Core §5.5), null when it asked for none
      * @param AuthorizationDetails|null $details what it was given beyond the scopes (RFC 9396 §7), null when it was given none
      * @param string $tokenShape the shape the access token was written in (architecture §4.6), as the shape names itself
      *

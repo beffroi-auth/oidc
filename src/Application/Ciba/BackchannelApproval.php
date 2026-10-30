@@ -12,6 +12,7 @@ use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Port\SecretSealerInterface;
 use Beffroi\Oidc\Application\Consent\ConsentGranting;
 use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
 use Beffroi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
 use Beffroi\Oidc\Domain\Event\BackchannelRequestAnswered;
@@ -106,8 +107,9 @@ final readonly class BackchannelApproval
             throw new LogicException('A backchannel authentication request is approved by a session that proves what it asked for; the page that answers it reads stepUpFor() first.');
         }
         $now = $this->clock->now();
-        // RFC 9396 §2 is not read at the endpoint this record was drawn at, so there is no detail to agree to
-        $this->consents->grant($session, $record->client, $record->scopes, null, $context, $now);
+        // neither RFC 9396 §2 nor OIDC Core §5.5 is read at the endpoint this record was drawn at, so there is no
+        // detail and no claim asked for by name to agree to
+        $this->consents->grant($session, $record->client, $record->scopes, null, new ClaimNames(), $context, $now);
         $record->approve($session, AuthenticationSnapshot::ofSession($session, $this->authentication->classFor($record, $session)), $now);
         $this->records->save($record);
         $this->tellTheClient($record, $context, $now);

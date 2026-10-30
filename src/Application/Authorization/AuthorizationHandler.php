@@ -8,6 +8,7 @@ use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Application\Claims\ClaimsAskedByName;
 use Beffroi\Oidc\Application\Consent\ConsentGranting;
 use Beffroi\Oidc\Application\Consent\RequiredConsent;
 use Beffroi\Oidc\Application\Secret\SecretDrawer;
@@ -39,8 +40,9 @@ use Psr\Clock\ClockInterface;
  *
  * It orchestrates and decides nothing on its own: what the authentication still needs is
  * AuthenticationRequirement's, the rules of a requested "acr" are the request's own
- * (RequestedAuthenticationContext, decision 0010), and minting the code is AuthorizationCodeIssuer's. What is
- * left here is the lifecycle of the interaction, whether a page may be shown at all, and the consent in force.
+ * (RequestedAuthenticationContext, decision 0010), what the person is asked for of the claims the request
+ * names one by one is ClaimsAskedByName's, and minting the code is AuthorizationCodeIssuer's. What is left
+ * here is the lifecycle of the interaction, whether a page may be shown at all, and the consent in force.
  */
 final readonly class AuthorizationHandler
 {
@@ -56,6 +58,7 @@ final readonly class AuthorizationHandler
         private InteractionRepositoryInterface $interactions,
         private ConsentGranting $consentGranting,
         private RequiredConsent $consent,
+        private ClaimsAskedByName $claims,
         private SecretDrawer $secrets,
         private AuthenticationRequirement $authentication,
         private AuthorizationCodeIssuer $codes,
@@ -106,7 +109,8 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the consent page, when the user agreed: the scopes of the request are added to the consent in force.
+     * After the consent page, when the user agreed: what the page asked for, the scopes, the authorization details
+     * and the claims asked for by name of the request, is added to the consent in force.
      *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
@@ -126,6 +130,7 @@ final readonly class AuthorizationHandler
             $interaction->request->client,
             $interaction->request->scopes,
             $interaction->request->authorizationDetails,
+            $this->claims->toAgreeTo($interaction->request),
             $context,
             $now,
         );
@@ -179,7 +184,14 @@ final readonly class AuthorizationHandler
                 }
                 $this->interactions->save($interaction);
 
-                return new ConsentRequired($interaction, $session, $request->scopes, $consentRequirement, $request->authorizationDetails);
+                return new ConsentRequired(
+                    $interaction,
+                    $session,
+                    $request->scopes,
+                    $consentRequirement,
+                    $request->authorizationDetails,
+                    $this->claims->toAgreeTo($request),
+                );
             }
             $granted = $this->codes->issue($interaction, $session, $requested->context, $context, $now);
         } catch (OAuth2Exception $exception) {

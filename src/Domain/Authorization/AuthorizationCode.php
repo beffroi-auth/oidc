@@ -43,6 +43,7 @@ final class AuthorizationCode extends GrantRecord implements ResolvesItsClientIn
      * @param ResourceIndicators|null $resources the resources the request asked the tokens for (RFC 8707 §2.1), null when it named none; a token request may narrow them and never widen them
      * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes (RFC 9396 §2), null when the request asked for none; a token request may narrow them and never widen them
      * @param KeyConfirmation|null $dpopKey the key the request reserved the code for (RFC 9449 §10), null when it reserved it for none
+     * @param ClaimsRequest|null $claimsRequest what the request asked for by name and the client may be told (OIDC Core §5.5), null when it asked for none
      * @param AuthenticationSnapshot $authentication what the session had proven, frozen for every token of the grant
      */
     public function __construct(

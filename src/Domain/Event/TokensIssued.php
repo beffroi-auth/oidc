@@ -38,7 +38,7 @@ final readonly class TokensIssued implements ClientInUseInterface, ConcernsAPers
     /**
      * @param ConfirmationInterface|null $confirmation what the tokens that left are bound to, null for bearer ones (RFC 9449 §6, RFC 8705 §3)
      * @param Subject|null $subject the person the tokens were issued in the name of, by the subject their account carries; null when they were issued in nobody's (RFC 6749 §4.4)
-     * @param ClaimsRequest|null $claimsRequest what the client had asked for by name (OIDC Core §5.5), null when it asked for none and for a grant nobody was asked for
+     * @param ClaimsRequest|null $claimsRequest what the client asked for by name and may be told (OIDC Core §5.5), null when it asked for none and for a grant nobody was asked for
      * @param AuthorizationDetails|null $authorizationDetails what the response carries beyond its scopes (RFC 9396 §7), null when it carries none
      * @param string $tokenShape the shape the access token was written in (architecture §4.6), as the shape names itself
      * @param Uuid|null $sessionId the session the tokens descend from, null when nobody signed in for them (RFC 6749 §4.4)

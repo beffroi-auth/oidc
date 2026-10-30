@@ -36,7 +36,7 @@ interface UserAuthorizationInterface extends AuthorizationInterface
     public ?string $nonce { get; }
 
     /**
-     * What the client asked for by name (OIDC Core §5.5), null when it asked for nothing.
+     * What the client asked for by name and may be told (OIDC Core §5.5), null when it asked for nothing.
      */
     public ?ClaimsRequest $claimsRequest { get; }
 

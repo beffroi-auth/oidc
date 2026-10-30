@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Authorization;
 
+use function array_filter;
 use function array_is_list;
 use function array_key_exists;
 use function array_keys;
+use const ARRAY_FILTER_USE_KEY;
 use function count;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
 use function is_bool;
@@ -104,6 +107,27 @@ final readonly class ClaimsRequest
             'userinfo' => array_keys($this->userinfo),
             'id_token' => array_keys($this->idToken),
         ];
+    }
+
+    /**
+     * The claims it asks for whichever member asks for them, each once: what a person lets a client learn
+     * is the same whether the client is told it in an ID token or at UserInfo.
+     */
+    public function claimNames(): ClaimNames
+    {
+        return new ClaimNames([...array_keys($this->userinfo), ...array_keys($this->idToken)]);
+    }
+
+    /**
+     * The same request asking for the claims named here and for no other, in each member, what it asks of
+     * each claim kept as it was asked. A claim taken out is not served, which is no error (OIDC Core §5.5.1).
+     */
+    public function narrowedTo(ClaimNames $names): self
+    {
+        return new self(
+            array_filter($this->userinfo, $names->has(...), ARRAY_FILTER_USE_KEY),
+            array_filter($this->idToken, $names->has(...), ARRAY_FILTER_USE_KEY),
+        );
     }
 
     /**

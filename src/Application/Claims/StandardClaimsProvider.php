@@ -18,8 +18,9 @@ use function in_array;
 
 /**
  * The standard claims of OIDC Core §5.1: the four scopes of §5.4, a claim asked for by name (§5.5) served
- * whether or not its scope was. An absent attribute yields no claim, its verification flag included; a
- * flag present is a JSON boolean (architecture §9).
+ * whether or not its scope was asked for, what a client may ask for by name having been held to the scopes
+ * it registered before it is asked here (ClaimsAskedByName). An absent attribute yields no claim, its
+ * verification flag included; a flag present is a JSON boolean (architecture §9).
  */
 final readonly class StandardClaimsProvider implements ClaimsProviderInterface
 {
@@ -52,16 +53,23 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
 
     public function claims(User $user, ?Scopes $scopes, array $requested): array
     {
-        $due = array_keys($requested);
-        foreach ($scopes->all ?? [] as $scope) {
-            $due = [...$due, ...(self::SCOPES[$scope->value] ?? [])];
-        }
+        $due = [...array_keys($requested), ...($scopes === null ? [] : $this->claimsOf($scopes))];
 
         $claims = [];
         foreach (self::valuesOf($user) as $name => $value) {
             if (in_array($name, $due, true) && $value !== null) {
                 $claims[$name] = $value;
             }
+        }
+
+        return $claims;
+    }
+
+    public function claimsOf(Scopes $scopes): array
+    {
+        $claims = [];
+        foreach ($scopes->all as $scope) {
+            $claims = [...$claims, ...(self::SCOPES[$scope->value] ?? [])];
         }
 
         return $claims;

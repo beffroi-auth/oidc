@@ -39,6 +39,7 @@ final readonly class ConsentsChapter implements ArchiveChapterInterface
                 'client_name' => $consent->client->registration->presentation->name,
                 'scopes' => $consent->scopes->values(),
                 'authorization_details' => $consent->authorizationDetails?->toClaim(),
+                'claims' => $consent->claims->all,
                 'granted_at' => ArchivedFacts::moment($consent->grantedAt),
             ];
         }

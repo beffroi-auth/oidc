@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Port\UuidGeneratorInterface;
+use Beffroi\Oidc\Application\Claims\ClaimsAskedByName;
 use Beffroi\Oidc\Application\Secret\SecretDrawer;
 use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Beffroi\Oidc\Domain\Authorization\AuthorizationCode;
@@ -30,8 +31,11 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * spent here, and the event is dispatched with what it carries.
  *
  * The record freezes what the session had proven at this moment (AuthenticationSnapshot): a re-authentication
- * or a step-up afterwards moves the session and never a code already issued. The event is raised here, where
- * the code is, and carries what it carries by identifier: never the value the client was handed.
+ * or a step-up afterwards moves the session and never a code already issued. Of the claims the request asked
+ * for by name, it carries those the client may be told (ClaimsAskedByName), every one of which the person has
+ * agreed to by the time a code is minted for a client that asks them: what a token answers with descends from
+ * the code, and never from the request. The event is raised here, where the code is, and carries what it
+ * carries by identifier: never the value the client was handed.
  */
 final readonly class AuthorizationCodeIssuer
 {
@@ -41,6 +45,7 @@ final readonly class AuthorizationCodeIssuer
         private SecretDrawer $secrets,
         private UuidGeneratorInterface $uuids,
         private EventDispatcherInterface $events,
+        private ClaimsAskedByName $claims,
         private DateInterval $lifetime = new DateInterval('PT60S'),
     ) {
     }
@@ -70,7 +75,7 @@ final readonly class AuthorizationCodeIssuer
             $request->nonce,
             $request->codeChallenge,
             $request->dpopKey,
-            $request->claims,
+            $this->claims->grantable($request->client, $request->claims),
             AuthenticationSnapshot::ofSession($session, $context->classFor($session)),
             $now,
             $now->add($this->lifetime),

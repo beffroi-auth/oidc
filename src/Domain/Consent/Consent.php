@@ -13,6 +13,7 @@ use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\ResolvesItsClientInterface;
 use Beffroi\Oidc\Domain\Scope\Scopes;
@@ -37,6 +38,8 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
     /**
      * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes
      *                                                        (RFC 9396 §2), null when they agreed to none
+     * @param ClaimNames $claims the claims the user agreed to one by name, beyond what the scopes stand for
+     *                           (OIDC Core §5.5), none when no request asked for one
      */
     public function __construct(
         public private(set) Uuid $id,
@@ -45,6 +48,7 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
         public readonly Scopes $scopes,
         public readonly DateTimeImmutable $grantedAt,
         public readonly ?AuthorizationDetails $authorizationDetails = null,
+        public readonly ClaimNames $claims = new ClaimNames(),
     ) {
         if (! $client->belongsTo($user->tenant)) {
             throw new InvalidArgumentException('A consent binds a user and a client of the same tenant.');
@@ -55,14 +59,15 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
 
     /**
      * The consent that supersedes this one when the user agrees to more: its scopes and the ones given,
-     * its details and the ones given, each once, from now; this one is revoked. What a user agreed to is
-     * never taken back by a new agreement (architecture §4.3).
+     * its details and the ones given, its claims and the ones given, each once, from now; this one is
+     * revoked. What a user agreed to is never taken back by a new agreement (architecture §4.3).
      *
      * @param AuthorizationDetails|null $authorizationDetails what was just agreed to beyond the scopes,
      *                                                        null when the request asked for none, which
      *                                                        leaves what this consent already carries
+     * @param ClaimNames $claims what was just agreed to by name, none when the request asked for none
      */
-    public function extendedWith(Scopes $scopes, ?AuthorizationDetails $authorizationDetails, Uuid $id, DateTimeImmutable $now): self
+    public function extendedWith(Scopes $scopes, ?AuthorizationDetails $authorizationDetails, ClaimNames $claims, Uuid $id, DateTimeImmutable $now): self
     {
         $this->revoke($now);
 
@@ -73,6 +78,7 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
             new Scopes([...$this->scopes->all, ...$scopes->all]),
             $now,
             self::merged($this->authorizationDetails, $authorizationDetails),
+            $this->claims->with($claims),
         );
     }
 
@@ -140,6 +146,16 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
         return $this->authorizationDetails !== null && $this->authorizationDetails->covers($details);
     }
 
+    /**
+     * Whether this consent answers for these claims asked for by name (OIDC Core §5.5): every one is a claim
+     * the user has already agreed to by name, or the page asks again. Which claims the scopes it holds stand
+     * for is what the wiring says and not this entity, so the caller has taken those out already.
+     */
+    public function coversClaims(ClaimNames $claims): bool
+    {
+        return $this->claims->covers($claims);
+    }
+
     public function isFor(User $user, Client $client): bool
     {
         return $this->user->id->equals($user->id) && $this->client->equals($client);
@@ -161,6 +177,7 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
             'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
             'scopes' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
             'authorizationDetails' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
+            'claims' => new NoPersonalDatum(Reason::WHAT_THE_REQUEST_ASKED),
             'grantedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'revokedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),

@@ -9,6 +9,7 @@ use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Port\UuidGeneratorInterface;
 use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
+use Beffroi\Oidc\Domain\Claims\ClaimNames;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Consent\Consent;
 use Beffroi\Oidc\Domain\Event\ConsentGranted;
@@ -18,8 +19,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * What a user agreeing to a request comes to (architecture §4.3): the consent in force extended with the
- * scopes and the authorization details of that request, or a first one when they had granted nothing yet,
- * and the event that says so.
+ * scopes, the authorization details and the claims asked for by name of that request, or a first one when
+ * they had granted nothing yet, and the event that says so.
  *
  * Recorded here whichever page asked, the consent page of a browser flow or the page an appliance sends
  * its user to (RFC 8628 §3.3): a consent is the same fact however it was obtained, and what a user agreed
@@ -37,20 +38,23 @@ final readonly class ConsentGranting
     /**
      * @param AuthorizationDetails|null $authorizationDetails what the request asked for beyond its scopes
      *                                                        (RFC 9396 §2), null when it asked for none
+     * @param ClaimNames $claims what the user agreed to by name beyond what the scopes stand for (OIDC Core
+     *                           §5.5), none when the request asked for none
      */
     public function grant(
         AuthenticationSession $session,
         Client $client,
         Scopes $scopes,
         ?AuthorizationDetails $authorizationDetails,
+        ClaimNames $claims,
         RequestContext $context,
         DateTimeImmutable $now,
     ): Consent {
         $previous = $this->consents->findActive($session->user, $client);
         if ($previous === null) {
-            $consent = new Consent($this->uuids->timeOrdered(), $session->user, $client, $scopes, $now, $authorizationDetails);
+            $consent = new Consent($this->uuids->timeOrdered(), $session->user, $client, $scopes, $now, $authorizationDetails, $claims);
         } else {
-            $consent = $previous->extendedWith($scopes, $authorizationDetails, $this->uuids->timeOrdered(), $now);
+            $consent = $previous->extendedWith($scopes, $authorizationDetails, $claims, $this->uuids->timeOrdered(), $now);
             $this->consents->save($previous);
         }
         $this->consents->save($consent);
@@ -62,6 +66,7 @@ final readonly class ConsentGranting
             $consent->user->subject,
             $consent->scopes,
             $consent->authorizationDetails,
+            $consent->claims,
             $previous?->id,
             $context,
         ));
