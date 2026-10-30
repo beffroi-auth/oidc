@@ -13,9 +13,9 @@ use Beffroi\Oidc\Domain\Scope\Scope;
  * question with one answer, because a provider that announced one set and registered against another
  * would be two places that must agree.
  *
- * It is not the same question as `RegisteredScopesInterface`, which is one of the things this is made
- * of: what the clients of the tenant registered, beside what a wired claims provider serves and what a
- * wired grant makes good.
+ * It is not the same question as `RegisteredScopesInterface` or `DeclaredScopesInterface`, which are two of
+ * the things this is made of: what the clients of the tenant registered and what its deployment declares,
+ * beside what a wired claims provider serves and what a wired grant makes good.
  */
 interface OfferedScopesInterface
 {

@@ -83,8 +83,8 @@ final readonly class RegisteredClients implements
     }
 
     /**
-     * OIDC Discovery §3: the scopes the clients of the tenant registered, which is where a scope that
-     * stands for no claim comes from (issue #278), each named once.
+     * OIDC Discovery §3: the scopes the clients of the tenant registered, which is one of the two places
+     * a scope that stands for no claim comes from (issue #278), each named once.
      */
     public function scopesRegisteredIn(Tenant $tenant): array
     {
