@@ -13,11 +13,14 @@ use DateTimeImmutable;
 use function hash_equals;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\Metadata\AssignedMembers;
+use Beffroi\Oidc\Domain\Client\Metadata\AttestedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
 use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use SensitiveParameter;
 use function sprintf;
 use Symfony\Component\Uid\Uuid;
@@ -37,6 +40,14 @@ use Symfony\Component\Uid\Uuid;
  * client could write half of. It is read back in front of the members the client sent, so that what a
  * policy granted at the registration is what the client is registered with until that policy writes the
  * registration again (RFC 7592 §2.2).
+ *
+ * What a software statement signed of the client (RFC 7591 §2.3) is kept beside the registration too, and
+ * for the same reason. It is among the members the client is registered with, the statement outranking
+ * what the client sent (§3.1.1), and it is kept apart as well because a replacement is read from what the
+ * client sends (RFC 7592 §2.2): read from that alone, what the client types would replace what an
+ * authority signed, the name and the logo the consent page shows among them. Kept apart, it is read in
+ * front of every replacement as it was read in front of the registration, and it changes with none of
+ * them.
  *
  * Neither the secret nor the registration access token is among those members. RFC 7591 §2 has no member
  * for either, the provider assigns both (§3.2.1), and each is kept apart so that the day they are
@@ -63,6 +74,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
      * @param ClientSecretInterface|null $secret in the shape the registered method verifies against; null for a client whose method proves none
      * @param string $registrationAccessTokenDigest see DrawnSecret::digestOf(); the credential of this one client for its own configuration endpoint (RFC 7592 §2.3)
      * @param DateTimeImmutable|null $secretExpiresAt when the secret stops being verified (RFC 7591 §3.2.1 "client_secret_expires_at"); null for one that does not expire, which the response writes as 0
+     * @param array<string, mixed>|null $attested the members a software statement signed of this client (RFC 7591 §2.3), kept apart from its metadata as well as among it; null for a client no statement attested
      *
      * @throws InvalidArgumentException when the record does not hold together
      */
@@ -77,6 +89,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
         public readonly string $registrationAccessTokenDigest,
         public readonly DateTimeImmutable $issuedAt,
         public private(set) ?DateTimeImmutable $secretExpiresAt = null,
+        public readonly ?array $attested = null,
     ) {
         if ($clientId === '') {
             throw new InvalidArgumentException('A registered client carries the identifier the provider drew for it (RFC 7591 section 3.2.1).');
@@ -119,6 +132,20 @@ final class ClientRecord implements ClassifiedFieldsInterface
             new RegisteredMembers($this->metadata),
             new SpecifiedDefaults(),
         ]);
+    }
+
+    /**
+     * What a statement signed of this client, as the source a replacement reads in front of the members the
+     * client sends (RFC 7592 §2.2), as the registration read it in front of the members the client sent
+     * (RFC 7591 §3.1.1); nothing for a client no statement attested.
+     *
+     * @throws InvalidClientMetadataException when the row carries a member of this provider alone
+     *
+     * @return list<ClientMetadataSourceInterface>
+     */
+    public function attestation(): array
+    {
+        return $this->attested === null ? [] : [new AttestedMembers($this->attested)];
     }
 
     /**
@@ -170,9 +197,10 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
-     * What a client inscribed of itself, what the registration policy of its tenant wrote on that inscription and
-     * its secret are sealed: a secret a method signs with cannot be hashed (OIDC Core §9), so it is sealed
-     * instead, and a dump of this table then holds no usable credential of a client either.
+     * What a client inscribed of itself, what the registration policy of its tenant wrote on that inscription,
+     * what a software statement signed of it and its secret are sealed: a secret a method signs with cannot
+     * be hashed (OIDC Core §9), so it is sealed instead, and a dump of this table then holds no usable
+     * credential of a client either.
      *
      * @return array<string, FieldClassificationInterface>
      */
@@ -182,6 +210,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
             'clientId' => new NoPersonalDatum(Reason::A_CLIENT),
             'metadata' => new Sealed('client'),
             'assigned' => new Sealed('client'),
+            'attested' => new Sealed('client'),
             'registrationAccessTokenDigest' => new NoPersonalDatum(Reason::HASHED),
             'secret' => new Sealed('client'),
             'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
