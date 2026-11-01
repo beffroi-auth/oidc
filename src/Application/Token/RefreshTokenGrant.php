@@ -33,7 +33,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * rotated on every use, its successor in the same family with the same scopes, and presented again it
  * revokes the family; a token that is protected otherwise stands, because replacing it would add
  * nothing and would lock out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9).
- * The session may have expired, not have been ended (architecture §4.9). A token of a session that has ended is
+ * The session may have expired, not have been ended (decision 0031). A token of a session that has ended is
  * refused, and announced (RefreshTokenOutlivedItsSession): the tokens of a session are revoked on the lane of the
  * events, so a refresh in flight when it ended may have saved its successor after they were, and that successor is
  * revoked once its first use is handled. A token revoked is refused before its session is read, so a row is no
