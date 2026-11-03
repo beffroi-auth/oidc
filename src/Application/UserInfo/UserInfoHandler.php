@@ -35,7 +35,9 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * The UserInfo endpoint (OIDC Core §5.3, architecture §4.7): an access token (RFC 6750 §2, RFC 9449 §7.1)
  * inspected as an access token of the provider, answered with the claims its scopes stand for (§5.4) and
  * those asked for by name (§5.5). A token without "openid" is insufficient_scope (§5.3.1). Errors are the
- * ones of RFC 6750 §3.1 and of RFC 9449 §7.1.
+ * ones of RFC 6750 §3.1 and of RFC 9449 §7.1, and a refusal of a token is delivered in the challenge of the
+ * scheme the token was presented under (RFC 9449 §7.2), save the refusal of a token presented the wrong
+ * way, which names the scheme that would have worked.
  *
  * It answers for a user, so a token nobody signed in for opens nothing here: a client acting for itself
  * (RFC 6749 §4.4) asks its token for a resource and is refused by the rule below that the token must be
@@ -54,7 +56,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * it proves another or nothing. A token bound to a key is refused when it is presented as a bearer token:
  * the scheme is part of how it is presented (RFC 9449 §7.1, §7.2). What a token is bound to is read from
  * the token, so the scheme is judged once the token has been verified: a bound token that does not hold,
- * an expired one for instance, is refused for that first, with the Bearer challenge any such token gets.
+ * an expired one for instance, is refused for that first, under the scheme it was presented under.
  * Whoever steals a bound token holds bytes that open nothing.
  *
  * The answer is the plain JSON unless the client registered a signature or an encryption for it (§5.3.2),
@@ -103,7 +105,11 @@ final readonly class UserInfoHandler
             throw new MissingBearerTokenException();
         }
         $provenKey = $this->proofs->verify($dpopProof, $method, $this->endpoints->locate($tenant)->userinfo, $context->receivedAt, $presented->value);
-        $inspected = $this->tokens->inspect($tenant, $presented->value, $context->receivedAt);
+        try {
+            $inspected = $this->tokens->inspect($tenant, $presented->value, $context->receivedAt);
+        } catch (InvalidTokenException $exception) {
+            throw $exception->presentedUnder($presented->scheme);
+        }
         $token = $inspected->token;
         $confirmation = $token->confirmation;
         if ($confirmation !== null && ! $presented->isPresentedAs($confirmation)) {
@@ -120,13 +126,14 @@ final readonly class UserInfoHandler
             );
         }
         if (! $token->audience->has($token->client->registration->clientId)) {
-            throw InvalidTokenException::addressedElsewhere();
+            throw InvalidTokenException::addressedElsewhere($presented->scheme);
         }
         $user = $inspected->user;
         if ($user === null || $token->scopes?->has(Scope::openid()) !== true) {
             throw new InsufficientScopeException(
                 'The access token was not obtained through an OpenID Connect authentication request.',
                 new Scopes([Scope::openid()]),
+                $presented->scheme,
             );
         }
 

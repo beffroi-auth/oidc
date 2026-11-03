@@ -14,12 +14,13 @@ use SensitiveParameter;
  * The scheme comes with the token, because a token is presented the way it was issued: one bound to a
  * key is sent under "DPoP" with a proof beside it (RFC 9449 §7.1), and whoever stole it and sends it as
  * a bearer token is refused. What it is bound to is read from the token, so that refusal comes once the
- * token has been verified.
+ * token has been verified. Any other refusal of the token is delivered in the challenge of the scheme it
+ * came with (RFC 9449 §7.2).
  */
 final readonly class PresentedAccessToken
 {
     /**
-     * @param string $scheme one of the schemes the resource serves, spelled as this provider spells it
+     * @param non-empty-string $scheme one of the schemes the resource serves, spelled as this provider spells it
      */
     public function __construct(
         public string $scheme,

@@ -15,8 +15,8 @@ namespace Beffroi\Oidc\Port;
 interface ServedTokenSchemesInterface
 {
     /**
-     * @return non-empty-list<string> each once, in the order the bindings are wired, the scheme of a
-     *                                token bound to nothing first
+     * @return non-empty-list<non-empty-string> each once, in the order the bindings are wired, the scheme of a
+     *                                          token bound to nothing first
      */
     public function servedTokenSchemes(): array;
 }

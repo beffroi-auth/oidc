@@ -27,8 +27,9 @@ use SensitiveParameter;
  * proves no key, which is not a refusal: nothing of this is asked of a client that does not bind its
  * tokens.
  *
- * The algorithms are the ones the provider is wired with, the same ones it signs with and announces in
- * "dpop_signing_alg_values_supported", never a list kept beside them.
+ * The algorithms are the ones the provider is wired with, the same ones it signs with, announces in
+ * "dpop_signing_alg_values_supported" and names in the "algs" of a challenge under DPoP, never a list kept
+ * beside them.
  */
 final readonly class DpopProofVerifier
 {

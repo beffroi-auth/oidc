@@ -30,7 +30,8 @@ final readonly class AnnouncedAlgorithms
 
     /**
      * What the provider signs a JWS with, whichever a client registered: an ID token, a UserInfo answer,
-     * a signed authorization response, and what it verifies a DPoP proof with.
+     * a signed authorization response, and what it verifies a DPoP proof with, which a challenge under
+     * DPoP names too (RFC 9449 §7.1).
      *
      * @return non-empty-list<string>
      */

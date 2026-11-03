@@ -90,6 +90,8 @@ final readonly class PresentedAccessTokenParser
     /**
      * RFC 9110 §11.6.1: a scheme is compared without regard to case, and answered in the spelling of the
      * specification that defines it.
+     *
+     * @return non-empty-string|null
      */
     private function served(string $scheme): ?string
     {
