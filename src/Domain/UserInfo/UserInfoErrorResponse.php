@@ -26,7 +26,7 @@ use function sprintf;
  * the algorithms a proof may be signed with (RFC 9449 §7.1). A refusal carries what the client needs to
  * try again (RFC 9449 §8.2). A refusal of the token or of its proof is a 401: the request was not honoured
  * for want of a credential this resource would take, whatever the same failure is worth at an endpoint
- * that issues tokens; a token honoured here and not enough is a 403 (RFC 6750 §3.1).
+ * that issues tokens; a token that holds and is not enough is a 403 (RFC 6750 §3.1).
  */
 final readonly class UserInfoErrorResponse
 {
