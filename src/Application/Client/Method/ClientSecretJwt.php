@@ -19,9 +19,9 @@ use SensitiveParameter;
  * "client_secret_jwt" (OIDC Core §9): the same assertion as "private_key_jwt", signed with the secret
  * the client registered instead of a key of its own, HS256 and nothing else (RFC 8725 §3.1, §3.2). It is
  * served because clients ask for it, and it is not a FAPI method: the provider has to hold the secret
- * back to compute the same MAC, which is what FAPI 2.0 §5.2.2 refuses. A deployment that follows the
- * profile leaves the method out of its wiring, and then no client can register it and the discovery
- * document does not announce it.
+ * back to compute the same MAC, and FAPI 2.0 Security Profile §5.3.2.1 takes MTLS and private_key_jwt
+ * alone. A deployment that follows the profile leaves the method out of its wiring, and then no client
+ * can register it and the discovery document does not announce it.
  */
 final readonly class ClientSecretJwt extends AssertionMethod implements SecretKeepingMethodInterface
 {
