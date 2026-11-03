@@ -17,7 +17,7 @@ use Beffroi\Oidc\Domain\Client\ClientUri;
  * the user and the moment the page was shown, whether or not consent follows. That is the price of
  * showing a logo at all, and it is bounded rather than removed: the origin below is the origin of that
  * one image, so nothing a client registers makes the page load anything else. The logo of the tenant is
- * on this page as on every other, and named by whatever page reads it (Beffroi\Bundle\Twig\TenantExtension).
+ * on this page as on every other, and named by whatever page reads it (App\Twig\TenantExtension).
  *
  * The provider fetches none of it. A logo read and cached here would be an outbound request on a URL a
  * client wrote, which is what the "sector_identifier_uri" and the "jwks_uri" rules bound so carefully
@@ -32,7 +32,7 @@ use Beffroi\Oidc\Domain\Client\ClientUri;
  * The page says what it adds and not what the whole policy is, because it is a page of the product: it
  * extends the layout an application overrides (architecture §5.2), so the policy its answer carries is
  * the one of its deployment, completed with this origin and with the origin the submission of the page
- * may end at (Beffroi\Bundle\Http\ImageSource, FormTarget). The two pages that carry a step of the
+ * may end at (App\Http\ImageSource, FormTarget). The two pages that carry a step of the
  * protocol are the ones that write a whole policy, "default-src 'none'" and a named script hash being
  * what they mean (FormPostResponse, FrontChannelLogoutPage).
  */

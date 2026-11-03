@@ -22,7 +22,7 @@ use Beffroi\Oidc\Exception\LogicException;
 
 /**
  * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier
- * is 256 random bits and the bundle binds it to the browser session; an interaction is completed once.
+ * is 256 random bits and the application binds it to the browser session; an interaction is completed once.
  */
 final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsInterface
 {

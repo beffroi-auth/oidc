@@ -13,7 +13,7 @@ use Beffroi\Core\Exception\LoadBudgetSpentException;
  * authenticated client is something the caller cannot choose for somebody else, which the "client_id" a
  * request carries before it is authenticated is not: a budget counted on that one is emptied by naming
  * the client of somebody else, and the limit becomes the weapon. A client that only names itself and
- * proves nothing (RFC 6749 §2.1) is bounded by the budget of its origin, which is the bundle's.
+ * proves nothing (RFC 6749 §2.1) is bounded by the budget of its origin, which is the application's.
  *
  * It is counted by tenant and by client, because two tenants may register the same identifier and one
  * bucket would make either pay for the other. What the window is and how it is kept is the

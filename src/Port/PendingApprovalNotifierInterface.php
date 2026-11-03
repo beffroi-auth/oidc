@@ -16,7 +16,7 @@ use Beffroi\Oidc\Domain\Ciba\PendingApproval;
  * is exactly what an attacker would like to write (BCP 10027 §5.2).
  *
  * Reaching somebody is not part of answering the client: an implementation that talks to a third party
- * hands the work on rather than doing it in the request (the bundle's own puts it on the notifications
+ * hands the work on rather than doing it in the request (the application's own puts it on the notifications
  * lane), and a user who is not reached still finds the request on the page where requests are answered.
  */
 interface PendingApprovalNotifierInterface
