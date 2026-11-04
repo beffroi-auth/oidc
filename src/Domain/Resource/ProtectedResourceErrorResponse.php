@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Beffroi\Oidc\Domain\UserInfo;
+namespace Beffroi\Oidc\Domain\Resource;
 
 use function array_map;
 use Beffroi\Oidc\Domain\Token\TokenResponse;
@@ -10,13 +10,14 @@ use Beffroi\Oidc\Exception\ChallengeInterface;
 use Beffroi\Oidc\Exception\InsufficientScopeException;
 use Beffroi\Oidc\Exception\MissingBearerTokenException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
+use Beffroi\Oidc\Domain\UserInfo\UserInfoResponse;
 use function implode;
 use function sprintf;
 
 /**
- * RFC 6750 §3, RFC 9449 §7.1, OIDC Core §5.3.3
+ * RFC 6750 §3, RFC 9449 §7.1, OIDC Core §5.3.3, decision 0038
  */
-final readonly class UserInfoErrorResponse
+final readonly class ProtectedResourceErrorResponse
 {
     /**
      * RFC 6750 §3.1
