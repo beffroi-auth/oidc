@@ -18,7 +18,7 @@ use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
  * What a deployment wrote about the clients that register themselves (architecture §5.1, decision 0009).
  * A deployment that named no mode has no policy, which is closed: no registration endpoint for that
  * tenant, in the document as on the wire. An empty name is no name, which is what an environment
- * variable nobody set gives.
+ * variable declared empty gives.
  *
  * The policy declared here is the policy of the tenant this deployment declares, named by its slug, as
  * the clients declared here are its clients: anything asked about another tenant is answered as a tenant
@@ -35,7 +35,7 @@ final readonly class ConfigurationClientRegistrationPolicy implements ClientRegi
      * What a registration that names no scope is registered with here (RFC 7591 §2), read once at the boot
      * that declared it: a deployment that writes a scope this provider does not read is told so then, and
      * not at the first registration. Null for a deployment that wrote none, and an empty string is none,
-     * which is what an environment variable nobody set gives.
+     * which is what an environment variable declared empty gives.
      */
     private ?Scopes $defaultScopes;
 
