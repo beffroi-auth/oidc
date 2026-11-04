@@ -12,11 +12,7 @@ use Beffroi\Oidc\Domain\Client\ClientRegistration;
 use Beffroi\Oidc\Port\SubjectIdentifierKindInterface;
 
 /**
- * OIDC Core §8 "public": every client sees the subject as the core keeps it (decision 0002).
- *
- * The way back is the same identifier read as itself, which is what it has always been: the string a client
- * presents is the one the provider keeps, so the user is the one that string names. It demands nothing of a
- * registration, this kind being computed from nothing a client registers.
+ * OIDC Core §8
  */
 final readonly class PublicSubjectIdentifierResolver implements SubjectIdentifierKindInterface
 {

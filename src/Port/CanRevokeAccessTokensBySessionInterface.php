@@ -7,13 +7,10 @@ namespace Beffroi\Oidc\Port;
 use Beffroi\Oidc\Domain\Token\StoredAccessToken;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * A companion of AccessTokenRepositoryInterface: every token of a session, for its end (architecture §4.9).
- */
 interface CanRevokeAccessTokensBySessionInterface
 {
     /**
-     * @return list<StoredAccessToken> the records removed
+     * @return list<StoredAccessToken>
      */
     public function revokeBySession(Uuid $session): array;
 }

@@ -7,8 +7,7 @@ namespace Beffroi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 8707 §2 "invalid_target": the requested resource is invalid, missing, unknown, or malformed. It
- * answers an authorization request (§2.1) and a token request (§2.2) alike.
+ * RFC 8707 §2
  */
 final class InvalidTargetException extends OAuth2Exception
 {
@@ -21,9 +20,7 @@ final class InvalidTargetException extends OAuth2Exception
     }
 
     /**
-     * What a "resource" parameter must be wherever one is read (RFC 8707 §2): the authorization
-     * request reads one, every grant of the token endpoint reads one, and all of them refuse the same
-     * thing the same way.
+     * RFC 8707 §2
      */
     public static function notAnAbsoluteUri(bool $redirectable = false, ?Throwable $previous = null): self
     {
@@ -35,9 +32,9 @@ final class InvalidTargetException extends OAuth2Exception
     }
 
     /**
-     * RFC 8707 §2.1: what a client may ask for is what it registered, as every other list of a client
-     * is. The description names no resource: what the client registered is not something an error
-     * response teaches whoever sent the request.
+     * RFC 8707 §2.1
+     *
+     * The description names no resource, so that an error response teaches nothing of what the client registered.
      */
     public static function notRegistered(bool $redirectable = false): self
     {
@@ -45,9 +42,9 @@ final class InvalidTargetException extends OAuth2Exception
     }
 
     /**
-     * RFC 8707 §2: a resource that is missing is as invalid as one that is unknown. A grant with nobody
-     * behind it asks for the resource its token is for, and is refused rather than answered with a token
-     * addressed to the client that asked for it.
+     * RFC 8707 §2
+     *
+     * A grant with nobody behind it is refused rather than given a token addressed to the client that asked.
      */
     public static function missing(): self
     {
@@ -55,8 +52,7 @@ final class InvalidTargetException extends OAuth2Exception
     }
 
     /**
-     * RFC 8707 §2.2: a token request narrows the resources of the authorization it spends, and never
-     * widens them.
+     * RFC 8707 §2.2
      */
     public static function notGranted(): self
     {

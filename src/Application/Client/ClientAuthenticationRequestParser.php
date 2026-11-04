@@ -14,28 +14,13 @@ use Beffroi\Oidc\Port\CompactJwtReaderInterface;
 use function is_string;
 use function sprintf;
 
-/**
- * What arrived at an endpoint that authenticates a client, read into the request the methods are handed
- * (RFC 6749 §2.3). Reading a request is the job of a parser of the Application, and reading it once is
- * the job of whoever owns the reader: seven methods may be wired and two of them read the assertion,
- * which is read here, before any of them sees the request, and never again.
- *
- * What it refuses is what cannot be read as a client authentication at all, and it refuses it with the
- * failure every refusal of this package travels in, so that the authenticator answers for this one as
- * it answers for every other (RFC 6749 §5.2 "invalid_request").
- */
 final readonly class ClientAuthenticationRequestParser
 {
     /**
-     * RFC 7523 §2.2: the one value of "client_assertion_type".
+     * RFC 7523 §2.2
      */
     public const string ASSERTION_TYPE = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 
-    /**
-     * The parameters a client authentication reads, all of them strings: what proves the client
-     * (RFC 6749 §2.3.1, RFC 7523 §2.2), and the name it goes by, which is a parameter of the request in
-     * its own right.
-     */
     private const array CREDENTIAL_PARAMETERS = ['client_id', 'client_secret', 'client_assertion', 'client_assertion_type'];
 
     public function __construct(
@@ -44,11 +29,10 @@ final readonly class ClientAuthenticationRequestParser
     }
 
     /**
-     * @param string $endpoint the absolute URL of the endpoint that received the request
-     * @param array<string, mixed> $parameters the form parameters of the request body
-     * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake, null when it presented none, which is the ordinary case (RFC 8705 §2)
+     * @param string $endpoint absolute URL
+     * @param array<string, mixed> $parameters
      *
-     * @throws ClientAuthenticationFailure when the request cannot be read as a client authentication
+     * @throws ClientAuthenticationFailure
      */
     public function read(
         Tenant $tenant,
@@ -72,8 +56,7 @@ final readonly class ClientAuthenticationRequestParser
     }
 
     /**
-     * A request whose credentials are not strings is refused before anything is read, and the audit
-     * trail keeps no identifier from it, because none of it can be trusted.
+     * The audit trail keeps no identifier of such a request: none of it can be trusted.
      *
      * @param array<string, mixed> $parameters
      *
@@ -95,14 +78,11 @@ final readonly class ClientAuthenticationRequestParser
     }
 
     /**
-     * RFC 7523 §2.2: the assertion the request carries, read and verified in nothing. A request that
-     * carries one half of the pair carries neither.
+     * RFC 7523 §2.2
      *
-     * @param array<string, mixed> $parameters the credential ones known to be strings
+     * @param array<string, mixed> $parameters
      *
-     * @throws ClientAuthenticationFailure when the type is not the one of RFC 7523 §2.2, when one of the
-     *                                     two parameters is there without the other, or when the
-     *                                     assertion cannot be read
+     * @throws ClientAuthenticationFailure when the pair is incomplete, of another type or unreadable
      */
     private function assertionIn(array $parameters): ?UnverifiedJwt
     {
@@ -145,8 +125,7 @@ final readonly class ClientAuthenticationRequestParser
     /**
      * @param array<string, mixed> $parameters
      *
-     * @return string|null null when the parameter is absent or empty, an empty credential being no
-     *                     credential (RFC 6749 appendix A)
+     * @return string|null null when absent or empty
      */
     private static function presented(array $parameters, string $name): ?string
     {

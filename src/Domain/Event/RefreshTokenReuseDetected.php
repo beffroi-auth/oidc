@@ -11,18 +11,11 @@ use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * A rotated refresh token was presented again (RFC 9700 §4.13.2); the whole family is revoked.
- */
 final readonly class RefreshTokenReuseDetected implements ConcernsAClientInterface, ConcernsAPersonInterface
 {
-    /**
-     * The name of the act, which is what the journal writes down (issue #454).
-     */
     public const string NAME = 'refresh_token.reuse_detected';
 
     /**
-     * @param Subject $subject the person whose session the family descends from, by the subject their account carries (issue #588)
      * @param list<string> $revokedTokenHashes
      */
     public function __construct(

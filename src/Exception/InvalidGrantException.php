@@ -7,8 +7,9 @@ namespace Beffroi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 6749 §5.2 "invalid_grant": one description whatever the cause, so that a guessing client learns nothing.
- * What went wrong is carried as the cause, which the audit trail of the provider reads and no response does.
+ * RFC 6749 §5.2
+ *
+ * One description whatever the cause, so that a guessing client learns nothing.
  */
 final class InvalidGrantException extends OAuth2Exception
 {

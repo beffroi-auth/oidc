@@ -11,14 +11,12 @@ use Beffroi\Oidc\Domain\Client\RedirectUri;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * A logout request that passed validation (RP-Initiated Logout §2, architecture §4.9), typed. It may
- * name no client at all (§3), or carry a hint the provider could not verify, absent here and said so.
+ * A logout request that passed validation (RP-Initiated Logout §2).
  */
 final readonly class EndSessionRequest
 {
     /**
      * @param list<string> $uiLocales most preferred first
-     * @param bool $invalidIdTokenHint the request carried a hint this provider could not verify
      */
     public function __construct(
         public Tenant $tenant,

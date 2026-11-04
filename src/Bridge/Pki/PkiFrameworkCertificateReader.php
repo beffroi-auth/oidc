@@ -17,16 +17,6 @@ use SpomkyLabs\Pki\X509\GeneralName\GeneralNames;
 use SpomkyLabs\Pki\X509\GeneralName\IPAddress;
 use Throwable;
 
-/**
- * Reads a certificate with pki-framework (docs/09-briques.md), which parses ASN.1 and writes a
- * distinguished name the way RFC 4514 says to. Nothing here takes a name apart with a regular
- * expression: a distinguished name is a structure, not a string, and the string is only how it is
- * written down to be compared with what a client registered (RFC 8705 §2.1.2).
- *
- * Only the leaf is read, and nothing of it is trusted beyond what it says: the chain, the validity and
- * the revocation are the edge's to judge before the request reaches the provider
- * (architecture §6).
- */
 final readonly class PkiFrameworkCertificateReader implements CertificateReaderInterface
 {
     public function subjectOf(ClientCertificate $certificate): CertificateSubject
@@ -73,9 +63,9 @@ final readonly class PkiFrameworkCertificateReader implements CertificateReaderI
     }
 
     /**
-     * RFC 5280 §4.2.1.6: an iPAddress entry is four or sixteen octets, which pki-framework writes back
-     * as the address it stands for. An entry carrying a mask is a name constraint and not an address,
-     * and names no client.
+     * RFC 5280 §4.2.1.6
+     *
+     * An entry carrying a mask is a name constraint, not an address, and names no client.
      *
      * @return list<string>
      */

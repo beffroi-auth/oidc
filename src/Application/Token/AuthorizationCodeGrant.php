@@ -31,32 +31,15 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
 
 /**
- * RFC 6749 §4.1.3, RFC 7636 §4.6, OIDC Core §3.1.3 (architecture §4.5). Every failure is "invalid_grant"
- * with one description. The code is consumed by its first presentation (RFC 9700 §4.5); presented again,
- * the grant and every token descending from it are revoked (RFC 6749 §4.1.2).
+ * RFC 6749 §4.1.3, RFC 7636 §4.6, OIDC Core §3.1.3
  *
- * What the response reads from outside the provider is read before the code is consumed (architecture
- * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, the key the ID token is
- * encrypted to (OIDC Core §3.1.3.7), and the session the code descends from, which a store reads with the
- * person it names and opens under the data keys of the tenant (decision 0018). A KMS that does not answer,
- * or keys the client cannot serve right now, leave the code to its next presentation, where a code consumed
- * and then left unanswered would make that presentation a replay. Nothing is read for a code presented
- * already, which goes straight to the claim that tells it is replayed, and the replay is announced with the
- * person named by the subject the store of sessions keeps in the clear (decision 0011): the grant is revoked,
- * and its revocation announced, whatever the KMS answers.
- *
- * A code reserved for a key (RFC 9449 §10) is exchanged by a request that proves that key and by no
- * other: the authorization request said which key would come and collect it, and a code intercepted on
- * its way back through the browser is worth nothing to whoever does not hold it.
+ * What the KMS opens is read before the code is consumed: a code consumed and left unanswered would make its next
+ * presentation a replay.
  */
 final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterface, SendsTheUserToTheClientInterface
 {
     private const string INVALID = 'The authorization code is invalid.';
 
-    /**
-     * @param RefreshTokenDue $refreshTokenDue whether a response of this grant carries a refresh token, asked where every grant that issues one asks it
-     * @param DateInterval $refreshTokenFamilyLifetime the absolute lifetime no rotation extends (architecture §4.6)
-     */
     public function __construct(
         private AuthorizationCodeRepositoryInterface $codes,
         private RefreshTokenRevocation $refreshTokens,
@@ -93,7 +76,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
         }
         $addressed = $record->isUsed() ? null : $this->issuer->address($record->client, $record->scopes);
         $sessionActive = ! $record->isUsed() && $record->session->isActive($now);
-        // atomic: of the requests presenting this code at once, exactly one is the first
+        // Atomic: of the requests presenting this code at once, exactly one is the first.
         if (! $this->codes->consume($record, $now)) {
             $this->replayed($record, $client->client, $context, $now);
 
@@ -111,9 +94,6 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
             throw new InvalidGrantException(self::INVALID);
         }
 
-        // RFC 8707 §2.2, RFC 9396 §7: the access token of this response may be addressed to a subset of
-        // the resources the authorization carries and may carry a subset of its details, while the refresh
-        // token beside it stays bound to them all
         $authorization = UserAuthorization::fromAuthorizationCode(
             $this->grantType(),
             $record,
@@ -150,9 +130,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
     }
 
     /**
-     * RFC 9449 §10.1: a code the authorization request reserved for a key is exchanged by a request that
-     * proved that key. A code reserved for none is exchanged by whichever request the rest of this
-     * grant accepts, a client that binds no token being a client that reserves nothing.
+     * RFC 9449 §10.1
      */
     private static function reservationSatisfied(AuthorizationCode $record, AuthenticatedClient $client): bool
     {
@@ -160,9 +138,9 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
     }
 
     /**
-     * RFC 6749 §4.1.2: every token issued from the code is revoked, and the replay announced with them. The person
-     * is named by the subject the store of sessions keeps in the clear and not read from the session, which a store
-     * that has not opened it yet would open under the data keys of the tenant (issue #884).
+     * RFC 6749 §4.1.2
+     *
+     * The person is named by the subject the store of sessions keeps in the clear, so the KMS need not answer.
      */
     private function replayed(AuthorizationCode $code, Client $presentedBy, RequestContext $context, DateTimeImmutable $now): void
     {

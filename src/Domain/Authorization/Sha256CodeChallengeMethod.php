@@ -10,8 +10,7 @@ use Beffroi\Core\Domain\Encoding\Base64Url;
 use SensitiveParameter;
 
 /**
- * RFC 7636 §4.2: BASE64URL(SHA256(ASCII(code_verifier))), the transformation RFC 9700 §2.1.1 holds every
- * client to and the one this provider is wired with (decision 0006).
+ * RFC 7636 §4.2
  */
 final readonly class Sha256CodeChallengeMethod implements CodeChallengeMethodInterface
 {

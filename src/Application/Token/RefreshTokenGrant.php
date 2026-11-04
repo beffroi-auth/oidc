@@ -27,35 +27,11 @@ use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * RFC 6749 §6, RFC 9700 §4.13 (architecture §4.5): what tells a refresh token from a copy of itself is
- * the authentication of a confidential client, the key or the certificate it is bound to, or rotation,
- * and one of the three is enough (§4.13.2). A token that is protected by neither of the first two is
- * rotated on every use, its successor in the same family with the same scopes, and presented again it
- * revokes the family; a token that is protected otherwise stands, because replacing it would add
- * nothing and would lock out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9).
- * The session may have expired, not have been ended (decision 0031). A token of a session that has ended is
- * refused, and announced (RefreshTokenOutlivedItsSession): the tokens of a session are revoked on the lane of the
- * events, so a refresh in flight when it ended may have saved its successor after they were, and that successor is
- * revoked once its first use is handled. A token revoked is refused before its session is read, so a row is no
- * longer announced once that revocation has run, and announcing it again before is harmless.
+ * RFC 6749 §6, RFC 9700 §4.13
  *
- * What the request may narrow it narrows and never widens: the scopes of the response (RFC 6749 §6), the
- * resources its access token is addressed to (RFC 8707 §2.2) and the details it carries (RFC 9396 §7), the
- * refresh token beside it staying bound to the whole of the original grant in each case.
- *
- * A token bound to a key (RFC 9449 §5) is refreshed by a request that proves that key again, and by
- * nobody else: the client that holds it is a public client, and the binding is the whole of what tells
- * it from whoever took a copy of the token.
- *
- * What the response reads from outside the provider is read before the token is rotated (architecture
- * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, the key the ID token is
- * encrypted to (OIDC Core §3.1.3.7), and the session the token descends from and the person it names, rows
- * a store opens under the data keys of the tenant (decision 0018), the person being what the announcement of
- * the rotation names. A KMS that does not answer, or keys the client cannot serve right now, leave the token
- * as it was, where a token rotated and then left unanswered would make the next presentation a reuse, and
- * revoke the family. A rotated token presented again reads nothing before its family is revoked, and the reuse
- * is announced with the person named by the subject the store of sessions keeps in the clear (decision 0011):
- * the family is revoked, and its revocation announced, whatever the KMS answers.
+ * Only a token protected by neither client authentication nor a binding is rotated: rotating another would lock
+ * out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9). What the KMS opens is read before the
+ * token is rotated, so a KMS that does not answer leaves the token as it was.
  */
 final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
@@ -145,11 +121,9 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
     }
 
     /**
-     * RFC 6749 §3.3, without repeats.
+     * RFC 6749 §3.3
      *
-     * @throws InvalidScopeException when the parameter is not a list of scope tokens
-     *
-     * @return Scopes|null null when the client did not narrow the scope
+     * @throws InvalidScopeException
      */
     private static function scopes(?string $scope): ?Scopes
     {
@@ -164,9 +138,9 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
     }
 
     /**
-     * RFC 9700 §4.13.2: the family is revoked, and the reuse announced with it. The person is named by the subject
-     * the store of sessions keeps in the clear and not read from the session, which a store that has not opened it
-     * yet would open under the data keys of the tenant (issue #884).
+     * RFC 9700 §4.13.2
+     *
+     * The person is named by the subject the store of sessions keeps in the clear, so the KMS need not answer.
      */
     private function reused(RefreshToken $presented, RequestContext $context, DateTimeImmutable $now): void
     {

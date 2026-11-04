@@ -12,8 +12,7 @@ use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * RFC 8705 §3.3 and §5: whether the provider binds an access token to the certificate its client
- * presented, which is whether a method that proves one is wired and nothing else.
+ * RFC 8705 §3.3, §5
  */
 final readonly class AnnouncedMutualTls implements MetadataContributorInterface
 {

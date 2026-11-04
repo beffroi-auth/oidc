@@ -11,19 +11,12 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\InvalidScopeException;
 
 /**
- * What the "scope" parameter of an authorization request must be (RFC 6749 §3.3, OIDC Core §3.1.2.2
- * step 3), judged against the client that sends it: a list of scope tokens, every one of them allowed to
- * that client, "openid" among them.
- *
- * The counterpart of what the token endpoint does with the same parameter (Application\Token): there a
- * scope is narrowed against the grant being spent, here it is checked against the registration, and the
- * two rules are two classes because they are two rules.
+ * RFC 6749 §3.3, OIDC Core §3.1.2.2
  */
 final readonly class RequestedScopes
 {
     /**
-     * @throws InvalidScopeException when it is not a list of scope tokens, when it names a scope the
-     *                               client is not allowed, or when it does not name "openid"
+     * @throws InvalidScopeException
      */
     public static function of(Client $client, string $scope): Scopes
     {

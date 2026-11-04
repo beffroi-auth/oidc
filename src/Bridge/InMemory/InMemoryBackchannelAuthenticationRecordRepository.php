@@ -15,10 +15,6 @@ use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Symfony\Component\Uid\Uuid;
 use function usort;
 
-/**
- * For tests and for the examples: nothing here survives the process, and one process claims a record once
- * because nothing else runs beside it.
- */
 final class InMemoryBackchannelAuthenticationRecordRepository implements
     BackchannelAuthenticationRecordRepositoryInterface,
     CanRevokeGrantsByConsentInterface,

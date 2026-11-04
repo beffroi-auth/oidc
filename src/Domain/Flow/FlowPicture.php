@@ -9,20 +9,12 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use function sprintf;
 
-/**
- * The picture of one flow this provider serves (issue #462): the grant whose shape it is, and the hops
- * of that flow in the order they happen. It says what the flow is made of; what travelled in a hop is
- * the business of whoever recorded one, never of the picture.
- *
- * The actors are read from the hops, in the order the drawing declares them: a picture has the columns
- * its own exchanges need, and no flow is given a party it never speaks to.
- */
 final readonly class FlowPicture
 {
     /**
      * @param non-empty-list<Hop> $hops
      *
-     * @throws InvalidArgumentException when the flow is drawn without a single hop
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public GrantTypeName $grantType,

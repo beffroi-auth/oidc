@@ -13,30 +13,21 @@ use Beffroi\Oidc\Port\ServedTokenSchemesInterface;
 use function strcasecmp;
 
 /**
- * How a protected resource of this provider reads the access token a request carries: the Authorization
- * header (RFC 6750 §2.1, RFC 9449 §7.1) or the form body (RFC 6750 §2.2), never the query string (§2.3,
- * RFC 9700 §4.3.2), never both. A header of a scheme this provider does not serve is left to whoever
- * understands it, and a request that carries no token at all is no error of the protocol (§3.1): the
- * resource answers it with a challenge, which is the caller's to send.
+ * RFC 6750 §2.1, §2.2, RFC 9449 §7.1
  *
- * Reading a request is what a parser of the Application does, here as at the endpoints a browser talks
- * to: the grammar of the header lives here, the body is read the one way every endpoint reads a
- * parameter, and what comes out is the value object the Domain reasons about.
- *
- * Which schemes are read is what the provider is wired to bind tokens with, asked of the wiring at every
- * request: a deployment wired for no binding reads bearer tokens alone.
+ * Never from the query string (RFC 9700 §4.3.2).
  */
 final readonly class PresentedAccessTokenParser
 {
     /**
-     * RFC 6750 §2.1: b64token = 1*( ALPHA / DIGIT / "-" / "." / "_" / "~" / "+" / "/" ) *"=".
+     * RFC 6750 §2.1
      */
     private const string B64TOKEN = '[A-Za-z0-9\-._~+\/]+=*';
 
     /**
-     * RFC 9110 §11.6.1: the scheme is a token, and what follows it is not part of it. "Bearerish" is
-     * another scheme, and so is one this provider does not serve; "Bearer" followed by anything but a
-     * space is this scheme, sent wrong.
+     * RFC 9110 §11.6.1
+     *
+     * "Bearer" followed by anything but a space is this scheme sent wrong, not another scheme.
      */
     private const string SCHEME = '/^([!#$%&\'*+\-.^_`|~0-9A-Za-z]+)(?![!#$%&\'*+\-.^_`|~0-9A-Za-z])/';
 
@@ -50,12 +41,9 @@ final readonly class PresentedAccessTokenParser
     }
 
     /**
-     * @param string|null $authorizationHeader the Authorization header of the request, null when it carries none
      * @param RequestParameters $parameters the form parameters of the request body, never the query string
      *
      * @throws InvalidRequestException when the token is malformed or sent twice
-     *
-     * @return PresentedAccessToken|null null when the request carries no token of this provider
      */
     public function parse(?string $authorizationHeader, RequestParameters $parameters): ?PresentedAccessToken
     {
@@ -88,8 +76,7 @@ final readonly class PresentedAccessTokenParser
     }
 
     /**
-     * RFC 9110 §11.6.1: a scheme is compared without regard to case, and answered in the spelling of the
-     * specification that defines it.
+     * RFC 9110 §11.6.1
      *
      * @return non-empty-string|null
      */
@@ -105,8 +92,7 @@ final readonly class PresentedAccessTokenParser
     }
 
     /**
-     * RFC 6750 §2.2: the body carries a bearer token and nothing else; a token bound to a key travels in
-     * the header with the proof that goes with it (RFC 9449 §7.1).
+     * RFC 6750 §2.2
      */
     private static function fromBody(RequestParameters $parameters): ?PresentedAccessToken
     {

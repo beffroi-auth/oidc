@@ -27,31 +27,10 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * RFC 7523 §2.1, §3 (architecture §4.5): the client presents an assertion signed by an issuer the tenant
- * trusts, and receives an access token for the user that assertion is about.
+ * RFC 7523 §2.1, §3
  *
- * It is one paragraph of a specification and a whole trust decision: whoever holds the signing key of a trusted
- * issuer can name a user of the tenant. So everything is registered in advance and nothing is asked for
- * (TrustedIssuer), the refusals say nothing of what is registered, and the subject of an assertion is a user of
- * this tenant only through a linked identity of that issuer's source (decision 0002). No user is created here:
- * an assertion about somebody no identity resolves is refused, as an assertion of an unknown issuer is.
- *
- * The assertion is the authorization and not the client authentication (RFC 7523 §2.1, last paragraph): the
- * client authenticates beside it as it does for every other grant, and the two readings of an assertion share
- * no validator, no registration and no replay guard, so that one cannot be taken for the other. §2.1 leaves
- * that authentication optional and this provider requires it, since whoever held the assertion would
- * otherwise be served the user it names: a public client is refused this grant
- * (RequiresClientAuthenticationInterface).
- *
- * No ID token, and "openid" refused with it: the user was authenticated somewhere else and this provider has
- * nothing to say about how, neither an "acr" nor an "amr" nor an "auth_time" being ours to claim (OIDC Core
- * §2). A client that wants a document describing a user signs that user in.
- *
- * The assertion is spent last, right before the response is struck (issue #876): its "jti" is remembered once
- * the user it names, the scopes, the resources and the subject the client is answered are settled, and once
- * the response is addressed, the key its token is signed with opened and the person it is about sealed. A KMS
- * that does not answer, or a request refused on the way, leaves the assertion to the next presentation, where
- * spent first it would send the client back to its issuer for another one.
+ * The assertion is spent last, once the response is addressed: a request refused on the way, or a KMS that does not
+ * answer, leaves it to the next presentation.
  */
 final readonly class JwtBearerGrant implements RequiresClientAuthenticationInterface
 {
@@ -73,9 +52,9 @@ final readonly class JwtBearerGrant implements RequiresClientAuthenticationInter
     }
 
     /**
-     * RFC 8707 §2 decides what the token is addressed to, here as in every grant with nobody's browser in it:
-     * the resources the request names, among the ones the client registered, at least one. A token addressed to
-     * the client that asked for it is a token no resource server is meant to accept.
+     * RFC 8707 §2
+     *
+     * A resource is required: a token addressed to the client itself is one no resource server is meant to accept.
      */
     public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens
     {
@@ -100,8 +79,6 @@ final readonly class JwtBearerGrant implements RequiresClientAuthenticationInter
             $resources,
             $registered,
             confirmation: $client->confirmation,
-            // the assertion was validated for a user of this tenant, so what it gets is written in the
-            // journal of that person and not under the "sub" this client is answered (issue #588)
             person: $user->subject,
         );
         $addressed = $this->issuer->addressFor($authorization);
@@ -111,10 +88,9 @@ final readonly class JwtBearerGrant implements RequiresClientAuthenticationInter
     }
 
     /**
-     * RFC 7523 §3, decision 0002: the user the assertion is about, found by the linked identity of the source
-     * the issuer is trusted for. An assertion about somebody no identity resolves, or about a user this
-     * provider no longer serves, is refused exactly as an assertion of an unknown issuer is: what the tenant
-     * knows is not something an error response teaches.
+     * RFC 7523 §3
+     *
+     * An unresolved or unserved user is refused as an unknown issuer is: an error teaches nothing of the tenant.
      *
      * @throws InvalidGrantException
      */
@@ -129,13 +105,10 @@ final readonly class JwtBearerGrant implements RequiresClientAuthenticationInter
     }
 
     /**
-     * RFC 6749 §3.3, RFC 7523 §3: the scopes the request asks for, among the ones the client registered and the
-     * ones the issuer is trusted for. The parameter is required here for the reason it is required of every
-     * grant with no browser in it: a request that named nothing would otherwise be answered with everything two
-     * registrations happen to have in common.
+     * RFC 6749 §3.3, RFC 7523 §3
      *
-     * "openid" asks for an authentication, and this grant performs none (OIDC Core §2): it is refused rather
-     * than dropped from a response that would then look like one.
+     * Required: naming nothing would be answered with every scope two registrations share. "openid" is refused, not
+     * dropped: this grant performs no authentication and must not look like one (OIDC Core §2).
      *
      * @throws InvalidScopeException
      */

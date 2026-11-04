@@ -9,17 +9,14 @@ use Beffroi\Oidc\Exception\InvalidClientException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 
 /**
- * An error of the token endpoint (RFC 6749 §5.2), and of the introspection (RFC 7662 §2.3) and revocation
- * (RFC 7009 §2.2.1) endpoints: 400, or 401 with a challenge for "invalid_client" through the header.
+ * RFC 6749 §5.2, RFC 7662 §2.3, RFC 7009 §2.2.1
  */
 final readonly class TokenErrorResponse
 {
     public const string CONTENT_TYPE = 'application/json';
 
     /**
-     * @param string|null $challenge the WWW-Authenticate header, when one is due
-     * @param array<string, string> $carried what the refusal carries beside its body, the nonce of
-     *                                       RFC 9449 §8.1 and nothing else today
+     * @param array<string, string> $carried the headers the refusal carries beside its body, by name
      */
     public function __construct(
         public int $statusCode,

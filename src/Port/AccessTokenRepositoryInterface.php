@@ -8,10 +8,7 @@ use Beffroi\Oidc\Domain\Token\StoredAccessToken;
 use SensitiveParameter;
 
 /**
- * Where the opaque access tokens live (architecture §4.6): the store keeps the record under the digest of
- * the value, and never the value. The value is drawn where every value this provider hands out is drawn
- * (SecretDrawer), so a store is a store here as everywhere else. What else it can do is declared by the
- * CanRevoke* companion interfaces.
+ * Opaque access tokens, kept under the digest of their value and never the value.
  */
 interface AccessTokenRepositoryInterface
 {

@@ -18,18 +18,7 @@ use Beffroi\Oidc\Port\ProofKeyVerifierInterface;
 use SensitiveParameter;
 
 /**
- * The proof of possession a request carries (RFC 9449 §4): read with the reader every JWT a client sends
- * is read with, verified against the public key of its own header, and then judged by the validator.
- *
- * What comes back is the key, named by its thumbprint (RFC 7638 §3), which is the one thing the rest of
- * the provider needs: it is what a token is bound to at the endpoints that issue one, and what a
- * resource compares with the binding of the token it was handed. A request that carries no proof
- * proves no key, which is not a refusal: nothing of this is asked of a client that does not bind its
- * tokens.
- *
- * The algorithms are the ones the provider is wired with, the same ones it signs with, announces in
- * "dpop_signing_alg_values_supported" and names in the "algs" of a challenge under DPoP, never a list kept
- * beside them.
+ * RFC 9449 §4
  */
 final readonly class DpopProofVerifier
 {
@@ -42,13 +31,10 @@ final readonly class DpopProofVerifier
     }
 
     /**
-     * @param string|null $proof the DPoP header of the request, null when it carries none
-     * @param string $method the method of the request
      * @param string $url the URL this provider publishes for the endpoint that received it
-     * @param string|null $accessToken the access token the request presents, null when it presents none
      *
      * @throws InvalidDpopProofException
-     * @throws UseDpopNonceException when this provider asks the client to make the proof again
+     * @throws UseDpopNonceException
      */
     public function verify(
         ?string $proof,

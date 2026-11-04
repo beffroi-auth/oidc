@@ -22,10 +22,9 @@ use JsonException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Reads an id_token_hint (OIDC Core §3.1.2.1, RP-Initiated Logout §2): signed by a published key of the
- * tenant, "iss" equal to the issuer, a valid "sub" and "sid". "exp" is not looked at, the hint may
- * describe a past session. verify() also checks "aud" for the authorization endpoint; the logout endpoint
- * calls read() and finds the client in "aud" itself.
+ * OIDC Core §3.1.2.1, RP-Initiated Logout §2
+ *
+ * "exp" is not checked: a hint may describe a past session.
  */
 final readonly class IdTokenHintVerifier
 {
@@ -44,7 +43,7 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * @throws InvalidRequestException always redirectable
+     * @throws InvalidRequestException
      */
     public function verify(Client $client, string $idTokenHint): Subject
     {
@@ -96,8 +95,6 @@ final readonly class IdTokenHintVerifier
     }
 
     /**
-     * OIDC Core §2 "aud": a string or a list of strings.
-     *
      * @return list<string>
      */
     private static function audiences(mixed $aud): array
@@ -113,9 +110,6 @@ final readonly class IdTokenHintVerifier
         return [];
     }
 
-    /**
-     * An RFC 9562 UUID, as this provider writes it (architecture §4.6).
-     */
     private static function sessionId(mixed $sid, bool $redirectable): ?Uuid
     {
         if ($sid === null) {

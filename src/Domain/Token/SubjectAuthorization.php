@@ -17,37 +17,14 @@ use Symfony\Component\Uid\Uuid;
 use function sprintf;
 
 /**
- * What a client is entitled to for a subject it did not sign in (architecture §4.5): an authorization whose
- * subject was named by what the client presented, a token this provider issued (RFC 8693 §2.1) or an
- * assertion of an issuer the tenant trusts (RFC 7523 §2.1).
- *
- * There is no session of this provider behind the request, so nothing of one is invented: what the token it
- * descends from said of a sign-in is carried unchanged and what said nothing carries nothing. There is
- * nobody to ask either, so there is no consent, no nonce and no ID token; a client that wants one signs a
- * user in.
- *
- * What it stands on is what the client presented, narrowed by the registration of the client that asks: the
- * scopes and the resources are a subset of the ones the presented token or the trusted issuer carried, never
- * a superset (RFC 8693 §2.1), and the resources are named by the request, because a token addressed to the
- * client that asked for it is a token no resource server is meant to accept.
+ * RFC 8693 §2.1, RFC 7523 §2.1
  */
 final readonly class SubjectAuthorization implements NamesItsSubjectInterface
 {
     public Tenant $tenant;
 
     /**
-     * @param GrantTypeName $grantType the grant that produced this authorization, as it names itself
-     * @param Uuid $grantId what the tokens of this response descend from: the grant of the token that was presented, so that taking that one back takes these with it
-     * @param Client $client the client that asked, which the tokens name in "client_id" (RFC 9068 §2.2)
-     * @param Subject $subject the "sub" of the tokens of this response, as whatever named it named it
-     * @param Scopes $scopes what this response carries, among the granted ones
-     * @param Scopes $grantedScopes what the presented token or the trusted issuer carried
-     * @param ResourceIndicators $resources what the access token is addressed to (RFC 8707 §2), at least one
-     * @param ResourceIndicators $grantedResources what it may be addressed to, as what was presented allows
-     * @param TokenSignIn|null $signIn the sign-in the presented token descended from, null when it descended from none
-     * @param Actor|null $actor who acts for the subject (RFC 8693 §4.1), null for an impersonation and for a grant where nobody acts
-     * @param ConfirmationInterface|null $confirmation what the access token of this response is bound to (RFC 8705 §3, RFC 9449 §6.1), null when it is a bearer token
-     * @param Subject|null $person the person the acts of this authorization are in the name of (issue #588), null when nothing read the subject back as one
+     * @param Uuid $grantId the presented token's grant, so that taking that one back takes these with it
      *
      * @throws InvalidArgumentException when the client could not have been granted this
      */

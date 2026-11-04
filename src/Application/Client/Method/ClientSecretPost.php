@@ -9,9 +9,7 @@ use Beffroi\Oidc\Application\Client\ClientAuthenticationRequest;
 use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 
 /**
- * "client_secret_post" (RFC 6749 §2.3.1): the identifier and the secret in the request body. The
- * specification only allows it for clients that cannot use the Authorization header, and the provider
- * takes it from the clients that registered it and from no other.
+ * RFC 6749 §2.3.1
  */
 final readonly class ClientSecretPost extends HashedSecretMethod
 {

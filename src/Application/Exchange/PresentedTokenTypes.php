@@ -11,12 +11,6 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\PresentedTokenTypesInterface;
 use function sprintf;
 
-/**
- * The types of token the wiring gave the exchange, in the order they are wired (RFC 8693 §3). The one source
- * of truth over them: the grant reads this list to know what a request may present, and a registration reads
- * it to know what a client may name. A type wired twice, and an exchange wired with none, are refused here,
- * where the wiring is collected.
- */
 final readonly class PresentedTokenTypes implements PresentedTokenTypesInterface
 {
     /**
@@ -28,9 +22,6 @@ final readonly class PresentedTokenTypes implements PresentedTokenTypesInterface
     }
 
     /**
-     * The type that reads what a request presented under this identifier, null for one the provider does not
-     * read, whatever the shape of that identifier: what a request wrote is looked up, never read as a name.
-     *
      * @throws InvalidArgumentException when the wiring does not hold together
      */
     public function named(string $identifier): ?PresentedTokenTypeInterface
@@ -51,7 +42,7 @@ final readonly class PresentedTokenTypes implements PresentedTokenTypesInterface
     /**
      * @throws InvalidArgumentException
      *
-     * @return non-empty-array<string, PresentedTokenTypeInterface> by the identifier each type gives itself
+     * @return non-empty-array<string, PresentedTokenTypeInterface> by identifier
      */
     private function wired(): array
     {

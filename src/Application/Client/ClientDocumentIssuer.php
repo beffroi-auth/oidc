@@ -18,27 +18,14 @@ use Beffroi\Oidc\Port\JweEncrypterInterface;
 use function sprintf;
 
 /**
- * A document the provider hands one client, in the shape that client registered (OIDC Registration §2):
- * signed with the active key of the tenant, then wrapped in a JWE addressed to a key the client
- * publishes. Written once for the three documents that travel this way, the ID token (OIDC Core
- * §3.1.3.7), the UserInfo answer (§5.3.2) and the signed authorization response (JARM §2.1): what changes
- * between them is the claims and the registration they read, never the order of the two operations.
+ * OIDC Registration §2, OIDC Core §16.14
  *
- * Signed then encrypted, and never the other way round (OIDC Core §16.14): the signature says who wrote
- * the document and it travels inside what hides it, so that a client that opens a JWE finds something to
- * verify rather than something to trust. A nested JWT says so in its "cty" (RFC 7519 §5.2).
- *
- * **Addressed, then struck.** Two steps depend on something outside the provider answering right now: the key
- * of the tenant the JWS is signed with is opened by the KMS, and the key the JWE goes to is read back from what
- * the client publishes. address() does both, and issue() strikes the document for the shape it is handed
- * without asking anything of either. A caller that spends nothing on the way does both at once; the token
- * endpoint addresses the ID token before the grant spends what the request presented, so that a KMS that does
- * not answer and a set that cannot be read cost the client nothing.
+ * address() needs the KMS and the client's keys: done before a grant is spent, a failure costs the client nothing.
  */
 final readonly class ClientDocumentIssuer
 {
     /**
-     * RFC 7519 §5.2: what the payload of a JWE is when it is itself a JWT.
+     * RFC 7519 §5.2
      */
     private const string NESTED = 'JWT';
 
@@ -51,14 +38,9 @@ final readonly class ClientDocumentIssuer
     }
 
     /**
-     * The shape, with the key of the tenant its JWS is signed with, opened, when it signs, and the key of the
-     * client a JWE under its algorithm is addressed to when it encrypts. A registration is checked when it is
-     * read, so a client whose published set holds nothing usable is a client that changed its keys since: it
-     * is said plainly, with the client and the algorithm, and no document leaves.
-     *
-     * @throws KeyNotFoundException when the tenant has no active key for the algorithm the document is signed with
-     * @throws KmsUnavailableException when the KMS does not answer to open that key, which is not open yet
-     * @throws ClientKeysUnavailableException when the set the client publishes cannot be read, or holds no key a JWE under that algorithm can be addressed to
+     * @throws KeyNotFoundException
+     * @throws KmsUnavailableException
+     * @throws ClientKeysUnavailableException when the client's set cannot be read or holds no usable key
      */
     public function address(Client $client, ResponseFormat $format): AddressedFormat
     {
@@ -82,10 +64,7 @@ final readonly class ClientDocumentIssuer
     /**
      * @param array<string, mixed> $claims
      *
-     * @throws LogicException when the shape asks for neither a signature nor an encryption, which is a
-     *                        document the caller hands over as it is and never here
-     *
-     * @return string the compact JWS, the compact JWE, or the JWS inside the JWE
+     * @throws LogicException when the shape neither signs nor encrypts
      */
     public function issue(Client $client, AddressedFormat $addressed, array $claims): string
     {

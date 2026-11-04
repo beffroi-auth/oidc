@@ -7,7 +7,7 @@ namespace Beffroi\Oidc\Exception;
 use RuntimeException;
 
 /**
- * RFC 6750 §3.1: no bearer token at all; 401 with the bare "Bearer" challenge, no error code.
+ * RFC 6750 §3.1
  */
 final class MissingBearerTokenException extends RuntimeException implements ExceptionInterface
 {

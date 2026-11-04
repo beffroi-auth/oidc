@@ -13,10 +13,6 @@ use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
 use Beffroi\Oidc\Port\IssuedInitialAccessTokensInterface;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * For tests and for the examples: nothing here survives the process, and one process has one request at
- * a time, which is what makes spending a token atomic here.
- */
 final class InMemoryInitialAccessTokenRepository implements InitialAccessTokenRepositoryInterface, IssuedInitialAccessTokensInterface
 {
     /**
@@ -58,10 +54,6 @@ final class InMemoryInitialAccessTokenRepository implements InitialAccessTokenRe
         return true;
     }
 
-    /**
-     * A token saved twice is one token: what is kept is by identifier, so writing back one that was
-     * revoked replaces the row rather than adding a second of the same name.
-     */
     public function save(InitialAccessToken $token): void
     {
         $this->tokens[$token->id->toRfc4122()] = $token;

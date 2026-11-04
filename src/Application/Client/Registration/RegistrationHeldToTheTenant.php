@@ -14,20 +14,7 @@ use Beffroi\Oidc\Port\OfferedScopesInterface;
 use function sprintf;
 
 /**
- * A client that registers itself gets nothing a declared client does not get (decision 0009). Most of
- * that rule is already where a registration meets the wiring: the grants, the authentication methods,
- * the access token shapes, the signature algorithms, the delivery modes and the kinds of "sub" a client
- * may name are the ones the provider is wired with, and the one reader of a registration refuses a name
- * outside them whoever wrote it.
- *
- * What is left is what a tenant has and the wiring has not: the scopes it hands out tokens for, which
- * are the ones it announces (`OfferedScopes`). A registration that names another is refused rather than
- * granted, and the document is what it is held to, so that a client cannot write into the document by
- * registering a scope nothing serves.
- *
- * It is read here for a registration the provider is about to write, the creation of RFC 7591 §3.1 and
- * the replacement of RFC 7592 §2.2: a declaration is read at a boot that has no tenant instance, and
- * what a tenant offers is what its deployment declares for it and what its own clients have made of it.
+ * Refuses a registration that names a scope its tenant does not offer.
  */
 final readonly class RegistrationHeldToTheTenant
 {
@@ -37,7 +24,7 @@ final readonly class RegistrationHeldToTheTenant
     }
 
     /**
-     * @throws InvalidClientMetadataException when the registration names something the tenant does not offer
+     * @throws InvalidClientMetadataException
      */
     public function assertHolds(Tenant $tenant, ClientRegistration $registration, ClientMetadata $metadata): void
     {

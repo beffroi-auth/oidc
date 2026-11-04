@@ -12,9 +12,6 @@ use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Beffroi\Oidc\Port\RefreshTokensOfAConsentInterface;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * For tests and for the examples: nothing here survives the process.
- */
 final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInterface, RefreshTokensOfAConsentInterface
 {
     /**
@@ -22,9 +19,6 @@ final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInte
      */
     private array $tokens = [];
 
-    /**
-     * For tests that must see a write happen on an object they already hold.
-     */
     public private(set) int $saves = 0;
 
     public function findByTokenHash(string $tokenHash): ?RefreshToken

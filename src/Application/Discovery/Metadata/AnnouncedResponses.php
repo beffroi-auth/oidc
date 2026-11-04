@@ -13,11 +13,7 @@ use Beffroi\Oidc\Port\MetadataContributorInterface;
 use Beffroi\Oidc\Port\ServedResponseModesInterface;
 
 /**
- * OIDC Discovery §3 and Multiple Response Type Encoding Practices §2.1: the one response type this
- * provider answers at all (ResponseTypeNames), and the modes the integration wired, under the names the ways of
- * answering give themselves. JARM §2.1 adds "jwt", which delivers nothing of its own and names the signed mode a
- * response type defaults to: it is announced because a signed mode is wired, never because it is listed
- * somewhere.
+ * OIDC Discovery §3, Multiple Response Type Encoding Practices §2.1, JARM §2.1
  */
 final readonly class AnnouncedResponses implements MetadataContributorInterface
 {

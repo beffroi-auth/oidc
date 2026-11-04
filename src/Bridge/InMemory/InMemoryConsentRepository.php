@@ -17,9 +17,6 @@ use Beffroi\Oidc\Port\CanPageActiveConsentsInterface;
 use Beffroi\Oidc\Port\ConsentRepositoryInterface;
 use function usort;
 
-/**
- * For tests and for the examples: nothing here survives the process.
- */
 final class InMemoryConsentRepository implements ConsentRepositoryInterface, ActiveConsentsInterface, CanPageActiveConsentsInterface
 {
     /**
@@ -27,14 +24,8 @@ final class InMemoryConsentRepository implements ConsentRepositoryInterface, Act
      */
     private array $consents = [];
 
-    /**
-     * For tests that must see a write happen on an object they already hold.
-     */
     public private(set) int $saves = 0;
 
-    /**
-     * The active consent granted last; on a tie, the one saved last.
-     */
     public function findActive(User $user, Client $client): ?Consent
     {
         $found = null;

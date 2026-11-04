@@ -16,9 +16,6 @@ use Beffroi\Oidc\Port\LoggedInClientsInterface;
 use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * For tests and for the examples: nothing here survives the process.
- */
 final class InMemoryAuthorizationCodeRepository implements
     AuthorizationCodeRepositoryInterface,
     CanRevokeGrantsByConsentInterface,
@@ -30,9 +27,6 @@ final class InMemoryAuthorizationCodeRepository implements
      */
     private array $codes = [];
 
-    /**
-     * For tests that must see a write happen on an object they already hold.
-     */
     public private(set) int $saves = 0;
 
     public function findByCodeHash(string $codeHash): ?AuthorizationCode

@@ -10,23 +10,14 @@ use function sprintf;
 use Stringable;
 
 /**
- * A token type identifier (RFC 8693 §3): the URI that says what kind of token a request presents and what
- * kind it asks for. It is a URI and never a bare word, because the registry of §3 names every type by one
- * and an extension names its own that way (RFC 6755).
- *
- * The one this provider reads and writes is the access token; a type it serves is a class wired into the
- * provider (PresentedTokenTypeInterface) and this is only the name such a class gives itself.
+ * RFC 8693 §3
  */
 final readonly class TokenTypeIdentifier implements Stringable
 {
-    /**
-     * RFC 8693 §3: the access tokens of RFC 6749, which is what this provider issues and what it reads
-     * back as a subject or as an actor token.
-     */
     public const string ACCESS_TOKEN = 'urn:ietf:params:oauth:token-type:access_token';
 
     /**
-     * RFC 3986 §3: a scheme and something after it, no fragment, nothing relative.
+     * RFC 3986 §3, no fragment
      */
     private const string PATTERN = '/^[A-Za-z][A-Za-z0-9+.-]*:[^\s#]+$/D';
 

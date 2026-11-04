@@ -18,21 +18,13 @@ use function implode;
 use function sprintf;
 
 /**
- * The shapes the wiring gave the provider, in the order they are wired. The one source of truth over
- * them (issue #98): a registration reads this list to know what a client may name, the retirement of a
- * signing key reads it to know what is still being written, and the token endpoint mints through it.
- *
- * It demands no shape in particular, so a deployment that wires one boots, and it refuses two issuers
- * that write the same shape, which is a wiring where the token a client receives depends on an order
- * nobody wrote down.
- *
- * The list is read when a question is asked of it and never at construction, because a client
- * registration asks it what a client may name while the clients are themselves being built.
+ * The issuers are read on first use, never at construction: a client registration reads them while the clients
+ * are being built.
  */
 final readonly class ServedAccessTokenShapes implements AccessTokenIssuerInterface, ServedAccessTokenShapesInterface
 {
     /**
-     * @param iterable<AccessTokenShapeIssuerInterface> $issuers at least one, each naming the shape it writes
+     * @param iterable<AccessTokenShapeIssuerInterface> $issuers at least one
      */
     public function __construct(
         private iterable $issuers,
@@ -69,9 +61,6 @@ final readonly class ServedAccessTokenShapes implements AccessTokenIssuerInterfa
     }
 
     /**
-     * Architecture §4.6: the shape the client registered says who writes the token, and that issuer
-     * alone addresses it and mints it.
-     *
      * @throws InvalidArgumentException when the wiring does not hold together
      */
     private function issuerOf(Client $client): AccessTokenShapeIssuerInterface
@@ -89,7 +78,7 @@ final readonly class ServedAccessTokenShapes implements AccessTokenIssuerInterfa
     /**
      * @throws InvalidArgumentException
      *
-     * @return non-empty-array<non-empty-string, AccessTokenShapeIssuerInterface> by the name each issuer gives its shape
+     * @return non-empty-array<non-empty-string, AccessTokenShapeIssuerInterface> by shape name
      */
     private function wired(): array
     {

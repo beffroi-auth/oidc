@@ -16,16 +16,10 @@ use Beffroi\Oidc\Port\ClientSourceInterface;
 use WeakMap;
 
 /**
- * The clients declared in the configuration (architecture §4.1, §5.1): validated at boot, the secret hashed
- * on the first lookup. The clients are built per tenant instance, so that a client always points at the
- * tenant of the request that asked for it.
+ * Clients are built per tenant instance, so that a client always points at the tenant of the request that asked.
  */
 final class ConfigurationClientRepository implements ClientInventoryInterface, ClientSourceInterface
 {
-    /**
-     * What this source calls itself where a person is shown where a client came from: these are the
-     * clients of `beffroi.yaml`, and one goes away when its block does.
-     */
     public const string SOURCE = 'configuration';
 
     /**
@@ -58,10 +52,6 @@ final class ConfigurationClientRepository implements ClientInventoryInterface, C
         $this->clients = new WeakMap();
     }
 
-    /**
-     * The clients declared here are those of one tenant, named by its slug: anything asked about another
-     * tenant is asked of the repository that holds its clients, and answered here as if there were none.
-     */
     private function serves(Tenant $tenant): bool
     {
         return $tenant->slug === $this->tenantSlug;
@@ -85,10 +75,6 @@ final class ConfigurationClientRepository implements ClientInventoryInterface, C
         return $clients[$clientId];
     }
 
-    /**
-     * What this source holds for that tenant: the registrations it read at boot, in the order they were
-     * declared. What the set of them means is read once, where every source is read (`RegisteredClients`).
-     */
     public function registrationsIn(Tenant $tenant): iterable
     {
         if (! $this->serves($tenant)) {
@@ -99,10 +85,6 @@ final class ConfigurationClientRepository implements ClientInventoryInterface, C
         }
     }
 
-    /**
-     * A declaration was not registered on a day and has nobody's history behind it, so it carries neither
-     * date: what it is, is what the configuration says today.
-     */
     public function inventoryIn(Tenant $tenant): iterable
     {
         if (! $this->serves($tenant)) {

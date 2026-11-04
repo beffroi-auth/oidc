@@ -7,8 +7,7 @@ namespace Beffroi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 7591 §3.2.2 "invalid_client_metadata": the value of one of the members of the registration is invalid,
- * or two of them contradict each other. Every member but the redirection URIs answers with this.
+ * RFC 7591 §3.2.2
  */
 final class InvalidClientMetadataException extends UnreadableClientMetadataException
 {

@@ -8,16 +8,12 @@ use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
 use Beffroi\Oidc\Exception\InvalidJwtException;
 
 /**
- * Reads a compact JWT a client sent, and verifies nothing (RFC 7519 §7.2): the header names the
- * algorithm and the key, the claims name the sender. A provider has to read that much before it can know
- * which client and which key would verify it. It reads the assertion that authenticates a client (RFC
- * 7523 §2.2) and the request object that carries its request (RFC 9101 §4) the same way; nothing read
- * here is trusted until a verifier has spoken.
+ * RFC 7519 §7.2
  */
 interface CompactJwtReaderInterface
 {
     /**
-     * @throws InvalidJwtException when the string is not a compact JWS carrying a JSON object
+     * @throws InvalidJwtException
      */
     public function read(string $jwt): UnverifiedJwt;
 }

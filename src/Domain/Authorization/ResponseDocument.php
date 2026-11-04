@@ -9,11 +9,7 @@ use Beffroi\Core\Domain\Tenant\Issuer;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * The claims of a signed authorization response (JARM §2.1): the parameters the answer would have
- * carried, each one a claim of its own, plus the three the module adds, "iss", "aud" naming the client
- * the document is for and "exp" bounding how long it is worth anything. A refusal is the same document
- * with "error" among its parameters (§2.4): a client that asked for a signed answer never reads an
- * unsigned one.
+ * JARM §2.1, §2.4
  */
 final readonly class ResponseDocument
 {
@@ -23,7 +19,7 @@ final readonly class ResponseDocument
     public array $parameters;
 
     /**
-     * @param array<string, string> $parameters the response as the protocol names it, "state" and "iss" included
+     * @param array<string, string> $parameters "state" and "iss" included
      */
     public function __construct(
         public Issuer $issuer,
@@ -38,9 +34,10 @@ final readonly class ResponseDocument
     }
 
     /**
-     * The parameters first, each under its own name, then the three claims of §2.1; "iss" is already
-     * among the parameters (RFC 9207 §2) and is written here from the tenant all the same, so that the
-     * document names its issuer whatever the answer carried.
+     * JARM §2.1
+     *
+     * "iss" is written from the tenant even though the parameters carry it, so that the document names its issuer
+     * whatever the answer carried.
      *
      * @return non-empty-array<string, mixed>
      */

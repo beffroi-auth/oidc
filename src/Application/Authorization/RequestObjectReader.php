@@ -23,28 +23,12 @@ use function substr_count;
 use Throwable;
 
 /**
- * What an endpoint has in hand once the request object has arrived (RFC 9101 §6.1, OIDC Core §6.1): the
- * object itself when the client sent it in clear, and the object inside the JWE when the client
- * encrypted it to a key the tenant publishes. The two endpoints that read an object, the authorization
- * endpoint and the pushed request endpoint, read it through here and read the same thing.
+ * RFC 9101 §6.1, OIDC Core §6.1
  *
- * A JWE is opened with the encryption keys of the tenant alone, which already refuse an "alg" or an
- * "enc" the provider is not wired with, an object that names no key, a key that signs and a key that has
- * retired. Nothing of what it carries is trusted for having been opened: the payload is a request object
- * like any other, read here and verified afterwards, the encryption saying who may read the request and
- * never who wrote it (OIDC Core §16.14).
- *
- * What a JWE carries is a JWS the client signed, which RFC 7519 §5.2 announces in its "cty", or the
- * claims themselves for the one client that registered "request_object_signing_alg": "none". The payload
- * says which of the two it is as plainly as the header does: a claims set is a JSON object, a nested
- * token is a compact serialization. An object read from claims is an unsigned object, and it is accepted
- * from that client and from no other, exactly as an unsigned object that arrived in clear.
+ * A JWE proves nothing about its sender: claims found inside are read as an unsigned object.
  */
 final readonly class RequestObjectReader
 {
-    /**
-     * RFC 7516 §7.1: the five parts of a compact JWE, where the compact JWS of RFC 7515 §7.1 has three.
-     */
     private const int JWE_SEPARATORS = 4;
 
     public function __construct(
@@ -54,13 +38,8 @@ final readonly class RequestObjectReader
     }
 
     /**
-     * @param string $received the object as the endpoint received it, by value or read back from the
-     *                         URL the client published it at
-     *
-     * @throws InvalidRequestObjectException when the string is neither a JWT this provider reads nor a
-     *                                       JWE it opens
-     * @throws KmsUnavailableException when the KMS does not answer to open the key the object names,
-     *                                 which is an outage and not a refusal
+     * @throws InvalidRequestObjectException
+     * @throws KmsUnavailableException
      */
     public function read(Tenant $tenant, string $received): RequestObject
     {
@@ -70,8 +49,7 @@ final readonly class RequestObjectReader
         try {
             $payload = $this->decrypter->decrypt($tenant, $received);
         } catch (InvalidJweException $exception) {
-            // What did not open is not written back: an error description names the rule and never the
-            // key, the algorithm or anything else the sender chose (RFC 6749 §5.2)
+            // The cause is not written back: a description never echoes what the sender chose (RFC 6749 §5.2).
             throw new InvalidRequestObjectException(
                 'The request object does not open with a key this provider publishes for encryption (RFC 9101 section 6.1).',
                 $exception,

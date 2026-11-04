@@ -7,21 +7,15 @@ namespace Beffroi\Oidc\Exception;
 use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 
 /**
- * RFC 9449 §8 "use_dpop_nonce": the provider asks the client to make its proof again, with the nonce
- * handed back beside this refusal. The nonce is the whole of what the client has to keep, and only
- * until its next request; whoever replays a proof made before it was issued is refused by it.
+ * RFC 9449 §8
  */
 final class UseDpopNonceException extends OAuth2Exception implements ChallengeInterface
 {
     /**
-     * RFC 9449 §8: the header the fresh nonce is handed back in, at an endpoint that issues tokens as
-     * at a resource that honours one.
+     * RFC 9449 §8
      */
     public const string HEADER = 'DPoP-Nonce';
 
-    /**
-     * @param string $nonce the fresh nonce, answered in the DPoP-Nonce header of RFC 9449 §8
-     */
     public function __construct(
         public readonly string $nonce,
         string $description,

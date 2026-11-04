@@ -10,17 +10,12 @@ use Beffroi\Core\Domain\Listing\Pagination;
 use Beffroi\Core\Domain\Listing\Period;
 use Beffroi\Oidc\Domain\Consent\Consent;
 
-/**
- * A companion of ActiveConsentsInterface: one page of what a person has agreed to, for the table of their
- * account where they read it and take one back (architecture §5.2).
- */
 interface CanPageActiveConsentsInterface
 {
     /**
-     * @param Period|null $period the stretch of time they were granted over, all of them when null
+     * @param Period|null $period when they were granted, all of them when null
      *
-     * @return Listing<Consent> the ones in force, most recently granted first; one given to a client no
-     *                          longer registered is not listed, as it is not in the whole list either
+     * @return Listing<Consent> most recently granted first
      */
     public function pageOfActiveConsents(User $user, Pagination $pagination, ?Period $period = null): Listing;
 }

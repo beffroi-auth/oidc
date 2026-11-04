@@ -8,8 +8,7 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * RFC 9207 §3: every authorization response carries "iss", which decision 0006 makes a rule and not an
- * option, so this is announced and never negotiated.
+ * RFC 9207 §3
  */
 final readonly class AnnouncedIssuerParameter implements MetadataContributorInterface
 {

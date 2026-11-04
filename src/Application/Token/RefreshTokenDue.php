@@ -11,20 +11,12 @@ use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * Whether a response carries a refresh token beside its access token (RFC 6749 §4.1.4, OIDC Core §11). Every
- * grant that may issue one asks the same three questions of the authorization it spends, so they are asked
- * here once rather than in each of them: a refresh token this client could not spend is one no response
- * carries, "offline_access" asks for one, and a confidential client gets one without asking unless the
- * deployment says otherwise.
- *
- * What spends a refresh token is what the provider is wired with and what the client registered for, and
- * neither the grant that issues one nor the client names it.
+ * RFC 6749 §4.1.4, OIDC Core §11
  */
 final readonly class RefreshTokenDue
 {
     /**
-     * @param ServedGrantsInterface $servedGrants what the provider serves, read for the grants that spend a refresh token
-     * @param bool $withoutOfflineAccess whether a confidential client gets one without asking for "offline_access"
+     * @param bool $withoutOfflineAccess whether a confidential client gets a refresh token without "offline_access"
      */
     public function __construct(
         private ServedGrantsInterface $servedGrants,

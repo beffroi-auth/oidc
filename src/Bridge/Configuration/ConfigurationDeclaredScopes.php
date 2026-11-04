@@ -11,13 +11,6 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\DeclaredScopesInterface;
 use function sprintf;
 
-/**
- * The scopes a deployment declares for the tenant it declares (architecture §5.1, issue #920), read once, when this
- * service is built: a value that is no scope token, or a scope that being declared does not make offered, refuses that
- * construction, whether the deployment wrote the list or the environment carried it. They belong to the tenant this
- * deployment declares, which is why the list is told its slug: asked about another tenant, this answers as a tenant
- * that declares none.
- */
 final readonly class ConfigurationDeclaredScopes implements DeclaredScopesInterface
 {
     /**
@@ -26,9 +19,9 @@ final readonly class ConfigurationDeclaredScopes implements DeclaredScopesInterf
     private array $scopes;
 
     /**
-     * @param list<string> $scopes the scope tokens the deployment declares (RFC 6749 §3.3), a token repeated counting once; none for a deployment that declares none
+     * @param list<string> $scopes
      *
-     * @throws InvalidArgumentException when one is no scope token, or is "offline_access", which the wired grants decide (OIDC Core §11)
+     * @throws InvalidArgumentException when one is no scope token, or is "offline_access"
      */
     public function __construct(
         private string $tenantSlug,

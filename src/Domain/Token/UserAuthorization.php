@@ -20,15 +20,6 @@ use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * What a verified grant of a browser flow entitles the client to (architecture §4.5): an authorization
- * that descends from a session, and therefore names a user and says what that session had proven when it
- * was granted. "scopes" is what this response carries, "grantedScopes" what the user granted
- * (RFC 6749 §6); "resources" and "grantedResources" say the same of the resources the access token is
- * addressed to (RFC 8707 §2.2), and "authorizationDetails" and "grantedAuthorizationDetails" of what the
- * user agreed to beyond the scopes (RFC 9396 §7), a token request being free to narrow any of them and to
- * widen none.
- */
 final readonly class UserAuthorization implements UserAuthorizationInterface
 {
     public Tenant $tenant;
@@ -47,16 +38,6 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
 
     public ?AuthorizationDetails $grantedAuthorizationDetails;
 
-    /**
-     * @param GrantTypeName $grantType the grant that produced this authorization, as it names itself
-     * @param string|null $nonce only when the grant has one to carry (OIDC Core §3.1.3.7 step 11, §12.2)
-     * @param AuthenticationSnapshot $authentication what the session had proven at the grant, written in every token
-     * @param ConfirmationInterface|null $confirmation what the tokens of this response are bound to (RFC 8705 §3, RFC 9449 §6.1), null when they are bearer tokens
-     * @param ResourceIndicators|null $resources the resources this response is for ("resource", RFC 8707 §2), null when the request named none
-     * @param ResourceIndicators|null $grantedResources the resources the grant carries, null when it carries none
-     * @param AuthorizationDetails|null $authorizationDetails what this response carries beyond its scopes ("authorization_details", RFC 9396 §2), null when the request asked for none
-     * @param AuthorizationDetails|null $grantedAuthorizationDetails what the user agreed to beyond the scopes, null when they agreed to none
-     */
     public function __construct(
         public GrantTypeName $grantType,
         public Uuid $grantId,
@@ -95,18 +76,11 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
         $this->grantedAuthorizationDetails = $grantedAuthorizationDetails;
     }
 
-    /**
-     * Who the access token of this response is addressed to (RFC 8707 §2), written by both shapes of
-     * access token and rendered by the introspection of the opaque one.
-     */
     public function audience(): TokenAudience
     {
         return TokenAudience::of($this->client, $this->resources);
     }
 
-    /**
-     * The user of the session it descends from, by the subject their account carries (issue #588).
-     */
     public function person(): Subject
     {
         return $this->user->subject;
@@ -118,8 +92,7 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
     }
 
     /**
-     * RFC 6749 §4.1.3, OIDC Core §3.1.3. The grant that exchanges the code names itself, here as in the
-     * discovery document.
+     * RFC 6749 §4.1.3, OIDC Core §3.1.3
      */
     public static function fromAuthorizationCode(
         GrantTypeName $grantType,
@@ -147,12 +120,9 @@ final readonly class UserAuthorization implements UserAuthorizationInterface
     }
 
     /**
-     * RFC 6749 §6. A refresh has no nonce to carry, so the ID token it reissues carries none (OIDC Core
-     * §12.2): the rule belongs here, to the grant that has none, and not to a comparison made elsewhere
-     * on the name of the grant. The tokens of a refresh are bound to what the client proved at that
-     * request (RFC 8705 §3), not to what it proved at the grant: a client that renews its certificate
-     * gets tokens bound to the new one, and a client that stops presenting one gets bearer tokens and
-     * nothing of what the bound ones could reach.
+     * RFC 6749 §6, OIDC Core §12.2
+     *
+     * The tokens are bound to what the client proved at this request, not at the grant (RFC 8705 §3).
      */
     public static function fromRefreshToken(
         GrantTypeName $grantType,

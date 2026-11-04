@@ -34,34 +34,16 @@ use Beffroi\Oidc\Port\ServedGrantsInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * The device authorization endpoint (RFC 8628 §3.1, §3.2): the front door of the flow for what has no
- * browser and no keyboard. The client first, authenticated exactly as at the token endpoint, then what it
- * asks for, then two codes, one it polls with and one its user types somewhere else.
- *
- * It is the endpoint of PushedAuthorizationHandler with a code beside the handle: an authenticated client,
- * a record with a lifetime, a reference answered back. Errors are the ones of RFC 6749 §5.2, in JSON, never
- * a redirect and never a page, this client having no browser to send anywhere.
- *
- * A client whose grants take no user on another device is refused here rather than served a code nothing
- * would ever spend; which grants those are is read where the token endpoint reads them, from the wiring.
- * The scopes are asked for and never assumed, as they are of a client acting for itself: what the user is
- * shown on the approval page is what the request named, and a request that named nothing would be a page
- * asking somebody to agree to everything the client ever registered.
+ * RFC 8628 §3.1, §3.2
  */
 final readonly class DeviceAuthorizationHandler
 {
-    /**
-     * How many times a code is drawn again when the draw collided with one still alive. A collision is a
-     * one in twenty-five billion draw; what is refused rather than retried for ever is a store that hands
-     * back the same code every time, which is a defect and not a collision.
-     */
     private const int DRAWS = 8;
 
     /**
-     * @param DateInterval $lifetime how long both codes live (RFC 8628 §3.2)
-     * @param positive-int $interval the seconds a client is asked to wait between two polls (§3.5), held to the bound of a record when the handler is built rather than at the first request
+     * @param positive-int $interval seconds between two polls
      *
-     * @throws InvalidArgumentException when the interval is one no request may be made with (DeviceAuthorizationRecord::assertInterval())
+     * @throws InvalidArgumentException when the interval is out of the bounds of a record
      */
     public function __construct(
         private ClientAuthenticator $clients,
@@ -79,11 +61,10 @@ final readonly class DeviceAuthorizationHandler
     }
 
     /**
-     * @param array<string, mixed> $parameters the form parameters of the request body
-     * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake (RFC 8705 §2)
+     * @param array<string, mixed> $parameters
      *
      * @throws OAuth2Exception
-     * @throws RuntimeException when no code could be drawn that the store does not already hold
+     * @throws RuntimeException when no free code could be drawn
      */
     public function handle(
         Tenant $tenant,
@@ -103,8 +84,6 @@ final readonly class DeviceAuthorizationHandler
             throw new UnauthorizedClientException('The client is not registered for a grant that asks its user on another device (RFC 8628 section 3.1).');
         }
 
-        // what the request asks for is read before anything is drawn for it: a request this endpoint
-        // refuses spends none of the codes this provider hands out
         $request = RequestParameters::of($parameters);
         $scopes = self::scopes($request->required('scope'), $registration);
         $resources = self::resources($request, $registration);
@@ -136,13 +115,9 @@ final readonly class DeviceAuthorizationHandler
     }
 
     /**
-     * RFC 6749 §3.3: the scopes the request asks for, among the ones the client registered. The parameter
-     * is optional in RFC 8628 §3.1 and required here, as it is of a client acting for itself: a request
-     * that named nothing would be answered with everything the client is registered for, and shown to
-     * somebody as what they are agreeing to.
+     * Required though optional in RFC 8628 §3.1: none would ask the user to agree to all the client registered.
      *
-     * @throws InvalidScopeException when it is not a list of scope tokens, or names a scope the client is
-     *                              not registered for
+     * @throws InvalidScopeException
      */
     private static function scopes(string $scope, ClientRegistration $registration): Scopes
     {
@@ -159,11 +134,9 @@ final readonly class DeviceAuthorizationHandler
     }
 
     /**
-     * RFC 8707 §2: the resources the request names, among the ones the client registered. A request that
-     * names none is served all the same, there being a user behind this grant and therefore a client the
-     * token can be addressed to (TokenAudience).
+     * RFC 8707 §2
      *
-     * @throws OAuth2Exception when a value is not an absolute URI, or names a resource the client did not register
+     * @throws OAuth2Exception
      */
     private static function resources(RequestParameters $request, ClientRegistration $registration): ?ResourceIndicators
     {
@@ -173,8 +146,7 @@ final readonly class DeviceAuthorizationHandler
     }
 
     /**
-     * A code no record still alive holds: the page the user types on looks a code up by itself, so two
-     * live records carrying the same one would be two requests one answer could approve.
+     * Unique among live records, or one answer on the page could approve two requests.
      *
      * @throws RuntimeException
      */

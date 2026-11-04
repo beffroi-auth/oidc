@@ -21,14 +21,10 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\LogicException;
 
 /**
- * An authorization request parked while the user logs in and consents (architecture §4.3). The identifier
- * is 256 random bits and the application binds it to the browser session; an interaction is completed once.
+ * An authorization request parked while the user logs in and consents.
  */
 final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
-    /**
-     * What a store keeps; the object is what the client repository resolved for it.
-     */
     public readonly string $clientId;
 
     public private(set) ?AuthenticationSession $session = null;
@@ -37,13 +33,6 @@ final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsI
 
     public private(set) ?DateTimeImmutable $completedAt = null;
 
-    /**
-     * @param string|null $locale the language of the pages of this interaction (architecture §5.7)
-     * @param string|null $requestUriHash the pushed authorization request this one was started from
-     *                                    (RFC 9126 §4), null when the request was not pushed; the
-     *                                    reference is spent when this interaction grants, so that a
-     *                                    request nobody has answered yet can be visited again
-     */
     public function __construct(
         public readonly string $id,
         public readonly Tenant $tenant,
@@ -69,11 +58,6 @@ final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsI
     }
 
     /**
-     * The language a visitor asked the pages of this journey to be read in, which outranks what the
-     * client hinted: "ui_locales" is what a client guesses of the preference of whoever it sends over
-     * (OIDC Core §3.1.2.1), and a visitor who asks is that person saying it. The caller has read the tag
-     * against the languages the deployment serves; an interaction that recorded none records this one.
-     *
      * @throws InvalidArgumentException if the locale is empty
      */
     public function readIn(string $locale): void
@@ -137,9 +121,7 @@ final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsI
     }
 
     /**
-     * Whether the latest proof of the session was given during this interaction, at or after the instant it began
-     * (OIDC Core §3.1.2.1): the login it asked for, which answers prompt=login, a max_age and a step-up whatever it
-     * proved, and after which the login page is not asked for again.
+     * Whether the latest proof of the session was given at or after the instant this interaction began.
      */
     public function sawTheLoginOf(AuthenticationSession $session): bool
     {
@@ -160,18 +142,12 @@ final class Interaction implements ResolvesItsClientInterface, ClassifiedFieldsI
         }
     }
 
-    /**
-     * The client of an interaction is the client of the request it parked, and the property that carries
-     * it lives there rather than on the interaction itself.
-     */
     public function clientHolder(): object
     {
         return $this->request;
     }
 
     /**
-     * What the interaction itself holds; the fields of the authorization request it carries are that object's own.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

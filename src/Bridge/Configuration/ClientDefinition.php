@@ -21,20 +21,10 @@ use function preg_match;
 use SensitiveParameter;
 use function sprintf;
 
-/**
- * One client as the configuration declares it (architecture §5.1). What it adds to the registration the
- * reader builds is the one thing RFC 7591 §2 has no member for and only a deployment writes: the secret it
- * chose for that client, kept in clear until the client is built and hashed once, when it is.
- *
- * Everything else is the metadata of a registration and is read where all of it is read
- * (`ClientMetadataReader`), behind the defaults a deployment means when it writes nothing
- * (`DeploymentDefaults`). A declaration that does not hold together stops the boot, which is the one thing
- * this caller does with a refusal the reader knows nothing about.
- */
 final readonly class ClientDefinition
 {
     /**
-     * RFC 6749 appendix A.2, at least 32 characters (RFC 6819 §5.1.4.2.2).
+     * RFC 6749 appendix A.2, RFC 6819 §5.1.4.2.2
      */
     private const string SECRET_PATTERN = '/^[\x21-\x7E]{32,}$/D';
 
@@ -46,9 +36,9 @@ final readonly class ClientDefinition
     }
 
     /**
-     * @param array<string, mixed> $definition the members of RFC 7591 §2 the deployment declared, and the secret it chose
+     * @param array<string, mixed> $definition the RFC 7591 §2 members and the secret the deployment chose
      *
-     * @throws InvalidArgumentException when the declaration does not hold together, which stops the boot
+     * @throws InvalidArgumentException
      */
     public static function fromArray(string $clientId, array $definition, ClientMetadataReader $reader): self
     {
@@ -78,8 +68,7 @@ final readonly class ClientDefinition
     }
 
     /**
-     * The registered secret in the shape the method it registered verifies against. As costly as hashing
-     * a password when the method keeps a hash: once per process.
+     * As costly as hashing a password when the method keeps a hash: once per process.
      *
      * @throws LogicException for a client whose method proves no secret
      */

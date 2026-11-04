@@ -11,22 +11,10 @@ use Beffroi\Oidc\Domain\Authorization\ResponseDocument;
 use Psr\Clock\ClockInterface;
 
 /**
- * Mints the signed authorization response of one answer (JARM §2.1, architecture §4.3), signed by the
- * active key of the tenant in the algorithm the client registered in "authorization_signed_response_alg",
- * or in the one the provider signs with when it registered none, as an ID token is (OIDC Registration
- * §2). A refusal goes through here exactly as a code does (§2.4).
- *
- * A client that registered an encryption receives the document inside a JWE addressed to one of its keys
- * (JARM §3), the same two steps as for an ID token and written in the same place.
- *
- * No "typ" header: JARM fixes none, and a client that reads the document knows what it asked for.
+ * JARM §2.1
  */
 final readonly class ResponseDocumentIssuer
 {
-    /**
-     * @param DateInterval $lifetime how long the document stays verifiable; short, a response being read
-     *                               by the client as soon as the browser hands it over
-     */
     public function __construct(
         private ClientDocumentIssuer $documents,
         private ClockInterface $clock,
@@ -34,9 +22,6 @@ final readonly class ResponseDocumentIssuer
     ) {
     }
 
-    /**
-     * @return string the compact JWS, or the compact JWE carrying it for a client that registered one
-     */
     public function issue(AuthorizationAnswer $answer): string
     {
         $client = $answer->client;

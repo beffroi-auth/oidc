@@ -10,12 +10,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**
- * The metadata of a tenant (OIDC Discovery §3, RFC 8414 §2): one document, two well-known locations.
- *
- * It says what the provider does and nothing it does not (decision 0006), and it is not assembled here:
- * each specification the provider implements contributes its own members (MetadataContributorInterface),
- * so a capability that arrives is a class beside the others rather than an edit of this one. What the
- * document holds is therefore exactly what the wiring contributes, in the order it is wired.
+ * OIDC Discovery §3, RFC 8414 §2
  */
 final readonly class ProviderMetadata
 {
@@ -31,10 +26,9 @@ final readonly class ProviderMetadata
     public array $headers;
 
     /**
-     * @param array<string, mixed> $members what the contributors put in the document, in order
-     * @param int $maxAge how long a client may keep the document, in seconds
+     * @param array<string, mixed> $members
      *
-     * @throws InvalidArgumentException when the lifetime is not a number of seconds
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public Issuer $issuer,
@@ -48,11 +42,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * How long a client may keep the document. The handler that holds the number refuses it at boot and
-     * the document refuses it again when one is built by hand, which is one rule and is therefore
-     * written here alone.
-     *
-     * @throws InvalidArgumentException when the lifetime is not a number of seconds
+     * @throws InvalidArgumentException
      */
     public static function assertCacheLifetime(int $maxAge): void
     {
@@ -62,7 +52,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * OIDC Discovery §4.1: appended to the issuer, path included.
+     * OIDC Discovery §4.1
      */
     public function openIdConfigurationUrl(): string
     {
@@ -70,7 +60,7 @@ final readonly class ProviderMetadata
     }
 
     /**
-     * RFC 8414 §3: inserted between the host and the path of the issuer.
+     * RFC 8414 §3
      */
     public function authorizationServerMetadataUrl(): string
     {

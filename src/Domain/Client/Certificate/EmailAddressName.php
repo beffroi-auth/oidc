@@ -9,16 +9,12 @@ use function hash_equals;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * "tls_client_auth_san_email" (RFC 8705 §2.1.2): the expected rfc822Name entry of the subject alternative
- * name extension, compared as the text it is. The local part of an address is case-sensitive (RFC 5321
- * §2.4), and a provider has no way of knowing what the domain of a client does with case, so nothing is
- * folded.
+ * RFC 8705 §2.1.2
+ *
+ * Nothing is folded: the local part of an address is case-sensitive (RFC 5321 §2.4).
  */
 final readonly class EmailAddressName implements CertificateIdentityInterface
 {
-    /**
-     * The registration metadata this kind is registered under (RFC 8705 §2.1.2).
-     */
     public const string NAME = 'tls_client_auth_san_email';
 
     public function __construct(

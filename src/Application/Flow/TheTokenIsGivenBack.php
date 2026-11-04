@@ -9,9 +9,7 @@ use Beffroi\Oidc\Domain\Flow\Hop;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * How a flow of this provider ends (RFC 7009 §2): the client gives the token back, and is answered the
- * same way whether the token was live, already dead or never existed. Every flow ends in a token, so
- * every one of them can end here.
+ * RFC 7009 §2
  */
 final readonly class TheTokenIsGivenBack implements FlowShapeInterface
 {

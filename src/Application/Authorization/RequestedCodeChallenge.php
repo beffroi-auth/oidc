@@ -14,11 +14,7 @@ use function implode;
 use function sprintf;
 
 /**
- * What the "code_challenge" and "code_challenge_method" parameters of an authorization request must be
- * (RFC 7636 §4.3, §4.4.1): a challenge made with a method the provider is wired with and nothing else,
- * which is what the token endpoint will verify the code verifier against. The methods are asked of the
- * wiring and never of a name written here, so that what a request may name is what the discovery document
- * announces; decision 0006 wires "S256" alone.
+ * RFC 7636 §4.3, §4.4.1
  */
 final readonly class RequestedCodeChallenge
 {
@@ -28,12 +24,9 @@ final readonly class RequestedCodeChallenge
     }
 
     /**
-     * A client exempted by decision 0008 may send no challenge; one it sends is checked like any other
-     * (RFC 9700 §2.1.1). A request that names no method names none: RFC 7636 §4.3 reads the absence as
-     * "plain", so it is refused as "plain" is, and never read as the first method wired.
+     * An absent method is "plain" for RFC 7636 §4.3: it is refused, never read as the first method wired.
      *
-     * @throws InvalidRequestException when a challenge is missing, of a method nothing wired answers to,
-     *                                 or malformed
+     * @throws InvalidRequestException
      */
     public function of(Client $client, ?string $challenge, ?string $method): ?CodeChallenge
     {

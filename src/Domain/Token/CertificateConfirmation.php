@@ -9,17 +9,14 @@ use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * A token bound to the certificate the client presented at the TLS handshake (RFC 8705 §3.1), named by
- * the SHA-256 thumbprint of its DER encoding. The token stays a bearer token on the wire: what the
- * transport proves, the transport proves again at every request, and the client changes nothing to the
- * way it presents its token.
+ * RFC 8705 §3.1
  */
 final readonly class CertificateConfirmation implements ConfirmationInterface
 {
     public const string MEMBER = 'x5t#S256';
 
     /**
-     * @param string $thumbprint the "x5t#S256" of RFC 8705 §3.1, base64url without padding
+     * @param string $thumbprint the "x5t#S256", base64url without padding
      */
     public function __construct(
         public string $thumbprint,

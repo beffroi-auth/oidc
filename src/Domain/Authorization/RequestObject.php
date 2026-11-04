@@ -17,31 +17,20 @@ use function is_string;
 use function sprintf;
 
 /**
- * An authorization request a client carried in a JWT (RFC 9101 §4, OIDC Core §6), read but not yet
- * verified. The claims of the JWT are the parameters of the request, save the ones RFC 7519 §4.1 reserves
- * for what a token says about itself; those are the validator's and never a parameter.
+ * RFC 9101 §4, OIDC Core §6
  *
- * OIDC Core §6.1 lets a parameter be any JSON value, "max_age" as a number and "claims" as an object
- * being the two the field sends; each is written back as the query would have carried it. A list of
- * strings is a parameter given several values, which is how RFC 8707 §2.1 says "resource" travels in an
- * object, and it reaches the parser as the repeated parameter it is. A boolean, a fraction or a null is
- * no parameter of an authorization request and is refused rather than cast (decision 0006). The refusal
- * names the rule and never the claim: its name is a string the client chose, where an error description
- * is the ASCII RFC 6749 §5.2 bounds.
- *
- * RFC 9101 §4 lets an object carry any extension parameter, and RFC 6749 §3.1 has the authorization
- * server ignore one it does not recognise. A claim named by a number is one, whatever it holds: no
- * parameter this provider reads is named so, and decoding the JSON made that name an integer.
+ * Read, not verified. A refusal never names the claim, a string the client chose: RFC 6749 §5.2 restricts the
+ * characters of an error description.
  */
 final readonly class RequestObject
 {
     /**
-     * RFC 7519 §4.1: what the JWT says about itself.
+     * RFC 7519 §4.1
      */
     private const array REGISTERED_CLAIMS = ['iss', 'aud', 'exp', 'nbf', 'iat', 'jti'];
 
     /**
-     * RFC 9101 §4: an object carries the request, never another object.
+     * RFC 9101 §4
      */
     private const array NESTED_PARAMETERS = ['request', 'request_uri'];
 
@@ -51,9 +40,7 @@ final readonly class RequestObject
     }
 
     /**
-     * Whether the object carries a signature at all (RFC 7515 §4.1.1, RFC 7518 §3.6). An object with
-     * "alg": "none" is read from the one client that registered it (decision 0006) and proves nothing:
-     * whoever wrote it wrote its claims too.
+     * RFC 7515 §4.1.1, RFC 7518 §3.6
      */
     public function isSigned(): bool
     {
@@ -61,8 +48,6 @@ final readonly class RequestObject
     }
 
     /**
-     * The parameters of the authorization request, as the endpoint that reads a query reads them.
-     *
      * @throws InvalidRequestObjectException
      *
      * @return array<string, string|list<string>>

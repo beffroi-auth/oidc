@@ -10,12 +10,6 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use function sprintf;
 
-/**
- * The client authentication methods the wiring gave the provider, in the order they are wired. The one
- * source of truth over them (issue #98): the authenticator reads this list to know what a request may
- * present, a registration reads it to know what a client may name, and the discovery document reads it
- * to know what to announce. The first wired one is what a client that names none registers.
- */
 final readonly class ClientAuthenticationMethods implements ClientAuthenticationMethodsInterface
 {
     /**

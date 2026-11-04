@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Exception;
 
 /**
- * OIDC Core §3.1.2.6 "consent_required": prompt=none and no consent covers the request.
+ * OIDC Core §3.1.2.6
  */
 final class ConsentRequiredException extends OAuth2Exception
 {

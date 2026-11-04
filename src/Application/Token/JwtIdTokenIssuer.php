@@ -18,26 +18,10 @@ use Beffroi\Oidc\Port\IdTokenIssuerInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierOpenerInterface;
 
 /**
- * OIDC Core §2, §3.1.3.6 (architecture §4.6): signed in the algorithm the client registered for, or in the
- * one the provider signs with by default when it registered none (OIDC Registration §2), "acr"
- * always present, "at_hash" of the access token of the same response, the "claims.id_token" of §5.5 added
- * from the claims provider. The protocol claims win over a provider's. No "typ" header: a resource server
- * requiring "at+jwt" refuses it, which is the point.
+ * OIDC Core §2, §3.1.3.6
  *
- * "sid" names the session the token was issued in, in every ID token and for every client: an OP that
- * announces frontchannel_logout_session_supported or backchannel_logout_session_supported includes it in
- * the ID tokens it issues (Front-Channel Logout 1.0 §3, Back-Channel Logout 1.0 §2.1), and it is what
- * the logout endpoint reads back from an id_token_hint to know the hint describes the session in front
- * of it (architecture §4.9). What a client registers, frontchannel_logout_session_required and
- * backchannel_logout_session_required, says whether "iss" and "sid" go on its logout URI and in its
- * logout token, not whether they go in its ID token.
- *
- * A client that registered an encryption receives the signed token inside a JWE addressed to one of its
- * keys (§3.1.3.7), which is the same two steps as for the UserInfo answer and the signed authorization
- * response and is written once, in ClientDocumentIssuer. The key is read when the token is addressed, and so is
- * the kind of "sub" the client registered, whose pairwise kind unseals a salt of the tenant (OIDC Core §8.1),
- * which the grant does before it spends anything: the token is struck for the key that was read and names whoever
- * signed in by what was opened.
+ * The protocol claims win over a provider's. "sid" is in every ID token: the "*_logout_session_required" members of
+ * a registration govern only the logout URI and the logout token.
  */
 final readonly class JwtIdTokenIssuer implements IdTokenIssuerInterface
 {

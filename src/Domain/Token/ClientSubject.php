@@ -11,14 +11,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function sprintf;
 
 /**
- * What names a client where a subject is expected (RFC 9068 §2.2): the "sub" of an access token it holds
- * for itself, there being nobody else to name (RFC 6749 §4.4). Written once, because the issuers write it
- * into the token and the reading of a stored one writes it back, and the two name the same thing or the
- * provider does not recognise its own token.
- *
- * A client identifier may carry a space (RFC 6749 appendix A.1) and a subject may not (OIDC Core §2), so a
- * client named that way cannot act for itself; it is refused where a registration is read, and here as the
- * invariant behind it.
+ * RFC 9068 §2.2
  */
 final readonly class ClientSubject
 {

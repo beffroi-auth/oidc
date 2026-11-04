@@ -17,15 +17,14 @@ use Beffroi\Oidc\Port\ClaimsProviderInterface;
 use function in_array;
 
 /**
- * The standard claims of OIDC Core §5.1: the four scopes of §5.4, a claim asked for by name (§5.5) served
- * whether or not its scope was asked for, what a client may ask for by name having been held to the scopes
- * it registered before it is asked here (ClaimsAskedByName). An absent attribute yields no claim, its
- * verification flag included; a flag present is a JSON boolean (architecture §9).
+ * OIDC Core §5.1, §5.4, §5.5
+ *
+ * A claim asked for by name is served whatever the scopes: ClaimsAskedByName held it to the registered ones.
  */
 final readonly class StandardClaimsProvider implements ClaimsProviderInterface
 {
     /**
-     * OIDC Core §5.4, in the order of §5.1.
+     * OIDC Core §5.4
      *
      * @var array<string, list<string>>
      */
@@ -86,8 +85,6 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
     }
 
     /**
-     * In the order of OIDC Core §5.1, null when the attribute is absent.
-     *
      * @return array<string, mixed>
      */
     private static function valuesOf(User $user): array
@@ -118,7 +115,7 @@ final readonly class StandardClaimsProvider implements ClaimsProviderInterface
     }
 
     /**
-     * OIDC Core §5.1.1: no member, no claim.
+     * OIDC Core §5.1.1
      *
      * @return array<string, string>|null
      */

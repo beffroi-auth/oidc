@@ -19,11 +19,7 @@ use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * Decides what a logout request does to the session the browser holds (RP-Initiated Logout §2,
- * architecture §4.9): ends it without a question when the hint proves the request is about it, asks the
- * user otherwise (§2, §6), honours the request as is when there is no session (§4). Ending a session
- * goes through the SessionTerminator, and the tokens issued in it are revoked on the event every end
- * announces (SessionTokensRevocation, decision 0006), as those of a session ended anywhere else are.
+ * RP-Initiated Logout §2, §4, §6
  */
 final readonly class EndSessionHandler
 {
@@ -49,9 +45,6 @@ final readonly class EndSessionHandler
         return $this->end($request, $session, $context);
     }
 
-    /**
-     * After the confirmation page, when the user said yes: the session ends whatever the hint said (§2).
-     */
     public function confirm(EndSessionRequest $request, ?AuthenticationSession $session, RequestContext $context): LoggedOut
     {
         $now = $this->clock->now();
@@ -64,9 +57,9 @@ final readonly class EndSessionHandler
     }
 
     /**
-     * §2: no hint, an unverifiable one, or one that does not belong to the current session and user. The "sub"
-     * of the hint is the one the client of the request was given, so it is read back for that client (OIDC
-     * Core §8): under a pairwise kind it is never the subject the core keeps.
+     * RP-Initiated Logout §2
+     *
+     * The hint's "sub" is read back for its client (OIDC Core §8): a pairwise one is not the core's subject.
      */
     private function confirmationReason(EndSessionRequest $request, AuthenticationSession $session): ?LogoutConfirmationReason
     {
@@ -74,7 +67,6 @@ final readonly class EndSessionHandler
         if ($hint === null) {
             return $request->invalidIdTokenHint ? LogoutConfirmationReason::InvalidHint : LogoutConfirmationReason::NoHint;
         }
-        // a request that carries a hint names the client it was issued to (EndSessionRequest)
         $named = $request->client === null ? null : $this->subjects->findUser($request->client, $hint->subject);
         if ($named === null || ! $named->id->equals($session->user->id)) {
             return LogoutConfirmationReason::DifferentUser;

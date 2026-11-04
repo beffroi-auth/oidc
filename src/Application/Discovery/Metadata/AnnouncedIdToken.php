@@ -9,8 +9,7 @@ use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * OIDC Discovery §3: what an ID token is signed with, and what a client may have it encrypted to
- * (OIDC Core §3.1.3.7).
+ * OIDC Discovery §3
  */
 final readonly class AnnouncedIdToken implements MetadataContributorInterface
 {

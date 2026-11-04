@@ -14,10 +14,6 @@ use Beffroi\Oidc\Domain\Client\Registration\ClientRetention;
 use Beffroi\Oidc\Port\ClientStoreInterface;
 use Beffroi\Oidc\Port\UnusedClientsInterface;
 
-/**
- * For tests and for the examples: nothing here survives the process. A row written twice is one row, as it
- * is in a store keyed by the identifier the provider drew.
- */
 final class InMemoryClientStore implements ClientStoreInterface, UnusedClientsInterface
 {
     /**

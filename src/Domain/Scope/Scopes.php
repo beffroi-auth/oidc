@@ -17,13 +17,7 @@ use Stringable;
 use Traversable;
 
 /**
- * A set of scopes as RFC 6749 §3.3 writes one: at least one, each named once, in the order it was first
- * seen. Everything this provider keeps a scope list on holds one of these, so that what a set answers is
- * answered once: whether it holds a scope, whether it covers another set, and how it is written on the
- * wire.
- *
- * At least one, because nothing here grants nothing: a request, a consent, a code, a token and a client
- * registration all name what they are for, and an empty set would be a promise with no content.
+ * RFC 6749 §3.3
  *
  * @implements IteratorAggregate<int, Scope>
  */
@@ -35,9 +29,9 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
     public array $all;
 
     /**
-     * @param list<Scope> $scopes at least one; a scope named twice counts once
+     * @param list<Scope> $scopes at least one; a duplicate counts once
      *
-     * @throws InvalidArgumentException when the set is empty
+     * @throws InvalidArgumentException
      */
     public function __construct(array $scopes)
     {
@@ -54,9 +48,7 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
     }
 
     /**
-     * A "scope" parameter or claim, as it arrived.
-     *
-     * @throws InvalidArgumentException when a token is not a scope, the empty string included
+     * @throws InvalidArgumentException
      */
     public static function parse(string $scope): self
     {
@@ -68,10 +60,6 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
         return array_any($this->all, static fn (Scope $held): bool => $held->equals($scope));
     }
 
-    /**
-     * Every scope of the other set is held here: what a consent has to cover for a request, and what a
-     * refresh token has to cover for the scopes asked of it (RFC 6749 §6).
-     */
     public function covers(self $scopes): bool
     {
         return array_all($scopes->all, fn (Scope $scope): bool => $this->has($scope));
@@ -96,9 +84,6 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
     }
 
     /**
-     * A set is walked over as a set: what a page listing them does, and what a caller that needs the
-     * list itself reads from "all".
-     *
      * @return Traversable<int, Scope>
      */
     public function getIterator(): Traversable
@@ -107,8 +92,7 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
     }
 
     /**
-     * Space-delimited, as RFC 6749 §3.3 writes it: what a token response, an introspection response and
-     * an "at+jwt" all put on the wire, written once.
+     * RFC 6749 §3.3
      */
     public function __toString(): string
     {

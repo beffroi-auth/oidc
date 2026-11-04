@@ -16,27 +16,21 @@ use Beffroi\Core\Domain\Session\AuthenticationProofs;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * Why a signed-in user is sent to the login page again (decision 0010): the client asked for classes the
- * provider can prove, the session satisfies none, and a credential of this user would; the new proof
- * joins the proofs the session keeps. Decided on what this user can still prove (architecture §4.3):
- * each credential of theirs declares the methods an authentication with it may prove
- * (ProvingCredentialInterface), and a class is within reach when those methods, added to the proofs of
- * the session, satisfy it. The page offers the kinds of credentials the user actually holds that would do.
+ * Decision 0010
  */
 final readonly class StepUp
 {
     /**
-     * @var non-empty-list<AuthenticationContextClass> the requested classes a credential of the user can still satisfy, in the client's order
+     * @var non-empty-list<AuthenticationContextClass> the requested classes still within reach, in the client's order
      */
     public array $classes;
 
     /**
-     * @var non-empty-list<Credential&ProvingCredentialInterface> the credentials of the user each of which would satisfy one of them, oldest first
+     * @var non-empty-list<Credential&ProvingCredentialInterface> the user's credentials that would do, oldest first
      */
     public array $credentials;
 
     /**
-     * @param AuthenticationProofs $proofs what the session has proven
      * @param list<AuthenticationContextClass> $classes
      * @param list<Credential&ProvingCredentialInterface> $credentials
      */
@@ -56,12 +50,10 @@ final readonly class StepUp
     }
 
     /**
-     * What one more authentication of this user could reach among the requested classes the provider can
-     * prove; null when no credential of theirs would satisfy any, which the caller refuses or answers with
-     * what the session has, and null when the session already satisfies one, there is nothing to step up to.
+     * Null when no credential of the user would satisfy any class, and when the session already satisfies one.
      *
-     * @param list<AuthenticationContextClass> $classes the requested classes the provider can prove, in the client's order
-     * @param list<Credential> $credentials the credentials of the user of the session, whatever their kind, revoked ones included
+     * @param list<AuthenticationContextClass> $classes requested classes the provider can prove, in the client's order
+     * @param list<Credential> $credentials every credential of the user, revoked ones included
      */
     public static function towards(AuthenticationProofs $proofs, array $classes, array $credentials): ?self
     {
@@ -97,9 +89,6 @@ final readonly class StepUp
     }
 
     /**
-     * Whether one more login proving these methods, as one login gives them together, would satisfy a
-     * class the client accepts.
-     *
      * @param non-empty-list<AuthenticationMethod> $methods
      */
     public function wouldBeMetBy(array $methods): bool
@@ -108,10 +97,7 @@ final readonly class StepUp
     }
 
     /**
-     * The kinds of the credentials that would do, each once, in the order they were enrolled: what the
-     * page names, and nothing of a kind the user does not hold.
-     *
-     * @return non-empty-list<string>
+     * @return non-empty-list<string> each kind once, in the order its credentials were enrolled
      */
     public function kinds(): array
     {
@@ -124,9 +110,6 @@ final readonly class StepUp
     }
 
     /**
-     * The classes among the given ones that the proofs, with these methods added as one login adds them,
-     * would satisfy.
-     *
      * @param non-empty-list<AuthenticationMethod> $methods
      * @param list<AuthenticationContextClass> $classes
      *

@@ -12,7 +12,7 @@ use function sprintf;
 use Stringable;
 
 /**
- * One scope token (RFC 6749 §3.3), compared byte for byte.
+ * RFC 6749 §3.3
  */
 final readonly class Scope implements Stringable
 {
@@ -32,7 +32,7 @@ final readonly class Scope implements Stringable
     }
 
     /**
-     * OIDC Core §11: what a client asks for to obtain a refresh token.
+     * OIDC Core §11
      */
     public static function offlineAccess(): self
     {
@@ -40,12 +40,10 @@ final readonly class Scope implements Stringable
     }
 
     /**
-     * A "scope" parameter or claim (RFC 6749 §3.3, RFC 8693 §4.2): space-delimited tokens, a set, so a token
-     * repeated counts once, in the order first seen. Written once here, whoever reads it: the authorization
-     * request, the refresh token grant, the access token verifier.
+     * RFC 6749 §3.3, RFC 8693 §4.2
      *
-     * @throws InvalidArgumentException when a token is not one, the empty string included
-     * @return non-empty-list<self>
+     * @throws InvalidArgumentException
+     * @return non-empty-list<self> each once, in the order first seen
      */
     public static function parseList(string $scope): array
     {

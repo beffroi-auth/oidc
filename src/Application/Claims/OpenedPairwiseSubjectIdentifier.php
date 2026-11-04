@@ -20,18 +20,12 @@ use SensitiveParameter;
 use function sprintf;
 
 /**
- * OIDC Core §8.1 for one client, opened: the sector it is of and the salt of its tenant, read when the client was
- * opened (PairwiseSubjectIdentifierResolver), so that the identifier of a user is computed here asking nothing of
- * the KMS. The salt stays in memory for as long as this does and is never handed out: what leaves is the value
- * the identifier is hashed into.
- *
- * Each identifier assigned is recorded, as the resolver records it, because that row is the way back from a "sub"
- * to its user.
+ * Each identifier is recorded: the row is the way back from a "sub" to its user.
  */
 final readonly class OpenedPairwiseSubjectIdentifier implements OpenedSubjectIdentifierInterface
 {
     /**
-     * @param non-empty-string $salt the salt of that tenant, opened
+     * @param non-empty-string $salt
      */
     public function __construct(
         private Tenant $tenant,
@@ -60,8 +54,7 @@ final readonly class OpenedPairwiseSubjectIdentifier implements OpenedSubjectIde
     }
 
     /**
-     * OIDC Core §8.1: the SHA-256 of the sector, the local account identifier and the salt, written in
-     * base64url as every other value this provider hands out is.
+     * OIDC Core §8.1
      */
     private function identifier(User $user): Subject
     {

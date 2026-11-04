@@ -49,39 +49,18 @@ use Psr\Clock\ClockInterface;
 use function sprintf;
 
 /**
- * The backchannel authentication endpoint (CIBA Core §7): the front door of the one flow of this provider
- * where the authorization request arrives without a browser and the answer is waited for. The client
- * first, authenticated exactly as at the token endpoint, then the user it names, then a record nobody but
- * that user can answer.
+ * CIBA Core §7
  *
- * It is the endpoint of PushedAuthorizationHandler with a user beside the handle: an authenticated client,
- * a request that may itself be a signed object (RFC 9101 §6.1, which FAPI-CIBA §5.2.2 asks of every one
- * of them), a record with a lifetime, an identifier answered back. Errors are the ones of §13, in JSON,
- * never a redirect and never a page, this client having no browser to send anywhere; an object this
- * endpoint will not read is "invalid_request" there and not the "invalid_request_object" of the endpoint
- * a browser reaches.
- *
- * What it does not do is tell the client whether the user it named exists. §13 defines "unknown_user_id"
- * for exactly that, and serving it would say in one round trip what the whole login path of this provider
- * is built not to say (decision 0006, architecture §3.4): a request naming a stranger is answered with an
- * identifier like every other, and it then goes the way of every request nobody answers, to
- * "expired_token". What the client is told is bounded by the same load budget as every other endpoint of
- * the protocol plane (decision 0014), counted against the client it authenticated.
+ * An unknown user is answered like any other, never "unknown_user_id": that would tell whether the user exists.
  */
 final readonly class BackchannelAuthenticationHandler
 {
-    /**
-     * CIBA Core §7.1 "requested_expiry": a positive integer of seconds and nothing else, read before it
-     * is compared with anything.
-     */
     private const string REQUESTED_EXPIRY_PATTERN = '/^[0-9]+$/D';
 
     /**
-     * @param DateInterval $lifetime how long a request lives when the client asks for nothing (§7.3)
-     * @param DateInterval $maxRequestedExpiry the longest this provider serves, whatever a client asks for (§7.1)
-     * @param positive-int $interval the seconds a client is asked to wait between two polls (§7.3), held to the bound of a record when the handler is built rather than at the first request
+     * @param positive-int $interval seconds between two polls
      *
-     * @throws InvalidArgumentException when the interval is one no request may be made with (BackchannelAuthenticationRecord::assertInterval())
+     * @throws InvalidArgumentException
      */
     public function __construct(
         private ClientAuthenticator $clients,
@@ -104,8 +83,7 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * @param array<string, mixed> $parameters the form parameters of the request body
-     * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake (RFC 8705 §2)
+     * @param array<string, mixed> $parameters
      *
      * @throws OAuth2Exception
      */
@@ -136,23 +114,16 @@ final readonly class BackchannelAuthenticationHandler
         $delivery =
             $registration->backchannelTokenDeliveryMode ?? throw new UnauthorizedClientException('The client registered no backchannel token delivery mode, and is told nothing about a request it could not be answered for (CIBA Core section 4).');
 
-        // RFC 9101 §6.1: the request may itself be a signed object, which FAPI-CIBA §5.2.2 requires. It
-        // is read here, against the client that has just authenticated, then what the object has to say
-        // about itself is asked of it (CIBA Core §7.1.1), and what follows reads parameters as at every
-        // other endpoint.
         $parameters['client_id'] = $registration->clientId;
         $object = $this->readObject($tenant, $parameters, $client);
         $this->signedRequests->accept($object, $client);
         $request = RequestParameters::of($object->parameters ?? $parameters);
 
-        // what the request asks for is read before anything is drawn for it, and before anybody is
-        // looked up: a request this endpoint refuses costs the provider no lookup at all
+        // Read before anybody is looked up: a request refused here costs no lookup.
         $scopes = self::scopes($request->required('scope'), $registration);
         $resources = self::resources($request, $registration);
         $bindingMessage = self::bindingMessage($request);
-        // CIBA Core §7.1 "acr_values": read here, with the rest of what the request asks for, and
-        // carried on the record. Nothing is judged against it now: what a class is worth is what the
-        // session of the person who answers proves, and that person is asked on a page (§4.14)
+        // acr_values is judged on the approval page, against the session of whoever answers, not here.
         $acrValues = $request->acrValues();
         $notificationToken = self::notificationToken($request, $delivery instanceof NotifiesTheClientInterface);
         self::refuseAUserCode($request);
@@ -170,9 +141,7 @@ final readonly class BackchannelAuthenticationHandler
             $resources,
             $bindingMessage,
             $acrValues,
-            // a client this provider has to call back is the only reason it keeps what it handed out:
-            // both values are sealed under the KMS of the tenant, as a shared secret of a user is
-            // (architecture §3.3), and a client that only polls leaves neither behind
+            // Kept, sealed, only for a client this provider calls back: the callback carries both values.
             $notificationToken === null ? null : $this->sealer->seal($tenant, $authRequestId),
             $notificationToken === null ? null : $this->sealer->seal($tenant, $notificationToken->value),
             $context,
@@ -196,11 +165,7 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * CIBA Core §13 names the errors this endpoint answers, and "invalid_request_object" is not one of
-     * them: that is the error of the authorization endpoint, where the parameter is "request" and the
-     * refusal is a page (OIDC Core §6.1, RFC 9101 §5). Here an object the endpoint will not read is
-     * "invalid_request", like every other request it will not read. What is refused and why stays the
-     * resolver's; only the name of the error belongs to the endpoint that answers.
+     * CIBA Core §13 has no "invalid_request_object", so a refused object is answered "invalid_request".
      *
      * @param array<string, mixed> $parameters
      *
@@ -216,13 +181,7 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * CIBA Core §7.1: the scopes the request asks for, among the ones the client registered, "openid"
-     * among them. There is no default: what the user is shown on the page where they approve is what the
-     * request named, and a request that named nothing would be a page asking somebody to agree to
-     * everything the client ever registered.
-     *
-     * @throws InvalidScopeException when it is not a list of scope tokens, names a scope the client is
-     *                              not registered for, or does not ask for "openid"
+     * @throws InvalidScopeException
      */
     private static function scopes(string $scope, ClientRegistration $registration): Scopes
     {
@@ -242,11 +201,9 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * RFC 8707 §2: the resources the request names, among the ones the client registered. A request that
-     * names none is served all the same, there being a user behind this grant and therefore a client the
-     * token can be addressed to (TokenAudience).
+     * RFC 8707 §2
      *
-     * @throws OAuth2Exception when a value is not an absolute URI, or names a resource the client did not register
+     * @throws OAuth2Exception
      */
     private static function resources(RequestParameters $request, ClientRegistration $registration): ?ResourceIndicators
     {
@@ -256,9 +213,6 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * CIBA Core §7.1, §13: optional, and refused rather than trimmed when it is not something a user can
-     * be shown as it was sent.
-     *
      * @throws OAuth2Exception
      */
     private static function bindingMessage(RequestParameters $request): ?BindingMessage
@@ -278,11 +232,6 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * CIBA Core §7.1: required of a client that registered a mode where this provider calls it back,
-     * refused from one that registered a mode where it does not. A client that only polls and sends a
-     * token all the same is telling the provider to keep a credential it would never present, so it is
-     * refused rather than ignored.
-     *
      * @throws OAuth2Exception
      */
     private static function notificationToken(RequestParameters $request, bool $theClientIsCalledBack): ?ClientNotificationToken
@@ -310,10 +259,7 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * CIBA Core §7.1 "user_code": a secret of the user, sent by the client, that this provider does not
-     * serve; the document says so ("backchannel_user_code_parameter_supported"). A request carrying one
-     * is refused rather than served without it: the client believes the request is bound to something
-     * the user knows, and answering it would be answering a request nobody made the way it was made.
+     * Refused, never ignored: the client believes the request is bound to a secret the user knows.
      *
      * @throws OAuth2Exception
      */
@@ -325,12 +271,6 @@ final readonly class BackchannelAuthenticationHandler
     }
 
     /**
-     * CIBA Core §7.1 "requested_expiry": what the client asks the lifetime to be, capped at what this
-     * provider serves. A request that asks for more is served the maximum rather than refused, §7.1
-     * making the value a request and not a condition; one that asks for nothing at all, or for a value
-     * that is not a number of seconds, is refused, because a client that wrote something there meant
-     * something by it.
-     *
      * @throws OAuth2Exception
      */
     private function expiryOf(RequestParameters $request, DateTimeImmutable $now): DateTimeImmutable

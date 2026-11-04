@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client;
 
-/**
- * The grant types of one list that are not in another, compared by name as a grant type always is. What
- * reads it is a reading of the wiring made of what the wiring does not say: the flow of a grant that
- * asks nobody anything, the closing a flow with nobody signed in behind it does not have.
- */
 final readonly class GrantTypesApart
 {
     /**

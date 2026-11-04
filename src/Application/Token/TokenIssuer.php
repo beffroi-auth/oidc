@@ -33,24 +33,8 @@ use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Mints what a verified authorization entitles the client to (architecture §4.5, §4.6); whether a
- * refresh token is due, and in which family, is the grant's decision.
- *
- * What the response carries beside the access token is what the authorization can answer for: an ID token
- * describes who signed in, so an authorization with nobody behind it is answered with an access token and
- * nothing else (RFC 6749 §4.4.3). The authorization says which it is by what it is, never by the name of
- * the grant that produced it.
- *
- * A response is addressed before it is struck, and struck here for what was read (OIDC Core §3.1.3.7,
- * architecture §4.5). What it reads from outside the provider is the key of the tenant each of its tokens is
- * signed with, opened by the KMS, the salt of the tenant the "sub" of a pairwise client is computed with, unsealed
- * by the KMS (OIDC Core §8.1), the person an access token whose subject the client named is about, sealed under
- * the KMS, and the key of the client its ID token is encrypted to, read from what the client publishes. A grant
- * addresses the response before it spends what the request presented: a KMS that does not answer and a set the
- * client cannot serve right now are then errors the same request is served past once they answer, where read after
- * the spending they would cost the client its code, the family of its refresh token, or the assertion its issuer
- * signed. A response to an authorization nobody signed in for carries an access token and nothing else, and is
- * addressed here when its grant spends nothing.
+ * A grant addresses the response, reading what it needs from the KMS and the client, before it spends what the
+ * request presented: an outage then leaves the request to be presented again.
  */
 final readonly class TokenIssuer
 {
@@ -74,16 +58,9 @@ final readonly class TokenIssuer
     }
 
     /**
-     * What a response to an authorization of that client somebody signed in for needs from outside the provider,
-     * read now: the key of the tenant its access token is signed with, opened, and, when "openid" is among the
-     * scopes (OIDC Core §3.1.3.3), the shape of its ID token with the key of the tenant it is signed with and the
-     * key of the client it is encrypted to; and the kind of "sub" the client registered, opened for each token that
-     * names the person, which for a pairwise client unseals the salt of its tenant (OIDC Core §8.1). What a grant
-     * asks before it spends what the request presented.
-     *
-     * @throws KeyNotFoundException when the tenant has no active key for an algorithm the response is signed with
-     * @throws KmsUnavailableException when the KMS does not answer to open a key the response is signed with, which is not open yet, or the salt of a pairwise client
-     * @throws ClientKeysUnavailableException when the set the client publishes cannot be read, or holds no key its ID tokens can be encrypted to
+     * @throws KeyNotFoundException
+     * @throws KmsUnavailableException
+     * @throws ClientKeysUnavailableException
      * @throws InvalidArgumentException when the wiring assigns no identifier of the kind the client registered
      */
     public function address(Client $client, Scopes $scopes): AddressedResponse
@@ -95,17 +72,9 @@ final readonly class TokenIssuer
     }
 
     /**
-     * What the response to an authorization nobody signed in for needs from outside the provider, read now. That
-     * response is an access token and nothing else (RFC 6749 §4.4.3): the key it is signed with is opened and,
-     * when its subject was named by what the client presented, the person it is about is sealed (issue #641). A
-     * grant of that kind asks it before it spends what the request presented, as the assertion grant does before
-     * it remembers its assertion (issue #876); one that spends nothing leaves it to issue(). The response to an
-     * authorization somebody signed in for is addressed by address(), its grant addressing it before the
-     * authorization exists.
-     *
-     * @throws KeyNotFoundException when the tenant has no active key for the algorithm the access token is signed with
-     * @throws KmsUnavailableException when the KMS does not answer to open that key, which is not open yet, or to seal the person the token is about
-     * @throws LogicException when somebody signed in for the authorization, so that its grant was to address the response
+     * @throws KeyNotFoundException
+     * @throws KmsUnavailableException
+     * @throws LogicException when somebody signed in for the authorization, whose grant calls address() instead
      */
     public function addressFor(AuthorizationInterface $authorization): AddressedResponse
     {
@@ -117,14 +86,13 @@ final readonly class TokenIssuer
     }
 
     /**
-     * The ID token is issued when "openid" is among the scopes (OIDC Core §3.1.3.3, §12.2), for the shape
-     * the grant addressed.
+     * OIDC Core §3.1.3.3, §12.2
      *
-     * @param AddressedResponse|null $addressed what address() or addressFor() answered before the grant spent anything; null for an authorization nobody signed in for whose grant spends nothing
+     * @param AddressedResponse|null $addressed null only when nobody signed in and the grant spends nothing
      *
-     * @throws KeyNotFoundException when the response is addressed here and the tenant has no active key for the algorithm its access token is signed with
-     * @throws KmsUnavailableException when the response is addressed here and the KMS does not answer to open the key its access token is signed with, or to seal the person it is about
-     * @throws LogicException when the response to an authorization somebody signed in for, or the ID token it carries, was not addressed by the grant first
+     * @throws KeyNotFoundException when the response is addressed here
+     * @throws KmsUnavailableException when the response is addressed here
+     * @throws LogicException when a response somebody signed in for was not addressed by its grant first
      */
     public function issue(
         AuthorizationInterface $authorization,
@@ -149,8 +117,6 @@ final readonly class TokenIssuer
             $idToken !== null,
             $authorization->confirmation,
             $refreshToken?->token->tokenHash,
-            // what the client is given of the person, which the row beside the act holds (issue #590): a
-            // grant nobody was asked for carries neither a request by name nor details anybody agreed to
             $authorization instanceof UserAuthorizationInterface ? $authorization->claimsRequest : null,
             $authorization instanceof UserAuthorizationInterface ? $authorization->authorizationDetails : null,
             $authorization->client->registration->accessTokenShape->name(),
@@ -161,8 +127,7 @@ final readonly class TokenIssuer
     }
 
     /**
-     * OIDC Core §3.1.3.3, §12.2: "openid" among the scopes, and somebody to describe. A grant with nobody
-     * behind it never has one (RFC 6749 §4.4.3), and the scopes it may ask for say so too.
+     * OIDC Core §3.1.3.3, §12.2
      *
      * @throws LogicException when the token is due and the grant did not address it
      */

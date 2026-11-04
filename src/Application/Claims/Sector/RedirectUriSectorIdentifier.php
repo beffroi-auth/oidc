@@ -16,13 +16,7 @@ use function array_map;
 use function sprintf;
 
 /**
- * OIDC Core §8.1: the sector of a client that named none, the host its browser comes back to. A client
- * whose redirection URIs are on one host is of that host's sector; one whose URIs are on several names no
- * sector by registering them, and §8.1 answers that with a "sector_identifier_uri", which is another
- * source and answers before this one.
- *
- * A client that registers no redirection URI registers nothing this reads, and this says nothing of it:
- * what such a client is of is another source's to answer (CIBA Core §4, `JwksUriSectorIdentifier`).
+ * OIDC Core §8.1
  */
 final readonly class RedirectUriSectorIdentifier implements SectorIdentifierSourceInterface
 {
@@ -47,9 +41,7 @@ final readonly class RedirectUriSectorIdentifier implements SectorIdentifierSour
     }
 
     /**
-     * Every redirection URI it registered, and not only the one the host was read from: the document of a
-     * registered sector names the clients of that sector by where their browsers come back to, so a URI
-     * left out of it is a URI nobody vouched for (OIDC Registration §5).
+     * OIDC Registration §5
      */
     public function publishedUris(ClientRegistration $registration): array
     {

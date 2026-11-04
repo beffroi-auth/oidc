@@ -19,19 +19,6 @@ use function implode;
 use SensitiveParameter;
 use function sprintf;
 
-/**
- * Reads back an access token of this provider, whatever shape it was written in (architecture §4.6): it
- * hands the token to the wired verifier that recognises its shape, and to no other.
- *
- * It knows no shape of its own. A shape the provider gains is a verifier beside the issuer that writes
- * it and a line in the wiring, and nothing here changes; what the provider knows beyond the token,
- * whether the session has ended, whether the grant is still alive and whether the user is still served,
- * is asked once and for every shape in AccessTokenInspector.
- *
- * It is also where the two sides of a shape are made to meet: a token this provider writes and cannot
- * read back is a token nobody can spend, so a wiring where a shape has no verifier, or where a verifier
- * reads a shape nothing writes, is refused here rather than discovered at a resource server.
- */
 final readonly class AccessTokenVerifier
 {
     /**
@@ -45,8 +32,7 @@ final readonly class AccessTokenVerifier
 
     /**
      * @throws InvalidArgumentException when the wiring does not hold together
-     * @throws InvalidTokenException when no wired shape recognises the token, or when the one that does
-     *                               refuses it
+     * @throws InvalidTokenException
      */
     public function verify(Tenant $tenant, #[SensitiveParameter] string $accessToken, DateTimeImmutable $now): VerifiedAccessToken
     {
@@ -54,10 +40,6 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * Whether the token carries its own claims and therefore cannot be taken back (RFC 7009 §2.2.1). The
-     * shape that recognises it answers; a shape nothing recognises is not one of ours and expires
-     * nowhere, which the caller reads as nothing to revoke.
-     *
      * @throws InvalidArgumentException when the wiring does not hold together
      */
     public function expiresOnItsOwn(#[SensitiveParameter] string $accessToken): bool
@@ -75,9 +57,6 @@ final readonly class AccessTokenVerifier
     }
 
     /**
-     * The wired shape this value has, null when it has none: asked once, by both the reading and the
-     * question the revocation endpoint asks before it looks anything up.
-     *
      * @throws InvalidArgumentException
      */
     private function recognisedBy(#[SensitiveParameter] string $accessToken): ?AccessTokenVerifierInterface
@@ -94,7 +73,7 @@ final readonly class AccessTokenVerifier
     /**
      * @throws InvalidArgumentException
      *
-     * @return non-empty-array<non-empty-string, AccessTokenVerifierInterface> by the name each one gives its shape
+     * @return non-empty-array<non-empty-string, AccessTokenVerifierInterface> by shape name
      */
     private function wired(): array
     {

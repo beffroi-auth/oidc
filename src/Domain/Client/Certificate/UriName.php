@@ -9,16 +9,12 @@ use function hash_equals;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * "tls_client_auth_san_uri" (RFC 8705 §2.1.2): the expected uniformResourceIdentifier entry of the
- * subject alternative name extension, compared as the text it is. A URI is not normalised before the
- * comparison: RFC 3986 §6.2.1 makes two URIs that differ equivalent only under rules a certificate does
- * not carry, and a provider that guessed them would accept a name nobody registered.
+ * RFC 8705 §2.1.2
+ *
+ * Compared as text, never normalised: guessing at RFC 3986 §6.2.1 would accept a name nobody registered.
  */
 final readonly class UriName implements CertificateIdentityInterface
 {
-    /**
-     * The registration metadata this kind is registered under (RFC 8705 §2.1.2).
-     */
     public const string NAME = 'tls_client_auth_san_uri';
 
     public function __construct(

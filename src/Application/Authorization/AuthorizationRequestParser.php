@@ -21,18 +21,7 @@ use Beffroi\Oidc\Port\ServedResponseModesInterface;
 use function sprintf;
 
 /**
- * Reads an authorization request (RFC 6749 §4.1.1, OIDC Core §3.1.2.1) in the two stages of RFC 6749
- * §4.1.2.1: the client and the redirect URI first, whose failures are never redirected; everything else
- * then, whose failures go back to the client with "state" and "iss".
- *
- * The two stages are two methods of one class because they are the two halves of one rule, when a failure
- * may be redirected at all (RFC 9700 §4.1); what each parameter of the second stage must be is not here
- * but in a class per group of them that belong together (`Requested*`), so that what is left is the stage
- * and not the dozen readings.
- *
- * It reads parameters and nothing else. A request the client pushed (RFC 9126 §4) and one it carried in
- * a JWT (RFC 9101 §6.1) are both resolved into parameters before they reach it, by the resolver of each,
- * so that the rules of a request are written once and judged once whichever way the request came in.
+ * RFC 6749 §4.1.1, OIDC Core §3.1.2.1
  */
 final readonly class AuthorizationRequestParser
 {
@@ -54,16 +43,9 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * First stage (RFC 6749 §4.1.2.1, §3.1.2.3): the client, the redirect URI byte for byte, the state
-     * and the mode the answer will use.
+     * RFC 6749 §4.1.2.1, §3.1.2.3
      *
      * @param array<string, mixed> $parameters
-     * @param bool $pushed whether the parameters are the ones of a request the client pushed (RFC 9126
-     *                     §2), which is the only way a client that requires it may start one
-     * @param bool $signed whether they are the ones of a request object the client signed (RFC 9101
-     *                     §6.1), directly or inside the record it pushed, which is the only way a client
-     *                     that requires it may start one. For such a client, an object read at all is
-     *                     one it signed: its registration reads no object unsigned (RFC 9101 §10.5)
      *
      * @throws OAuth2Exception never redirectable
      */
@@ -75,14 +57,11 @@ final readonly class AuthorizationRequestParser
         if ($client === null) {
             throw new InvalidRequestException('The client is unknown.');
         }
-        // RFC 9126 §6: before the redirect URI is even read, so that a client held to pushing its
-        // requests is told so on a page and nothing of the request reaches the browser it came from
+        // RFC 9126 §6: before the redirect URI is read, so the refusal is a page and nothing is redirected.
         if (! $pushed && $client->registration->requiresPushedAuthorizationRequests) {
             throw new InvalidRequestException('The client only starts an authorization request by pushing it (RFC 9126 section 6).');
         }
-        // RFC 9101 §10.5 "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1: read here
-        // for the same reason, so that a client held to signing its requests is told so on a page and
-        // nothing of the request reaches the browser it came from
+        // RFC 9101 §10.5: before the redirect URI too, for the same reason.
         if (! $signed && $client->registration->requiresSignedRequestObject) {
             throw new InvalidRequestException('The client only starts an authorization request with a request object it signed (RFC 9101 section 10.5, require_signed_request_object).');
         }
@@ -93,12 +72,6 @@ final readonly class AuthorizationRequestParser
         return new RedirectTarget($client, new RedirectUri($redirectUri), $request->state(), $this->responseMode->of($parameters));
     }
 
-    /**
-     * A request object is read before a request is parsed, by the resolver an endpoint calls first
-     * (RFC 9101 §6.1): what the parser is given is the parameters of the object, never the object.
-     * Finding one here is an endpoint wired without that resolver, which is a fault of the integration
-     * and not of the request.
-     */
     private static function assertResolved(RequestParameters $request): void
     {
         foreach (['request', 'request_uri'] as $name) {
@@ -112,8 +85,7 @@ final readonly class AuthorizationRequestParser
     }
 
     /**
-     * Second stage (OIDC Core §3.1.2.2, RFC 7636 §4.4, architecture §4.2): everything else, each
-     * parameter judged by the class that owns its rule.
+     * OIDC Core §3.1.2.2, RFC 7636 §4.4
      *
      * @param array<string, mixed> $parameters
      *

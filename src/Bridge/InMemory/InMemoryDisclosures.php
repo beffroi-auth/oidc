@@ -16,10 +16,7 @@ use Symfony\Component\Uid\Uuid;
 use function usort;
 
 /**
- * For tests and for the examples: nothing here survives the process.
- *
- * It bounds no run of the retention, having no table to hold: what the contract of the port means by
- * bounded is a store that would otherwise delete a year of rows in one statement.
+ * The retention runs unbounded here: the bound of the port protects a table, and there is none.
  */
 final class InMemoryDisclosures implements DisclosuresInterface, DisclosuresOfAPersonInterface
 {
@@ -66,8 +63,6 @@ final class InMemoryDisclosures implements DisclosuresInterface, DisclosuresOfAP
     }
 
     /**
-     * Everything it holds, which a test reads to say what was written down.
-     *
      * @return list<Disclosure>
      */
     public function all(): array

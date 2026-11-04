@@ -8,10 +8,6 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Core\Port\RandomnessInterface;
 use Beffroi\Oidc\Port\PairwiseSaltInterface;
 
-/**
- * For tests and for the examples: a salt drawn once per tenant and written nowhere, so nothing here
- * survives the process and no two runs compute the same identifiers.
- */
 final class InMemoryPairwiseSalt implements PairwiseSaltInterface
 {
     /**
@@ -20,7 +16,7 @@ final class InMemoryPairwiseSalt implements PairwiseSaltInterface
     private array $salts = [];
 
     /**
-     * @param positive-int $length how many bytes a salt is made of, the number a deployment draws
+     * @param positive-int $length in bytes
      */
     public function __construct(
         private readonly RandomnessInterface $randomness,

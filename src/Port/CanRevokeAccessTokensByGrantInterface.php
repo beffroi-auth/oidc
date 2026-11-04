@@ -8,13 +8,12 @@ use Beffroi\Oidc\Domain\Token\StoredAccessToken;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A companion of AccessTokenRepositoryInterface: every token of a grant, for a replayed code (RFC 6749
- * §4.1.2) or a revoked refresh token (RFC 7009 §2.1).
+ * RFC 6749 §4.1.2, RFC 7009 §2.1
  */
 interface CanRevokeAccessTokensByGrantInterface
 {
     /**
-     * @return list<StoredAccessToken> the records removed
+     * @return list<StoredAccessToken>
      */
     public function revokeByGrant(Uuid $grantId): array;
 }

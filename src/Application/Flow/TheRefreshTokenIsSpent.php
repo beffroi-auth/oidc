@@ -9,10 +9,7 @@ use Beffroi\Oidc\Domain\Flow\Hop;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * What a client does when the access token it was given runs out and it was given a refresh token with
- * it (RFC 6749 §6): it spends that one and is given another pair, without the user being asked
- * anything again. The flows that close this way are the ones whose answer may carry a refresh token,
- * which is what their grants declare.
+ * RFC 6749 §6
  */
 final readonly class TheRefreshTokenIsSpent implements FlowShapeInterface
 {

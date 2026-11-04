@@ -11,9 +11,7 @@ use Beffroi\Oidc\Port\IssuerAssertionReplayGuardInterface;
 use function sprintf;
 
 /**
- * The "jti" already seen, kept for the life of the process. What a single-process integration and the tests
- * use; a deployment of several workers points the port at a store they share, or one worker would exchange an
- * assertion another one already exchanged.
+ * One process only: workers that share no store would each accept the same assertion.
  */
 final class InMemoryIssuerAssertionReplayGuard implements IssuerAssertionReplayGuardInterface
 {

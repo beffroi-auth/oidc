@@ -14,9 +14,7 @@ use const JSON_THROW_ON_ERROR;
 use Throwable;
 
 /**
- * Reads a compact JWT with web-token/jwt-library, and verifies nothing (RFC 7519 §7.2): the
- * serialization is undone, the protected header and the claims are read as they are, and what they say
- * is only what the sender claims until a verifier has spoken.
+ * Verifies nothing: the header and the claims it reads are only what the sender claims.
  */
 final readonly class JwtLibraryCompactJwtReader implements CompactJwtReaderInterface
 {

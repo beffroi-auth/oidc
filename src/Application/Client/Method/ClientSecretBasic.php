@@ -14,9 +14,7 @@ use function str_contains;
 use function urldecode;
 
 /**
- * "client_secret_basic" (RFC 6749 §2.3.1, RFC 7617 §2): the identifier and the secret, form-urlencoded,
- * joined by a colon and Basic-encoded in the Authorization header. The method every OAuth 2.0 client
- * knows, and the one Symfony's own client sends by default.
+ * RFC 6749 §2.3.1, RFC 7617 §2
  */
 final readonly class ClientSecretBasic extends HashedSecretMethod
 {
@@ -45,10 +43,10 @@ final readonly class ClientSecretBasic extends HashedSecretMethod
     }
 
     /**
-     * RFC 7235 §2.1: the scheme is case-insensitive and followed by at least one space. A header that is
-     * not this one belongs to another method, or to none.
+     * RFC 7235 §2.1
      *
-     * @throws ClientAuthenticationFailure when the header is Basic and its credentials cannot be read
+     * @throws ClientAuthenticationFailure when a Basic header cannot be read
+     *
      * @return array{string, string}|null
      */
     private function credentials(ClientAuthenticationRequest $request): ?array

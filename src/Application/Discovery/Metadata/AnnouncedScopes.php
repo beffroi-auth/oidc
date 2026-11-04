@@ -10,10 +10,7 @@ use Beffroi\Oidc\Port\MetadataContributorInterface;
 use Beffroi\Oidc\Port\OfferedScopesInterface;
 
 /**
- * OIDC Discovery §3: the scopes a client may ask for, which are the scopes the tenant hands out tokens
- * for and are read where they are assembled (`OfferedScopes`). What the document announces and what a
- * registration is held to is one set, because a provider that announced one and registered against
- * another would be two places that must agree.
+ * OIDC Discovery §3
  */
 final readonly class AnnouncedScopes implements MetadataContributorInterface
 {

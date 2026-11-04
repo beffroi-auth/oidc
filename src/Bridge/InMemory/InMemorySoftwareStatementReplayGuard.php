@@ -11,9 +11,7 @@ use Beffroi\Oidc\Port\SoftwareStatementReplayGuardInterface;
 use function sprintf;
 
 /**
- * The "jti" already seen, kept for the life of the process. What a single-process integration and the
- * tests use; a deployment of several workers points the port at a store they share, or one worker would
- * register a client on a statement another one already registered one on.
+ * One process only: workers that share no store would each accept the same software statement.
  */
 final class InMemorySoftwareStatementReplayGuard implements SoftwareStatementReplayGuardInterface
 {

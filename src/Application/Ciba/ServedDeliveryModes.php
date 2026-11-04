@@ -10,12 +10,6 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\ServedDeliveryModesInterface;
 use function sprintf;
 
-/**
- * The delivery modes the wiring gave this provider, in the order they are wired (CIBA Core §4). The one
- * source of truth over them: the discovery document reads this list to know what to announce, and a
- * registration reads it to know what a client may name. A mode wired twice is refused here, where the
- * wiring is collected.
- */
 final readonly class ServedDeliveryModes implements ServedDeliveryModesInterface
 {
     /**
@@ -42,7 +36,7 @@ final readonly class ServedDeliveryModes implements ServedDeliveryModesInterface
     /**
      * @throws InvalidArgumentException
      *
-     * @return array<string, DeliveryModeInterface> by the name each mode gives itself
+     * @return array<string, DeliveryModeInterface> by mode name
      */
     private function wired(): array
     {

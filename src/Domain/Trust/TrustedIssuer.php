@@ -14,26 +14,12 @@ use function preg_match;
 use function sprintf;
 
 /**
- * A third party whose signature a tenant trusts (RFC 7523 §3): whoever holds its signing key can name a user
- * of that tenant and be answered with an access token, so what it may do is written down in full and nothing
- * about it is inferred.
- *
- * Everything here is a closed list. The keys are the ones the tenant wrote down, or the ones published behind
- * the URL it wrote down, and no key a token names is ever read (RFC 8725 §3.10). The algorithms are the ones
- * it signs with, so a key of one kind
- * cannot be used with another. The clients are the ones that may present its assertions, because an issuer
- * trusted for a gateway is not thereby trusted for every client of the tenant. The scopes are what it is
- * trusted for, which the scopes of a response are a subset of. And the subjects of its assertions name users
- * through linked identities of one source (decision 0002), so an assertion never invents a row.
- *
- * It belongs to the tenant that registered it and is looked up under that tenant: an issuer one tenant trusts
- * is unknown to another, which is what keeps one deployment's trust from being another's.
+ * RFC 7523 §3
  */
 final readonly class TrustedIssuer
 {
     /**
-     * RFC 7519 §4.1.1: an "iss" is a StringOrURI, and one naming a party whose keys a tenant holds is a URI;
-     * it is compared byte for byte, as every other name this provider registers.
+     * RFC 7519 §4.1.1 StringOrURI, restricted to a URI
      */
     private const string ISSUER_PATTERN = '/^[A-Za-z][A-Za-z0-9+.-]*:[^\s#]+$/D';
 
@@ -48,15 +34,11 @@ final readonly class TrustedIssuer
     public array $clientIds;
 
     /**
-     * @param string $issuer the "iss" of the assertions this issuer signs (RFC 7523 §3), compared byte for byte
-     * @param ClientJwks|ClientUri $keys the public keys the tenant trusts this issuer by, written down or
-     *                                    read back from the URL it publishes them behind (RFC 7517 §5)
-     * @param list<non-empty-string> $signingAlgorithms the "alg" an assertion of this issuer may carry, at least one
-     * @param list<string> $clientIds the clients that may present an assertion of this issuer, at least one
-     * @param string $identityProvider the source of the linked identities the subjects of its assertions name (decision 0002)
-     * @param Scopes $trustedScopes what this issuer is trusted for, which the scopes of a response are a subset of
+     * @param list<non-empty-string> $signingAlgorithms at least one
+     * @param list<string> $clientIds at least one
+     * @param string $identityProvider the source of the linked identities its subjects name (decision 0002)
      *
-     * @throws InvalidArgumentException when the registration does not hold together
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public string $issuer,
@@ -91,27 +73,16 @@ final readonly class TrustedIssuer
         $this->clientIds = $clientIds;
     }
 
-    /**
-     * RFC 7523 §3: which clients may present an assertion of this issuer, compared byte for byte.
-     */
     public function allowsClient(string $clientId): bool
     {
         return in_array($clientId, $this->clientIds, true);
     }
 
-    /**
-     * What this issuer is trusted for: the scopes of a response are a subset of these, of what the client
-     * registered and of what the request asked for.
-     */
     public function isTrustedFor(Scopes $scopes): bool
     {
         return $this->trustedScopes->covers($scopes);
     }
 
-    /**
-     * Whether the signature of an assertion may carry this algorithm (RFC 7515 §4.1.1), among the ones the
-     * tenant trusts this issuer to sign with.
-     */
     public function signsWith(string $algorithm): bool
     {
         return array_any($this->signingAlgorithms, static fn (string $trusted): bool => $trusted === $algorithm);

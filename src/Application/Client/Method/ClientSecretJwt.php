@@ -16,18 +16,10 @@ use Beffroi\Oidc\Port\ClientAssertionSecretVerifierInterface;
 use SensitiveParameter;
 
 /**
- * "client_secret_jwt" (OIDC Core §9): the same assertion as "private_key_jwt", signed with the secret
- * the client registered instead of a key of its own, HS256 and nothing else (RFC 8725 §3.1, §3.2). It is
- * served because clients ask for it, and it is not a FAPI method: the provider has to hold the secret
- * back to compute the same MAC, and FAPI 2.0 Security Profile §5.3.2.1 takes MTLS and private_key_jwt
- * alone. A deployment that follows the profile leaves the method out of its wiring, and then no client
- * can register it and the discovery document does not announce it.
+ * OIDC Core §9, RFC 8725 §3.1, §3.2
  */
 final readonly class ClientSecretJwt extends AssertionMethod implements SecretKeepingMethodInterface
 {
-    /**
-     * OIDC Core §9 allows HS256, HS384 and HS512; one is enough and is what clients send.
-     */
     private const string ALGORITHM = 'HS256';
 
     public function __construct(

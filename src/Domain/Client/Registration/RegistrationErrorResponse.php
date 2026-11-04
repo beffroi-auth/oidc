@@ -9,18 +9,7 @@ use function preg_replace;
 use function str_replace;
 
 /**
- * A refusal of the registration endpoint (RFC 7591 §3.2.2): a 400, the error code the refusal answers
- * for, and the human-readable description that says which member did not hold.
- *
- * The code is the one the refusal names itself by, one class per code of §3.2.2, and the description is
- * the message that refusal carries: what a deployment reads when a declaration stops its boot is what a
- * client reads in its "error_description", the two being the same refusal of the same member read by the
- * same reader.
- *
- * §3.2.2 asks for ASCII, so the section sign of a message written for a log becomes the word every
- * description this provider sends already spells (OAuth2Exception), and whatever else is left outside
- * printable ASCII is dropped: a message naming a member a client sent carries what that client wrote,
- * and what a client wrote is not what decides the shape of an answer.
+ * RFC 7591 §3.2.2
  */
 final readonly class RegistrationErrorResponse
 {
@@ -29,8 +18,7 @@ final readonly class RegistrationErrorResponse
     public const int STATUS_CODE = 400;
 
     /**
-     * What is left of a description: printable ASCII, as RFC 6749 §5.2 asks of one at every other
-     * endpoint.
+     * RFC 6749 §5.2
      */
     private const string OUTSIDE_ASCII = '/[^\x20-\x7E]/u';
 

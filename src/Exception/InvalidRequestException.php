@@ -7,7 +7,7 @@ namespace Beffroi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 6749 §5.2 "invalid_request".
+ * RFC 6749 §5.2
  */
 final class InvalidRequestException extends OAuth2Exception
 {

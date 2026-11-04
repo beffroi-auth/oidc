@@ -24,18 +24,7 @@ use Beffroi\Oidc\Port\EndpointLocatorInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * The introspection endpoint (RFC 7662 §2, architecture §4.12). The caller is a confidential client (§2.1);
- * a token is described to the client it was issued to and to nobody else (§2.2, §4); "token_type_hint" is
- * ignored. When asked, the answer is signed as RFC 9701 §4 and §5 describe.
- *
- * A token bound to a certificate (RFC 8705 §3) is described here whatever the caller presented: the
- * answer carries the "cnf" the resource server needs to make its own check (§3.2), and the client that
- * was issued the token is entitled to read it back whichever way it authenticated itself today.
- *
- * **An answer that describes a person is an act** (`IntrospectionAnswered`, issue #589): it is one of the
- * two requests where a personal datum leaves this provider, so the journal of that person says that this
- * client read them. What describes nobody writes nothing: an inactive answer, and a token a client holds
- * for itself (RFC 6749 §4.4).
+ * RFC 7662 §2, RFC 9701 §4, §5
  */
 final readonly class IntrospectionHandler
 {
@@ -50,11 +39,9 @@ final readonly class IntrospectionHandler
     }
 
     /**
-     * @param array<string, mixed> $parameters the form parameters of the request body
-     * @param bool $signed a signed response was asked for (RFC 9701 §4)
-     * @param ClientCertificate|null $certificate the certificate the caller presented at the TLS handshake (RFC 8705 §2)
+     * @param array<string, mixed> $parameters
      *
-     * @throws OAuth2Exception invalid_client or invalid_request; never for a token that is not active
+     * @throws OAuth2Exception invalid_client or invalid_request, never for a token that is not active
      */
     public function handle(
         Tenant $tenant,
@@ -83,8 +70,6 @@ final readonly class IntrospectionHandler
             ? IntrospectionResponse::inactive()
             : IntrospectionResponse::active($described->token, $tenant->issuer);
         $response = $signed ? $this->sign($tenant, $caller, $response, $context) : $response;
-        // the act is written once the answer exists, and only of an answer that describes a person: what
-        // the journal of a person holds is a read that reached that client (issue #589)
         $person = $described?->user;
         if ($person !== null) {
             $this->events->dispatch(new IntrospectionAnswered(
@@ -100,8 +85,7 @@ final readonly class IntrospectionHandler
     }
 
     /**
-     * The token this caller may be told about, null when there is none: a token this provider does not
-     * honour, and a token of another client, which are one answer and not two (RFC 7662 §2.2, §4).
+     * RFC 7662 §2.2, §4
      */
     private function tokenOfTheCaller(Tenant $tenant, Client $caller, string $token, RequestContext $context): ?InspectedAccessToken
     {

@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 /**
- * Binding to the certificate the client presented at the TLS handshake (RFC 8705 §3.1). The token stays
- * a bearer token on the wire: the transport proves the holder again at every request, and the client
- * changes nothing to the way it presents its token.
+ * RFC 8705 §3.1
  */
 final readonly class CertificateConfirmationKind implements ConfirmationKindInterface
 {

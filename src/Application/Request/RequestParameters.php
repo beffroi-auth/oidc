@@ -14,41 +14,33 @@ use function preg_match;
 use function sprintf;
 
 /**
- * The raw parameters of a request, read the one way every endpoint of this provider reads them
- * (RFC 6749 §3.1): a single string, a repeated or nested one refused, an empty one omitted, an unknown
- * one ignored. Nothing is cast; every pattern ends with the D modifier. A parameter a specification
- * allows to repeat is the one exception, and it is read as the list it is.
+ * RFC 6749 §3.1
  *
- * Whether a failure may be redirected back to the client is a property of the stage that reads, not of
- * the parameter: the first stage of an authorization request knows no redirect URI yet and the token
- * endpoint answers in JSON, so what they read refuses without a redirect; the second stage of an
- * authorization request answers to the client, so what it reads refuses with one. The caller says which
- * it is once, when it takes the parameters up, and every rule below follows.
+ * Nothing is cast, and every pattern ends with the D modifier so that "$" never matches before a final newline.
  */
 final readonly class RequestParameters
 {
     /**
-     * RFC 6749 appendix A.5: state = 1*VSCHAR (%x20-7E).
+     * RFC 6749 appendix A.5
      */
     public const string STATE_PATTERN = '/^[\x20-\x7E]+$/D';
 
-    /**
-     * Free text (nonce, login_hint, logout_hint): valid UTF-8 without control characters.
-     */
     public const string TEXT_PATTERN = '/^[^\p{Cc}]+$/Du';
 
     /**
-     * RFC 5646 §2.1, loosely; whether the tag is supported is the integration's concern.
+     * RFC 5646 §2.1, loosely
      */
     public const string LANGUAGE_TAG_PATTERN = '/^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/D';
 
     /**
-     * RFC 7515 §7.1, the third segment never empty (OIDC Core §2 forbids "none").
+     * RFC 7515 §7.1
+     *
+     * The third segment is never empty: OIDC Core §2 forbids "none".
      */
     public const string COMPACT_JWS_PATTERN = '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D';
 
     /**
-     * OIDC Core §2 "acr": printable ASCII without space.
+     * OIDC Core §2
      */
     public const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
 
@@ -62,9 +54,6 @@ final readonly class RequestParameters
     }
 
     /**
-     * The parameters as an endpoint received them, whose failures are refused on the spot: no redirect
-     * URI is known yet, or the endpoint answers in JSON and never redirects at all.
-     *
      * @param array<string, mixed> $parameters
      */
     public static function of(array $parameters): self
@@ -72,10 +61,6 @@ final readonly class RequestParameters
         return new self($parameters, false);
     }
 
-    /**
-     * The same parameters, read by a stage whose failures go back to the client with "state" and "iss"
-     * (RFC 6749 §4.1.2.1, RFC 9207 §2).
-     */
     public function withRedirectableFailures(): self
     {
         return new self($this->parameters, true);
@@ -87,7 +72,7 @@ final readonly class RequestParameters
     }
 
     /**
-     * RFC 6749 §3.1: empty is omitted, repeated or nested is refused.
+     * RFC 6749 §3.1
      *
      * @throws InvalidRequestException when the parameter is not a single string
      */
@@ -113,9 +98,9 @@ final readonly class RequestParameters
     }
 
     /**
-     * RFC 6749 §4.1.1: the client names itself in every request that reaches an endpoint reading this,
-     * and one that names nobody names nothing to look up. Never redirectable: where an answer may go is
-     * read off the client, so it is not known yet.
+     * RFC 6749 §4.1.1
+     *
+     * Never redirectable: where an answer may go is read off the client, which is not known yet.
      *
      * @throws InvalidRequestException when the parameter is missing, or is not a single string
      */
@@ -155,9 +140,9 @@ final readonly class RequestParameters
     }
 
     /**
-     * OIDC Core §3.1.2.1 "ui_locales": most preferred first.
+     * OIDC Core §3.1.2.1
      *
-     * @return list<string>
+     * @return list<string> most preferred first
      */
     public function uiLocales(): array
     {
@@ -169,11 +154,9 @@ final readonly class RequestParameters
     }
 
     /**
-     * OIDC Core §3.1.2.1, CIBA Core §7.1 "acr_values": the classes the client would like the
-     * authentication to reach, in its order of preference. One reading for the two doors, the one a
-     * browser reaches and the one a client with no browser at all does.
+     * OIDC Core §3.1.2.1, CIBA Core §7.1
      *
-     * @return list<string>
+     * @return list<string> in the client's order of preference
      */
     public function acrValues(): array
     {
@@ -185,13 +168,11 @@ final readonly class RequestParameters
     }
 
     /**
-     * A parameter a specification allows to be sent several times (RFC 8707 §2), which RFC 6749 §3.1
-     * forbids for every other one: what arrives is a single string, a list of them, or nothing. Values
-     * are kept in the order they came, without repeats, and nothing is cast.
+     * RFC 8707 §2
      *
      * @throws InvalidRequestException when the parameter is neither a string nor a list of them
      *
-     * @return list<string> empty when the request carries none
+     * @return list<string>
      */
     public function repeated(string $name): array
     {

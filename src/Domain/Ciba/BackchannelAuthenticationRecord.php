@@ -28,66 +28,36 @@ use function max;
 use function sprintf;
 
 /**
- * What the provider keeps of a backchannel authentication request (CIBA Core §7): the SHA-256 of the
- * identifier the client polls with, the client it is bound to, what the request asked for, the user it
- * named, and the message that user will be shown where they approve. Where the client asked from is kept
- * beside them, because the page that asks for the approval says so (BCP 10027 §5.2): a request nobody
- * started must look like one nobody started.
+ * CIBA Core §7
  *
- * It is a record and not a request: it outlives the request that created it, with a lifetime, a use and a
- * state of its own, exactly as the device authorization request is. Two things happen to it. The user
- * answers it, once, yes or no; and the client spends it, once, the record being read once as an
- * authorization code is (RecordReadOnce). An answered record that nobody spent stays until it expires,
- * and a spent one stays so that the next presentation is told from an identifier nobody ever issued.
- *
- * A request whose hint named nobody is a record with no user, which nobody can ever answer and which
- * expires as every unanswered one does. That is deliberate and it is the whole of this provider's answer
- * to §13 "unknown_user_id": what the login page is built not to say (decision 0006, architecture §3.4) is
- * not said here either, and a client that names a stranger learns exactly what a client that names
- * somebody who never answers learns.
- *
- * What the client would like that user to prove is kept with the rest of what it asked for, and it is a
- * demand on the approval and not on the request: whether the session somebody holds proves a class is a
- * question about that person, and asking it at the endpoint would answer, to whoever authenticated as a
- * client, something about a user they only named (§13 "unknown_user_id" above).
- *
- * The session the user answered with, and what that session had proven then, are frozen here: the tokens
- * the client comes for descend from the approval and not from whatever the session became afterwards
- * (architecture §4.6). The record is also the grant those tokens descend from (GrantRecord): this flow
- * writes no authorization code, and a resource of this provider asks of a token whether the grant behind
- * it is still alive.
+ * A hint that names nobody makes a record with no user, which expires unanswered: a client that names a stranger
+ * learns no more than one whose user never answers (§13 "unknown_user_id").
  */
 final class BackchannelAuthenticationRecord extends GrantRecord implements ResolvesItsClientInterface
 {
     /**
-     * CIBA Core §7.3: the seconds a client waits between two polls when the response names none.
+     * CIBA Core §7.3
      */
     public const int DEFAULT_INTERVAL = 5;
 
     /**
-     * CIBA Core §11: the longest interval a request is made with. An interval a client is asked to respect
-     * is one it can respect, as for the device grant, and for the same reason. What "slow_down" adds
-     * afterwards is the client's doing and not bounded by this.
+     * CIBA Core §11
+     *
+     * Bounds the interval a request is made with, not what "slow_down" adds afterwards.
      */
     public const int MAX_INTERVAL = 30;
 
     /**
-     * CIBA Core §11: what "slow_down" adds to the interval, for that request and every one after it.
+     * CIBA Core §11
      */
     public const int INTERVAL_INCREASE = 5;
 
     public readonly Tenant $tenant;
 
-    /**
-     * What a store keeps; the object is what the client repository resolved for it.
-     */
     public readonly string $clientId;
 
     /**
-     * CIBA Core §11: the seconds the client is asked to wait between two polls, as this record has come
-     * to expect them.
-     *
-     * @var positive-int
+     * @var positive-int in seconds
      */
     public private(set) int $interval;
 
@@ -102,19 +72,12 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     public private(set) ?AuthenticationSnapshot $authentication = null;
 
     /**
-     * @param string $authRequestIdHash the hex SHA-256 of the auth_req_id (DrawnSecret)
-     * @param Uuid $grantId the grant the tokens of this request will name
-     * @param User|null $user the user the hint named, null when it named nobody
-     * @param Scopes $scopes what the request asked for, among the ones the client registered
-     * @param ResourceIndicators|null $resources what the access token will be addressed to (RFC 8707 §2), null when the request named none
-     * @param BindingMessage|null $bindingMessage what the user is shown beside the name of the client (§7.1)
-     * @param list<string> $acrValues the classes the client would like the authentication to reach, in its order of preference (§7.1)
-     * @param string|null $sealedAuthRequestId the identifier itself, sealed, for a client this provider has to call back with it (§10.2); null for a client that only polls, which is then the only holder of it
-     * @param string|null $sealedNotificationToken the token such a client sent to recognise that call (§7.1), sealed the same way
-     * @param RequestContext $requestedFrom where the client asked from, which the approval page shows (BCP 10027 §5.2)
-     * @param int $interval the seconds between two polls the response announced, from one to MAX_INTERVAL (§7.3)
+     * @param string $authRequestIdHash the hex SHA-256 of the auth_req_id
+     * @param list<string> $acrValues in order of preference
+     * @param string|null $sealedAuthRequestId null for a client that only polls
+     * @param int $interval in seconds, from one to MAX_INTERVAL
      *
-     * @throws InvalidArgumentException when the record does not hold together
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public readonly string $authRequestIdHash,
@@ -170,10 +133,7 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     }
 
     /**
-     * What the request asks of the authentication of whoever answers it (CIBA Core §7.1, decision 0010).
-     * It is voluntary and never a condition: §7.1 takes "acr_values" and takes no "claims", so this flow
-     * has no essential form of the demand at all, and the "acr" of the tokens says what the session that
-     * approved actually proved (OIDC Core §5.5.1.1).
+     * Always voluntary: CIBA Core §7.1 takes "acr_values" and no "claims".
      */
     public function requestedAuthenticationContext(): AuthenticationContextRequest
     {
@@ -181,10 +141,9 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     }
 
     /**
-     * CIBA Core §7.3: a positive number of seconds, rounded up so that the client is never told a
-     * lifetime longer than the one the record has.
+     * CIBA Core §7.3
      *
-     * @return positive-int
+     * @return positive-int in seconds
      */
     public function expiresIn(DateTimeImmutable $now): int
     {
@@ -196,10 +155,6 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
         return $this->clientId === $client->registration->clientId && $this->tenant->equals($client->tenant);
     }
 
-    /**
-     * CIBA Core §7.1: the request named its user, and that user is the only one who may answer it. A
-     * request that named nobody is answered by nobody.
-     */
     public function mayBeAnsweredBy(User $user): bool
     {
         return $this->user !== null && $this->user->id->equals($user->id) && $user->tenant->equals($this->tenant);
@@ -221,12 +176,8 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     }
 
     /**
-     * CIBA Core §10.1: the user said yes, on a page of this provider, signed in as the one the request
-     * named. The session they said it with, and the class it had proven then, are what every token of
-     * this grant will descend from.
-     *
-     * @throws InvalidArgumentException when the session is not the one of the user this request named
-     * @throws LogicException when the request was answered already; whoever answers reads isAnswered() first
+     * @throws InvalidArgumentException when the session is not of the user this request named
+     * @throws LogicException when the request was answered already
      */
     public function approve(AuthenticationSession $session, AuthenticationSnapshot $authentication, DateTimeImmutable $now): void
     {
@@ -240,8 +191,6 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     }
 
     /**
-     * CIBA Core §11: the user said no, and the client learns "access_denied".
-     *
      * @throws LogicException when the request was answered already
      */
     public function deny(DateTimeImmutable $now): void
@@ -251,10 +200,9 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     }
 
     /**
-     * CIBA Core §11: whether the client polled sooner than the interval it was given, in which case it is
-     * told "slow_down" and the interval grows by five seconds, for that request and every one after it,
-     * which is what the client is told to do with it. Every poll is recorded, the refused ones included:
-     * asking again does not buy a faster answer.
+     * CIBA Core §11
+     *
+     * Records every poll, the refused ones included, and grows the interval when the poll came too soon.
      */
     public function polledTooSoon(DateTimeImmutable $now): bool
     {
@@ -294,9 +242,6 @@ final class BackchannelAuthenticationRecord extends GrantRecord implements Resol
     }
 
     /**
-     * The message the person will read and the provenance of the request are sealed; the identifier of the request
-     * and the token the notification is sent with are envelopes.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

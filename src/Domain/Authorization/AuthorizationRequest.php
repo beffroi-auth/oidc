@@ -21,8 +21,7 @@ use function in_array;
 use function sprintf;
 
 /**
- * An authorization request that passed both stages of validation (RFC 6749 §4.1.1, OIDC Core §3.1.2.1,
- * architecture §4.2), already typed; nothing is read from the raw parameters again.
+ * RFC 6749 §4.1.1, OIDC Core §3.1.2.1
  */
 final readonly class AuthorizationRequest implements ClassifiedFieldsInterface
 {
@@ -32,10 +31,6 @@ final readonly class AuthorizationRequest implements ClassifiedFieldsInterface
      * @param list<string> $uiLocales most preferred first
      * @param list<string> $acrValues in order of preference
      * @param string|null $idTokenHint a compact JWS, verified by the interaction
-     * @param KeyConfirmation|null $dpopKey the key the client asks the code to be reserved for ("dpop_jkt", RFC 9449 §10), null when it asks for none
-     * @param ResourceIndicators|null $resources the resources the tokens are asked for ("resource", RFC 8707 §2.1), null when the request names none
-     * @param string $responseMode the wired mode the answer is delivered in, resolved by the parser against what the integration serves (RedirectTarget)
-     * @param AuthorizationDetails|null $authorizationDetails what the request asks for beyond its scopes ("authorization_details", RFC 9396 §2), null when it asks for none
      */
     public function __construct(
         public Client $client,
@@ -70,10 +65,7 @@ final readonly class AuthorizationRequest implements ClassifiedFieldsInterface
     }
 
     /**
-     * OIDC Core §3.1.2.1 max_age: whether the latest proof of the session is older than the request allows, its
-     * "auth_time" plus max_age seconds before now; never when the request names no max_age. The login page asks for a
-     * new login on it (AuthenticationRequirement), and the service provider of a tenant asks an upstream identity
-     * provider for one (beffroi/saml, spec/saml.md S-49).
+     * OIDC Core §3.1.2.1
      */
     public function maxAgeExceededBy(AuthenticationSession $session, DateTimeImmutable $now): bool
     {
@@ -81,10 +73,7 @@ final readonly class AuthorizationRequest implements ClassifiedFieldsInterface
     }
 
     /**
-     * The two hints a client may send name the person it asks for, and they are sealed under the family of the one
-     * entity that embeds this object. An embeddable fixes the type of each of its fields once for the whole model,
-     * so a second entity embedding it would seal them into the scope of another table, which the walk of the
-     * schema refuses (Sealed).
+     * Only one entity may embed this object: the hints it seals belong to the family of that entity.
      *
      * @return array<string, FieldClassificationInterface>
      */

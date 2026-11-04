@@ -25,22 +25,12 @@ use Beffroi\Oidc\Exception\LogicException;
 use function min;
 
 /**
- * A refresh token (RFC 6749 §6, architecture §4.6) as the provider keeps it: the SHA-256 of the value,
- * its family, the authentication of the original authorization carried along the rotations (OIDC Core
- * §12.2). Presented once; a second presentation is a reuse (RFC 9700 §4.13.2).
- *
- * One issued to a public client keeps what the request that got it proved (RFC 8705 §4, RFC 9449 §5):
- * such a client has no credentials, so the binding is the only thing that tells its holder from
- * whoever took a copy. One issued to a confidential client keeps none: what it authenticates with is
- * what it is asked for again, at every refresh.
+ * RFC 6749 §6, RFC 9700 §4.13.2
  */
 final class RefreshToken extends ExpiringRecord implements HashedTokenInterface, ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
     public readonly Tenant $tenant;
 
-    /**
-     * What a store keeps; the object is what the client repository resolved for it.
-     */
     public readonly string $clientId;
 
     public private(set) ?DateTimeImmutable $rotatedAt = null;
@@ -48,12 +38,10 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
     /**
-     * @param string $tokenHash the hex SHA-256 of the value drawn for it, see DrawnSecret
-     * @param ResourceIndicators|null $resources the resources of the whole grant, which a refresh is bound to and may narrow (RFC 8707 §2.2), null when the authorization named none
-     * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes, which a refresh is bound to and may narrow (RFC 9396 §7), null when they agreed to none
-     * @param AuthenticationSnapshot $authentication what the session had proven at the grant, the same for the whole family
-     * @param ConfirmationInterface|null $confirmation what a refresh of this token has to prove again (RFC 9449 §5), null when the client proves itself another way
-     * @param DateTimeImmutable $expiresAt the sliding expiry, never past the one of the family
+     * @param ResourceIndicators|null $resources the whole grant's, which a refresh may narrow (RFC 8707 §2.2)
+     * @param AuthorizationDetails|null $authorizationDetails the whole grant's, which a refresh may narrow (RFC 9396 §7)
+     * @param AuthenticationSnapshot $authentication as proven at the grant, the same for the whole family
+     * @param DateTimeImmutable $expiresAt sliding, never past the family's
      */
     public function __construct(
         public readonly string $tokenHash,
@@ -104,27 +92,22 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
             $authorization->client,
             $authorization->session,
             $authorization->grantedScopes,
-            // RFC 8707 §2.2, RFC 9396 §7: a refresh token is bound to the full original grant, whatever
-            // subset of its resources and of its details the access token beside it was narrowed to
             $authorization->grantedResources,
             $authorization->grantedAuthorizationDetails,
             $authorization->claimsRequest,
             $authorization->authentication,
             $now,
             min($expiresAt, $family->expiresAt),
-            // RFC 8705 §4, RFC 9449 §5: a public client is bound by what it proved, a confidential one
-            // by what it authenticates with, which the endpoint asks of it again anyway
+            // A confidential client authenticates at every refresh, so only a public client's token keeps its binding.
             $authorization->client->registration->isPublic() ? $authorization->confirmation : null,
         );
     }
 
     /**
-     * Whether this token is protected by being replaced at every use (RFC 9700 §4.13.2), which is the
-     * last term of a disjunction and not a rule of its own. A refresh token is told from a copy of
-     * itself by one of three things: the authentication of a confidential client, the key or the
-     * certificate it is bound to, or rotation. Where one of the first two holds, rotation adds nothing,
-     * and FAPI 2.0 Security Profile §5.3.2.1-9 forbids it for that very reason: a client that loses the
-     * answer to a refresh would be locked out of a grant it still holds.
+     * RFC 9700 §4.13.2
+     *
+     * Where client authentication or a binding protects the token, rotation adds nothing and FAPI 2.0 Security
+     * Profile §5.3.2.1-9 forbids it.
      */
     public function rotatesOnUse(): bool
     {
@@ -132,9 +115,7 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     }
 
     /**
-     * RFC 9449 §5: whether the request refreshing this token proved what it is bound to. A token bound
-     * to nothing is refreshed by the client it was issued to, which the endpoint authenticated before
-     * the grant was even reached.
+     * RFC 9449 §5
      */
     public function isRefreshedBy(?ConfirmationInterface $confirmation): bool
     {
@@ -142,7 +123,7 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     }
 
     /**
-     * RFC 6749 §6, RFC 9700 §4.13.2. The grant reads isRotated() first: a second presentation is a reuse.
+     * RFC 6749 §6, RFC 9700 §4.13.2
      */
     public function rotate(DateTimeImmutable $now): void
     {
@@ -155,9 +136,6 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
         $this->rotatedAt = $now;
     }
 
-    /**
-     * The first revocation wins.
-     */
     public function revoke(DateTimeImmutable $now): void
     {
         if ($this->revokedAt !== null) {
@@ -182,9 +160,6 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     }
 
     /**
-     * The token is held as a digest; what is left is what the request asked, what the session proved and the
-     * instants of the rotation.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

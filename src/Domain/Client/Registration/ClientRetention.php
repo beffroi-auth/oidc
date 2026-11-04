@@ -7,13 +7,7 @@ namespace Beffroi\Oidc\Domain\Client\Registration;
 use DateTimeImmutable;
 
 /**
- * What a tenant still keeps of the clients that registered themselves, at one instant (decision 0009): two
- * dates, because a client that was used and a client that never was are not worth the same. A client used
- * before the first is dropped; a client that was never used and registered before the second is dropped.
- *
- * Two dates and not two durations, because that is what a store can ask its rows: a purge that had to read
- * every row to subtract a duration from the instant would be a purge that reads the table it is there to
- * keep small.
+ * A client is kept when used since $usedSince or, never used, registered since $registeredSince.
  */
 final readonly class ClientRetention
 {

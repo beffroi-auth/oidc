@@ -11,18 +11,9 @@ use Beffroi\Oidc\Domain\Client\KeyBearingMethodInterface;
 use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
 
 /**
- * "self_signed_tls_client_auth" (RFC 8705 §2.2): the client presents a certificate it signed itself, and
- * the provider authenticates it when that certificate is one of those the client publishes in its JWK
- * Set, in the "x5c" of a key (RFC 7517 §4.7) or by the thumbprint of §4.9.
+ * RFC 8705 §2.2, RFC 7517 §4.7, §4.9
  *
- * There is no chain and no trust store: what is trusted is what the client published, exactly as for the
- * keys of "private_key_jwt". The certificate itself is compared and not the key inside it, because a
- * certificate reissued on the same key is another certificate: §2.2 authenticates a certificate the
- * client registered, and §3.1 binds the tokens of that request to the thumbprint of that very one.
- *
- * A client that rotates its certificate publishes the new one before presenting it, which is the same
- * discipline a client that rotates a signing key follows; a set behind a "jwks_uri" is read back with
- * the guard time of ClientKeySetProvider.
+ * The certificate itself is compared, not its key: one reissued on the same key is another certificate.
  */
 final readonly class SelfSignedTlsClientAuth extends CertificateMethod implements KeyBearingMethodInterface
 {

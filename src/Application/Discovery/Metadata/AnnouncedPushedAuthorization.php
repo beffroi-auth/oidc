@@ -10,8 +10,7 @@ use Beffroi\Oidc\Port\MetadataContributorInterface;
 use Beffroi\Oidc\Port\PushedAuthorizationRequirementInterface;
 
 /**
- * RFC 9126 §5: where a request is pushed, and whether pushing it is the only way in, which is what every
- * client registered here requires and not a switch of the deployment (§6).
+ * RFC 9126 §5
  */
 final readonly class AnnouncedPushedAuthorization implements MetadataContributorInterface
 {

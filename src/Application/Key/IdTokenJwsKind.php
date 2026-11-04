@@ -10,9 +10,6 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Core\Port\KeyBoundArtifactInterface;
 use Beffroi\Oidc\Application\Token\JwtIdTokenIssuer;
 
-/**
- * The ID token (OIDC Core §2). The lifetime is read from the issuer so that the two cannot disagree.
- */
 final readonly class IdTokenJwsKind implements KeyBoundArtifactInterface
 {
     public function __construct(

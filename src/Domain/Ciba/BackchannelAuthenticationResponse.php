@@ -8,12 +8,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * The successful acknowledgement of the backchannel authentication endpoint (CIBA Core §7.3): what the
- * client comes back to the token endpoint with, for how long it is worth anything, and how often it may
- * ask. Never cached, the identifier being a credential of one use.
- *
- * Three members and no more: the tokens of this flow are handed out at the token endpoint and nowhere
- * else, which is what makes "push" a mode this provider does not serve (§10.3, decision 0006).
+ * CIBA Core §7.3
  */
 final readonly class BackchannelAuthenticationResponse
 {
@@ -22,7 +17,7 @@ final readonly class BackchannelAuthenticationResponse
     public const int STATUS_CODE = 200;
 
     /**
-     * CIBA Core §7.3, for the errors of §13 as well.
+     * CIBA Core §7.3, §13
      */
     public const array HEADERS = [
         'Cache-Control' => 'no-store',
@@ -30,11 +25,10 @@ final readonly class BackchannelAuthenticationResponse
     ];
 
     /**
-     * @param string $authRequestId what the client comes back to the token endpoint with (§7.3)
-     * @param int $expiresIn the seconds the request still lives, at least one
-     * @param int $interval the seconds the client waits between two polls, at least one
+     * @param int $expiresIn in seconds, at least one
+     * @param int $interval in seconds, at least one
      *
-     * @throws InvalidArgumentException when the answer says nothing a client could use
+     * @throws InvalidArgumentException
      */
     public function __construct(
         #[SensitiveParameter]

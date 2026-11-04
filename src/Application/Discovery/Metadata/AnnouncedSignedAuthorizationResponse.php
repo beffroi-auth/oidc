@@ -10,9 +10,7 @@ use Beffroi\Oidc\Port\MetadataContributorInterface;
 use Beffroi\Oidc\Port\ServedResponseModesInterface;
 
 /**
- * JARM §3: what a signed authorization response is signed with, which is what the provider signs every
- * other JWS with, and what it may be encrypted to a key of the client with. A deployment that wires no
- * signed mode announces nothing at all here rather than empty lists: there is no answer to sign.
+ * JARM §3
  */
 final readonly class AnnouncedSignedAuthorizationResponse implements MetadataContributorInterface
 {

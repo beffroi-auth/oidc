@@ -10,13 +10,7 @@ use Beffroi\Oidc\Domain\Flow\TokenEndpointHops;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * The flow of a grant that sends the user's browser back to the client (RFC 6749 §4.1): the browser
- * carries the request to this provider, carries the response back, and the client then spends what it
- * was given at the token endpoint, server to server, where no browser goes.
- *
- * Four hops and no more: the client building the request and the browser landing at the redirect URI
- * carry the same two payloads as the hops below, and a drawing that showed them twice would say the
- * flow exchanged twice what it exchanged once.
+ * RFC 6749 §4.1
  */
 final readonly class TheUserIsSentToTheClient implements FlowShapeInterface
 {

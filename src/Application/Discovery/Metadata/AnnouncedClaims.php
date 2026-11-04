@@ -11,8 +11,7 @@ use Beffroi\Oidc\Port\ClaimsProviderInterface;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * OIDC Discovery §3: the claims the provider may put in a token or a UserInfo answer, "sub" always among
- * them, and that a client may ask for them by name with the "claims" parameter (OIDC Core §5.5).
+ * OIDC Discovery §3
  */
 final readonly class AnnouncedClaims implements MetadataContributorInterface
 {

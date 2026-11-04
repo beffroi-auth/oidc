@@ -13,20 +13,6 @@ use Beffroi\Oidc\Domain\Client\HashedClientSecret;
 use Beffroi\Oidc\Domain\Client\SharedClientSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
-/**
- * The document the secret the provider handed a client is kept as (RFC 7591 §3.2.1), one document in one
- * column so that the day a deployment encrypts it at rest is the day one column changes and nothing else.
- *
- * A secret is kept in one of the two shapes the domain has, and the document says which: the digest of a
- * secret the provider cannot read back, which is what a method that receives one verifies against
- * (RFC 6749 §2.3.1), or the secret itself, which is what a method that signs with it needs
- * (OIDC Core §9, "client_secret_jwt"). The two are not an open set the wiring decides, as the kinds of
- * confirmation are: either the provider can compute what the client computed, or it cannot.
- *
- * The digest is the document of a password hash and never a second shape of one (StoredPasswordHash),
- * which is also why this is a use case: reading the hash back names an algorithm, and the algorithm is
- * the class the wiring holds for that name (decision 0002).
- */
 final readonly class StoredClientSecret
 {
     private const string HASH = 'hash';
@@ -41,7 +27,7 @@ final readonly class StoredClientSecret
     }
 
     /**
-     * @throws InvalidArgumentException when the secret is of neither shape this provider keeps
+     * @throws InvalidArgumentException
      *
      * @return array<string, mixed>
      */
@@ -64,8 +50,8 @@ final readonly class StoredClientSecret
     /**
      * @param array<array-key, mixed> $document
      *
-     * @throws InvalidArgumentException when the document carries neither shape
-     * @throws CoreInvalidArgumentException when the hash it carries is not one this deployment can read
+     * @throws InvalidArgumentException
+     * @throws CoreInvalidArgumentException when the hash is not one this deployment can read
      */
     public function of(array $document): ClientSecretInterface
     {

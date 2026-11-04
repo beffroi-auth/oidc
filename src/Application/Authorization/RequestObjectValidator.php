@@ -13,29 +13,12 @@ use Beffroi\Oidc\Exception\InvalidRequestObjectException;
 use function in_array;
 
 /**
- * What a request object has to say once its signature has been verified (RFC 9101 §6.1, OIDC Core §6.1).
- * "iss" names the client, so an object minted for one client cannot be presented for another. "aud"
- * names the issuer of the tenant, so an object minted for another provider, or for another tenant of
- * this one, is not replayed here (RFC 9101 §10.2). "exp" and "nbf" are both there and bounded, so that
- * an object is a request made now and not a bearer authorization a client keeps for a year, which is
- * what FAPI 2.0 Message Signing asks of one. The "client_id" the object carries is the one the request
- * names outside it, the two being one client.
+ * RFC 9101 §6.1, OIDC Core §6.1
  *
- * Those four claims bound what a signature proves, and they are asked of an object that carries one,
- * whichever client sent it: RFC 9101 §4 makes "iss" and "aud" a SHOULD and names neither of the other
- * two, and decision 0012 opens an exemption on the four to no client, which is what refuses the object of
- * one module of the Dynamic OP plan (oidcc-request-uri-signed-rs256, issue #385).
- * An object with "alg": "none", read from the one client that registered it (decision 0006), proves
- * nothing: whoever wrote the object wrote its claims, and asking it for an "iss" would ask a forger to
- * name himself. OIDC Core §6.1 makes them optional for exactly that kind of object, and the "client_id"
- * rule, which the query decides and not the object, is asked of both.
+ * An unsigned object proves nothing, so of its claims only "client_id" is checked.
  */
 final readonly class RequestObjectValidator
 {
-    /**
-     * @param DateInterval $maximumLifetime how long a request object may stand, from its "nbf"
-     * @param DateInterval $leeway what is allowed of the clock of the client, both ways
-     */
     public function __construct(
         public DateInterval $maximumLifetime,
         private DateInterval $leeway,

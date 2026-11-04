@@ -8,7 +8,7 @@ use RuntimeException;
 use function sprintf;
 
 /**
- * Resumed after its lifetime; shown to the user, never sent to the client.
+ * Shown to the user, never sent to the client.
  */
 final class InteractionExpiredException extends RuntimeException implements ExceptionInterface
 {

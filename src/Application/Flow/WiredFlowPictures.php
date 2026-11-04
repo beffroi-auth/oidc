@@ -12,23 +12,11 @@ use Beffroi\Oidc\Port\FlowPicturesInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 use function sprintf;
 
-/**
- * The pictures of the flows this provider serves, read from the grants the token endpoint is wired with
- * (issue #462). One picture per wired grant, in the order the grants are wired: the opening its
- * capabilities give it, then every closing they give it, in the order the shapes are wired.
- *
- * No list of flows is kept beside the wiring, exactly as the discovery document announces what is
- * wired (issue #98): a grant unwired takes its picture away, and a grant added brings the picture its
- * capabilities draw without a line being edited here.
- *
- * A grant two openings claim is refused, where the wiring is collected: two ways of reaching a token
- * is not a flow, it is two, and a grant that declares both has to say which one its picture is.
- */
 final readonly class WiredFlowPictures implements FlowPicturesInterface
 {
     /**
      * @param iterable<FlowShapeInterface> $openings how a flow reaches a token, one per grant
-     * @param iterable<FlowShapeInterface> $closings what is then done with it, as many as apply
+     * @param iterable<FlowShapeInterface> $closings what is then done with the token
      */
     public function __construct(
         private ServedGrantsInterface $served,

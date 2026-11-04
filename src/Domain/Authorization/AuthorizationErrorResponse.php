@@ -11,8 +11,7 @@ use Beffroi\Oidc\Exception\OAuth2Exception;
 use function sprintf;
 
 /**
- * An error sent back to the client (RFC 6749 §4.1.2.1), always with "iss" (RFC 9207 §2). Built only from
- * a redirectable error (RFC 9700 §4.1).
+ * RFC 6749 §4.1.2.1, RFC 9207 §2
  */
 final readonly class AuthorizationErrorResponse
 {

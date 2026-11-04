@@ -8,8 +8,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * The successful answer of the pushed authorization request endpoint (RFC 9126 §2.2): the reference and
- * how long it lives, under a 201 and never cached, the reference being a credential of one use.
+ * RFC 9126 §2.2
  */
 final readonly class PushedAuthorizationResponse
 {
@@ -18,7 +17,7 @@ final readonly class PushedAuthorizationResponse
     public const int STATUS_CODE = 201;
 
     /**
-     * RFC 9126 §2.2, for the errors of §2.3 as well.
+     * RFC 9126 §2.2, §2.3
      */
     public const array HEADERS = [
         'Cache-Control' => 'no-cache, no-store',
@@ -26,7 +25,7 @@ final readonly class PushedAuthorizationResponse
     ];
 
     /**
-     * @param int $expiresIn the seconds the reference still lives, at least one (RFC 9126 §2.2)
+     * @param int $expiresIn seconds, at least one
      */
     public function __construct(
         #[SensitiveParameter]

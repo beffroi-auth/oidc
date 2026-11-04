@@ -15,21 +15,12 @@ use function count;
 use function in_array;
 
 /**
- * What a client assertion has to say once its signature has been verified (RFC 7523 §3, OIDC Core §9),
- * the same for every method that carries one. "iss" and "sub" both name the client, so an assertion
- * cannot be presented for another one. "aud" names this provider, once and by one of the names this
- * client may name it by, which AcceptedAssertionAudiences answers: one name and not two, because an
- * assertion made for this provider and for somebody else was made for somebody else. "exp" is there and
- * is bounded, so that an assertion is not a bearer token for a year. "jti" is there and is remembered
- * until "exp", so that an assertion authenticates once.
+ * RFC 7523 §3, OIDC Core §9
+ *
+ * An "aud" of several values is refused, even when one of them names this provider.
  */
 final readonly class ClientAssertionValidator
 {
-    /**
-     * @param AcceptedAssertionAudiences $audiences the names of this provider this client may name
-     * @param DateInterval $maximumLifetime how far ahead of the request an "exp" may be
-     * @param DateInterval $leeway what is allowed of the clock of the client, both ways
-     */
     public function __construct(
         private ClientAssertionReplayGuardInterface $replays,
         private AcceptedAssertionAudiences $audiences,
@@ -39,9 +30,6 @@ final readonly class ClientAssertionValidator
     }
 
     /**
-     * @param AssertionMethodInterface $method the method the assertion was presented under, which the
-     *                                         audit trail records with the refusal
-     *
      * @throws ClientAuthenticationFailure
      */
     public function validate(AssertionMethodInterface $method, UnverifiedJwt $assertion, Client $client, ClientAuthenticationRequest $request): void

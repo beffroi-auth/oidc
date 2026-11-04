@@ -9,31 +9,23 @@ use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Oidc\Domain\Ciba\BackchannelAuthenticationRecord;
 
 /**
- * Where the record of a backchannel authentication request waits for its user and for the client that
- * comes back for it (CIBA Core §7, §10.1). A spent record stays until it expires, so that its second
- * presentation can be told from an auth_req_id nobody ever issued; what is past its lifetime grants
- * nothing whether the store still holds it or not.
+ * A spent record stays until it expires, so that its second presentation can be told from an unknown auth_req_id.
  */
 interface BackchannelAuthenticationRecordRepositoryInterface
 {
     /**
-     * @param string $authRequestIdHash the hex SHA-256 of the auth_req_id the client comes back with
+     * @param string $authRequestIdHash the hex SHA-256 of the auth_req_id
      */
     public function findByAuthRequestIdHash(string $authRequestIdHash): ?BackchannelAuthenticationRecord;
 
     /**
-     * What the page where a user answers reads: the requests made for that user that are still waiting
-     * for an answer, oldest first. A request that expired, that was answered or that was spent is not one
-     * of them.
-     *
-     * @return list<BackchannelAuthenticationRecord>
+     * @return list<BackchannelAuthenticationRecord> oldest first
      */
     public function awaitingAnAnswerBy(User $user, DateTimeImmutable $now): array;
 
     /**
-     * Atomic: of any number of requests presenting the same auth_req_id at once, exactly one is told true
-     * (CIBA Core §10.1, an auth_req_id being spent once). A caller told false holds a record whose state
-     * is the winner's.
+     * Atomic: of concurrent requests presenting the same auth_req_id, exactly one is told true, and a caller told false
+     * holds a record whose state is the winner's (CIBA Core §10.1).
      */
     public function consume(BackchannelAuthenticationRecord $record, DateTimeImmutable $now): bool;
 

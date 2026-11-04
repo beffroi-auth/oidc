@@ -9,8 +9,7 @@ use Beffroi\Oidc\Port\EndpointLocatorInterface;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * OIDC Discovery §3: who the provider is and where its four endpoints are. Every provider has these,
- * whatever else it is wired with.
+ * OIDC Discovery §3
  */
 final readonly class ProviderIdentity implements MetadataContributorInterface
 {

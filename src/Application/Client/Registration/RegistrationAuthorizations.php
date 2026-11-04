@@ -11,14 +11,6 @@ use Beffroi\Oidc\Exception\LogicException;
 use function implode;
 use function sprintf;
 
-/**
- * The ways a registration may be authorised that the wiring gave the provider (decision 0009), each
- * under the name it gives itself. The one source of truth over them: a registration policy names one of
- * these names, and what serves it is looked up here rather than decided anywhere by a case.
- *
- * A policy that names a mode nothing serves is a deployment that wired one thing and wrote another, and
- * it is told which modes it wired.
- */
 final readonly class RegistrationAuthorizations
 {
     /**
@@ -27,7 +19,7 @@ final readonly class RegistrationAuthorizations
     private array $modes;
 
     /**
-     * @param iterable<RegistrationAuthorizationInterface> $modes in the order they are wired
+     * @param iterable<RegistrationAuthorizationInterface> $modes
      *
      * @throws InvalidArgumentException when two of them answer to one name
      */

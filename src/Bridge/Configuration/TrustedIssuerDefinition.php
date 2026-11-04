@@ -21,15 +21,6 @@ use function is_array;
 use function is_string;
 use function sprintf;
 
-/**
- * One trusted issuer as the configuration declares it (architecture §5.1), read strictly, nothing cast. It is
- * validated at boot, so a tenant that declares an issuer it cannot read, an algorithm nothing verifies or a
- * client that does not exist learns it when the deployment starts and not when an assertion arrives.
- *
- * The keys are declared inline or behind a URL, one or the other and never both, as a client declares its own
- * (RFC 7591 §2): a declaration that carries both, and one that carries neither, is an issuer nothing could be
- * verified against, and it fails at boot.
- */
 final readonly class TrustedIssuerDefinition
 {
     private const array KEYS = [
@@ -48,9 +39,8 @@ final readonly class TrustedIssuerDefinition
 
     /**
      * @param array<string, mixed> $definition the keys of architecture §5.1, in snake_case
-     * @param SignatureAlgorithmsInterface $algorithms what the provider verifies a signature with: an issuer is trusted to sign with those names and no other
      *
-     * @throws InvalidArgumentException when the declaration does not hold together
+     * @throws InvalidArgumentException
      */
     public static function fromArray(string $issuer, array $definition, SignatureAlgorithmsInterface $algorithms): self
     {
@@ -70,11 +60,6 @@ final readonly class TrustedIssuerDefinition
     }
 
     /**
-     * RFC 7517 §5: the keys the tenant trusts this issuer by, written down in "jwks" or read back from the
-     * "jwks_uri" it publishes them behind, one or the other and never both (RFC 7591 §2). Public keys only,
-     * which ClientJwks is the invariant behind, and a URL this provider is willing to call, which ClientUri
-     * is the invariant behind.
-     *
      * @param array<string, mixed> $definition
      *
      * @throws InvalidArgumentException
@@ -107,10 +92,6 @@ final readonly class TrustedIssuerDefinition
     }
 
     /**
-     * RFC 7515 §4.1.1: what an assertion of this issuer may be signed with, among the algorithms the provider
-     * is wired with. An algorithm nothing verifies is refused at boot rather than at the first assertion, and
-     * a deployment that drops an algorithm from its wiring drops it from every issuer with it.
-     *
      * @param array<string, mixed> $definition
      *
      * @throws InvalidArgumentException
@@ -145,9 +126,6 @@ final readonly class TrustedIssuerDefinition
     }
 
     /**
-     * RFC 6749 §3.3: what this issuer is trusted for, at least one scope; an issuer trusted for none could ask
-     * for nothing, so a declaration that names none is a declaration of nothing.
-     *
      * @param array<string, mixed> $definition
      *
      * @throws InvalidArgumentException

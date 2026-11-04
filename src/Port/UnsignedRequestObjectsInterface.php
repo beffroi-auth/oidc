@@ -7,11 +7,7 @@ namespace Beffroi\Oidc\Port;
 use Beffroi\Core\Domain\Tenant\Tenant;
 
 /**
- * Whether a client of a tenant registered "request_object_signing_alg": "none" (OIDC Registration §2).
- * The document says what is wired and nothing else (issue #98): "none" is announced in
- * "request_object_signing_alg_values_supported" when a client registered it and is absent otherwise, so
- * that a deployment whose clients all sign their request objects never announces that it would read an
- * unsigned one.
+ * True when a client of the tenant registered "request_object_signing_alg": "none" (OIDC Registration §2).
  */
 interface UnsignedRequestObjectsInterface
 {

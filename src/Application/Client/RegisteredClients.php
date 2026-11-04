@@ -20,21 +20,6 @@ use Beffroi\Oidc\Port\RegisteredResourcesInterface;
 use Beffroi\Oidc\Port\RegisteredScopesInterface;
 use Beffroi\Oidc\Port\UnsignedRequestObjectsInterface;
 
-/**
- * The clients of a tenant, read from every source the wiring holds and answered as one (architecture
- * §4.1): the clients a deployment declared, those that registered themselves, and whatever source comes
- * after them. Nothing downstream learns which source a client came from, and a source added later is a
- * class and a line of wiring.
- *
- * The questions about the **set** of clients of a tenant are answered here and nowhere else (issue #98):
- * which resources and which scopes exist for it, which shapes of access token it issues, whether every
- * client of it pushes its requests, and whether one of them reads an unsigned request object. A source
- * says what it holds and never what the set of them means, so a store that keeps its clients in rows
- * writes none of these rules a second time in the idiom of its store.
- *
- * An identifier belongs to one client of a tenant, whatever the source: the provider draws it and refuses
- * a draw any source already holds (`ClientIdentifierDrawer`), so the first source that carries it answers.
- */
 final readonly class RegisteredClients implements
     ClientRepositoryInterface,
     PushedAuthorizationRequirementInterface,
@@ -44,8 +29,7 @@ final readonly class RegisteredClients implements
     UnsignedRequestObjectsInterface
 {
     /**
-     * @param iterable<ClientSourceInterface> $sources in the order they are wired, the configuration of
-     *                                                 the deployment first
+     * @param iterable<ClientSourceInterface> $sources the deployment's configuration first
      */
     public function __construct(
         private iterable $sources,
@@ -64,10 +48,6 @@ final readonly class RegisteredClients implements
         return null;
     }
 
-    /**
-     * RFC 8707 §2: what the clients of the tenant may ask a token for, which is what the document
-     * enumerates (RFC 9728 §4), each resource named once.
-     */
     public function resourcesRegisteredIn(Tenant $tenant): array
     {
         $resources = [];
@@ -82,10 +62,6 @@ final readonly class RegisteredClients implements
         return $resources;
     }
 
-    /**
-     * OIDC Discovery §3: the scopes the clients of the tenant registered, which is one of the two places
-     * a scope that stands for no claim comes from (issue #278), each named once.
-     */
     public function scopesRegisteredIn(Tenant $tenant): array
     {
         $scopes = [];
@@ -100,10 +76,6 @@ final readonly class RegisteredClients implements
         return $scopes;
     }
 
-    /**
-     * Architecture §4.6: whether a client of this tenant receives its access tokens in that shape, which
-     * is what says whether the provider writes one at all for it.
-     */
     public function issuesAccessTokensIn(Tenant $tenant, AccessTokenShapeInterface $shape): bool
     {
         foreach ($this->registrationsIn($tenant) as $registration) {
@@ -116,9 +88,7 @@ final readonly class RegisteredClients implements
     }
 
     /**
-     * RFC 9126 §5: the document says so when every client of the tenant does, which is what makes it the
-     * truth about the endpoint and not a second place to keep in agreement (issue #98). A tenant no
-     * source holds a client of requires nothing of anybody.
+     * RFC 9126 §5
      */
     public function requiresPushedAuthorizationRequests(Tenant $tenant): bool
     {
@@ -133,10 +103,6 @@ final readonly class RegisteredClients implements
         );
     }
 
-    /**
-     * OIDC Registration §2: the document announces "none" when a client of the tenant registered it, so
-     * that what is announced is what a client of this tenant may actually send (issue #98).
-     */
     public function acceptsUnsignedRequestObjects(Tenant $tenant): bool
     {
         foreach ($this->registrationsIn($tenant) as $registration) {

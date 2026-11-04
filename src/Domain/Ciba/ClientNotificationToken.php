@@ -11,31 +11,24 @@ use function sprintf;
 use function strlen;
 
 /**
- * The bearer token a client sends with a request it expects to be called back about, and that the
- * provider presents when it calls back (CIBA Core §7.1, §10.2): "MUST be sufficiently random", "at least
- * 128 bits of entropy", "MUST NOT be longer than 1024 characters", and it is carried in an Authorization
- * header, so it is the b64token of RFC 6750 §2.1 and nothing else.
- *
- * It is a credential of the client and not of this provider: the provider never draws it, it verifies
- * that it is one a header can carry and keeps it sealed until the moment it has to present it.
+ * CIBA Core §7.1, §10.2, RFC 6750 §2.1
  */
 final readonly class ClientNotificationToken
 {
     /**
-     * RFC 6750 §2.1: b64token = 1*( ALPHA / DIGIT / "-" / "." / "_" / "~" / "+" / "/" ) *"="
+     * RFC 6750 §2.1
      */
     private const string PATTERN = '/^[A-Za-z0-9\-._~+\/]+=*$/D';
 
     /**
-     * §7.1: 128 bits of entropy is 22 characters of base64url, and a shorter value cannot carry them
-     * whatever it is made of.
+     * 128 bits of entropy (CIBA Core §7.1) take at least 22 characters of base64url.
      */
     public const int MIN_LENGTH = 22;
 
     public const int MAX_LENGTH = 1024;
 
     /**
-     * @throws InvalidArgumentException when the token is not one this provider could present again
+     * @throws InvalidArgumentException
      */
     public function __construct(
         #[SensitiveParameter]

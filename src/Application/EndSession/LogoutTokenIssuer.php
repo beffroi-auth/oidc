@@ -16,16 +16,7 @@ use Beffroi\Oidc\Port\LogoutTokenDeliveryInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 
 /**
- * Mints the logout token of one client of one ended session (Back-Channel Logout 1.0 §2.4, architecture
- * §4.9), signed by the active key of the tenant in the algorithm the client registered for its ID
- * tokens, since that is the one it knows how to verify (§2.6). The "sub" is the one the client already
- * sees (OIDC Core §8), never the internal identifier.
- *
- * **It expires when the delivery does** (§2.4 requires an "exp"): the instant is the one the delivery of
- * the token is budgeted for, read from what carries it, so that the claim and the patience of the sender
- * cannot disagree. A token whose last attempt is still in flight is still valid, and one that arrives
- * after the provider gave up is refused by whoever receives it, which is the same instant that releases
- * the signing key held back for it (`LogoutTokenJwsKind`, issue #155).
+ * Back-Channel Logout 1.0 §2.4
  */
 final readonly class LogoutTokenIssuer
 {
@@ -38,9 +29,6 @@ final readonly class LogoutTokenIssuer
     ) {
     }
 
-    /**
-     * @return string the compact JWS
-     */
     public function issue(Client $client, AuthenticationSession $session, DateTimeImmutable $now): string
     {
         $token = new LogoutToken(

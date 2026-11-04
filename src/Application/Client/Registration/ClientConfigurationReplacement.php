@@ -22,36 +22,13 @@ use function is_string;
 use function sprintf;
 
 /**
- * A client replaces its own registration (RFC 7592 §2.2). **An update is whole and never a patch**: a
- * member the client leaves out is a member it no longer registers, so what is read is a registration and
- * not a difference, and it is read by the very thing a creation is read by
- * (`RegistrationUnderThePolicy`). An update therefore cannot reach what a registration could not: the same
- * wiring, the same policy of the same tenant, the same refusals.
+ * RFC 7592 §2.2
  *
- * Nor can it undo what outranked the registration. What a software statement signed of the client is read
- * in front of what the client sends, as it was read in front of what the client sent (RFC 7591 §3.1.1),
- * RFC 7592 §3 letting the provider substitute values of its own for the ones an update asks for: whatever
- * the replacement says of its name or its logo, an attested client keeps the ones an authority signed,
- * which are the ones the consent page shows. A statement the replacement carries is a member the reader does not
- * read, the registration access token being what authorises a replacement (§2.2).
- *
- * Three members of the request are not metadata. §2.2 requires the `client_id`, and it must be the one the
- * URI names: a client may not rename itself, and a request that names another client is refused rather
- * than arbitrated. `client_id_issued_at`, `client_secret_expires_at`, `registration_access_token` and
- * `registration_client_uri` are what the provider assigned, and §2.2 says a request carries none of them.
- * The `client_secret` a client may echo back is compared with what it holds and never read back out of
- * what the provider keeps; one that is not the client's own is refused, as §2.2 requires.
- *
- * What the provider assigned does not change, the identifier, the date it was drawn on and the token the
- * client reads itself with, which is not rotated (§2.3). The secret is the one thing that may: a client
- * that registers a method proving a secret where it held none is handed one, answered once as a
- * registration answers one, and a client that registers a method proving none keeps nothing.
+ * A signed statement's members still outrank the replacement: an attested client keeps what its authority signed.
  */
 final readonly class ClientConfigurationReplacement
 {
     /**
-     * RFC 7592 §2.2: what the provider assigned, and what a request therefore does not carry.
-     *
      * @var list<string>
      */
     private const array ASSIGNED_BY_THE_PROVIDER = [
@@ -61,9 +38,6 @@ final readonly class ClientConfigurationReplacement
         'registration_client_uri',
     ];
 
-    /**
-     * RFC 7592 §2.2: the identifier the request must name, and the secret it may.
-     */
     private const string CLIENT_ID = 'client_id';
 
     private const string CLIENT_SECRET = 'client_secret';
@@ -79,9 +53,8 @@ final readonly class ClientConfigurationReplacement
     }
 
     /**
-     * @throws UnauthorizedClientConfigurationException when the request reads no client of that tenant
-     * @throws UnreadableClientMetadataException when the registration does not hold together, which is the
-     *                                           400 of RFC 7591 §3.2.2 under the error its subclass names
+     * @throws UnauthorizedClientConfigurationException
+     * @throws UnreadableClientMetadataException
      */
     public function replace(Tenant $tenant, string $clientId, RegistrationRequest $request): ClientInformationResponse
     {
@@ -154,8 +127,6 @@ final readonly class ClientConfigurationReplacement
     }
 
     /**
-     * RFC 7592 §2.2: a client may echo back the secret it was handed, and it may echo back no other.
-     *
      * @param array<string, mixed> $members
      *
      * @throws InvalidClientMetadataException

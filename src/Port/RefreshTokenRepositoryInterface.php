@@ -8,8 +8,7 @@ use Beffroi\Oidc\Domain\Token\RefreshToken;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Where refresh tokens live (architecture §4.6). Rotated and revoked tokens stay, so that a reuse can be
- * told from an unknown token.
+ * Rotated and revoked tokens stay, so that a reuse can be told from an unknown token.
  */
 interface RefreshTokenRepositoryInterface
 {

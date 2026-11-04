@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Exception;
 
 /**
- * RFC 6749 §5.2 "unauthorized_client": not registered for the grant type.
+ * RFC 6749 §5.2
  */
 final class UnauthorizedClientException extends OAuth2Exception
 {

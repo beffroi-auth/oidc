@@ -11,37 +11,25 @@ use function in_array;
 use function sprintf;
 
 /**
- * The metadata a client is registered with, read from an ordered set of sources (RFC 7591 §2, §3.1.1): the
- * first source that carries a member is the one that answers for it, so a source is put in front of
- * another and never merged into it.
+ * RFC 7591 §2, §3.1.1
  *
- * A member a source carries as null is a member it does not carry: a configuration tree fills every option
- * nobody wrote with null, and a body that sends a member as JSON null sends nothing about it.
- *
- * It answers what a value is and where it came from, and nothing about what a value means: what a member
- * is read as is the reader's (ClientMetadataReader), and the names are read there and nowhere else.
+ * A member a source carries as null is not carried: a configuration tree writes null for every option nobody set.
  */
 final readonly class ClientMetadata
 {
     /**
-     * @param non-empty-list<ClientMetadataSourceInterface> $sources the one that wins first
+     * @param non-empty-list<ClientMetadataSourceInterface> $sources the first one wins
      */
     public function __construct(
         private array $sources,
     ) {
     }
 
-    /**
-     * Whether any source carries that member.
-     */
     public function has(string $member): bool
     {
         return $this->carrying($member) !== null;
     }
 
-    /**
-     * The value of that member, from the first source that carries it, or null when no source does.
-     */
     public function value(string $member): mixed
     {
         $source = $this->carrying($member);
@@ -50,9 +38,7 @@ final readonly class ClientMetadata
     }
 
     /**
-     * Where the value of that member came from, as a refusal names it.
-     *
-     * @throws LogicException when no source carries that member
+     * @throws LogicException
      *
      * @return non-empty-string
      */
@@ -67,9 +53,6 @@ final readonly class ClientMetadata
     }
 
     /**
-     * Every member any source carries, each once, in the order the sources carry them: what the reader
-     * checks its own names against, so that a member nobody reads is refused wherever it was written.
-     *
      * @return list<string>
      */
     public function members(): array

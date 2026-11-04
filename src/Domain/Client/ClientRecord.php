@@ -26,57 +26,18 @@ use function sprintf;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * What the provider keeps of a client it registered itself (RFC 7591 §3.2.1): the tenant it belongs to,
- * the identifier the provider drew for it, the metadata as the client registered it, the secret the
- * provider handed it in the shape the registered method verifies against, the token that client reads
- * and deletes itself with (RFC 7592 §2.3), and the two dates the registration response carries.
- *
- * The metadata is kept as it was registered, in the names of RFC 7591 §2, and is read back by the reader
- * a declaration goes through: a row is not a second spelling of a registration, and a member this
- * provider learns to read tomorrow is read from the rows that already carry it.
- *
- * What the registration policy of the tenant wrote on the registration is kept beside it and not among
- * it (decision 0017): it is not what the client asked for, and the two would otherwise be one column a
- * client could write half of. It is read back in front of the members the client sent, so that what a
- * policy granted at the registration is what the client is registered with until that policy writes the
- * registration again (RFC 7592 §2.2).
- *
- * What a software statement signed of the client (RFC 7591 §2.3) is kept beside the registration too, and
- * for the same reason. It is among the members the client is registered with, the statement outranking
- * what the client sent (§3.1.1), and it is kept apart as well because a replacement is read from what the
- * client sends (RFC 7592 §2.2): read from that alone, what the client types would replace what an
- * authority signed, the name and the logo the consent page shows among them. Kept apart, it is read in
- * front of every replacement as it was read in front of the registration, and it changes with none of
- * them.
- *
- * Neither the secret nor the registration access token is among those members. RFC 7591 §2 has no member
- * for either, the provider assigns both (§3.2.1), and each is kept apart so that the day they are
- * encrypted at rest is the day two columns change. The token is kept as its digest and never as its
- * value, like every value this provider draws.
- *
- * A replacement (RFC 7592 §2.2) is the same client under the same identifier: the row changes, and what
- * the provider assigned to it stays, the identifier, the date it was drawn on and the token it is read
- * with. An update is whole and never a patch, which is why what changes is given all at once. The date of
- * the last use is not part of a registration either: replacing one is not using the client.
+ * A client that registered itself (RFC 7591 §3.2.1), as the provider stores it.
  */
 final class ClientRecord implements ClassifiedFieldsInterface
 {
-    /**
-     * When somebody last used this client (decision 0009): an authorization granted for it, a request it
-     * made at the token endpoint. Null for a client that has never been used, which is not the same as one
-     * used long ago and is not kept for as long.
-     */
     public private(set) ?DateTimeImmutable $lastUsedAt = null;
 
     /**
-     * @param array<string, mixed> $metadata the members of RFC 7591 §2 the client registered, as it registered them
-     * @param array<string, mixed> $assigned the members the registration policy of the tenant wrote on this registration (decision 0017); empty for a policy that writes none
-     * @param ClientSecretInterface|null $secret in the shape the registered method verifies against; null for a client whose method proves none
-     * @param string $registrationAccessTokenDigest see DrawnSecret::digestOf(); the credential of this one client for its own configuration endpoint (RFC 7592 §2.3)
-     * @param DateTimeImmutable|null $secretExpiresAt when the secret stops being verified (RFC 7591 §3.2.1 "client_secret_expires_at"); null for one that does not expire, which the response writes as 0
-     * @param array<string, mixed>|null $attested the members a software statement signed of this client (RFC 7591 §2.3), kept apart from its metadata as well as among it; null for a client no statement attested
+     * @param array<string, mixed> $metadata the RFC 7591 §2 members, as the client registered them
+     * @param array<string, mixed> $assigned the members the tenant's registration policy wrote
+     * @param array<string, mixed>|null $attested what a software statement signed, which no replacement overwrites
      *
-     * @throws InvalidArgumentException when the record does not hold together
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public readonly Uuid $id,
@@ -109,9 +70,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
-     * Somebody used this client at that instant. **The date only moves forward**: the two events that say
-     * so are written to a queue and read from it, so they arrive in whatever order the queue gives them,
-     * and a use recorded late must not make a client look older than it is.
+     * The date only moves forward: uses are read from a queue, in whatever order it gives them.
      */
     public function recordUse(DateTimeImmutable $at): void
     {
@@ -120,11 +79,6 @@ final class ClientRecord implements ClassifiedFieldsInterface
         }
     }
 
-    /**
-     * The registration this row keeps, in the order the one reader of a registration reads it: what the
-     * policy of the tenant wrote in front of what the client sent, behind the defaults of RFC 7591 §2.
-     * The order is the row's own business, so it is named here and not again at each caller.
-     */
     public function asRegistered(): ClientMetadata
     {
         return new ClientMetadata([
@@ -135,11 +89,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
-     * What a statement signed of this client, as the source a replacement reads in front of the members the
-     * client sends (RFC 7592 §2.2), as the registration read it in front of the members the client sent
-     * (RFC 7591 §3.1.1); nothing for a client no statement attested.
-     *
-     * @throws InvalidClientMetadataException when the row carries a member of this provider alone
+     * @throws InvalidClientMetadataException
      *
      * @return list<ClientMetadataSourceInterface>
      */
@@ -149,11 +99,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
-     * Whether this is the client that token reads and deletes itself with (RFC 7592 §2.3), compared in
-     * constant time as every secret of this provider is. A token drawn for another client is a token
-     * this one does not hold, which is the same answer as a token nobody was ever handed.
-     *
-     * @param string $digest see DrawnSecret::digestOf()
+     * Compared in constant time.
      */
     public function isReadWith(string $digest): bool
     {
@@ -161,13 +107,12 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
-     * The registration this client replaced its own with (RFC 7592 §2.2): whole, never a patch, so a
-     * member it left out is a member it no longer registers. What the provider assigned does not change.
+     * RFC 7592 §2.2
      *
      * @param array<string, mixed> $metadata
      * @param array<string, mixed> $assigned
      *
-     * @throws InvalidArgumentException when what is left does not hold together
+     * @throws InvalidArgumentException
      */
     public function replaceWith(
         array $metadata,
@@ -197,11 +142,6 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
-     * What a client inscribed of itself, what the registration policy of its tenant wrote on that inscription,
-     * what a software statement signed of it and its secret are sealed: a secret a method signs with cannot
-     * be hashed (OIDC Core §9), so it is sealed instead, and a dump of this table then holds no usable
-     * credential of a client either.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

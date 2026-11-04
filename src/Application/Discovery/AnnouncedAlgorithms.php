@@ -14,11 +14,6 @@ use Beffroi\Oidc\Application\Key\AlgorithmNames;
 use Beffroi\Oidc\Domain\Client\AssertionMethodInterface;
 use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
-/**
- * How the document names the algorithms of the provider. Every member that lists algorithms says the
- * same thing about the same wiring, so it is said here once and the contributors that announce one read
- * it: what signs a JWS, what a client encrypts to, and what a client assertion may be signed with.
- */
 final readonly class AnnouncedAlgorithms
 {
     public function __construct(
@@ -29,10 +24,6 @@ final readonly class AnnouncedAlgorithms
     }
 
     /**
-     * What the provider signs a JWS with, whichever a client registered: an ID token, a UserInfo answer,
-     * a signed authorization response, and what it verifies a DPoP proof with, which a challenge under
-     * DPoP names too (RFC 9449 §7.1).
-     *
      * @return non-empty-list<string>
      */
     public function signing(): array
@@ -41,10 +32,6 @@ final readonly class AnnouncedAlgorithms
     }
 
     /**
-     * What the provider signs a JWS with where no client registers a choice: a signed introspection
-     * response, whose algorithm the provider determines (RFC 9701 §6). The one it signs with, and not
-     * every one it could.
-     *
      * @return non-empty-list<string>
      */
     public function defaultSigning(): array
@@ -53,10 +40,7 @@ final readonly class AnnouncedAlgorithms
     }
 
     /**
-     * The pair of members that says what a document may be encrypted with, named after the document
-     * (OIDC Discovery §3). A provider nobody encrypts to announces neither, rather than two empty lists:
-     * there is nothing to encrypt with, which is not the same as encrypting with nothing. It takes both
-     * halves to encrypt anything, so half a wiring announces nothing either.
+     * Empty unless both halves are wired: two empty lists would announce encrypting with nothing.
      *
      * @return array<string, list<string>>
      */
@@ -75,9 +59,6 @@ final readonly class AnnouncedAlgorithms
     }
 
     /**
-     * What an assertion of those methods may be signed with, each algorithm once: the methods say it,
-     * nothing enumerates it here.
-     *
      * @param list<ClientAuthenticationMethodInterface> $methods
      *
      * @return list<string>

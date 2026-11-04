@@ -23,50 +23,17 @@ use Beffroi\Oidc\Port\BackchannelAuthenticationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * CIBA Core §10.1, §11 (architecture §4.5): the client comes back for the answer its user gave on a
- * device of their own. It answers "not yet" as the device grant does, and for the same reasons:
- * "authorization_pending" while the user has not answered, "slow_down" when the client asks faster than
- * it was told to, "expired_token" once the request is past its lifetime, "access_denied" when the user
- * said no. A client that registered to be called back comes here too, once it has been told: the token
- * endpoint is the only place this provider hands a token out (§10.3 is not served, decision 0006).
+ * CIBA Core §10.1, §11
  *
- * What it spends is a record read once, as the authorization code grant spends a code: of any number of
- * requests presenting one auth_req_id at once exactly one is served, and an identifier presented again is
- * worth nothing. The order of the answers is the order of what a client can do about them: an identifier
- * that belongs to somebody else or expired is beyond polling, then the answer the user gave, and the
- * interval bounds the wait and only the wait. "slow_down" is a variant of "authorization_pending" (§11),
- * so it is something to say about a request that is still pending and nothing to say about one that is
- * over: a request that has an answer is answered, however soon after the last one it is asked for. That
- * is what a client called back needs, §10.2 telling it to come when it is notified, which is sooner than
- * the interval it was given to poll at.
- *
- * What the response reads from outside the provider is read before the record is spent (architecture
- * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, the key the ID token is
- * encrypted to (OIDC Core §3.1.3.7), and the session the user approved with, which a store reads with the
- * person it names and opens under the data keys of the tenant (decision 0018). A KMS that does not answer,
- * or keys the client cannot serve right now, leave the auth_req_id to its next presentation.
- *
- * What comes out is an authorization of the ordinary kind, descending from the session the user approved
- * with: the same scopes, the same consent, the same session rules, and an ID token, "openid" being
- * required of every request of this flow (§7.1). The tokens are bound to what this request proved and
- * not to what the approval proved (RFC 8705 §3, RFC 9449 §5): the browser that approved holds nothing
- * the client can prove.
- *
- * The grant those tokens name is the record's own and is not drawn here (GrantRecord): a resource of this
- * provider asks of every token whether the grant behind it is still alive, and the answer is a row.
+ * "slow_down" is said only of a pending request: a client called back (§10.2) is answered as soon as it asks.
+ * What the KMS opens is read before the record is spent, so a KMS that does not answer leaves it to the next poll.
  */
 final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroughABackchannelInterface, IssuesRefreshTokensInterface
 {
-    /**
-     * CIBA Core §7.3, registered in the IANA "OAuth URI" registry.
-     */
     public const string GRANT_TYPE = 'urn:openid:params:grant-type:ciba';
 
     private const string INVALID = 'The auth_req_id is invalid.';
 
-    /**
-     * @param DateInterval $refreshTokenFamilyLifetime the absolute lifetime no rotation extends (architecture §4.6)
-     */
     public function __construct(
         private BackchannelAuthenticationRecordRepositoryInterface $records,
         private TokenIssuer $issuer,
@@ -96,8 +63,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
             throw new AccessDeniedException('The end user denied the request.', false);
         }
         if (! $record->isApproved()) {
-            // CIBA Core §11: every poll is recorded, the refused ones included, so that asking again does
-            // not buy a faster answer; the record is saved before either of the two answers below
+            // CIBA Core §11: every poll is saved, the refused ones included, so asking again buys no faster answer.
             $tooSoon = $record->polledTooSoon($now);
             $this->records->save($record);
             if ($tooSoon) {
@@ -110,7 +76,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
         $session = $record->session;
         $authentication = $record->authentication;
         $granted = $session !== null && $authentication !== null && $session->isActive($now);
-        // atomic: of the requests presenting this auth_req_id at once, exactly one is the first
+        // Atomic: of the requests presenting this auth_req_id at once, exactly one is the first.
         if (! $this->records->consume($record, $now)) {
             throw new InvalidGrantException(self::INVALID);
         }

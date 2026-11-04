@@ -30,19 +30,7 @@ use Beffroi\Oidc\Port\InteractionRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * Decides what a validated authorization request still needs (architecture §4.3): a login, a consent, or
- * nothing, in which case the code is issued. begin() parks the request in an Interaction; resume(),
- * grantConsent() and deny() apply the same rules at every step. With prompt=none a needed page is the
- * redirected error login_required or consent_required (OIDC Core §3.1.2.6). A login page asked for again after a
- * login done during the interaction is login_required too, whatever the prompt: that login answers whatever the
- * request asks of a login but the person an id_token_hint names, and the page would ask whoever signs in next the
- * same thing (§3.1.2.1).
- *
- * It orchestrates and decides nothing on its own: what the authentication still needs is
- * AuthenticationRequirement's, the rules of a requested "acr" are the request's own
- * (RequestedAuthenticationContext, decision 0010), what the person is asked for of the claims the request
- * names one by one is ClaimsAskedByName's, and minting the code is AuthorizationCodeIssuer's. What is left
- * here is the lifecycle of the interaction, whether a page may be shown at all, and the consent in force.
+ * Decides what a validated authorization request still needs: a login, a consent, or the code.
  */
 final readonly class AuthorizationHandler
 {
@@ -68,9 +56,7 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * @param string|null $locale the language of the pages of this interaction
-     *
-     * @throws OAuth2Exception redirectable, the interaction being completed
+     * @throws OAuth2Exception redirectable
      */
     public function begin(
         AuthorizationRequest $request,
@@ -94,8 +80,6 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the login page.
-     *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
      * @throws OAuth2Exception
@@ -109,9 +93,6 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the consent page, when the user agreed: what the page asked for, the scopes, the authorization details
-     * and the claims asked for by name of the request, is added to the consent in force.
-     *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
      * @throws OAuth2Exception
@@ -140,11 +121,9 @@ final readonly class AuthorizationHandler
     }
 
     /**
-     * After the consent page, when the user refused (RFC 6749 §4.1.2.1).
-     *
      * @throws InteractionCompletedException
      * @throws InteractionExpiredException
-     * @throws AccessDeniedException always
+     * @throws AccessDeniedException
      */
     public function deny(Interaction $interaction): never
     {
@@ -167,7 +146,7 @@ final readonly class AuthorizationHandler
             }
             $login = $this->authentication->of($requested, $interaction, $session, $now);
             if ($login !== null) {
-                // no login page after a login done during this interaction: it would ask whoever signs in next the same thing
+                // No second login page in one interaction: it would ask whoever signs in next the same thing.
                 if ($interaction->sawTheLoginOf($session)) {
                     throw new LoginRequiredException(self::UNMET_BY_THE_LOGIN);
                 }
@@ -200,7 +179,6 @@ final readonly class AuthorizationHandler
 
             throw $exception;
         }
-        // the code is issued, so the interaction is over
         $interaction->complete($now);
         $this->interactions->save($interaction);
 

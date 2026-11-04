@@ -11,15 +11,6 @@ use function explode;
 use function sprintf;
 use function str_contains;
 
-/**
- * The value a column holds a PKCE challenge as (RFC 7636 §4.3): "method:challenge", one value, because a
- * challenge may be absent (decision 0008) and two columns that are null together are one column.
- *
- * The method is written under the name it gives itself and read back as the class the wiring holds for
- * that name, which is why this is a use case and not a method of the challenge: a challenge this
- * deployment is not wired to verify is refused rather than guessed, exactly as the algorithm of a stored
- * hash is (decision 0002).
- */
 final readonly class StoredCodeChallenge
 {
     private const string SEPARATOR = ':';
@@ -35,9 +26,7 @@ final readonly class StoredCodeChallenge
     }
 
     /**
-     * @throws InvalidArgumentException when the value does not read "method:challenge", when nothing wired
-     *                                 carries the method it names, or when what it carries is not a
-     *                                 challenge
+     * @throws InvalidArgumentException
      */
     public function of(string $value): CodeChallenge
     {

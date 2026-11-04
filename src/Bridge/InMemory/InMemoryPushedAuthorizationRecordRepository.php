@@ -8,10 +8,6 @@ use DateTimeImmutable;
 use Beffroi\Oidc\Domain\PushedAuthorization\PushedAuthorizationRecord;
 use Beffroi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 
-/**
- * For tests and for the examples: nothing here survives the process, and one process claims a record
- * once because nothing else runs beside it.
- */
 final class InMemoryPushedAuthorizationRecordRepository implements PushedAuthorizationRecordRepositoryInterface
 {
     /**

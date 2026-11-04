@@ -9,20 +9,12 @@ use Beffroi\Oidc\Domain\Claims\OpenedSubjectIdentifierInterface;
 use Beffroi\Oidc\Exception\LogicException;
 
 /**
- * What the access token of a response needs from outside the provider, read before it is struck (architecture §4.6):
- * the key of the tenant it is signed with, opened by the KMS, for a shape that signs it, and nothing for a shape that
- * is a reference to a record the provider keeps; the kind of "sub" its client registered, opened, for a shape that
- * names whoever signed in in the token, whose pairwise kind computes the "sub" with a salt of the tenant the KMS
- * opens (OIDC Core §8.1); and the person a token whose subject the client named is about, sealed under the KMS of the
- * tenant, for a shape that carries it sealed (issue #641). Whoever spends something on the way to a token addresses
- * it first, and striking the token then asks nothing of the KMS.
+ * What the access token of a response needs from outside the provider, read before it is struck.
  */
 final readonly class AddressedAccessToken
 {
     /**
-     * @param OpenedSigningKeyInterface|null $signingKey the key of the tenant the token is signed with, opened, null for a shape that signs nothing
-     * @param string|null $person the person the token is about, sealed as its claim carries it, null for a token that carries none
-     * @param OpenedSubjectIdentifierInterface|null $subjectIdentifier the kind of "sub" the client registered, opened, null for a token that names nobody who signed in
+     * @param string|null $person sealed, as the token's claim carries it
      */
     public function __construct(
         private ?OpenedSigningKeyInterface $signingKey = null,
@@ -32,9 +24,7 @@ final readonly class AddressedAccessToken
     }
 
     /**
-     * @throws LogicException when the shape signs nothing, so that no key of the tenant was opened for the token
-     *
-     * @return OpenedSigningKeyInterface the key of the tenant the token is signed with, opened
+     * @throws LogicException
      */
     public function signingKey(): OpenedSigningKeyInterface
     {
@@ -42,9 +32,9 @@ final readonly class AddressedAccessToken
     }
 
     /**
-     * @throws LogicException when the person was not sealed when the token was addressed
+     * @throws LogicException
      *
-     * @return string the person the token is about, sealed as its claim carries it
+     * @return string sealed, as the token's claim carries it
      */
     public function person(): string
     {
@@ -54,9 +44,7 @@ final readonly class AddressedAccessToken
     }
 
     /**
-     * @throws LogicException when the token names nobody who signed in, so that no kind of "sub" was opened for it
-     *
-     * @return OpenedSubjectIdentifierInterface the kind of "sub" the client registered, opened
+     * @throws LogicException
      */
     public function subjectIdentifier(): OpenedSubjectIdentifierInterface
     {

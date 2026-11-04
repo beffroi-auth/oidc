@@ -12,9 +12,7 @@ use Beffroi\Oidc\Port\MetadataContributorInterface;
 use Beffroi\Oidc\Port\ServedLogoutChannelsInterface;
 
 /**
- * RP-Initiated Logout §2.1, Back-Channel Logout 1.0 §3 and Front-Channel Logout 1.0 §3: where a client
- * sends a user to sign out, and which channels the integration wired. A channel that is served always
- * carries the session, so what announces one announces the other.
+ * RP-Initiated Logout §2.1, Back-Channel Logout 1.0 §3, Front-Channel Logout 1.0 §3
  */
 final readonly class AnnouncedLogout implements MetadataContributorInterface
 {

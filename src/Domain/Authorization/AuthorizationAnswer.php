@@ -9,15 +9,12 @@ use Beffroi\Oidc\Domain\Client\RedirectUri;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * What the authorization endpoint hands to one client, whatever it says: the parameters of a successful
- * response (RFC 6749 §4.1.2) or of a refusal (§4.1.2.1), the client they are meant for and the redirect
- * URI they are delivered to. A mode that signs the answer needs the client, to name the audience of the
- * document and to read the algorithm it registered; a mode that does not, ignores it.
+ * RFC 6749 §4.1.2, §4.1.2.1
  */
 final readonly class AuthorizationAnswer
 {
     /**
-     * JARM §2.1: a signed answer travels as one parameter, whichever way it is delivered.
+     * JARM §2.1
      */
     public const string DOCUMENT_PARAMETER = 'response';
 
@@ -27,7 +24,7 @@ final readonly class AuthorizationAnswer
     public array $parameters;
 
     /**
-     * @param array<string, string> $parameters the response as the protocol names it, "iss" included (RFC 9207 §2)
+     * @param array<string, string> $parameters "iss" included
      */
     public function __construct(
         public Client $client,
@@ -41,9 +38,7 @@ final readonly class AuthorizationAnswer
     }
 
     /**
-     * The same answer once it has been gathered in a signed document (JARM §2.1): "response" and nothing
-     * else, so that neither "state" nor "iss" is ever written beside the document that already carries
-     * them.
+     * JARM §2.1
      */
     public function signedWith(string $document): self
     {

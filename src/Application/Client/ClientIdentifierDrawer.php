@@ -11,21 +11,12 @@ use Beffroi\Oidc\Port\ClientRepositoryInterface;
 use function sprintf;
 
 /**
- * The identifier a client that registers itself is given (RFC 7591 §3.2.1): the provider assigns it, so
- * it is drawn where every other value this provider hands out and recognises again is drawn, and a
- * request that names one of its own does not get it.
+ * RFC 7591 §3.2.1
  *
- * A draw any wired source already holds is not served: the identifier of a client is the name the tenant
- * answers to it by, and two clients under one name would be one client with two registrations. Two
- * hundred and fifty-six bits make a collision a thing that does not happen; what makes it impossible is
- * that the draw is looked up before it is served.
+ * Every draw is looked up in every source: 256 bits make a collision unlikely, the lookup makes it impossible.
  */
 final readonly class ClientIdentifierDrawer
 {
-    /**
-     * Past the first draw, the store is answering about something else: a second is drawn rather than a
-     * registration refused, and a third says the deployment has a problem no registration can fix.
-     */
     private const int DRAWS = 3;
 
     public function __construct(
@@ -35,7 +26,7 @@ final readonly class ClientIdentifierDrawer
     }
 
     /**
-     * @throws LogicException when every draw is already held, which is not a thing a client did
+     * @throws LogicException when every draw is already held
      */
     public function drawFor(Tenant $tenant): string
     {

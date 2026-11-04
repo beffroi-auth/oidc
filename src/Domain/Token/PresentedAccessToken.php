@@ -7,15 +7,7 @@ namespace Beffroi\Oidc\Domain\Token;
 use SensitiveParameter;
 
 /**
- * An access token as a protected resource received it: the value, and the scheme it was presented under
- * (RFC 6750 §2.1, RFC 9449 §7.1). How a request carries it is read before this, by the parser of the
- * Application that knows about headers and bodies; what is left here is what the provider reasons about.
- *
- * The scheme comes with the token, because a token is presented the way it was issued: one bound to a
- * key is sent under "DPoP" with a proof beside it (RFC 9449 §7.1), and whoever stole it and sends it as
- * a bearer token is refused. What it is bound to is read from the token, so that refusal comes once the
- * token has been verified. Any other refusal of the token is delivered in the challenge of the scheme it
- * came with (RFC 9449 §7.2).
+ * RFC 6750 §2.1, RFC 9449 §7.1
  */
 final readonly class PresentedAccessToken
 {
@@ -30,8 +22,7 @@ final readonly class PresentedAccessToken
     }
 
     /**
-     * Whether the token was presented the way a token bound like this is presented (RFC 9449 §7.1); a
-     * token bound to nothing is a bearer token and is presented as one.
+     * RFC 9449 §7.1
      */
     public function isPresentedAs(?ConfirmationInterface $confirmation): bool
     {

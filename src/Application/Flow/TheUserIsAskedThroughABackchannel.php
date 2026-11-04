@@ -10,13 +10,7 @@ use Beffroi\Oidc\Domain\Flow\TokenEndpointHops;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * The flow of a grant whose user this provider reaches itself, on a device they already hold (CIBA
- * Core §7): the client names the user it is asking for and waits, and the browser it never sees is the
- * one this provider went looking for.
- *
- * The notification is the hop a client registered for the ping or the push mode is told by, and the one
- * a client that polls never gets (§10.2): it is a hop of this flow whatever the mode, drawn as a hop a
- * run did not take when the client of that run polls.
+ * CIBA Core §7
  */
 final readonly class TheUserIsAskedThroughABackchannel implements FlowShapeInterface
 {

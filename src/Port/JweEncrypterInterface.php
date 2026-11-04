@@ -10,14 +10,12 @@ use Beffroi\Oidc\Exception\RuntimeException;
 interface JweEncrypterInterface
 {
     /**
-     * A compact JWE addressed to one public key (RFC 7516 §7.1). No key of the tenant is involved: what
-     * is encrypted here is for the client to open, and only the client holds the private half.
+     * RFC 7516 §7.1
      *
-     * @param array<string, mixed> $recipient the public JWK the JWE is addressed to
-     * @param array<string, mixed> $protectedHeader what the caller adds; "alg", "enc" and the "kid" of the recipient are written here
+     * @param array<string, mixed> $recipient the public JWK
+     * @param array<string, mixed> $protectedHeader what the caller adds; "alg", "enc" and "kid" are written here
      *
-     * @throws RuntimeException when the key cannot receive a JWE under that algorithm, which a
-     *                          registration checked at boot has already made impossible
+     * @throws RuntimeException when the key cannot receive a JWE under that algorithm
      */
     public function encrypt(array $recipient, ResponseEncryption $encryption, string $payload, array $protectedHeader = []): string;
 }

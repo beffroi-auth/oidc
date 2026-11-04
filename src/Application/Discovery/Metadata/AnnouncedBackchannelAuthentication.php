@@ -13,15 +13,7 @@ use Beffroi\Oidc\Port\ServedDeliveryModesInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * CIBA Core §4: where a client starts a request for a user it names, and the ways it may be told that
- * the request has been answered. Both are read from what the provider is wired with, the modes being
- * one class each; the grant that goes with them is announced by the fact of being wired, as every other
- * is (AnnouncedGrants).
- *
- * A provider wired with no grant of this flow announces none of it, rather than an endpoint nothing
- * serves. The algorithms are the ones the provider verifies a signature with, this endpoint reading a
- * signed request exactly as the pushed one does (RFC 9101 §6.1). "user_code" is a secret of the user
- * this provider does not take, and the document says so rather than leaving a client to find out.
+ * CIBA Core §4
  */
 final readonly class AnnouncedBackchannelAuthentication implements MetadataContributorInterface
 {

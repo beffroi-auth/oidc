@@ -11,9 +11,7 @@ use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * OIDC Discovery §3: how a client authenticates at the token endpoint, which is the methods wired into
- * the authenticator in the order it tries them, and what an assertion of those methods may be signed
- * with. Nothing here enumerates a method.
+ * OIDC Discovery §3
  */
 final readonly class AnnouncedClientAuthentication implements MetadataContributorInterface
 {

@@ -21,22 +21,6 @@ use Beffroi\Oidc\Port\AccessTokenVerifierInterface;
 use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use SensitiveParameter;
 
-/**
- * Reads back an opaque access token (architecture §4.6), the counterpart of OpaqueAccessTokenIssuer: the
- * record kept under the digest of the value, which is the only thing that says what the token is for. A
- * token of this shape is a reference the provider holds, so it can be taken back (RFC 7009 §2.1).
- *
- * The record says whether somebody signed in for the token: the one kept for a sign-in names the user of
- * its session in "sub" and the sign-in it descends from, the one kept for a client acting for itself names
- * that client and no sign-in (RFC 6749 §4.4, RFC 9068 §2.2), and the one kept for a subject somebody else
- * named keeps what was named, the "sub" and the sign-in of the token it descends from and the chain of actors
- * that holds it (RFC 8693 §2.2.1, §4.1).
- *
- * It also says who the token is about, which the record answers for and nothing here resolves again
- * (issue #601): each kind of record names its person or names nobody (StoredAccessToken::person()), so a
- * token whose "sub" was written for another client is read as being about the person the exchange resolved
- * when it read what was presented, and not by looking that "sub" up under the client that asked for it.
- */
 final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInterface
 {
     public function __construct(
@@ -45,18 +29,11 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
     ) {
     }
 
-    /**
-     * The shape OpaqueAccessTokenIssuer writes, which a client registers by this name.
-     */
     public function name(): string
     {
         return 'opaque';
     }
 
-    /**
-     * The shape this provider draws an opaque token in, and nothing else: a value of another shape was
-     * not issued here, whatever a store might answer for it.
-     */
     public function recognises(#[SensitiveParameter] string $accessToken): bool
     {
         return DrawnSecret::isValue($accessToken);
@@ -90,18 +67,13 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
             $token->expiresAt,
             $token->confirmation,
             $token instanceof StoredSubjectAccessToken ? $token->actor : null,
-            // RFC 9396 §7: only a record of a grant somebody agreed to carries details
             $signedIn ? $token->authorizationDetails : null,
-            // issue #601: who the token is about, as the record names them, which is the one reading that
-            // does not go through the "sub" of a client
             $token->person(),
         );
     }
 
     /**
-     * RFC 9068 §2.2: the pairwise subject of the user who signed in (OIDC Core §8), the client itself when
-     * nobody did (RFC 6749 §4.4), and the subject as it was named when somebody else named it
-     * (RFC 8693 §2.2.1, RFC 7523 §2.1); the same rule the self-contained shape writes into its own "sub".
+     * RFC 9068 §2.2
      */
     private function subjectOf(StoredAccessToken $token): Subject
     {
@@ -115,9 +87,7 @@ final readonly class OpaqueAccessTokenVerifier implements AccessTokenVerifierInt
     }
 
     /**
-     * RFC 9068 §2.2.1: the sign-in the record names, null when it names none. A record of a subject somebody
-     * else named keeps the sign-in of the token it descends from as the token carried it, a "sid" and what
-     * that session had proven, and not the row of a session.
+     * RFC 9068 §2.2.1
      */
     private static function signInOf(StoredAccessToken $token): ?TokenSignIn
     {

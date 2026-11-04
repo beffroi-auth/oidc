@@ -16,20 +16,12 @@ use function in_array;
 use function preg_match;
 
 /**
- * What an authorization request asks of the pages the user will see (OIDC Core §3.1.2.1): whether to ask
- * again or not to ask at all, how old a sign-in may be, who is expected, in which language, at which
- * authentication context class, on which kind of screen, and what the client wants to know about the
- * person. Eight parameters, one rule each, and none of them a condition the provider must meet: they say
- * what is asked, and the interaction says what happened (§4.3).
- *
- * They are read together because they are decided together, by the handler that turns them into a login,
- * a step-up, a consent or a code; the request keeps each of them on its own, so nothing here is a second
- * copy of what AuthorizationRequest carries.
+ * OIDC Core §3.1.2.1
  */
 final readonly class RequestedInteraction
 {
     /**
-     * OIDC Core §3.1.2.1: seconds, bounded to a PHP integer.
+     * At most 18 digits, so that it fits a PHP integer.
      */
     private const string MAX_AGE_PATTERN = '/^(?:0|[1-9][0-9]{0,17})$/D';
 
@@ -37,7 +29,6 @@ final readonly class RequestedInteraction
      * @param list<Prompt> $prompts
      * @param list<string> $uiLocales most preferred first
      * @param list<string> $acrValues in order of preference
-     * @param string|null $idTokenHint a compact JWS, verified by the interaction
      */
     private function __construct(
         public array $prompts,
@@ -52,7 +43,7 @@ final readonly class RequestedInteraction
     }
 
     /**
-     * @throws InvalidRequestException when one of them is not what it must be
+     * @throws InvalidRequestException
      */
     public static function of(RequestParameters $request): self
     {
@@ -69,8 +60,6 @@ final readonly class RequestedInteraction
     }
 
     /**
-     * OIDC Core §3.1.2.1 "prompt": a closed list, "none" alone.
-     *
      * @return list<Prompt>
      */
     private static function prompts(?string $prompt): array

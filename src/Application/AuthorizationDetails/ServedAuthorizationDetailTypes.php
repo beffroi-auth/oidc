@@ -21,27 +21,17 @@ use JsonException;
 use function sprintf;
 
 /**
- * The types of authorization detail the wiring gave the provider, the one source of truth over them
- * (issue #98): reading an "authorization_details" asks them which type each object names, a client
- * registration asks them what a client may name, and the discovery document announces what they hold.
- *
- * A request naming a type nobody wired is refused rather than served: a detail this provider cannot
- * describe is a detail it cannot show a user, and agreeing to something nobody can read is the one thing
- * a consent must never be (RFC 9396 §5).
- *
- * The list is read when a question is asked of it and never at construction, because a client
- * registration asks it what a client may name while the clients are themselves being built.
+ * Types are read when asked, not at construction: a client registration asks them while clients are being built.
  */
 final readonly class ServedAuthorizationDetailTypes implements AuthorizationDetailsReaderInterface, ServedAuthorizationDetailTypesInterface
 {
     /**
-     * The array, one object of it, a member holding an object, one of its members holding a list, and a
-     * scalar inside that, as json_decode() counts. Deeper than that was not asked for here.
+     * Deep enough for a member object holding a list of scalars; deeper was not asked for here.
      */
     private const int MAX_DEPTH = 6;
 
     /**
-     * @param iterable<AuthorizationDetailTypeInterface> $types each answering for its own "type"; none is a provider that serves no rich authorization request
+     * @param iterable<AuthorizationDetailTypeInterface> $types
      */
     public function __construct(
         private iterable $types,
@@ -92,13 +82,11 @@ final readonly class ServedAuthorizationDetailTypes implements AuthorizationDeta
     }
 
     /**
-     * The members of one object, "type" already removed: named, each one once. A member name made of
-     * digits became an integer key when it was decoded, and it names no member, exactly as a claim name
-     * made of digits names no claim (OIDC Core §5.5).
+     * json_decode() turns a member name made of digits into an integer key, which names no member.
      *
      * @param array<array-key, mixed> $members
      *
-     * @throws InvalidArgumentException when a member is not named
+     * @throws InvalidArgumentException
      *
      * @return array<string, mixed>
      */
@@ -121,7 +109,7 @@ final readonly class ServedAuthorizationDetailTypes implements AuthorizationDeta
     /**
      * @throws InvalidArgumentException when two wired types answer for one "type"
      *
-     * @return array<non-empty-string, AuthorizationDetailTypeInterface> by the name each type gives itself
+     * @return array<non-empty-string, AuthorizationDetailTypeInterface> by type name
      */
     private function wired(): array
     {

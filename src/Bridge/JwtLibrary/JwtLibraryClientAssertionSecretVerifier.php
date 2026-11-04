@@ -18,8 +18,7 @@ use function sprintf;
 use Throwable;
 
 /**
- * "client_secret_jwt" on web-token/jwt-library (OIDC Core §9): the registered secret read as the octets
- * of a symmetric key (RFC 7518 §6.4), and the MAC of the assertion verified against it.
+ * OIDC Core §9, RFC 7518 §6.4
  */
 final readonly class JwtLibraryClientAssertionSecretVerifier implements ClientAssertionSecretVerifierInterface
 {
@@ -27,9 +26,6 @@ final readonly class JwtLibraryClientAssertionSecretVerifier implements ClientAs
 
     private CompactSerializer $serializer;
 
-    /**
-     * @param AlgorithmManager $algorithms the MAC algorithms of the methods that sign with a secret
-     */
     public function __construct(AlgorithmManager $algorithms)
     {
         $this->verifier = new JWSVerifier($algorithms);

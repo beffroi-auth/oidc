@@ -19,14 +19,6 @@ use Beffroi\Oidc\Port\ConfirmationReaderInterface;
 use Beffroi\Oidc\Port\ServedTokenSchemesInterface;
 use function sprintf;
 
-/**
- * The bindings the wiring gave the provider, the one source of truth over them (issue #98): reading a
- * "cnf" back asks them which member it names, and the schemes a resource reads a token under are theirs
- * plus the one of a token bound to nothing.
- *
- * A token is bound to one thing: it was issued on a request that proved one possession, and a "cnf"
- * naming two is not a "cnf" this provider wrote.
- */
 final readonly class Confirmations implements ConfirmationReaderInterface, ServedTokenSchemesInterface
 {
     /**
@@ -35,7 +27,7 @@ final readonly class Confirmations implements ConfirmationReaderInterface, Serve
     private array $kinds;
 
     /**
-     * @param iterable<ConfirmationKindInterface> $kinds at least one, each answering for its own member
+     * @param iterable<ConfirmationKindInterface> $kinds
      *
      * @throws InvalidArgumentException when two kinds answer for one member, or when none is wired
      */

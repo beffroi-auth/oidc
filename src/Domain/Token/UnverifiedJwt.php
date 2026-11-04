@@ -8,16 +8,6 @@ use DateTimeImmutable;
 use function is_int;
 use function is_string;
 
-/**
- * A compact JWT a third party sent, read and not verified (RFC 7519 §7.2): the serialization it arrived
- * in, its protected header and its claims. Nothing it says is trusted at this point; it is read to know
- * who claims to send it and which key is supposed to have signed it, and what it says is judged only
- * once a verifier has spoken.
- *
- * Both tokens a client signs are read this way: the assertion that authenticates it (RFC 7523 §2.2, OIDC
- * Core §9) and the request object that carries its authorization request (RFC 9101 §4). What each of
- * them has to say afterwards is its own validator's.
- */
 final readonly class UnverifiedJwt
 {
     /**
@@ -32,7 +22,7 @@ final readonly class UnverifiedJwt
     }
 
     /**
-     * RFC 7515 §4.1.1.
+     * RFC 7515 §4.1.1
      *
      * @return non-empty-string|null
      */
@@ -44,7 +34,7 @@ final readonly class UnverifiedJwt
     }
 
     /**
-     * RFC 7515 §4.1.4; a sender that publishes one key alone may send none.
+     * RFC 7515 §4.1.4
      *
      * @return non-empty-string|null
      */
@@ -73,7 +63,7 @@ final readonly class UnverifiedJwt
     }
 
     /**
-     * RFC 7519 §4.1.3: one string, or an array of them.
+     * RFC 7519 §4.1.3
      *
      * @return list<string>
      */

@@ -25,20 +25,12 @@ use function strtolower;
 use function substr;
 
 /**
- * What a proof has to say once the key it carries has been shown to have signed it (RFC 9449 §4.3).
- *
- * It says which request it was made for, and this is the whole point: a proof is not a credential the
- * holder of the key hands out, it is a signature over one request. The method and the URL are compared
- * with the endpoint that received it, as the provider publishes that endpoint and never as a header of
- * the request says it (§11.1); the "iat" keeps a proof to the window a request needs; the "jti" is
- * remembered for that window, so that a proof taken off the wire cannot be sent again; and the "ath"
- * ties the proof to the very access token the request carries, so that a proof cannot be moved from one
- * token to another.
+ * RFC 9449 §4.3
  */
 final readonly class DpopProofValidator
 {
     /**
-     * RFC 3986 §6.2.3: the port a scheme defaults to, which a URL carrying it is the same URL without.
+     * RFC 3986 §6.2.3
      *
      * @var array<string, string>
      */
@@ -47,10 +39,6 @@ final readonly class DpopProofValidator
         'http' => '80',
     ];
 
-    /**
-     * @param DateInterval $maximumAge how long a proof stands, from its "iat", before the leeway is added
-     * @param DateInterval $leeway what is allowed of the clock of the client, both ways
-     */
     public function __construct(
         private DpopProofReplayGuardInterface $replays,
         private DpopNonceInterface $nonces,
@@ -60,12 +48,10 @@ final readonly class DpopProofValidator
     }
 
     /**
-     * @param string $method the method of the request that carried the proof
      * @param string $url the URL this provider publishes for the endpoint that received it
-     * @param string|null $accessToken the access token the request presented, null when it presented none
      *
      * @throws InvalidDpopProofException
-     * @throws UseDpopNonceException when this provider asks the client to make the proof again
+     * @throws UseDpopNonceException
      */
     public function validate(
         DpopProof $proof,
@@ -101,9 +87,7 @@ final readonly class DpopProofValidator
     }
 
     /**
-     * RFC 9449 §4.3 and §7.1: a proof made for a request that presents an access token names that token,
-     * and a proof made for a request that presents none names none. A proof carrying an "ath" where no
-     * token is presented was made for another request.
+     * RFC 9449 §4.3, §7.1
      *
      * @throws InvalidDpopProofException
      */
@@ -126,12 +110,9 @@ final readonly class DpopProofValidator
     }
 
     /**
-     * The shape two URLs are compared in (RFC 9449 §4.3): the query and the fragment are dropped, and
-     * what is left is normalised as RFC 3986 §6.2.2 and §6.2.3 say a URL is. The scheme and the host are
-     * case insensitive, and a port that is the default of its scheme is the same URL as no port at all;
-     * a client that writes "HTTPS://OP.EXAMPLE:443/token" wrote the endpoint this provider publishes,
-     * and refusing its proof would be this provider comparing bytes where the specification compares
-     * URLs. The path is left alone: RFC 3986 §6.2.2.1 makes it case sensitive.
+     * RFC 9449 §4.3, RFC 3986 §6.2.2, §6.2.3
+     *
+     * The path keeps its case: RFC 3986 §6.2.2.1 makes it case sensitive.
      */
     private static function comparable(string $url): string
     {

@@ -14,34 +14,19 @@ use function implode;
 use function sprintf;
 
 /**
- * An error of the UserInfo endpoint (RFC 6750 §3, RFC 9449 §7.1, OIDC Core §5.3.3): the challenge is
- * what the protocol reads, bare when the request carried no access token (§3.1) and naming then every
- * scheme this resource serves, so that a client learns it may bind its tokens; the body repeats it for
- * the human.
- *
- * A refusal names its scheme (`ChallengeInterface`): the one the token was presented under, whose
- * challenge delivers the error (RFC 9449 §7.2), or the one that would have worked when that is what was
- * wrong; a request refused before its token could be read is answered under the scheme of RFC 6750. Each
- * scheme also says what a client needs to present a token under it, whatever the refusal: under "DPoP",
- * the algorithms a proof may be signed with (RFC 9449 §7.1). A refusal carries what the client needs to
- * try again (RFC 9449 §8.2). A refusal of the token or of its proof is a 401: the request was not honoured
- * for want of a credential this resource would take, whatever the same failure is worth at an endpoint
- * that issues tokens; a token that holds and is not enough is a 403 (RFC 6750 §3.1).
+ * RFC 6750 §3, RFC 9449 §7.1, OIDC Core §5.3.3
  */
 final readonly class UserInfoErrorResponse
 {
     /**
-     * RFC 6750 §3.1: a 401, the status of a challenge of a resource whose credential was refused.
+     * RFC 6750 §3.1
      */
     public const int CHALLENGED = 401;
 
     /**
-     * @param non-empty-list<string> $schemes the schemes of the challenge, one of them save when the
-     *                                        request presented no token at all
-     * @param string|null $scope the "scope" attribute of the challenge, for insufficient_scope
-     * @param array<string, string> $carried what the refusal carries beside the challenge
-     * @param array<string, array<string, string>> $authParameters what the challenge of a scheme carries
-     *                                                             whatever the refusal, by scheme
+     * @param non-empty-list<string> $schemes one, save when the request presented no token at all
+     * @param array<string, string> $carried the headers beside the challenge, by name
+     * @param array<string, array<string, string>> $authParameters auth-params by scheme, whatever the refusal
      */
     public function __construct(
         public int $statusCode,
@@ -55,10 +40,8 @@ final readonly class UserInfoErrorResponse
     }
 
     /**
-     * @param non-empty-list<string> $schemes the schemes this resource serves, named in the bare
-     *                                        challenge a request that carried no token gets (RFC 6750 §3.1)
-     * @param array<string, array<string, string>> $authParameters what the challenge of a scheme carries
-     *                                                             whatever the refusal, by scheme
+     * @param non-empty-list<string> $schemes every scheme this resource serves
+     * @param array<string, array<string, string>> $authParameters auth-params by scheme, whatever the refusal
      */
     public static function fromException(OAuth2Exception|MissingBearerTokenException $exception, array $schemes, array $authParameters): self
     {
@@ -98,9 +81,9 @@ final readonly class UserInfoErrorResponse
     }
 
     /**
-     * RFC 6750 §3 and RFC 9110 §11.6.1: one challenge, or the bare list of the schemes this resource
-     * takes when there is nothing to say of a credential nobody sent. The descriptions and the names of
-     * the algorithms carry no double quote nor backslash and need no escaping.
+     * RFC 6750 §3, RFC 9110 §11.6.1
+     *
+     * The descriptions and the algorithm names carry no double quote nor backslash, so nothing is escaped.
      */
     public function challenge(): string
     {
@@ -153,10 +136,9 @@ final readonly class UserInfoErrorResponse
     }
 
     /**
-     * A scheme and its auth-params (RFC 9110 §11.6.1): what the refusal says, then what the scheme says
-     * of itself (RFC 9449 §7.1, Figure 16).
+     * RFC 9110 §11.6.1
      *
-     * @param array<string, string> $parameters what the refusal says
+     * @param array<string, string> $parameters
      */
     private function ofScheme(string $scheme, array $parameters = []): string
     {

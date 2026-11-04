@@ -17,17 +17,7 @@ use Beffroi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * What the page an appliance sends its user to asks of the provider (RFC 8628 §3.3, BCP 10027 §2): the
- * request a code names, and the two answers a user can give it.
- *
- * A code that names nothing, a code past its lifetime, a code of another tenant and a code somebody has
- * already answered are one refusal and not four: whoever is typing learns that this code is worth nothing
- * and nothing else, so that a code tried at random teaches no more than it should (RFC 8628 §5.1). How
- * often one may be tried is the page's, which counts the entries it refuses.
- *
- * Approving is granting an authorization of the ordinary kind: the consent is recorded where a consent is
- * recorded, the session is the one the browser holds, and what that session had proven is frozen on the
- * record, so the tokens the client polls for descend from the approval.
+ * RFC 8628 §3.3, §5.1
  */
 final readonly class DeviceApproval
 {
@@ -39,8 +29,7 @@ final readonly class DeviceApproval
     }
 
     /**
-     * The request awaiting an answer that this code names, null when there is none: unknown, expired,
-     * answered, spent, or of another tenant.
+     * Null for an unknown, expired, answered, spent or foreign code alike, so a random guess learns nothing more.
      */
     public function awaitingAnAnswer(Tenant $tenant, string $typedCode): ?DeviceAuthorizationRecord
     {
@@ -60,24 +49,19 @@ final readonly class DeviceApproval
     }
 
     /**
-     * RFC 8628 §3.3: the user said yes, on a page of this provider, signed in. The client learns it at its
-     * next poll.
-     *
-     * @throws LogicException when the request was answered already, which awaitingAnAnswer() tells first
+     * @throws LogicException when the request was answered already
      */
     public function approve(DeviceAuthorizationRecord $record, AuthenticationSession $session, RequestContext $context): void
     {
         $now = $this->clock->now();
-        // neither RFC 9396 §2 nor OIDC Core §5.5 is read at the endpoint this record was drawn at, so there is no
-        // detail and no claim asked for by name to agree to
+        // The device authorization endpoint reads no authorization details and no claim asked for by name.
         $this->consents->grant($session, $record->client, $record->scopes, null, new ClaimNames(), $context, $now);
         $record->approve($session, AuthenticationSnapshot::ofSession($session, $session->authenticationContextClass()), $now);
         $this->records->save($record);
     }
 
     /**
-     * RFC 8628 §3.5: the user said no, and the client learns "access_denied". A refusal is an answer and
-     * ends the request; nobody is asked twice about the same code.
+     * RFC 8628 §3.5
      *
      * @throws LogicException when the request was answered already
      */

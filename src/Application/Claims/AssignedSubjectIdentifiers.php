@@ -21,18 +21,9 @@ use function implode;
 use function sprintf;
 
 /**
- * The kinds of "sub" the wiring gave the provider, in the order they are wired. The one source of truth over
- * them (OIDC Core §8): the discovery document announces this list, a registration reads it to know what a
- * client may name, and both ways of a "sub" go through it, out to the client, in one step or in two, and back
- * from it.
+ * OIDC Core §8
  *
- * It demands no kind in particular, so a deployment that wires one boots, and it refuses two resolvers of
- * the same kind, which is a wiring where the identifier a client receives depends on an order nobody wrote
- * down. The first wired kind is the one a client that registers none takes, as the first wired shape is the
- * shape its access tokens take.
- *
- * The list is read when a question is asked of it and never at construction, because a client registration
- * asks it what a client may name while the clients are themselves being built.
+ * Kinds are read when asked, not at construction: a client registration asks them while clients are being built.
  */
 final readonly class AssignedSubjectIdentifiers implements
     AssignedSubjectTypesInterface,
@@ -41,7 +32,7 @@ final readonly class AssignedSubjectIdentifiers implements
     SubjectIdentifierResolverInterface
 {
     /**
-     * @param iterable<SubjectIdentifierKindInterface> $kinds at least one, each naming the kind it assigns
+     * @param iterable<SubjectIdentifierKindInterface> $kinds at least one
      */
     public function __construct(
         private iterable $kinds,
@@ -74,11 +65,7 @@ final readonly class AssignedSubjectIdentifiers implements
     }
 
     /**
-     * The kind the client registered says who assigns its identifier, and that resolver alone assigns it;
-     * a client that registered none takes the first wired kind.
-     *
-     * @throws InvalidArgumentException when the wiring does not hold together, or no longer holds the kind
-     *                                  this client registered
+     * @throws InvalidArgumentException
      */
     private function of(ClientRegistration $registration): SubjectIdentifierKindInterface
     {
@@ -95,7 +82,7 @@ final readonly class AssignedSubjectIdentifiers implements
     /**
      * @throws InvalidArgumentException
      *
-     * @return non-empty-array<non-empty-string, SubjectIdentifierKindInterface> by the name each resolver gives its kind
+     * @return non-empty-array<non-empty-string, SubjectIdentifierKindInterface> by subject type
      */
     private function wired(): array
     {

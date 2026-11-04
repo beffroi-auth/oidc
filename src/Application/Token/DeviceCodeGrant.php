@@ -23,40 +23,14 @@ use Beffroi\Oidc\Port\DeviceAuthorizationRecordRepositoryInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * RFC 8628 §3.4, §3.5 (architecture §4.5): the client that has no browser polls for the answer somebody
- * gave elsewhere. This is the one grant of the provider that answers "not yet": "authorization_pending"
- * while the user has not answered, "slow_down" when the client asks faster than it was told to,
- * "expired_token" once the code is past its lifetime, "access_denied" when the user said no.
+ * RFC 8628 §3.4, §3.5
  *
- * What it spends is a record read once, as the authorization code grant spends a code: of any number of
- * requests presenting one device code at once exactly one is served, and a code presented again is worth
- * nothing. The order of the answers is the order of what a client can do about them: a code that belongs
- * to somebody else or expired is beyond polling, then the answer the user gave, and the interval bounds
- * the wait and only the wait. "slow_down" is a variant of "authorization_pending" (§3.5), so it is
- * something to say about a request that is still pending and nothing to say about one that is over: a
- * request that has an answer is answered, however soon after the last one it is asked for.
- *
- * What the response reads from outside the provider is read before the record is spent (architecture
- * §4.5): the keys of the tenant its tokens are signed with, opened by the KMS, the key the ID token is
- * encrypted to (OIDC Core §3.1.3.7), and the session the user approved with, which a store reads with the
- * person it names and opens under the data keys of the tenant (decision 0018). A KMS that does not answer,
- * or keys the client cannot serve right now, leave the device code to its next poll.
- *
- * What comes out is an authorization of the ordinary kind, descending from the session the user approved
- * with: the same scopes, the same consent, the same session rules, so the tokens are the ones of a code
- * and nothing new. They are bound to what this request proved and not to what the approval proved
- * (RFC 8705 §3, RFC 9449 §5): the browser that approved holds nothing the appliance can prove.
- *
- * The grant those tokens name is the record's own and is not drawn here (GrantRecord): a resource of this
- * provider asks of every token whether the grant behind it is still alive, and the answer is a row.
+ * What the KMS opens is read before the record is spent, so a KMS that does not answer leaves it to the next poll.
  */
 final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterface, IssuesRefreshTokensInterface
 {
     private const string INVALID = 'The device code is invalid.';
 
-    /**
-     * @param DateInterval $refreshTokenFamilyLifetime the absolute lifetime no rotation extends (architecture §4.6)
-     */
     public function __construct(
         private DeviceAuthorizationRecordRepositoryInterface $records,
         private TokenIssuer $issuer,
@@ -86,8 +60,7 @@ final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterf
             throw new AccessDeniedException('The end user denied the request.', false);
         }
         if (! $record->isApproved()) {
-            // RFC 8628 §3.5: every poll is recorded, the refused ones included, so that asking again does
-            // not buy a faster answer; the record is saved before either of the two answers below
+            // RFC 8628 §3.5: every poll is saved, the refused ones included, so asking again buys no faster answer.
             $tooSoon = $record->polledTooSoon($now);
             $this->records->save($record);
             if ($tooSoon) {
@@ -100,7 +73,7 @@ final readonly class DeviceCodeGrant implements AsksTheUserOnAnotherDeviceInterf
         $session = $record->session;
         $authentication = $record->authentication;
         $granted = $session !== null && $authentication !== null && $session->isActive($now);
-        // atomic: of the requests presenting this device code at once, exactly one is the first
+        // Atomic: of the requests presenting this device code at once, exactly one is the first.
         if (! $this->records->consume($record, $now)) {
             throw new InvalidGrantException(self::INVALID);
         }

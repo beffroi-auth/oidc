@@ -10,9 +10,7 @@ use Beffroi\Oidc\Domain\Flow\Hop;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * What a client does with a token once it holds one, when there is somebody behind it (OIDC Core §5.3):
- * it asks this provider who that is. A flow a client uses for itself has nobody to ask about, so it is
- * the one that does not close this way.
+ * OIDC Core §5.3
  */
 final readonly class TheProviderIsAskedWhoTheUserIs implements FlowShapeInterface
 {

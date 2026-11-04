@@ -7,20 +7,12 @@ namespace Beffroi\Oidc\Exception;
 use function sprintf;
 
 /**
- * A request that presents no bearer credential this endpoint would act on (RFC 6750 §3.1): the initial
- * access token a registration is authorised by (RFC 7591 §1.2), the registration access token a client
- * reads itself with (RFC 7592 §2.3).
+ * RFC 6750 §3.1
  *
- * Both are `invalid_token` and a 401 carrying the challenge an endpoint that reads such a credential owes,
- * and both read the same whatever gave them away: whoever does not hold the credential learns nothing
- * about the one they presented (decision 0006). What differs between them is the one sentence each says,
- * which is what tells a caller which credential the endpoint wanted.
+ * Reads the same whatever gave the credential away (decision 0006).
  */
 abstract class UnauthorizedBearerRequestException extends OAuth2Exception
 {
-    /**
-     * RFC 6750 §1.2: how such a credential is presented, and therefore how one should have been.
-     */
     public const string SCHEME = 'Bearer';
 
     public function __construct(string $description)
@@ -29,8 +21,9 @@ abstract class UnauthorizedBearerRequestException extends OAuth2Exception
     }
 
     /**
-     * RFC 6750 §3: an endpoint that reads a bearer credential says on every 401 what would have been read.
-     * The descriptions of this package carry no double quote nor backslash and need no escaping.
+     * RFC 6750 §3
+     *
+     * The descriptions of this package carry no double quote nor backslash, so nothing is escaped.
      */
     public function challenge(): string
     {

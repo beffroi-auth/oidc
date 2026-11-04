@@ -10,14 +10,7 @@ use Beffroi\Oidc\Domain\Flow\TokenEndpointHops;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * The flow of a grant whose user is asked somewhere other than in the client's own browser (RFC 8628):
- * the client has no browser to send anywhere, so it starts the flow at an endpoint of its own, shows
- * what it was answered, and asks the token endpoint again and again while the user types that code on
- * another screen.
- *
- * The code travelling from the client's screen to the user is the one step of this flow that is not an
- * exchange of the protocol: nothing is sent, somebody reads. It is drawn by the hop the user then makes,
- * which is the first thing this provider sees of them (§3.3).
+ * RFC 8628
  */
 final readonly class TheUserIsAskedOnAnotherDevice implements FlowShapeInterface
 {

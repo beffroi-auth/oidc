@@ -29,30 +29,7 @@ use Psr\Clock\ClockInterface;
 use function sprintf;
 
 /**
- * RFC 8693 §2.1 (architecture §4.5): the grant of a service that acts for somebody else. It takes a token
- * this provider issued and gives back another one, about the same subject, addressed to another resource,
- * good for no more than the first.
- *
- * The two cases of §1.3 are told apart by the request and by nothing else: an "actor_token" makes it a
- * delegation, and the token that comes out carries an "act" naming who acts (§4.1); no "actor_token" makes it
- * an impersonation, and the token that comes out says nothing of anybody acting. There is no flag, no scope
- * and no registration option that turns one into the other.
- *
- * What a client may ask is registered and never asked for (TokenExchange): which types of token it may
- * present, which resources it may ask the new token for, and whether it may act for a user at all. A client
- * with no such registration is refused whatever it presents.
- *
- * Nothing widens. The scopes of the new token are a subset of the ones the presented token carried, the
- * resources are a subset of the ones it was addressed to, and a token addressed to its own client is not
- * exchangeable at all: there would be nothing to narrow, and the new token could only be addressed outside
- * what the old one covered. Both are also among the ones the client that asks registered, as in every other
- * grant: the presented token was issued to somebody else, who may have registered more. The new token
- * descends from the grant the old one descended from, so taking that grant back takes both, and a session
- * that ended refuses both.
- *
- * "may_act" is the subject's word on the matter (§4.4): when the token says who may act for its subject,
- * whoever asks is compared with it and refused when it is somebody else, the registration of the asking
- * client notwithstanding.
+ * RFC 8693 §2.1
  */
 final readonly class TokenExchangeGrant implements ExchangesATokenInterface
 {
@@ -104,14 +81,12 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §2.1: the token the request presents under that name, read by the type it names, which is one
-     * the provider is wired to read and one the client registered for. The type is required beside the token
-     * (§2.1), and nothing is read of a value whose type the request did not name.
+     * RFC 8693 §2.1
      *
      * @param non-empty-string $name "subject_token" or "actor_token"
      *
      * @throws InvalidArgumentException when the wiring does not hold together
-     * @throws InvalidRequestException when the type is missing, unwired, unregistered, or the token is not one this provider honours
+     * @throws InvalidRequestException
      */
     private function present(
         AuthenticatedClient $client,
@@ -133,14 +108,9 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §1.3, §4.1: who acts for the subject, null when nobody does. An "actor_token" makes the
-     * exchange a delegation and its subject the actor, added around whatever the presented token already
-     * recorded so that a chain of two exchanges nests and does not flatten.
+     * RFC 8693 §1.3, §4.1
      *
-     * The actor token names the client that presents it and no other: a token is held by whoever holds it, so
-     * one naming somebody else would let a client write that somebody else into the "act" of a token nobody
-     * else asked for. A type beside the token is required when the token is there and refused when it is not
-     * (§2.1).
+     * The actor token must name the client that presents it, or a client could write somebody else into the "act".
      *
      * @throws InvalidArgumentException when the wiring does not hold together
      * @throws InvalidRequestException
@@ -168,12 +138,9 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §2.1: what this provider issues is an access token, so a request that asks for another type
-     * asks for something it cannot answer. Absent, the request asks for the one thing there is.
+     * RFC 8693 §2.1
      *
-     * The "audience" parameter is refused: what a token of this provider is addressed to is named by the
-     * resource indicators of RFC 8707 §2, in one place (TokenAudience, issue #217), and a logical name beside
-     * them would be a second way of saying the same thing with no registration behind it.
+     * "audience" is refused: a token of this provider is addressed by its resource indicators (RFC 8707 §2) alone.
      *
      * @throws InvalidRequestException
      * @throws InvalidTargetException
@@ -193,10 +160,9 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §4.4: the subject's own word on who may act for them. A token that carries none says nothing,
-     * and the registration of the client that asks is what decides; a token that carries one narrows that to
-     * a single party. Whoever is about to hold the new token is the party compared: the actor of a delegation
-     * and, when nobody acts, the client itself, impersonation being acting in the strongest sense.
+     * RFC 8693 §4.4
+     *
+     * Without an actor the client itself is compared, impersonation being acting in the strongest sense.
      *
      * @throws InvalidRequestException
      */
@@ -212,10 +178,7 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §2.1, RFC 6749 §3.3: the scopes of the new token are a subset of the ones the presented token
-     * carried, among the ones the client that asks registered. A request that names none narrows nothing and
-     * takes all of the presented token's; a request that names more, or that takes a scope its client never
-     * registered, is refused rather than served less than it asked for.
+     * RFC 8693 §2.1, RFC 6749 §3.3
      *
      * @throws InvalidScopeException
      */
@@ -241,10 +204,7 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8707 §2, RFC 8693 §2.1: the resources the new token is addressed to, a subset of the ones the
-     * presented token was addressed to, among the ones the client that asks registered. A request that names
-     * none takes all of the presented token's, and is refused as a request naming them would be when its
-     * client did not register them all.
+     * RFC 8707 §2, RFC 8693 §2.1
      *
      * @throws InvalidTargetException
      */
@@ -259,10 +219,9 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     }
 
     /**
-     * RFC 8693 §2.1, RFC 8707 §2: the resources the new token may be addressed to are the ones the presented
-     * token was addressed to. A token addressed to its own client was asked for no resource at all, so there
-     * is nothing to narrow and the exchange is refused rather than answered with a token addressed somewhere
-     * the old one never reached.
+     * RFC 8693 §2.1, RFC 8707 §2
+     *
+     * A token addressed to its own client is refused: the new one could only reach where the old one never did.
      *
      * @throws InvalidTargetException
      */

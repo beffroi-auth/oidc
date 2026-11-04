@@ -7,15 +7,9 @@ namespace Beffroi\Oidc\Domain\Client;
 use Beffroi\Core\Domain\Key\SignatureAlgorithmInterface;
 
 /**
- * The shape a client registered for one kind of document the provider hands it (OIDC Registration §2):
- * the ID token (OIDC Core §3.1.3.7), the UserInfo answer (§5.3.2) and the signed authorization response
- * (JARM §2.1). Signed, then encrypted, in that order and never the other way round: what proves who wrote
- * the document is inside what hides it.
+ * OIDC Registration §2
  *
- * A document that is always signed says so with signed(), and a null algorithm there means the one the
- * provider signs with, a client being free to register none. A UserInfo answer is the one document a
- * client may receive unsigned, and unsigned() says it: encrypted alone, its payload is the plain JSON of
- * §5.3.2, and encrypted by nothing it is that JSON.
+ * Signed, then encrypted, never the other way round.
  */
 final readonly class ResponseFormat
 {
@@ -27,7 +21,7 @@ final readonly class ResponseFormat
     }
 
     /**
-     * @param SignatureAlgorithmInterface|null $signature what the client registered, null for the algorithm the provider signs with
+     * @param SignatureAlgorithmInterface|null $signature null for the algorithm the provider signs with
      */
     public static function signed(?SignatureAlgorithmInterface $signature = null, ?ResponseEncryption $encryption = null): self
     {
@@ -45,7 +39,7 @@ final readonly class ResponseFormat
     }
 
     /**
-     * Neither signed nor encrypted: the document travels as it is written.
+     * Neither signed nor encrypted.
      */
     public function isPlain(): bool
     {

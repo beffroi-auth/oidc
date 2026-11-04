@@ -18,19 +18,9 @@ use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * What the authorization endpoint reads when the request was pushed (RFC 9126 §4): the "request_uri"
- * names a record, the record carries the parameters, and the query carries nothing else that counts.
- * "client_id" and "request_uri" are the two parameters such a request has; every other one of the query
- * is dropped, as it is for a request object (OIDC Core §6.1), so that what the client pushed and what
- * the provider reads are the same request.
+ * RFC 9126 §4
  *
- * A reference is spent once and read by the client it was issued to, and it is spent when the request
- * it carries is granted and not when it is read (FAPI 2.0 Security Profile §5.3.1): a user who reloads
- * the page they were sent to, or a browser that repeats the request, is still holding a request nobody
- * has answered yet. The authorization endpoint consumes the record with the code it issues.
- *
- * What is not a reference of this provider is left alone: the authorization endpoint answers for it, and
- * nothing here ever fetches a URL.
+ * A reference is spent when its request is granted, not when read: a reloaded page still holds an unanswered request.
  */
 final readonly class PushedAuthorizationRequestResolver
 {
@@ -44,12 +34,9 @@ final readonly class PushedAuthorizationRequestResolver
     }
 
     /**
-     * @param array<string, mixed> $parameters the parameters of the authorization request as the browser carried them
+     * @param array<string, mixed> $parameters
      *
-     * @throws OAuth2Exception never redirectable: a pushed request that grants nothing names no redirect
-     *                         URI this provider would send anything to
-     * @return PushedAuthorizationRecord|null the record the endpoint reads in place of the query, null
-     *                                         when the request was not pushed and the query stands
+     * @throws OAuth2Exception never redirectable
      */
     public function resolve(Tenant $tenant, array $parameters, RequestContext $context): ?PushedAuthorizationRecord
     {
@@ -77,9 +64,6 @@ final readonly class PushedAuthorizationRequestResolver
     }
 
     /**
-     * RFC 9126 §4: the parameters of the record, plus the "client_id" the request must carry, which is
-     * the one the record is bound to.
-     *
      * @return array<string, string|list<string>>
      */
     public static function parametersOf(PushedAuthorizationRecord $record): array
@@ -91,8 +75,7 @@ final readonly class PushedAuthorizationRequestResolver
     }
 
     /**
-     * The audit trail gets the reason and the two clients; the one that presented the reference reads
-     * one error whichever of the four it ran into.
+     * The audit trail gets the reason; the client reads one error whatever it ran into.
      */
     private function refuse(
         Tenant $tenant,

@@ -9,21 +9,14 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\LogicException;
 
 /**
- * The shape a client registered for one document (ResponseFormat), addressed: with what the document needs from
- * outside the provider. That is the key of the tenant its JWS is signed with when the shape signs it, opened by the
- * KMS, and the key of the client its JWE goes to when the shape encrypts it (OIDC Core §3.1.3.7, RFC 7516 §7.1), read
- * back from what the client publishes. Both are read before the document is struck and travel with the shape: whoever
- * spends something on the way to a document reads them first, and striking the document then depends on nothing the
- * KMS or the client serves.
+ * A ResponseFormat with the keys its document needs, opened and read before anything is spent.
  */
 final readonly class AddressedFormat
 {
     /**
-     * @param OpenedSigningKeyInterface|null $signingKey the key of the tenant the JWS is signed with, opened, null for a shape that signs nothing
-     * @param array<string, mixed>|null $recipient the public JWK of the client the JWE is addressed to, null for a shape that encrypts nothing
+     * @param array<string, mixed>|null $recipient the public JWK of the client
      *
-     * @throws InvalidArgumentException when a shape that signs is given no key to sign with, or a shape that does not is given one,
-     *                                  and when a shape that encrypts is given no key of the client, or a shape that does not is given one
+     * @throws InvalidArgumentException when a key the shape needs is missing, or one it does not need is given
      */
     public function __construct(
         public ResponseFormat $format,
@@ -39,9 +32,7 @@ final readonly class AddressedFormat
     }
 
     /**
-     * @throws LogicException when the shape signs nothing, so that no key of the tenant was opened for the document
-     *
-     * @return OpenedSigningKeyInterface the key of the tenant the JWS is signed with, opened
+     * @throws LogicException when the shape signs nothing
      */
     public function signingKey(): OpenedSigningKeyInterface
     {
@@ -49,9 +40,9 @@ final readonly class AddressedFormat
     }
 
     /**
-     * @throws LogicException when the shape encrypts nothing, so that the document goes to no key
+     * @throws LogicException when the shape encrypts nothing
      *
-     * @return array<string, mixed> the public JWK of the client the JWE is addressed to
+     * @return array<string, mixed> the public JWK of the client
      */
     public function recipient(): array
     {

@@ -15,24 +15,8 @@ use Beffroi\Oidc\Exception\InvalidTokenException;
 use function is_string;
 
 /**
- * The person a self-contained access token is about, as the claim that carries it and as the subject that
- * claim is read back to (issue #641, architecture §4.6): the way a token whose subject a client named says
- * who it is about, where there is no record to say it.
- *
- * **It is sealed under the KMS of the tenant**, as a shared secret of a user is (architecture §3.3), and
- * what that buys is the one thing a claim in the clear could not: the name the account carries is the name
- * that links a person across sectors, which is what a pairwise kind exists to keep from a client
- * (OIDC Core §8.1), so a token that carried it would hand it to every holder. Sealed, it is read by this
- * provider and by nobody else, and the holder of the token learns from it exactly what it learned before,
- * nothing.
- *
- * It is a use case and not a pair of methods on the token because reading it back names the sealer the
- * wiring holds, as reading a password hash back names its algorithm (StoredPasswordHash): the issuer and
- * the verifier of the shape are handed the same object, so what one writes is what the other reads.
- *
- * What it is not is a claim a resource server is held to (RFC 9068 §2.2): the claims of §2.2 are the ones
- * they were, this one is a private claim of the provider (RFC 7519 §4.3), and a resource server verifying
- * offline reads it as it reads anything it was not given a meaning for.
+ * Sealed under the KMS of the tenant: in the clear, the account's subject would link the person across pairwise
+ * sectors (OIDC Core §8.1).
  */
 final readonly class SealedPerson
 {
@@ -42,10 +26,8 @@ final readonly class SealedPerson
     }
 
     /**
-     * @throws KmsUnavailableException when the KMS of the tenant does not answer or refuses to seal
-     * @throws RuntimeException when the envelope cannot be made for another reason
-     *
-     * @return string the envelope in base64url, which is what a claim of a JWT carries
+     * @throws KmsUnavailableException
+     * @throws RuntimeException
      */
     public function claim(Tenant $tenant, Subject $person): string
     {
@@ -53,16 +35,8 @@ final readonly class SealedPerson
     }
 
     /**
-     * The person the claim names, null when the token carries none, which is what a token nothing resolved
-     * a person for says: a token a client holds for itself is about nobody (RFC 6749 §4.4), and a token
-     * somebody signed in for says who it is about in its "sub", for the client it was written for.
-     *
-     * A claim this provider did not write there is refused rather than read as saying nobody: what it holds
-     * is an envelope of this use and of this tenant or it is not one of ours, and the token it came in was
-     * then not issued here either.
-     *
      * @throws InvalidTokenException when the claim is not an envelope this provider sealed for this tenant
-     * @throws KmsUnavailableException when the KMS of the tenant does not answer
+     * @throws KmsUnavailableException
      */
     public function of(Tenant $tenant, mixed $claim): ?Subject
     {

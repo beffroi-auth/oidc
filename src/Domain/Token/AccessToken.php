@@ -9,7 +9,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * An access token as the token endpoint hands it out (RFC 6749 §5.1); what the value contains is the issuer's business.
+ * RFC 6749 §5.1
  */
 final readonly class AccessToken
 {
@@ -28,8 +28,6 @@ final readonly class AccessToken
     }
 
     /**
-     * RFC 6749 §5.1 "expires_in".
-     *
      * @return positive-int
      */
     public function expiresIn(): int

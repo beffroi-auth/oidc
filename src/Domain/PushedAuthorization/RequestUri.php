@@ -10,16 +10,12 @@ use function preg_match;
 use SensitiveParameter;
 
 /**
- * The reference the pushed authorization request endpoint answers with (RFC 9126 §2.2): the URN of
- * RFC 9101 §5.2.1, with 256 bits of randomness behind the prefix, which is the entropy RFC 9126 §7.1
- * asks for. The provider keeps its SHA-256 and never the value, as it keeps an authorization code, so
- * that a store read by someone else replays nothing.
+ * RFC 9126 §2.2
  */
 final readonly class RequestUri
 {
     /**
-     * RFC 9126 §2.2: the form the specification registers and the one the authorization endpoint
-     * recognises as one of ours.
+     * RFC 9126 §2.2
      */
     public const string URN_PREFIX = 'urn:ietf:params:oauth:request_uri:';
 
@@ -31,10 +27,7 @@ final readonly class RequestUri
     }
 
     /**
-     * The reference behind the prefix: 256 bits, base64url without padding, drawn where every value this
-     * provider hands out is drawn (SecretDrawer). The record does not draw what names it.
-     *
-     * @throws InvalidArgumentException when the value is not one of the shape this provider draws
+     * @throws InvalidArgumentException
      */
     public static function of(#[SensitiveParameter] string $drawn): self
     {
@@ -45,11 +38,6 @@ final readonly class RequestUri
         return new self(self::URN_PREFIX . $drawn);
     }
 
-    /**
-     * Whether a value claims to be one this provider issued, which is what tells a pushed request from
-     * the request object by reference of OIDC Core §6.2: what is not ours is left to the authorization
-     * endpoint to answer for, and is never fetched over the network.
-     */
     public static function isOurs(#[SensitiveParameter] string $value): bool
     {
         return preg_match(self::PATTERN, $value) === 1;

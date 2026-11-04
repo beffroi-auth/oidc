@@ -22,30 +22,12 @@ use function in_array;
 use SensitiveParameter;
 
 /**
- * What a software statement has to say before any of it is read as metadata (RFC 7591 §2.3): signed by an
- * authority the policy of the tenant pinned, with a key that policy holds, addressed to this provider,
- * still valid, and not seen before.
+ * RFC 7591 §2.3, RFC 8725 §3.10
  *
- * Nothing of the statement is verified before the authority is found: which key would verify it is the
- * policy's answer and never the statement's (RFC 8725 §3.10). A statement carrying its own key, or naming
- * a "jwks_uri" of its own, is verified against neither, which is what keeps whoever can sign anything from
- * signing themselves an attestation.
- *
- * Every refusal is the same refusal, `invalid_software_statement`, and whoever presents a statement learns
- * that it was not accepted and nothing else: not whether the authority is pinned, not whether the
- * signature verified, not whether the identifier had been seen (decision 0006). What a statement that
- * verified says is then client metadata, and a member of it that no client registers is refused as the
- * same member of a request body is (`AttestedMembers`).
- *
- * It shares nothing with the two readings of an assertion (RFC 7523 §2.1, §3): different registrations,
- * different keys, different rules and a replay guard of its own.
+ * Verified only against the keys the tenant's policy pinned, never a key or "jwks_uri" the statement names.
  */
 final readonly class SoftwareStatementVerifier
 {
-    /**
-     * @param DateInterval $maximumLifetime how far ahead of the request an "exp" may be
-     * @param DateInterval $leeway what is allowed of the clock of the authority, both ways
-     */
     public function __construct(
         private CompactJwtReaderInterface $jwts,
         private JwtKeyVerifierInterface $keys,
@@ -56,10 +38,8 @@ final readonly class SoftwareStatementVerifier
     }
 
     /**
-     * @param string $statement the compact JWS the registration carried
-     *
-     * @throws InvalidSoftwareStatementException whenever the statement is not accepted, whatever the reason
-     * @throws InvalidClientMetadataException when the statement it accepts carries a member of this provider alone
+     * @throws InvalidSoftwareStatementException whatever the reason the statement is refused
+     * @throws InvalidClientMetadataException when the statement carries a member of this provider alone
      */
     public function verify(
         Tenant $tenant,
@@ -85,8 +65,6 @@ final readonly class SoftwareStatementVerifier
     }
 
     /**
-     * RFC 7591 §2.3: the authority the statement names, among the ones the policy of this tenant pinned.
-     *
      * @throws InvalidSoftwareStatementException
      */
     private function pinned(ClientRegistrationPolicy $policy, UnverifiedJwt $jwt): StatementIssuer
@@ -101,14 +79,7 @@ final readonly class SoftwareStatementVerifier
     }
 
     /**
-     * Addressed to this provider, once and by its issuer identifier; expired or not yet issued, refused;
-     * bounded, so that a statement is not a registration credential for a year; and remembered, so that one
-     * statement registers one client.
-     *
-     * RFC 7591 §2.3 requires none of these of a statement, the "software_statement" being defined as a JWT
-     * whose claims are metadata and nothing more. They are required here for the same reason every other
-     * signed thing this provider takes back is held to them (decision 0006): a statement with no "exp" is a
-     * bearer credential for ever, and one no audience names is one an authority signed for somebody else.
+     * Beyond what RFC 7591 §2.3 asks: without these checks a statement would be a bearer credential for ever.
      *
      * @throws InvalidSoftwareStatementException
      */

@@ -7,14 +7,9 @@ namespace Beffroi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 9396 §5 "invalid_authorization_details": the "authorization_details" of the request is not what it
- * must be. It answers an authorization request, a pushed one and a token request alike, as
- * "invalid_target" does for the resources beside it.
+ * RFC 9396 §5
  *
- * The four ways of being wrong are one error: a malformed array, an object naming no type, a type nobody
- * serves and a type the client is not registered for. Which it was is the description, and the
- * description names neither the type nor what the client registered: what a client may ask for is not
- * something an error response teaches whoever sent the request.
+ * The description names neither the type nor what the client registered.
  */
 final class InvalidAuthorizationDetailsException extends OAuth2Exception
 {
@@ -27,8 +22,7 @@ final class InvalidAuthorizationDetailsException extends OAuth2Exception
     }
 
     /**
-     * What an "authorization_details" must be wherever one is read (RFC 9396 §2): a JSON array of
-     * objects, each naming in "type" a type this provider serves, each holding what that type accepts.
+     * RFC 9396 §2
      */
     public static function notWhatItMustBe(bool $redirectable = false, ?Throwable $previous = null): self
     {
@@ -40,8 +34,7 @@ final class InvalidAuthorizationDetailsException extends OAuth2Exception
     }
 
     /**
-     * RFC 9396 §11: what a client may ask for is the closed list of its registration, as every other list
-     * of a client is.
+     * RFC 9396 §11
      */
     public static function notRegistered(bool $redirectable = false): self
     {
@@ -52,8 +45,7 @@ final class InvalidAuthorizationDetailsException extends OAuth2Exception
     }
 
     /**
-     * RFC 9396 §7: a token request narrows the details of the authorization it spends, and never widens
-     * them.
+     * RFC 9396 §7
      */
     public static function notGranted(): self
     {

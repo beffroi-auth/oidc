@@ -32,41 +32,9 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * The UserInfo endpoint (OIDC Core §5.3, architecture §4.7): an access token (RFC 6750 §2, RFC 9449 §7.1)
- * inspected as an access token of the provider, answered with the claims its scopes stand for (§5.4) and
- * those asked for by name (§5.5). A token without "openid" is insufficient_scope (§5.3.1). Errors are the
- * ones of RFC 6750 §3.1 and of RFC 9449 §7.1, and a refusal of a token is delivered in the challenge of the
- * scheme the token was presented under (RFC 9449 §7.2), save the refusal of a token presented the wrong
- * way, which names the scheme that would have worked.
+ * OIDC Core §5.3, RFC 6750 §3.1, RFC 9449 §7.1, §7.2
  *
- * It answers for a user, so a token nobody signed in for opens nothing here: a client acting for itself
- * (RFC 6749 §4.4) asks its token for a resource and is refused by the rule below that the token must be
- * addressed to this provider, and a token with nobody behind it that got that far would be refused for
- * carrying no "openid" either (OIDC Core §5.3.1). The claims of a user are served to a token that names one
- * and to no other, whatever else the request is right about.
- *
- * It is a token of the provider itself: a token asked for a resource (RFC 8707 §2) is addressed to that
- * resource, and this endpoint is not it, so it is refused here however valid it is elsewhere. A client
- * that comes for the claims of its user asks for a token naming no resource, which is what a client of
- * OpenID Connect sends and what every certification profile plays.
- *
- * This is a protected resource of the provider, and the first one: a bound token (RFC 8705 §3,
- * RFC 9449 §6.1) is honoured here only when the request proves again what it is bound to, the
- * certificate of its connection or the key of the proof it carries, and refused with invalid_token when
- * it proves another or nothing. A token bound to a key is refused when it is presented as a bearer token:
- * the scheme is part of how it is presented (RFC 9449 §7.1, §7.2). What a token is bound to is read from
- * the token, so the scheme is judged once the token has been verified: a bound token that does not hold,
- * an expired one for instance, is refused for that first, under the scheme it was presented under.
- * Whoever steals a bound token holds bytes that open nothing.
- *
- * The answer is the plain JSON unless the client registered a signature or an encryption for it (§5.3.2),
- * in which case it is a JWT carrying the same claims plus the "iss" and the "aud" that tell a client who
- * wrote them and for whom. Signed then encrypted, as an ID token is and in the same place.
- *
- * **An answer is an act** (`UserInfoAnswered`, issue #589): this is one of the two requests where a
- * personal datum leaves this provider, and the one where what leaves is the person themselves, so the
- * journal of that person says that this client read them. A refusal writes nothing, nothing of anybody
- * having left.
+ * A token asked for a resource (RFC 8707 §2) is addressed to it, not to this endpoint, and is refused here.
  */
 final readonly class UserInfoHandler
 {
@@ -83,13 +51,10 @@ final readonly class UserInfoHandler
     }
 
     /**
-     * @param string $method the method of the request, which a proof made for it names (RFC 9449 §4.2)
-     * @param array<string, mixed> $parameters the form parameters of the request body, never the query string (RFC 6750 §2.3)
-     * @param ClientCertificate|null $certificate the certificate the caller presented at the TLS handshake (RFC 8705 §3)
-     * @param string|null $dpopProof the DPoP header of the request, null when it carries none (RFC 9449 §4.1)
+     * @param array<string, mixed> $parameters the request body, never the query string (RFC 6750 §2.3)
      *
-     * @throws MissingBearerTokenException 401 with a bare challenge
-     * @throws OAuth2Exception invalid_request, invalid_token, invalid_dpop_proof or insufficient_scope
+     * @throws MissingBearerTokenException
+     * @throws OAuth2Exception
      */
     public function handle(
         Tenant $tenant,
@@ -142,8 +107,7 @@ final readonly class UserInfoHandler
         $subject = $this->subjects->resolve($user, $client)->value;
         $claims = UserInfoResponse::claimsOf($subject, $this->claims->claims($user, $token->scopes, $requested));
         $response = $this->answer($tenant, $client, $subject, $claims);
-        // the act is written once the answer exists: what the journal of a person says is what was served
-        // to that client and never what this provider set out to serve (issue #589)
+        // Dispatched once the answer exists: the journal records what was served, never what was attempted.
         $this->events->dispatch(new UserInfoAnswered(
             $context->receivedAt,
             $tenant,
@@ -156,7 +120,7 @@ final readonly class UserInfoHandler
     }
 
     /**
-     * The answer in the shape the client registered for it (OIDC Core §5.3.2).
+     * OIDC Core §5.3.2
      *
      * @param array<string, mixed> $claims
      */
@@ -166,7 +130,6 @@ final readonly class UserInfoHandler
         if ($format->isPlain()) {
             return UserInfoResponse::json($subject, $claims);
         }
-        // OIDC Core §5.3.2: a JWT answer names who wrote it and for whom, which the JSON one has no room to say.
         $claims += [
             'iss' => (string) $tenant->issuer,
             'aud' => $client->registration->clientId,

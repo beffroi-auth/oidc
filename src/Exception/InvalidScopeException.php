@@ -7,7 +7,7 @@ namespace Beffroi\Oidc\Exception;
 use Throwable;
 
 /**
- * RFC 6749 §4.1.2.1, §5.2 "invalid_scope".
+ * RFC 6749 §4.1.2.1, §5.2
  */
 final class InvalidScopeException extends OAuth2Exception
 {
@@ -20,8 +20,7 @@ final class InvalidScopeException extends OAuth2Exception
     }
 
     /**
-     * What a "scope" parameter must be wherever one is read (RFC 6749 §3.3): the authorization request
-     * reads one, the refresh grant reads one, and both refuse the same thing the same way.
+     * RFC 6749 §3.3
      */
     public static function notASpaceSeparatedList(bool $redirectable = false, ?Throwable $previous = null): self
     {
@@ -29,10 +28,9 @@ final class InvalidScopeException extends OAuth2Exception
     }
 
     /**
-     * RFC 6749 §3.3: what a client may be granted is among what it registered, wherever a request is read
-     * for it: the authorization request, the endpoints where a flow on another device or through a
-     * backchannel starts, and every grant with nobody's browser in it. The description names no scope: what
-     * the client registered is not something an error response teaches whoever sent the request.
+     * RFC 6749 §3.3
+     *
+     * The description names no scope, so that an error response teaches nothing of what the client registered.
      */
     public static function notRegistered(bool $redirectable = false): self
     {

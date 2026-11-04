@@ -16,17 +16,7 @@ use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A tenant hands somebody the right to register a client with it (RFC 7591 §1.2, decision 0009): a value
- * drawn like every other value this provider hands out, worth a number of registrations, expiring, and
- * named so that whoever issued it can say later which integration it was for.
- *
- * The value is answered once and the row holds its digest, which is the same rule the registration
- * answers its secret under: whoever reads the table holds nothing to present. So there is no second way
- * to obtain it, and a tenant that lost one issues another.
- *
- * Nothing here says who may issue one. A token is issued by whoever runs the deployment, at the console
- * and later at the tenant console (#194), both of which have the deployment already; the authority is
- * the reach of the machine, not a credential this provider checks.
+ * Checks no permission: whoever can call it already runs the deployment.
  */
 final readonly class InitialAccessTokenIssuance
 {
@@ -38,11 +28,10 @@ final readonly class InitialAccessTokenIssuance
     }
 
     /**
-     * @param string $name what the tenant calls this token; never empty
-     * @param int $registrationsAllowed how many clients it may register; at least one
-     * @param DateInterval $validFor how long it is worth anything, counted from now
+     * @param string $name never empty
+     * @param int $registrationsAllowed at least one
      *
-     * @throws InvalidArgumentException when what is asked for is not a token that holds together
+     * @throws InvalidArgumentException
      */
     public function issue(Tenant $tenant, string $name, int $registrationsAllowed, DateInterval $validFor): IssuedInitialAccessToken
     {

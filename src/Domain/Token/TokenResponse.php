@@ -11,29 +11,19 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * The successful answer of the token endpoint (RFC 6749 §5.1, OIDC Core §3.1.3.3); "scope" is always there.
- *
- * A grant that turns one token into another names the type of the token it issued (RFC 8693 §2.2.1), which
- * every other grant has nothing to say and therefore does not write.
- *
- * What it granted beyond its scopes is written the same way (RFC 9396 §7): a response of an authorization
- * carrying details says which, and a response of one carrying none writes no member at all. It is what a
- * client compares with what it asked for, a provider being free to grant less, and the details of a response
- * are the ones its type built rather than the objects the request wrote, so the request is not that
- * comparison (AuthorizationDetail).
+ * RFC 6749 §5.1, OIDC Core §3.1.3.3, RFC 8693 §2.2.1, RFC 9396 §7
  */
 final readonly class TokenResponse
 {
     /**
-     * RFC 6749 §5.1, RFC 6750 §6.1: the type of a token whose holder is whoever presents it, and of one
-     * the transport binds (RFC 8705 §3, which changes nothing to the way a client sends it).
+     * RFC 6749 §5.1, RFC 6750 §6.1; a token bound to a certificate is a bearer token too (RFC 8705 §3)
      */
     public const string BEARER = 'Bearer';
 
     public const string CONTENT_TYPE = 'application/json';
 
     /**
-     * RFC 6749 §5.1, for the errors of §5.2 as well.
+     * RFC 6749 §5.1, §5.2
      */
     public const array HEADERS = [
         'Cache-Control' => 'no-store',
@@ -42,10 +32,6 @@ final readonly class TokenResponse
 
     /**
      * @param positive-int $expiresIn
-     * @param string $tokenType how the client presents the token it is handed (RFC 6749 §5.1), which is
-     *                          what the binding of the token says and "Bearer" when it has none
-     * @param TokenTypeIdentifier|null $issuedTokenType the type of the token this response carries (RFC 8693 §2.2.1), null for a response no exchange produced
-     * @param AuthorizationDetails|null $authorizationDetails what this response granted beyond its scopes (RFC 9396 §7), null when it granted none
      */
     public function __construct(
         #[SensitiveParameter]

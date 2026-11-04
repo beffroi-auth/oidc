@@ -12,14 +12,7 @@ use Beffroi\Oidc\Port\ServedGrantsInterface;
 use function sprintf;
 
 /**
- * The grants the wiring gave the token endpoint, in the order they are wired. The one source of truth
- * over them (issue #98): the endpoint reads this list to know what a request may ask for, a
- * registration reads it to know what a client may name, and the discovery document reads it to know
- * what to announce. A grant wired twice, and a token endpoint wired with none, are refused here, where
- * the wiring is collected.
- *
- * The list is read when a question is asked of it and never at construction, because a grant reads it
- * to know what the others make of a refresh token and is wired among them.
+ * The grants are read on first use, never at construction: a grant reads them and is wired among them.
  */
 final readonly class ServedGrants implements ServedGrantsInterface
 {
@@ -32,9 +25,6 @@ final readonly class ServedGrants implements ServedGrantsInterface
     }
 
     /**
-     * The grant that serves this "grant_type" (RFC 6749 §4.1.3), null for a name the provider does not
-     * serve, whatever the shape of that name: what a request wrote is looked up, never read as a name.
-     *
      * @throws InvalidArgumentException when the wiring does not hold together
      */
     public function named(string $grantType): ?GrantInterface
@@ -112,7 +102,7 @@ final readonly class ServedGrants implements ServedGrantsInterface
     /**
      * @throws InvalidArgumentException
      *
-     * @return non-empty-array<string, GrantInterface> by the name each grant gives itself
+     * @return non-empty-array<string, GrantInterface> by grant type
      */
     private function wired(): array
     {

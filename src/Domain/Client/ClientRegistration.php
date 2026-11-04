@@ -25,28 +25,12 @@ use function preg_match;
 use function sprintf;
 
 /**
- * What a relying party registered (RFC 7591 §2), as one value that answers for itself: every rule a
- * registration must hold is checked here, against the fields themselves, once.
- *
- * It is the same registration wherever it comes from, the configuration of a deployment or a client
- * registering itself, and it is validated before anything is built from it. What it does not hold is
- * what is not registered: the tenant it belongs to, and the shared secret in the shape the provider
- * keeps it, which are the two things a `Client` adds.
- *
- * The names it registers are read against what the provider is wired with, where the two meet, and not
- * here: a registration knows the shape of a grant name and not which names anybody serves. Whether it must
- * carry a redirect URI is one of those rules, since only the wiring says whether a grant it registered
- * sends a browser anywhere: a client that acts for itself (RFC 6749 §4.4) registers none.
- *
- * Every list is closed, no wildcard. "requiresConsent = false" and "requiresPkce = false" are the named
- * exceptions of architecture §7 and decision 0008, carried by the registration and by nothing global;
- * "requiresPushedAuthorizationRequests" tightens the other way, one client at a time and never by a
- * switch of the deployment (RFC 9126 §6).
+ * RFC 7591 §2
  */
 final readonly class ClientRegistration
 {
     /**
-     * RFC 6749 appendix A.1, without leading nor trailing space.
+     * RFC 6749 appendix A.1, without a leading or trailing space
      */
     private const string CLIENT_ID_PATTERN = '/^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$/D';
 
@@ -89,42 +73,15 @@ final readonly class ClientRegistration
     public ResponseFormat $authorizationResponse;
 
     /**
-     * @param ClientPresentation $presentation what the registration says about who is asking (OIDC Registration §2), which the consent page shows
-     * @param bool $registersASecret whether the client registered a shared secret; what shape the provider keeps it in is the business of the `Client` that holds it
-     * @param list<RedirectUri> $redirectUris where the user's browser is sent back to (RFC 6749 §3.1.2); how many a client must register depends on the grants it registered, which is read where a registration meets the wiring
-     * @param AccessTokenShapeInterface $accessTokenShape the shape this client receives its access tokens in (architecture §4.6), among those the provider is wired to write; which those are is read where a registration meets that wiring, as for a grant and for an authentication method
+     * @param list<RedirectUri> $redirectUris
      * @param list<RedirectUri> $postLogoutRedirectUris
-     * @param list<GrantTypeName> $grantTypes at least one; "authorization_code" alone for a client that registers none (RFC 7591 §2). Which names the provider serves, and which of them need another beside them, is what it is wired with and is read where a registration meets that wiring (architecture §4.8)
-     * @param bool $requiresPkce false only for a confidential client (decision 0008)
-     * @param bool $requiresPushedAuthorizationRequests true when the only way this client starts an authorization request is by pushing it (RFC 9126 §6)
-     * @param bool $requiresSenderConstrainedTokens true when this client gets sender-constrained tokens or none at all (FAPI 2.0 Security Profile §5.3.1): a token request that proves neither a certificate nor a key is refused rather than answered with bearer tokens
-     * @param bool $requiresSignedRequestObject true when a request of this client is only read from a request object it signed, at the authorization endpoint as at the backchannel authentication one (RFC 9101 §10.5 "require_signed_request_object", FAPI 2.0 Message Signing §5.3.1, FAPI-CIBA §5.2.2); never beside a $requestObjectSigning under which an unsigned object is read, so that every object read for such a client is one it signed
-     * @param non-empty-string|null $subjectType the kind of "sub" this client registered ("subject_type", OIDC Core §8), under the name the resolver of that kind gives itself; which kinds the provider assigns one for is read where a registration meets the wiring, as for a grant and for an authentication method. Null for a client that registered none, which sees the kind the provider assigns by default
-     * @param ClientUri|null $sectorIdentifierUri the document naming every redirection URI of the clients that share a "sub" with this one (OIDC Core §8.1); null for a client that registered none, which is every client whose sector is its own host
-     * @param InitiateLoginUri|null $initiateLoginUri where a third party sends a user to have this provider begin a login at this client (OIDC Core §4, OIDC Registration §2), an HTTPS URL whatever the host; null for a client no third party starts a login at
-     * @param string|null $softwareId what the software this client is an instance of calls itself, the same across every installation of it (RFC 7591 §2); null for a client whose software names none
-     * @param string|null $softwareVersion the version of that software, which unlike the identifier changes from one installation to the next (RFC 7591 §2); null for a client whose software names none
-     * @param bool $requiresCertificateBoundTokens true when the tokens of this client are bound to the certificate it presents whichever way it authenticated (RFC 8705 §3.4 "tls_client_certificate_bound_access_tokens", FAPI 1.0 Advanced Final §5.2.2): a token request of such a client that proves no certificate is refused rather than answered with tokens bound to nothing. It is what a client authenticated by its certificate gets anyway (§3), so it is the registration of a client that authenticates some other way
-     * @param DeliveryModeInterface|null $backchannelTokenDeliveryMode how this client is told that a backchannel request has been answered (CIBA Core §4), among the modes the provider is wired with; null for a client of no such flow, which is every client that does not ask for one. There is no default: a mode nobody registered would make a client of another flow a client of this one by accident
-     * @param TokenExchange|null $tokenExchange what this client may exchange a token for (RFC 8693 §2.1); null for a client that exchanges none, which is every client that is not registered for that grant
-     * @param MayAct|null $mayAct who may act for the subject of a token issued to this client (RFC 8693 §4.4), written on every token it receives; null when the registration names nobody and what decides is the registration of whoever asks
-     * @param ClientUri|null $backchannelClientNotificationEndpoint where this provider calls that client back (CIBA Core §7.1), for a mode where it does and for no other
-     * @param list<ResourceIndicator> $resources the resources this client may ask a token for ("resource", RFC 8707 §2); a closed list like every other, so a resource outside it is "invalid_target". A client that registers none asks for none and its tokens are addressed to itself
-     * @param list<string> $authorizationDetailsTypes the types of authorization detail this client may ask for ("authorization_details", RFC 9396 §2, §11), among the ones the provider is wired with, which is read where a registration meets that wiring; a closed list like every other, so a type outside it is "invalid_authorization_details". A client that registers none asks for none
-     * @param RequestObjectSigningInterface $requestObjectSigning what the client registered in "request_object_signing_alg" (OIDC Registration §2), which its request objects are read under
-     * @param list<RequestUri> $requestUris the URLs a request object of this client may be read back from (OIDC Registration §2); a "request_uri" that is none of them is refused unread
-     * @param CertificateIdentityInterface|null $certificateIdentity what names the client in the certificate it presents (RFC 8705 §2.1.2), for the method that recognises it that way and for no other
-     * @param ClientJwks|null $jwks the keys the client publishes inline (RFC 7591 §2); exclusive with $jwksUri
-     * @param ClientUri|null $jwksUri where the keys the client publishes are read back from (RFC 7591 §2); exclusive with $jwks
-     * @param ResponseFormat|null $idToken the shape the client registered for its ID tokens (OIDC Core §3.1.3.7), which its logout tokens are signed like; null for the ordinary one, signed with what the provider signs with and not encrypted
-     * @param ResponseFormat|null $authorizationResponse the shape the client registered for its signed authorization responses (JARM §3), null for the ordinary one
-     * @param ResponseFormat|null $userInfo the shape the client registered for the UserInfo answer (OIDC Core §5.3.2); null for the plain JSON, which is what a client that registered nothing receives
-     * @param ClientUri|null $backChannelLogoutUri null for a client the provider does not tell of a logout
-     * @param bool $backChannelLogoutSessionRequired needs a back-channel logout URI (Back-Channel Logout 1.0 §2.2)
-     * @param ClientUri|null $frontChannelLogoutUri null for a client the logout page does not load
-     * @param bool $frontChannelLogoutSessionRequired needs a front-channel logout URI (Front-Channel Logout 1.0 §3)
+     * @param list<GrantTypeName> $grantTypes at least one
+     * @param non-empty-string|null $subjectType
+     * @param list<ResourceIndicator> $resources
+     * @param list<string> $authorizationDetailsTypes
+     * @param list<RequestUri> $requestUris
      *
-     * @throws InvalidArgumentException when the registration does not hold together
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public string $clientId,
@@ -188,16 +145,9 @@ final readonly class ClientRegistration
     }
 
     /**
-     * RFC 6749 §3.1.2.3: byte for byte, with the one named exception of RFC 8252 §7.3, which this is the
-     * only place able to apply: the port of a loopback redirection of a **public** client, which listens
-     * on whatever port the operating system handed it when it started and cannot register that port in
-     * advance. Nothing else varies, and a confidential client is held to the port it registered, having a
-     * host of its own to be reached at.
+     * RFC 6749 §3.1.2.3, RFC 8252 §7.3
      *
-     * It is the named and bounded exception decision 0006 allows, carried by the registration that may
-     * claim it as `requiresConsent` and `requiresPkce` are, and by no option of a deployment. PKCE stays
-     * mandatory for such a client, as it is for every public one, and the registration of such a client
-     * names the loopback interface by its IP literal and never by a name (§8.3, checked at construction).
+     * The port of a loopback redirection may vary for a public client only.
      */
     public function hasRedirectUri(string $redirectUri): bool
     {
@@ -208,10 +158,9 @@ final readonly class ClientRegistration
     }
 
     /**
-     * OIDC Core §6.2, OIDC Registration §2 "request_uris": byte for byte, fragment included, as every other
-     * URL a client registers. The provider reads a request object back from a URL the client registered and
-     * from no other, which is what "require_request_uri_registration" announces. What comes back is the
-     * registration itself, validated at boot, so that nothing reads a URL a request wrote.
+     * OIDC Core §6.2, OIDC Registration §2
+     *
+     * Returns the registered value, so that nothing fetches a URL a request wrote.
      */
     public function registeredRequestUri(string $requestUri): ?RequestUri
     {
@@ -219,10 +168,7 @@ final readonly class ClientRegistration
     }
 
     /**
-     * RP-Initiated Logout §2, and the same exception for the same reason: a native client is reached on
-     * the port it was given at the end of a session as at the beginning of one, so a provider that let it
-     * sign in and not sign out would have applied the rule of RFC 8252 §7.3 to half of what a client
-     * registers.
+     * RP-Initiated Logout §2, RFC 8252 §7.3
      */
     public function hasPostLogoutRedirectUri(string $redirectUri): bool
     {
@@ -238,8 +184,7 @@ final readonly class ClientRegistration
     }
 
     /**
-     * RFC 8707 §2.1: what this client may ask a token for, compared byte for byte as every other URI it
-     * registers. A client that registered none may ask for none.
+     * RFC 8707 §2.1
      */
     public function allowsResources(ResourceIndicators $resources): bool
     {
@@ -250,10 +195,7 @@ final readonly class ClientRegistration
     }
 
     /**
-     * RFC 9396 §11: what this client may ask for is the types it registered, compared byte for byte as
-     * every other closed list of a client. A client that registered none may ask for none, and a detail
-     * of a type outside the list is "invalid_authorization_details" whatever that type would have made
-     * of it.
+     * RFC 9396 §11
      */
     public function allowsAuthorizationDetails(AuthorizationDetails $details): bool
     {
@@ -264,9 +206,7 @@ final readonly class ClientRegistration
     }
 
     /**
-     * What a token of this client may be addressed to (RFC 8707 §2): one of the resources it registered,
-     * or the client itself when the request named none. Read where a token is read back, so that a value
-     * this provider would never have written is refused before anything is believed of it.
+     * RFC 8707 §2
      */
     public function mayBeAddressedTo(TokenAudience $audience): bool
     {
@@ -282,27 +222,16 @@ final readonly class ClientRegistration
         );
     }
 
-    /**
-     * Whether any of the three documents the provider writes for this client is addressed to a key of
-     * its own, which is what makes published keys necessary.
-     */
     public function registersAnEncryption(): bool
     {
         return $this->idToken->isEncrypted() || $this->authorizationResponse->isEncrypted() || $this->userInfo->isEncrypted();
     }
 
-    /**
-     * Whether the client publishes its keys at all, inline or behind a URL (RFC 7591 §2).
-     */
     public function publishesKeys(): bool
     {
         return $this->jwks !== null || $this->jwksUri !== null;
     }
 
-    /**
-     * What the client publishes, as what reads a published key set takes it (RFC 7591 §2): the set it
-     * wrote down, or the URL it is read back from, never both, and null when it publishes neither.
-     */
     public function publishedKeys(): ClientJwks|ClientUri|null
     {
         return $this->jwks ?? $this->jwksUri;
@@ -430,8 +359,6 @@ final readonly class ClientRegistration
     }
 
     /**
-     * The names of a closed list a client registers, each once, in the order they were registered.
-     *
      * @param list<string> $names
      *
      * @throws InvalidArgumentException when one of them is empty

@@ -11,11 +11,6 @@ use Beffroi\Core\Port\KeyBoundArtifactInterface;
 use Beffroi\Oidc\Application\Token\JwtAccessTokenIssuer;
 use Beffroi\Oidc\Port\RegisteredAccessTokenShapesInterface;
 
-/**
- * The "at+jwt" access token (RFC 9068), issued only when a client of the tenant is registered for that
- * shape (architecture §4.6). Both the shape and the lifetime are read from the issuer that writes them,
- * so that nothing here names either again.
- */
 final readonly class AccessTokenJwsKind implements KeyBoundArtifactInterface
 {
     public function __construct(

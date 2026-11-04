@@ -9,9 +9,7 @@ use Beffroi\Oidc\Domain\Flow\Hop;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * What the resource server a token is spent at asks of this provider (RFC 7662 §2): it hands the token
- * over and is told what it is. Every flow of this provider ends in a token spent somewhere, so every
- * one of them closes this way, and this is where the fourth actor of a picture comes in.
+ * RFC 7662 §2
  */
 final readonly class TheResourceServerAsksWhatTheTokenIs implements FlowShapeInterface
 {

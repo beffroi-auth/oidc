@@ -14,24 +14,17 @@ use Beffroi\Oidc\Exception\LogicException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use function sprintf;
 
-/**
- * The ways this provider is wired to read the user a backchannel authentication request is made for
- * (CIBA Core §7.1), and the one rule that governs all of them: a request carries exactly one hint.
- *
- * Which parameters count as a hint is the specification's closed list and not the wiring's: a request
- * carrying a hint this provider does not read, beside one it does, names its user twice and is refused
- * for that, not served on the half it happens to understand. A request carrying only a hint that is not
- * read here is refused as well, and neither refusal has looked up anybody.
- */
 final readonly class UserHints
 {
     /**
-     * CIBA Core §7.1: "the Client MUST provide one (and only one) of the hints", and these are the three.
+     * CIBA Core §7.1
+     *
+     * The specification's list, not the wiring's: an unread hint beside a read one still names the user twice.
      */
     public const array HINT_PARAMETERS = ['login_hint_token', 'id_token_hint', 'login_hint'];
 
     /**
-     * @param iterable<UserHintInterface> $hints in the order they are wired
+     * @param iterable<UserHintInterface> $hints
      */
     public function __construct(
         private iterable $hints,
@@ -39,10 +32,7 @@ final readonly class UserHints
     }
 
     /**
-     * The user the request names, null when the hint it carries names nobody.
-     *
-     * @throws OAuth2Exception when the request names no user, names one in more than one way, or names
-     *                         one in a way this provider does not read
+     * @throws OAuth2Exception
      */
     public function userNamedBy(Client $client, RequestParameters $request): ?User
     {
@@ -62,8 +52,7 @@ final readonly class UserHints
 
     /**
      * @throws InvalidRequestException when nothing wired reads that parameter
-     * @throws LogicException when two wired hints read the same one, which is a wiring that has two
-     *                        answers to one question
+     * @throws LogicException when two wired hints read it
      */
     private function reading(string $parameter): UserHintInterface
     {

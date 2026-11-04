@@ -15,15 +15,9 @@ use Beffroi\Oidc\Port\CertificateReaderInterface;
 use function sprintf;
 
 /**
- * "tls_client_auth" (RFC 8705 §2.1): the client presents a certificate issued by a certificate authority
- * the deployment trusts, and the provider recognises it by the one value of §2.1.2 it registered, read
- * out of the certificate and compared to what the registration says.
+ * RFC 8705 §2.1
  *
- * What this method does not do is as important as what it does. It does not build a chain, does not look
- * at a validity period and does not ask a revocation list anything: the handshake did, at the edge,
- * before the request existed (architecture §6), because only the leaf reaches the provider and
- * a provider that judged a chain from the leaf alone would be judging nothing. The deployment that turns
- * this method on is the deployment that configures the authorities its listener accepts.
+ * The chain, its validity and its revocation are checked by the TLS listener: only the leaf reaches the provider.
  */
 final readonly class TlsClientAuth extends CertificateMethod implements CertificateIdentityBearingMethodInterface
 {
@@ -60,10 +54,6 @@ final readonly class TlsClientAuth extends CertificateMethod implements Certific
         }
     }
 
-    /**
-     * What an acceptance costs that a refusal must cost too is reading the certificate, which is done
-     * whether or not there is a client to compare it to.
-     */
     public function payRefusal(ClientAuthenticationRequest $request): void
     {
         $certificate = $request->certificate;

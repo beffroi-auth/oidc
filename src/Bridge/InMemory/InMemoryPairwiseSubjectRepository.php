@@ -12,9 +12,6 @@ use Beffroi\Oidc\Domain\Claims\SectorIdentifier;
 use Beffroi\Oidc\Port\PairwiseSubjectRepositoryInterface;
 use function sprintf;
 
-/**
- * For tests and for the examples: nothing here survives the process.
- */
 final class InMemoryPairwiseSubjectRepository implements PairwiseSubjectRepositoryInterface
 {
     /**

@@ -8,24 +8,15 @@ use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use SensitiveParameter;
 
 /**
- * What arrived at a registration or at a client configuration endpoint (RFC 7591 §3.1, RFC 7592 §2.2): the
- * JSON object the client sent, member by member as it sent them, and the Authorization header it sent them
- * with.
+ * RFC 7591 §3.1, RFC 7592 §2.2
  *
- * It is what an authorisation reads, and the two modes that read it read different halves of it: the
- * controlled one the header, where the initial access token of §1.2 is presented, and the attested one the
- * body, where the `software_statement` of §2.3 is. Neither is a case of the other, and the request is one
- * thing whichever reads it.
- *
- * **A body that is no JSON object is a request that carries no members**, and saying so is the request's
- * own business rather than the caller's: what refuses first is then decided where the other refusals are
- * ordered, so a caller holding no credential is told that and nothing about the body it sent.
+ * A body that is no JSON object is refused only when its members are read, so that a caller holding no
+ * credential learns nothing about it.
  */
 final readonly class RegistrationRequest
 {
     /**
-     * @param array<string, mixed>|null $members the JSON object of the request body, as the client wrote it; null when the body was no JSON object at all
-     * @param string|null $authorizationHeader null when the request carries none
+     * @param array<string, mixed>|null $members null when the body is no JSON object
      */
     public function __construct(
         private ?array $members = null,
@@ -35,7 +26,7 @@ final readonly class RegistrationRequest
     }
 
     /**
-     * @throws InvalidClientMetadataException when the body was no JSON object (RFC 7591 §3.1)
+     * @throws InvalidClientMetadataException when the body is no JSON object
      *
      * @return array<string, mixed>
      */

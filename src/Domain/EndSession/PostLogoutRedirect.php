@@ -7,8 +7,9 @@ namespace Beffroi\Oidc\Domain\EndSession;
 use Beffroi\Oidc\Domain\Client\RedirectUri;
 
 /**
- * Where the user agent is sent once the logout is done (RP-Initiated Logout §3): a registered URI, "state"
- * echoed, no "iss" (RFC 9207 covers authorization responses only).
+ * RP-Initiated Logout §3
+ *
+ * No "iss": RFC 9207 covers authorization responses only.
  */
 final readonly class PostLogoutRedirect
 {

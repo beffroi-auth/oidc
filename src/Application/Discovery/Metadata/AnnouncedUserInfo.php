@@ -9,8 +9,7 @@ use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * OIDC Discovery §3 and OIDC Core §5.3.2: a client may have the UserInfo answer as a JWT signed by the
- * tenant, encrypted, or both; one that registers none of these keeps the JSON.
+ * OIDC Discovery §3, OIDC Core §5.3.2
  */
 final readonly class AnnouncedUserInfo implements MetadataContributorInterface
 {

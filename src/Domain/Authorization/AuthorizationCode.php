@@ -23,28 +23,17 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * An authorization code (RFC 6749 §4.1.2, architecture §4.4) as the provider keeps it: the SHA-256 of the
- * value, and everything the token endpoint needs, what the session had proven, frozen in an
- * AuthenticationSnapshot at issuance. The record is also the grant the tokens descend from
- * (GrantRecord), revoked when the code is replayed (RFC 6749 §4.1.2).
+ * RFC 6749 §4.1.2
  */
 final class AuthorizationCode extends GrantRecord implements ResolvesItsClientInterface
 {
     public readonly Tenant $tenant;
 
-    /**
-     * What a store keeps; the object is what the client repository resolved for it.
-     */
     public readonly string $clientId;
 
     /**
-     * @param string $codeHash the hex SHA-256 of the value drawn for it, see DrawnSecret
-     * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE (decision 0008)
-     * @param ResourceIndicators|null $resources the resources the request asked the tokens for (RFC 8707 §2.1), null when it named none; a token request may narrow them and never widen them
-     * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes (RFC 9396 §2), null when the request asked for none; a token request may narrow them and never widen them
-     * @param KeyConfirmation|null $dpopKey the key the request reserved the code for (RFC 9449 §10), null when it reserved it for none
-     * @param ClaimsRequest|null $claimsRequest what the request asked for by name and the client may be told (OIDC Core §5.5), null when it asked for none
-     * @param AuthenticationSnapshot $authentication what the session had proven, frozen for every token of the grant
+     * @param string $codeHash the hex SHA-256 of the code
+     * @param CodeChallenge|null $codeChallenge null only for a client that does not require PKCE
      */
     public function __construct(
         public readonly string $codeHash,
@@ -92,9 +81,6 @@ final class AuthorizationCode extends GrantRecord implements ResolvesItsClientIn
     }
 
     /**
-     * The code is held as a digest; what the request asked and what the session proved are what every token issued
-     * from it carries in the clear.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

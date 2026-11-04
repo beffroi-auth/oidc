@@ -7,10 +7,7 @@ namespace Beffroi\Oidc\Domain\Client\RequestObject;
 use function in_array;
 
 /**
- * A client that registered no "request_object_signing_alg" (OIDC Registration §2): its request objects
- * are read under any algorithm the provider is wired with. Never unsigned, whatever the default of the
- * specification is read to be: an unsigned object is the named exception of decision 0006 and is
- * registered, never fallen into.
+ * No "request_object_signing_alg" registered: any algorithm the provider is wired with, never "none".
  */
 final readonly class AnyRegisteredAlgorithm implements RequestObjectSigningInterface
 {

@@ -9,9 +9,7 @@ use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * RFC 9449 §5.1: what a proof of possession may be signed with, which is what the provider is wired with
- * and verifies every other signature with; a client binding its tokens to a key signs with one of these
- * and with nothing else.
+ * RFC 9449 §5.1
  */
 final readonly class AnnouncedDpop implements MetadataContributorInterface
 {

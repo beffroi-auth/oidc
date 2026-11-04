@@ -12,12 +12,7 @@ use function implode;
 use function sprintf;
 
 /**
- * The five ways RFC 8705 §2.1.2 lets a client register itself, read from a registration. A client that
- * authenticates with "tls_client_auth" registers exactly one of them: several would be several rules for
- * one certificate, where the specification names one expected value.
- *
- * This is the whole of §2.1.2 and the only place the five names are written down; a sixth kind the
- * specification added would be a class beside the other five and a line here.
+ * RFC 8705 §2.1.2
  */
 final readonly class CertificateIdentities
 {
@@ -31,17 +26,12 @@ final readonly class CertificateIdentities
 
     public const string SAN_EMAIL = EmailAddressName::NAME;
 
-    /**
-     * In the order of RFC 8705 §2.1.2. Each kind names itself; this list says which ones the provider
-     * reads a registration for, and in which order, and repeats none of their names.
-     */
     public const array NAMES = [self::SUBJECT_DN, self::SAN_DNS, self::SAN_URI, self::SAN_IP, self::SAN_EMAIL];
 
     /**
-     * @param array<string, string|null> $registration the five names, each one the value registered or null
+     * @param array<string, string|null> $registration keyed by the five names
      *
-     * @throws InvalidArgumentException when more than one is registered, or when one of them is not a
-     *                                  value of its kind
+     * @throws InvalidArgumentException when more than one is registered, or one is not a value of its kind
      */
     public static function fromRegistration(array $registration): ?CertificateIdentityInterface
     {

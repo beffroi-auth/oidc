@@ -7,8 +7,7 @@ namespace Beffroi\Oidc\Exception;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 
 /**
- * RFC 6750 §3.1 "insufficient_scope": 403, the challenge naming the scopes that would have sufficed, under
- * the scheme the token was presented under (RFC 9449 §7.2).
+ * RFC 6750 §3.1, RFC 9449 §7.2
  */
 final class InsufficientScopeException extends OAuth2Exception implements ChallengeInterface
 {

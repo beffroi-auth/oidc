@@ -18,13 +18,7 @@ use IteratorAggregate;
 use Traversable;
 
 /**
- * Who an access token is addressed to (RFC 7519 §4.1.3): the resources the request asked it for
- * (RFC 8707 §2), or the client itself when it asked for none. Written once here, because the two shapes
- * of access token write it, the introspection response renders it and the verifier reads it back, and
- * four places that must agree on what "aud" is are one place.
- *
- * "aud" is the audience and never the client: what names the client is "client_id" (RFC 9068 §2.2),
- * which is written beside it whatever the audience says.
+ * RFC 7519 §4.1.3
  *
  * @implements IteratorAggregate<int, string>
  */
@@ -36,9 +30,9 @@ final readonly class TokenAudience implements Countable, IteratorAggregate
     public array $values;
 
     /**
-     * @param list<string> $values at least one; a value named twice counts once
+     * @param list<string> $values at least one; a duplicate counts once
      *
-     * @throws InvalidArgumentException when the audience is empty, or holds something that is not text
+     * @throws InvalidArgumentException
      */
     public function __construct(array $values)
     {
@@ -58,11 +52,10 @@ final readonly class TokenAudience implements Countable, IteratorAggregate
     }
 
     /**
-     * RFC 8707 §2: a token is audience-restricted to the resources the request named. A request that
-     * named none asks for nothing beyond the provider itself, and its token is addressed to the client
-     * that asked for it, which is what a client of OpenID Connect presents at the UserInfo endpoint and
-     * introspects. Nothing is defaulted to the resources the client registered: a token valid at
-     * several resources is valid at each of them (RFC 8707 §3), so it is asked for and never assumed.
+     * RFC 8707 §2
+     *
+     * Never defaulted to the resources the client registered: a token valid at several resources is valid at each of
+     * them (RFC 8707 §3).
      */
     public static function of(Client $client, ?ResourceIndicators $resources): self
     {
@@ -70,9 +63,9 @@ final readonly class TokenAudience implements Countable, IteratorAggregate
     }
 
     /**
-     * RFC 7519 §4.1.3: an "aud" claim or member is a single string or a list of strings.
+     * RFC 7519 §4.1.3
      *
-     * @throws InvalidArgumentException when it is neither
+     * @throws InvalidArgumentException
      */
     public static function fromClaim(mixed $aud): self
     {
@@ -92,8 +85,7 @@ final readonly class TokenAudience implements Countable, IteratorAggregate
     }
 
     /**
-     * RFC 7519 §4.1.3: one audience is written as a string, several as a list, which is how every
-     * reader of an "aud" expects to find it.
+     * RFC 7519 §4.1.3
      *
      * @return string|non-empty-list<string>
      */

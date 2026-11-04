@@ -16,18 +16,7 @@ use Beffroi\Oidc\Domain\Interaction\StepUp;
 use Beffroi\Oidc\Exception\UnmetAuthenticationRequirementsException;
 
 /**
- * What a request demands of the authentication, judged against what this provider can prove (decision
- * 0010): the "acr" the request asks for, and the requested classes the policy of the tenant can assert with
- * the methods the provider is wired to prove. The rules of OIDC Core §5.5.1.1 are here and nowhere else,
- * asked at the three moments they answer differently.
- *
- * It holds no port, reads no store and tells no time: the three refusals and the step-up are functions of
- * the request, of the policy, of the session and of the credentials the user holds, and nothing more. What
- * reads a session's credentials, and when, is the caller's (AuthenticationRequirement), because reading them
- * costs a query and only a request that binds the provider to a class needs them.
- *
- * An essential "acr" is the only one that refuses: a voluntary one is never refused and is answered with the
- * class the session has (§5.5.1.1).
+ * OIDC Core §5.5.1.1, decision 0010
  */
 final readonly class RequestedAuthenticationContext
 {
@@ -38,7 +27,7 @@ final readonly class RequestedAuthenticationContext
     private const string UNMET_AFTER_LOGIN = 'The end user did not authenticate as any requested acr value demands.';
 
     /**
-     * @param list<AuthenticationContextClass> $provable the requested classes the provider can prove, in the client's order of preference
+     * @param list<AuthenticationContextClass> $provable in the client's order of preference
      */
     private function __construct(
         public AuthenticationContextRequest $requested,
@@ -48,9 +37,7 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * What an authorization request asks of the authentication (OIDC Core §3.1.2.1, §5.5.1.1).
-     *
-     * @param non-empty-list<AuthenticationMethod> $provableMethods what the provider is wired to prove
+     * @param non-empty-list<AuthenticationMethod> $provableMethods
      */
     public static function of(AuthorizationRequest $request, array $provableMethods): self
     {
@@ -58,12 +45,7 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * The same rules for a request that is not an authorization request: what is asked of the user of a
-     * backchannel authentication request is asked of the same policy, judged against the same wiring and
-     * answered on the same page of the provider (CIBA Core §7.1, decision 0010). The demand is read where
-     * that request was read, and what it means is decided once, here.
-     *
-     * @param non-empty-list<AuthenticationMethod> $provableMethods what the provider is wired to prove
+     * @param non-empty-list<AuthenticationMethod> $provableMethods
      */
     public static function against(AuthenticationContextRequest $requested, Tenant $tenant, array $provableMethods): self
     {
@@ -71,8 +53,7 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * Whether a class is in question at all, which is what makes the credentials of the user worth reading:
-     * a request that names none, and one whose classes the provider cannot prove, are answered without them.
+     * Whether the credentials of the user are worth reading: the request names a class the provider can prove.
      */
     public function isInQuestion(): bool
     {
@@ -80,10 +61,9 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * OIDC Core §5.5.1.1: an essential "acr" naming only classes the provider cannot assert fails without a
-     * login; a voluntary one is never refused.
+     * OIDC Core §5.5.1.1
      *
-     * @throws UnmetAuthenticationRequirementsException
+     * @throws UnmetAuthenticationRequirementsException only for an essential "acr"
      */
     public function assertTheProviderCanProveOne(): void
     {
@@ -93,13 +73,9 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * Decision 0010: the client asked for classes the provider can prove, the session satisfies none and a
-     * credential of the user would, so the login page asks for what is missing rather than for a new login.
+     * A credential the floor of the tenant forbids is not offered: no login here would accept it.
      *
-     * What the floor of the tenant forbids is not offered (issue #327): a credential a hardening has not
-     * swept away yet would be a kind named on the page that no login here would accept.
-     *
-     * @param list<Credential> $credentials the credentials of the user of the session, whatever their kind
+     * @param list<Credential> $credentials
      */
     public function stepUpFor(AuthenticationSession $session, array $credentials): ?StepUp
     {
@@ -119,11 +95,9 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * OIDC Core §5.5.1.1, as for a class the provider cannot prove: an essential "acr" the session does not
-     * satisfy and no credential of the user could is a failed authentication before any page, the user can do
-     * nothing about it there; a voluntary one gets the class the session has.
+     * OIDC Core §5.5.1.1
      *
-     * @throws UnmetAuthenticationRequirementsException
+     * @throws UnmetAuthenticationRequirementsException only for an essential "acr"
      */
     public function assertTheUserCouldMeetIt(AuthenticationSession $session, ?StepUp $stepUp): void
     {
@@ -133,10 +107,9 @@ final readonly class RequestedAuthenticationContext
     }
 
     /**
-     * OIDC Core §5.5.1.1: an essential "acr" still unsatisfied once the login of this interaction is done is
-     * a failed authentication; a voluntary one gets the class the session has.
+     * OIDC Core §5.5.1.1
      *
-     * @throws UnmetAuthenticationRequirementsException
+     * @throws UnmetAuthenticationRequirementsException only for an essential "acr"
      */
     public function assertMetBy(AuthenticationSession $session): void
     {
@@ -145,10 +118,6 @@ final readonly class RequestedAuthenticationContext
         }
     }
 
-    /**
-     * The class every token descending from this grant will name (OIDC Core §2): the requested one the session
-     * satisfies, and the one the session has when the request asked for none in particular.
-     */
     public function classFor(AuthenticationSession $session): AuthenticationContextClass
     {
         return $this->requested->firstSatisfiedBy($session) ?? $session->authenticationContextClass();

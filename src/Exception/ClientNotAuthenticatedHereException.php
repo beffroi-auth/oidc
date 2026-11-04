@@ -10,10 +10,8 @@ use LogicException as BaseLogicException;
 use function sprintf;
 
 /**
- * A client authentication method was asked to verify a client it did not authenticate here: the
- * authenticator picked the method because it read the request, so a request that no longer carries what
- * it read, or a client kept in a shape the method does not verify, is a fault of this module and never
- * of the caller.
+ * A client authentication method was asked to verify a client it did not authenticate here: a fault of this
+ * module, never of the caller.
  */
 final class ClientNotAuthenticatedHereException extends BaseLogicException implements ExceptionInterface
 {

@@ -10,8 +10,7 @@ use Beffroi\Oidc\Port\DpopProofReplayGuardInterface;
 use function sprintf;
 
 /**
- * The proofs already seen, in the memory of one process: for the tests and for a deployment of one
- * worker. A deployment of several needs a store they share.
+ * One process only: workers that share no store would each accept the same proof.
  */
 final class InMemoryDpopProofReplayGuard implements DpopProofReplayGuardInterface
 {

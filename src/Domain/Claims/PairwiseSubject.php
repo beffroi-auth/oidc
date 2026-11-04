@@ -15,13 +15,9 @@ use Beffroi\Core\Domain\Tenant\Tenant;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * The identifier one sector sees a user under (OIDC Core §8.1), recorded the first time a client of that
- * sector is written a document about them.
+ * OIDC Core §8.1
  *
- * It records a fact and does not decide one: the value is computed from the sector, the user and the salt of
- * the tenant, so the same three give it again whether or not this row exists. What the row is for is the way
- * back: a "sub" a client presents is a string no other table carries, and hashing is one way, so the one way
- * to answer "who is this, to this client" is to have written it down.
+ * Kept for the way back: the value is a one-way hash, and only this row tells whom a presented "sub" names.
  */
 final class PairwiseSubject implements ClassifiedFieldsInterface
 {
@@ -42,9 +38,6 @@ final class PairwiseSubject implements ClassifiedFieldsInterface
     }
 
     /**
-     * The sector a client registered and the pseudonym one person is to it: the pseudonym designates nobody
-     * without this very row.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

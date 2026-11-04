@@ -12,18 +12,9 @@ use function sprintf;
 use function strtolower;
 
 /**
- * The endpoints of a tenant (OIDC Discovery §3, RP-Initiated Logout §2.1, RFC 8414 §2, RFC 8628 §3.1, CIBA Core §4, RFC 7591 §3.1):
- * absolute, no fragment, no credentials, HTTPS with plain HTTP on a loopback host only. The endpoints a
- * client reaches server to server have no exception (RFC 6749 §3.2, RFC 7662 §2.1, RFC 7009 §2,
- * RFC 9126 §2, RFC 8628 §3.1, CIBA Core §7); the ones a browser reaches keep the loopback one, which is what a
- * deployment is developed on.
+ * OIDC Discovery §3, RFC 8414 §2
  *
- * The page where a user types a device code is one of them (RFC 8628 §3.2 "verification_uri"): it is per
- * tenant like every other, the answer of the device authorization endpoint carries it, and it is read here
- * rather than written down a second time. The page where a user answers a request made for them on the
- * back channel is one of them for the same reason (CIBA Core §7), even though no answer of the protocol
- * ever carries it: what reaches the user says where to go, and where that is, is read here. Which of these
- * the document announces is each contributor's business and not this one's.
+ * Only an endpoint a browser reaches may be plain HTTP on a loopback host; one a client calls never is.
  */
 final readonly class ProviderEndpoints
 {

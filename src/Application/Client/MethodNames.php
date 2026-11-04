@@ -7,12 +7,6 @@ namespace Beffroi\Oidc\Application\Client;
 use function array_map;
 use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 
-/**
- * The names of client authentication methods, read from the methods themselves. Every place that has to
- * say them, each endpoint the discovery document describes and the message a registration naming an
- * unwired method is refused with, reads them here: a method names itself and nothing writes that reading
- * again.
- */
 final readonly class MethodNames
 {
     /**

@@ -9,21 +9,15 @@ use function preg_match;
 use function sprintf;
 use Stringable;
 
-/**
- * The name of a grant type (RFC 6749 appendix A.10, RFC 7591 §2 "grant_types"), compared byte for byte:
- * a name of the IANA "OAuth Authorization Grant Types" registry, or the absolute URI an extension grant
- * is named by (RFC 6749 §4.5, RFC 6755). It carries the shape of a name and nothing else; which names
- * exist is what the provider is wired with, and no list of them is kept anywhere.
- */
 final readonly class GrantTypeName implements Stringable
 {
     /**
-     * RFC 6749 appendix A.10: grant-name = 1*name-char.
+     * RFC 6749 appendix A.10
      */
     private const string NAME_PATTERN = '/^[A-Za-z0-9._-]+$/D';
 
     /**
-     * RFC 3986 §4.3: a scheme, a colon and something after it, no fragment.
+     * RFC 3986 §4.3
      */
     private const string ABSOLUTE_URI_PATTERN = '/^[A-Za-z][A-Za-z0-9+.-]*:[^\s#]+$/D';
 

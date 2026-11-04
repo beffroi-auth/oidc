@@ -23,7 +23,7 @@ use JsonException;
 use function sprintf;
 
 /**
- * The "claims" parameter (OIDC Core §5.5): an unknown member is ignored, a malformed one refused.
+ * OIDC Core §5.5
  */
 final readonly class ClaimsRequest
 {
@@ -45,7 +45,7 @@ final readonly class ClaimsRequest
     /**
      * An empty object decodes as an empty list and asks for nothing.
      *
-     * @throws InvalidArgumentException when the JSON is not a claims request
+     * @throws InvalidArgumentException
      */
     public static function fromJson(string $json): self
     {
@@ -62,9 +62,7 @@ final readonly class ClaimsRequest
     }
 
     /**
-     * The document the request is kept as, which is the form of the wire (OIDC Core §5.5): the two
-     * members, each a document of the claims asked of it by name, and an empty object where nothing is
-     * asked, since an empty PHP array would be written as a JSON list.
+     * An empty member is written as an object: an empty PHP array would be written as a JSON list.
      *
      * @return array<string, array<string, array<string, mixed>|null>|object>
      */
@@ -79,7 +77,7 @@ final readonly class ClaimsRequest
     /**
      * @param array<array-key, mixed> $document
      *
-     * @throws InvalidArgumentException when the document is not a claims request
+     * @throws InvalidArgumentException
      */
     public static function fromDocument(array $document): self
     {
@@ -96,9 +94,6 @@ final readonly class ClaimsRequest
     }
 
     /**
-     * The names it asks for, by the place they were asked of: what a person reads of a request made about
-     * them (issue #590), where what each name asks of its claim is for whoever serves it.
-     *
      * @return array{userinfo: list<string>, id_token: list<string>}
      */
     public function names(): array
@@ -109,19 +104,11 @@ final readonly class ClaimsRequest
         ];
     }
 
-    /**
-     * The claims it asks for whichever member asks for them, each once: what a person lets a client learn
-     * is the same whether the client is told it in an ID token or at UserInfo.
-     */
     public function claimNames(): ClaimNames
     {
         return new ClaimNames([...array_keys($this->userinfo), ...array_keys($this->idToken)]);
     }
 
-    /**
-     * The same request asking for the claims named here and for no other, in each member, what it asks of
-     * each claim kept as it was asked. A claim taken out is not served, which is no error (OIDC Core §5.5.1).
-     */
     public function narrowedTo(ClaimNames $names): self
     {
         return new self(
@@ -131,13 +118,9 @@ final readonly class ClaimsRequest
     }
 
     /**
-     * What one of the two members holds, each claim under its name and the members §5.5.1 gives it, a
-     * claim that asks for nothing at all being written null as the specification writes it.
-     *
      * @param array<string, ClaimRequest> $claims
      *
-     * @return array<string, array<string, mixed>|null>|object an empty object, which decodes as an object
-     *                                                         and not as a list
+     * @return array<string, array<string, mixed>|null>|object
      */
     private static function asked(array $claims): array|object
     {

@@ -7,12 +7,9 @@ namespace Beffroi\Oidc\Exception;
 use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
 
 /**
- * RFC 8705 §3 and RFC 9449 §7.1 "invalid_token": the access token is bound to something this request did
- * not present again, or was presented under another scheme than the one its binding calls for. Whoever
- * stole a bound token holds bytes that open nothing.
+ * RFC 8705 §3, RFC 9449 §7.1
  *
- * The challenge names the scheme the binding calls for, so that a client told this much knows what to
- * send: a token bound to a key is presented under "DPoP" with a proof, and never as a bearer token.
+ * The challenge names the scheme the binding calls for.
  */
 final class TokenBindingNotProvenException extends OAuth2Exception implements ChallengeInterface
 {

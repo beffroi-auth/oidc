@@ -13,15 +13,7 @@ use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use SensitiveParameter;
 
 /**
- * An "id_token_hint" read as what it is: an ID token this provider issued to this very client, whose
- * "sub" names the user (CIBA Core §7.1). It is the hint §15 recommends above every other, the client
- * naming the user by an identifier it was given here and that says nothing anywhere else.
- *
- * A token that was not issued here, or was issued to another client, is not a hint that names nobody: it
- * is a request that is wrong about what it carries, and it is refused as such. The token is read exactly
- * where every other ID token this provider takes back is read, against the keys of the tenant; "exp" is
- * not looked at, a hint describing a past sign-in being the ordinary case. Its "sub" is read for the client
- * that sent it and never as a key of a row (OIDC Core §8), the token having been written for that client.
+ * CIBA Core §7.1
  */
 final readonly class IdTokenUserHint implements UserHintInterface
 {

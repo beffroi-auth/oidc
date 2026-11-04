@@ -16,27 +16,12 @@ use function in_array;
 use function sprintf;
 
 /**
- * The claims providers the wiring gave this provider, answering as one (OIDC Core §5.1). The standard
- * claims of §5.1 are one of them, closed by the specification; the claims of a deployment, and the scope
- * that stands for them, are a class beside it and a line in the wiring, never a map of scopes edited.
- *
- * What each one serves it says itself, and what the document announces is read from them (§4.8): a scope
- * of a deployment is announced because a class serves it, exactly as a grant is announced because a class
- * is wired to serve it (issue #98).
- *
- * Two providers that both put a value on the same claim are refused where the values meet: which of the
- * two a client would receive is not something a deployment should have to guess, as it is not for a
- * member of the discovery document. Two that serve the same scope are not refused: a scope is a name for
- * a set of claims, and what each provider puts under that name is its own.
- *
- * The providers are walked when a question is asked and never at construction, so that one is built when
- * a claim of it is due.
+ * The wired claims providers answering as one, walked on each call so that each is built only when needed.
  */
 final readonly class ServedClaims implements ClaimsProviderInterface
 {
     /**
-     * @param iterable<ClaimsProviderInterface> $providers in the order they are wired; none is a
-     *                                                     deployment that serves "sub" and nothing else
+     * @param iterable<ClaimsProviderInterface> $providers
      */
     public function __construct(
         private iterable $providers,
@@ -61,10 +46,6 @@ final readonly class ServedClaims implements ClaimsProviderInterface
         return $claims;
     }
 
-    /**
-     * What each provider puts under these scopes, as one list: a scope two providers serve stands for the
-     * claims of both.
-     */
     public function claimsOf(Scopes $scopes): array
     {
         $claims = new ClaimNames();

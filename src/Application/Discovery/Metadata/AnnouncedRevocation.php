@@ -12,8 +12,7 @@ use Beffroi\Oidc\Port\EndpointLocatorInterface;
 use Beffroi\Oidc\Port\MetadataContributorInterface;
 
 /**
- * RFC 7009 §2 through RFC 8414 §2: where a token is revoked, and how the caller authenticates there,
- * which is how it authenticates at the token endpoint.
+ * RFC 7009 §2, RFC 8414 §2
  */
 final readonly class AnnouncedRevocation implements MetadataContributorInterface
 {

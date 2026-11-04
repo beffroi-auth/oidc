@@ -29,28 +29,14 @@ use function is_string;
 use Psr\Clock\ClockInterface;
 
 /**
- * The pushed authorization request endpoint (RFC 9126 §2): the client first, authenticated exactly as at
- * the token endpoint, then the request, read by the very parser the authorization endpoint reads with,
- * so that what is refused there is refused here and nothing is judged twice by two pieces of code.
- * Errors are the ones of RFC 6749 §5.2, never a redirect and never a page (§2.3), which is the caller's
- * to shape; the redirect URI is checked here all the same, because the request is complete.
- *
- * A proof of possession sent here names the key the client will come back with (RFC 9449 §10.1): the
- * provider writes it into the request as the "dpop_jkt" the client could have written itself, and the
- * code that comes out of the request is reserved for that key. A request that names one and is pushed
- * with a proof of another key names two keys, and is refused rather than arbitrated.
- *
- * What comes back is a reference and its lifetime. The parameters kept are the ones the client wrote,
- * credentials taken out: they authenticate the request that carried them and have no business in a store
- * that outlives it. A request the client signed is read here too (RFC 9101 §6.1) and what is kept is
- * what it carried, so that an object is verified by the endpoint it was sent to and once.
+ * RFC 9126 §2
  */
 final readonly class PushedAuthorizationHandler
 {
     /**
-     * RFC 6749 §2.3.1, RFC 7523 §2.2: what a client authentication proves the client with, and what this
-     * endpoint therefore never keeps (RFC 9126 §2.1). "client_id" is not one of them: it is a parameter
-     * of the authorization request in its own right.
+     * RFC 6749 §2.3.1, RFC 7523 §2.2
+     *
+     * "client_id" is not one of them: it is a parameter of the authorization request in its own right.
      */
     private const array PROVING_PARAMETERS = ['client_secret', 'client_assertion', 'client_assertion_type'];
 
@@ -68,9 +54,7 @@ final readonly class PushedAuthorizationHandler
     }
 
     /**
-     * @param array<string, mixed> $parameters the form parameters of the request body
-     * @param ClientCertificate|null $certificate the certificate the client presented at the TLS handshake (RFC 8705 §2)
-     * @param string|null $dpopProof the DPoP header of the request, null when it carries none (RFC 9449 §4.1)
+     * @param array<string, mixed> $parameters
      *
      * @throws OAuth2Exception
      */
@@ -82,7 +66,6 @@ final readonly class PushedAuthorizationHandler
         ?ClientCertificate $certificate = null,
         ?string $dpopProof = null,
     ): PushedAuthorizationResponse {
-        // RFC 9126 §2: a request is pushed with a POST, which is what a proof made for it names
         $endpoint = $this->endpoints->locate($tenant)->pushedAuthorizationRequest;
         $client = $this->clients->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)->client;
         $provenKey = $this->proofs->verify($dpopProof, 'POST', $endpoint, $context->receivedAt);
@@ -90,15 +73,8 @@ final readonly class PushedAuthorizationHandler
             throw new InvalidRequestException('The request_uri parameter is not one of those a pushed authorization request carries (RFC 9126 section 2.1).');
         }
 
-        // RFC 9126 §2.1: the request names the authenticated client and no other. A "client_id" of the
-        // body that named another was already refused by the authenticator, and a client that
-        // authenticated through the Authorization header carries none, so the authenticated client is
-        // what the parser is given to read.
+        // RFC 9126 §2.1: a "client_id" naming another client was already refused, and Basic auth sends none.
         $parameters['client_id'] = $client->registration->clientId;
-        // RFC 9101 §6.1: a pushed request may itself be a request object, which FAPI 2.0 Message
-        // Signing asks of one. It is read here, against the client that has just authenticated, and
-        // what the store keeps is the request it carried: the object is verified once, by the endpoint
-        // the client sent it to, and the authorization endpoint reads parameters like any other.
         $object = $this->requestObjects->resolve($tenant, $parameters, $client);
         $parameters = $object->parameters ?? $parameters;
         $parameters = self::reservedFor($parameters, $provenKey);
@@ -114,9 +90,7 @@ final readonly class PushedAuthorizationHandler
     }
 
     /**
-     * RFC 9449 §10.1: the key of the proof is the key the request reserves its code for, whether the
-     * client wrote the "dpop_jkt" itself or let the proof say it. Both are read as the parser reads any
-     * parameter, so a thumbprint of the wrong shape is refused there and once.
+     * RFC 9449 §10.1
      *
      * @param array<string, mixed> $parameters
      *
@@ -139,14 +113,7 @@ final readonly class PushedAuthorizationHandler
     }
 
     /**
-     * What the store keeps of the body: the parameters of an authorization request as the client wrote
-     * them, without what authenticated it (RFC 9126 §2.1) and without what is not a form parameter at
-     * all, which the parser has already refused for every name it reads. A credential authenticates the
-     * request that carries it and nothing else, and a store holding one would hold a secret it has no
-     * use for.
-     *
-     * A parameter the client repeated arrives as the list it was and is kept as one (RFC 8707 §2), so
-     * that the authorization endpoint reads the same request the parser read here.
+     * RFC 9126 §2.1
      *
      * @param array<string, mixed> $parameters
      *

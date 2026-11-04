@@ -8,10 +8,7 @@ use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 use Throwable;
 
 /**
- * RFC 9449 §5 and §7.1 "invalid_dpop_proof": the proof the request carried cannot be read, is not signed
- * by the key it carries, or does not name this request. Never redirected: a proof is verified at an
- * endpoint that answers the client directly, and what it fails to prove says nothing of where a refusal
- * should go. A protected resource answers the same code with the challenge of §7.1.
+ * RFC 9449 §5, §7.1
  */
 final class InvalidDpopProofException extends OAuth2Exception implements ChallengeInterface
 {

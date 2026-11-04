@@ -32,20 +32,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use SensitiveParameter;
 
 /**
- * The revocation endpoint (RFC 7009 §2, architecture §4.12): a stored access token or a refresh token
- * issued to the caller is revoked, a refresh token taking the access tokens of its grant with it (§2.1).
- * An unknown token or another client's is answered 200 without a word (§2.2); an access token the
- * provider cannot take back is unsupported_token_type (§2.2.1). "token_type_hint" is ignored.
- *
- * A self-contained token is unsupported only while the provider honours it, which is asked as its own
- * resources ask it (AccessTokenInspector): a token whose session ended, whose grant was revoked or whose
- * person is no longer served is invalid there, and an invalid token is answered 200 here too (§2.2).
- *
- * A revocation is announced with the person the token was issued in the name of, never read from the session the
- * token descends from, which a store that has not opened it yet would open under the data keys of the tenant
- * (decision 0018): a token that names its person through a session names them by the subject the store of sessions
- * keeps in the clear (decision 0011), so a token taken back is announced whether or not the KMS opens the data keys
- * of its session and of its person (issue #888).
+ * RFC 7009 §2
  */
 final readonly class RevocationHandler
 {
@@ -62,8 +49,7 @@ final readonly class RevocationHandler
     }
 
     /**
-     * @param array<string, mixed> $parameters the form parameters of the request body
-     * @param ClientCertificate|null $certificate the certificate the caller presented at the TLS handshake (RFC 8705 §2)
+     * @param array<string, mixed> $parameters
      *
      * @throws OAuth2Exception invalid_client, invalid_request or unsupported_token_type
      */
@@ -104,8 +90,7 @@ final readonly class RevocationHandler
     }
 
     /**
-     * A JWS the provider honours cannot be revoked; one it refuses, because it does not verify or because
-     * what it descends from or names is gone, is an invalid token, answered 200.
+     * A JWS still honoured cannot be revoked; one the provider refuses is an invalid token, answered 200.
      */
     private function refuseSelfContained(Tenant $tenant, #[SensitiveParameter] string $token, DateTimeImmutable $now): void
     {
@@ -161,8 +146,7 @@ final readonly class RevocationHandler
     }
 
     /**
-     * The person the token was issued in the name of, as its record names them: through the session it descends
-     * from, whose subject the store of sessions keeps in the clear, or by what the record keeps itself.
+     * Never read by opening the session, so a revocation is announced whether or not the KMS answers.
      */
     private function personOf(StoredAccessToken $token): ?Subject
     {

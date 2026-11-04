@@ -7,11 +7,6 @@ namespace Beffroi\Oidc\Application\Token;
 use function array_map;
 use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
 
-/**
- * The names of the shapes an access token is written in, read from the shapes themselves. Every place
- * that has to say them, the panel of the profiler and the message a registration naming an unwired
- * shape is refused with, reads them here: a shape names itself and nothing writes that reading again.
- */
 final readonly class ShapeNames
 {
     /**

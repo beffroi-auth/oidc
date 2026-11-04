@@ -25,21 +25,9 @@ use Beffroi\Oidc\Port\RequestObjectFetcherInterface;
 use Psr\Clock\ClockInterface;
 
 /**
- * What an endpoint reads when the request came in a JWT (RFC 9101 §6.1, OIDC Core §6): "request" carries
- * the object, "request_uri" names where it is published, and the two together are no request at all.
- * The parameters of the object are the request; the ones of the query are dropped, which is §6.1 read as
- * it is written, so that what the client signed and what the provider reads are the same request. Only
- * "client_id" stays, because RFC 9101 §5 has it outside the object as well and the two must be one.
+ * RFC 9101 §6.1, OIDC Core §6
  *
- * An object a client encrypted to a key the tenant publishes is opened before it is read, and what comes
- * out of the JWE goes on exactly as an object that arrived in clear (RFC 9101 §6.1): being encrypted
- * says who may read the request, never who wrote it.
- *
- * Nothing of the object is trusted before its signature is: the algorithm is the one the client
- * registered, the key is one the client publishes, and an object signed with nothing is read only from a
- * client that registered "none" (decision 0006). A "request_uri" is read back only when the client
- * registered that very URL, which is what "require_request_uri_registration" announces: an unregistered
- * one is refused before any request leaves the process.
+ * The query's parameters are dropped, never merged, so the provider reads exactly what the client signed.
  */
 final readonly class RequestObjectResolver
 {
@@ -56,16 +44,9 @@ final readonly class RequestObjectResolver
     }
 
     /**
-     * @param array<string, mixed> $parameters the parameters of the request as the endpoint received them
-     * @param Client|null $client the client the endpoint has already authenticated (RFC 9126 §2), null
-     *                            at an endpoint that authenticates none and reads "client_id" instead
+     * @param array<string, mixed> $parameters
      *
-     * @throws OAuth2Exception never redirectable: what names the destination is inside the object, and
-     *                         an object that is refused is an object that was not read
-     *
-     * @return ResolvedRequestObject|null the object and the parameters the endpoint reads in place of
-     *                                     them, null when the request carries no object and the ones it
-     *                                     carries stand
+     * @throws OAuth2Exception never redirectable
      */
     public function resolve(Tenant $tenant, array $parameters, ?Client $client = null): ?ResolvedRequestObject
     {
@@ -90,9 +71,7 @@ final readonly class RequestObjectResolver
     }
 
     /**
-     * RFC 9101 §5: "client_id" is a parameter of the request itself and is there whether the object
-     * carries one or not, because the provider has to know whose keys to verify the object with before
-     * it reads anything of it.
+     * RFC 9101 §5
      *
      * @param array<string, mixed> $parameters
      *
@@ -109,10 +88,9 @@ final readonly class RequestObjectResolver
     }
 
     /**
-     * RFC 9101 §6.2: the signature, under the algorithm the client registered and against the keys the
-     * client publishes. An object a client registered "none" for carries no signature, and there is
-     * nothing to verify; every other one is verified under the one algorithm that was accepted, never
-     * under whichever of them the object names.
+     * RFC 9101 §6.2
+     *
+     * The verifier is given the one algorithm accepted, never a list the header could choose from.
      *
      * @throws OAuth2Exception
      */
@@ -120,8 +98,7 @@ final readonly class RequestObjectResolver
     {
         $algorithm = $object->jwt->algorithm();
         if ($algorithm === null || ! $client->registration->requestObjectSigning->accepts($algorithm, $this->wiredAlgorithms())) {
-            // The "alg" of the object is not written back: it is a string the sender chose, and an error
-            // description is ASCII the specification bounds (RFC 6749 §5.2)
+            // The "alg" is not written back: a description never echoes what the sender chose (RFC 6749 §5.2).
             throw new InvalidRequestObjectException('The request object is not signed with the algorithm the client registered in request_object_signing_alg (OIDC Registration section 2).');
         }
         if ($algorithm === UnsignedRequestObjects::ALGORITHM) {
@@ -140,11 +117,7 @@ final readonly class RequestObjectResolver
     }
 
     /**
-     * RFC 9101 §5.2, OIDC Core §6.2: read back from the URL the client registered and from no other.
-     * The URL is compared with the registration before anything leaves the process, so an unregistered
-     * one costs the provider one comparison and no request at all (decision 0006). What is compared is
-     * the URI the client registered, fragment included, and what is read is the URL without it: §6.2
-     * gives that fragment a meaning, and a fragment is never sent to a server (RequestUri).
+     * RFC 9101 §5.2, OIDC Core §6.2
      *
      * @throws OAuth2Exception
      */

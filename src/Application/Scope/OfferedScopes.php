@@ -14,22 +14,7 @@ use Beffroi\Oidc\Port\RegisteredScopesInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * Every scope a tenant hands out tokens for, assembled where it is assembled once (issue #98):
- *
- * - "openid", always, this being an OpenID provider;
- * - what the wired claims providers serve, which stand for claims (OIDC Core §5.4);
- * - what the deployment declares for the tenant, which is where a scope that stands for no claim comes
- *   from before any client exists, an API being protected by one (issue #920);
- * - what the clients of the tenant registered, which is the other place such a scope comes from, a
- *   declared client saying it exists by registering it (issue #278);
- * - "offline_access", where the provider can make it good (OIDC Core §11), which is where a wired grant
- *   issues a refresh token and a wired grant spends one. A registration alone never puts it here: a
- *   client that registered it on a deployment whose grants do not make it good would have the provider
- *   promise a refresh token its token endpoint would not issue.
- *
- * The document announces this (`AnnouncedScopes`) and a registration is held to it, which is the reason
- * it is one class: a typo in a registration is announced rather than granted in silence, and a client
- * that registers itself is held to what a declared client of the same tenant is held to.
+ * "offline_access" is never offered on a registration alone: the token endpoint might not issue what it promises.
  */
 final readonly class OfferedScopes implements OfferedScopesInterface
 {

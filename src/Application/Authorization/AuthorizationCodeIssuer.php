@@ -24,19 +24,6 @@ use Beffroi\Oidc\Port\AuthorizationCodeRepositoryInterface;
 use Beffroi\Oidc\Port\PushedAuthorizationRecordRepositoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
-/**
- * Mints what an interaction that needs nothing more has earned (architecture §4.3, §4.4): the counterpart of
- * TokenIssuer at the other endpoint. The code is drawn where every value this provider hands out is drawn, the
- * record is the grant the tokens of that code will descend from, the reference the request was pushed under is
- * spent here, and the event is dispatched with what it carries.
- *
- * The record freezes what the session had proven at this moment (AuthenticationSnapshot): a re-authentication
- * or a step-up afterwards moves the session and never a code already issued. Of the claims the request asked
- * for by name, it carries those the client may be told (ClaimsAskedByName), every one of which the person has
- * agreed to by the time a code is minted for a client that asks them: what a token answers with descends from
- * the code, and never from the request. The event is raised here, where the code is, and carries what it
- * carries by identifier: never the value the client was handed.
- */
 final readonly class AuthorizationCodeIssuer
 {
     public function __construct(
@@ -51,8 +38,7 @@ final readonly class AuthorizationCodeIssuer
     }
 
     /**
-     * @throws InvalidRequestUriException when another request has already been granted on the reference this
-     *                                   one was pushed under (RFC 9126 §4)
+     * @throws InvalidRequestUriException when another request was already granted on its request_uri
      */
     public function issue(
         Interaction $interaction,
@@ -81,9 +67,7 @@ final readonly class AuthorizationCodeIssuer
             $now->add($this->lifetime),
         );
         $this->codes->save($record);
-        // RFC 9126 §4, FAPI 2.0 Security Profile §5.3.1: the reference is spent here, with the code it
-        // bought, and not when the endpoint read it. A record the winner of the claim did not get is one
-        // another request granted first, and this one grants nothing.
+        // RFC 9126 §4: the request_uri is spent here, with the code it bought, not when the endpoint read it.
         if (! $this->spend($interaction, $now)) {
             throw new InvalidRequestUriException('The request_uri parameter names a request this provider has already granted (RFC 9126 section 4).');
         }
@@ -108,11 +92,6 @@ final readonly class AuthorizationCodeIssuer
         );
     }
 
-    /**
-     * The record an interaction was started from, claimed atomically: of any number of interactions that
-     * reached this point on one reference, exactly one is told true (RFC 9126 §4). An interaction that was not
-     * started from a record has nothing to spend and is told true.
-     */
     private function spend(Interaction $interaction, DateTimeImmutable $now): bool
     {
         if ($interaction->requestUriHash === null) {

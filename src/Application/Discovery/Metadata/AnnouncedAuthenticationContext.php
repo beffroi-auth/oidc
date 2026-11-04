@@ -12,9 +12,7 @@ use Beffroi\Oidc\Port\MetadataContributorInterface;
 use Beffroi\Oidc\Port\ProvableMethodsInterface;
 
 /**
- * OIDC Discovery §3 and decision 0010: the classes of the tenant's policy that its wired logins can
- * actually satisfy, in the order the policy names them, and the kinds of "sub" this provider assigns one
- * of, read from what resolves them and never named here.
+ * OIDC Discovery §3
  */
 final readonly class AnnouncedAuthenticationContext implements MetadataContributorInterface
 {

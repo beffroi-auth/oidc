@@ -10,7 +10,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * The successful answer of the authorization endpoint (RFC 6749 §4.1.2), always with "iss" (RFC 9207 §2).
+ * RFC 6749 §4.1.2, RFC 9207 §2
  */
 final readonly class AuthorizationResponse
 {

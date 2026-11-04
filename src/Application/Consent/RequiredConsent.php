@@ -13,20 +13,7 @@ use Beffroi\Oidc\Domain\Interaction\Interaction;
 use Beffroi\Oidc\Port\ConsentRepositoryInterface;
 
 /**
- * Whether a consent page is still needed, and what for (architecture §4.3): the counterpart of
- * ConsentGranting, which records the answer. A client the deployment named first-party needs none
- * (decision 0008), a consent given during this interaction is the answer, prompt=consent asks again
- * whatever is in force, and a consent in force that covers the scopes, the authorization details and the
- * claims asked for by name of the request is carried by the interaction rather than asked for again.
- *
- * A request that asks for a detail the consent in force does not carry asks again (RFC 9396 §7), whichever
- * of the two it is: the scopes say what kind of thing the client may do and the details say what it may do
- * to what, so a consent covers a request when it covers both. A claim asked for by name (OIDC Core §5.5) is
- * covered by a consent that holds it by name or holds a scope that stands for it, and a request that names
- * a claim beyond both asks again, the person being asked before anything is released (§3.1.2.4).
- *
- * Whether the page may be shown at all is prompt=none's (OIDC Core §3.1.2.6) and the handler's: this says
- * what is needed and never what to do about it.
+ * RFC 9396 §7, OIDC Core §3.1.2.4, §5.5
  */
 final readonly class RequiredConsent
 {
@@ -37,8 +24,7 @@ final readonly class RequiredConsent
     }
 
     /**
-     * @return ConsentRequirement|null null when nothing more is needed, the consent in force having been
-     *                                carried by the interaction when there was one
+     * @return ConsentRequirement|null null when none is needed, any consent in force then put on the interaction
      */
     public function of(Interaction $interaction, AuthenticationSession $session, DateTimeImmutable $now): ?ConsentRequirement
     {

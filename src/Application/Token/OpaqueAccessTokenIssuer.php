@@ -15,11 +15,6 @@ use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
 use Beffroi\Oidc\Port\AccessTokenRepositoryInterface;
 use Beffroi\Oidc\Port\AccessTokenShapeIssuerInterface;
 
-/**
- * The opaque shape of the access token (architecture §4.6): a random value, and a record kept under its
- * hash with everything the JWT shape would carry. Same lifetime as the JWT shape. Nothing signs it and
- * nothing of it is sealed, so nothing is opened when it is addressed.
- */
 final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerInterface
 {
     public function __construct(
@@ -29,10 +24,6 @@ final readonly class OpaqueAccessTokenIssuer implements AccessTokenShapeIssuerIn
     ) {
     }
 
-    /**
-     * The name a client registers to receive its access tokens in this shape, which
-     * OpaqueAccessTokenVerifier reads them back under.
-     */
     public function name(): string
     {
         return 'opaque';

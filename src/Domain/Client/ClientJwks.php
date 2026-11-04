@@ -15,9 +15,9 @@ use function is_array;
 use function is_string;
 
 /**
- * The public keys a client publishes (RFC 7517 §5, RFC 7591 §2), inline in its registration or read back
- * from its "jwks_uri". Public keys only: a set is read as it is given, and a symmetric key is refused
- * (RFC 8725 §3.5), because a client that signs with a shared secret registers a secret, not a key.
+ * RFC 7517 §5, RFC 7591 §2
+ *
+ * Public keys only: a client that signs with a shared secret registers a secret, not a key (RFC 8725 §3.5).
  */
 final readonly class ClientJwks
 {
@@ -47,8 +47,6 @@ final readonly class ClientJwks
     }
 
     /**
-     * The document as JSON gives it, read strictly: "keys" is a list of objects and nothing else is read.
-     *
      * @param array<mixed> $document
      */
     public static function fromDocument(array $document): self
@@ -83,12 +81,10 @@ final readonly class ClientJwks
     }
 
     /**
-     * The key of this set a JWE under that algorithm is addressed to, or null when the client publishes
-     * none that fits. A key is taken at its word (RFC 7517 §4.2, §4.4): one that says it signs never
-     * receives a JWE, one that names an "alg" receives only what that name says, and the key type has to
-     * be the one the algorithm takes. A key that names the algorithm wins over one that only says it is
-     * for encryption, which wins over one that says neither, and the first published wins inside each of
-     * those three, so a client that publishes several chooses by saying more about the one it wants.
+     * RFC 7517 §4.2, §4.4
+     *
+     * A key that names the algorithm wins over one that says it encrypts, which wins over one that says
+     * neither; the first published wins a tie.
      *
      * @return array<string, mixed>|null
      */
@@ -125,14 +121,9 @@ final readonly class ClientJwks
     }
 
     /**
-     * RFC 8705 §2.2: whether one of the keys published is this very certificate, which is what
-     * "self_signed_tls_client_auth" authenticates against. A key publishes its certificate in its "x5c"
-     * (RFC 7517 §4.7) or names it by thumbprint in its "x5t#S256" (§4.9); a key that does neither
-     * publishes a public key and no certificate, and authenticates nobody here.
+     * RFC 8705 §2.2
      *
-     * The certificate is compared and not the key inside it: a certificate reissued on the same key is
-     * another certificate, it is not the one the client registered, and it binds tokens to another
-     * thumbprint (§3.1).
+     * The certificate is compared, not its key: one reissued on the same key binds tokens to another thumbprint.
      */
     public function publishes(ClientCertificate $certificate): bool
     {

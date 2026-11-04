@@ -16,10 +16,9 @@ use Beffroi\Oidc\Exception\OAuth2Exception;
 use Beffroi\Oidc\Port\ClientRepositoryInterface;
 
 /**
- * Reads a logout request (RP-Initiated Logout §2): the hint identifies the client, client_id must be
- * in its audience, post_logout_redirect_uri is honoured only for an identified client (§3). No error
- * is redirectable (§4). A hint the provider cannot verify today (a retired key) identifies no client
- * and marks the request so that the handler asks the user (§2, §6).
+ * RP-Initiated Logout §2, §4
+ *
+ * A hint that cannot be verified (a retired key) is no error: it identifies no client and the user is asked.
  */
 final readonly class EndSessionRequestParser
 {
@@ -62,9 +61,6 @@ final readonly class EndSessionRequestParser
         );
     }
 
-    /**
-     * §2: client_id, or else the first audience of the hint that is a client of the tenant.
-     */
     private function client(Tenant $tenant, ?IdTokenHint $hint, ?string $clientId): ?Client
     {
         if ($clientId !== null) {
@@ -88,8 +84,7 @@ final readonly class EndSessionRequestParser
     }
 
     /**
-     * §3: only a URI the client registered byte for byte. Without a client the URI is a fault of the
-     * request, unless the hint could not be verified: it is then dropped and the user asked.
+     * RP-Initiated Logout §3
      */
     private static function postLogoutRedirectUri(?Client $client, ?string $postLogoutRedirectUri, bool $invalidHint): ?RedirectUri
     {

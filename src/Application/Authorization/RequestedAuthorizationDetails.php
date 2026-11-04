@@ -11,9 +11,7 @@ use Beffroi\Oidc\Exception\InvalidAuthorizationDetailsException;
 use Beffroi\Oidc\Port\AuthorizationDetailsReaderInterface;
 
 /**
- * What the "authorization_details" parameter of an authorization request must be (RFC 9396 §2), judged
- * against the client that sends it, the counterpart of the class of the same name that narrows it at the
- * token endpoint against the grant being spent (Application\Token\RequestedAuthorizationDetails).
+ * RFC 9396 §2
  */
 final readonly class RequestedAuthorizationDetails
 {
@@ -23,13 +21,6 @@ final readonly class RequestedAuthorizationDetails
     }
 
     /**
-     * What this request asks for beyond its scopes, a JSON array of objects each naming its type. The
-     * types are the ones the provider is wired with, each validating its own members, and what a client
-     * may ask for is the closed list of its registration (§11), as every other list of a client is. A
-     * malformed array, an object naming no type, a type nobody serves and a type the client is not
-     * registered for are all "invalid_authorization_details" (§5), which goes back to the redirect URI as
-     * every refusal of this stage does.
-     *
      * @throws InvalidAuthorizationDetailsException
      */
     public function of(Client $client, ?string $json): ?AuthorizationDetails

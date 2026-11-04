@@ -16,14 +16,7 @@ use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use SensitiveParameter;
 
 /**
- * A method whose client proves a shared secret the provider keeps as a hash (RFC 6749 §2.3.1). What such
- * a method does with the secret is the same whichever way the request carries it: the provider keeps a
- * hash it can verify against and never the secret, a refusal costs what an acceptance costs, and a
- * client kept in another shape is a fault of the wiring.
- *
- * Where the request carries the secret is the one thing that differs, and it is the one thing a kind
- * says for itself. Adding a third way of presenting a shared secret is a class that answers two
- * questions, not a third copy of this one.
+ * RFC 6749 §2.3.1
  */
 abstract readonly class HashedSecretMethod implements AuthenticationMethodInterface, SecretKeepingMethodInterface
 {
@@ -54,10 +47,8 @@ abstract readonly class HashedSecretMethod implements AuthenticationMethodInterf
     }
 
     /**
-     * @throws ClientNotAuthenticatedHereException when the request no longer carries the secret the
-     *                                                authenticator read, or when the client is kept in a
-     *                                                shape this method does not verify
-     * @throws ClientAuthenticationFailure when the secret presented is not the one registered
+     * @throws ClientNotAuthenticatedHereException when no secret is read or the client's is in another shape
+     * @throws ClientAuthenticationFailure
      */
     public function verify(ClientAuthenticationRequest $request, Client $client): void
     {
@@ -71,10 +62,6 @@ abstract readonly class HashedSecretMethod implements AuthenticationMethodInterf
         }
     }
 
-    /**
-     * A refusal costs what an acceptance costs, so that the time a request takes tells nothing about
-     * whether the client is registered (architecture §7).
-     */
     public function payRefusal(ClientAuthenticationRequest $request): void
     {
         $presented = $this->presentedSecret($request);
@@ -83,8 +70,5 @@ abstract readonly class HashedSecretMethod implements AuthenticationMethodInterf
         }
     }
 
-    /**
-     * The secret this request carries under this method, null when it carries none.
-     */
     abstract protected function presentedSecret(ClientAuthenticationRequest $request): ?string;
 }

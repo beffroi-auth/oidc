@@ -19,19 +19,15 @@ use function sprintf;
 use Throwable;
 
 /**
- * The signature of a DPoP proof on web-token/jwt-library: the key is the one the header of the proof
- * carries and no other (RFC 9449 §4.2), which is the whole difference with a token a client signs with
- * a key it published. "kid", "jku" and "x5c" are ignored; nothing is looked up anywhere.
+ * RFC 9449 §4.2
  *
- * A key with private material is refused rather than stripped: a client that sent its private key sent
- * it, and a provider that quietly used the public half of it would let that pass unsaid. A symmetric
- * key is refused by the algorithms the provider is wired with, none of which is a MAC, and by the
- * refusal below, because a shared secret proves possession to whoever shares it (RFC 8725 §3.1).
+ * A key with private material is refused rather than stripped, and a symmetric one is refused even though no
+ * wired algorithm is a MAC: a shared secret proves possession to whoever shares it (RFC 8725 §3.1).
  */
 final readonly class JwtLibraryProofKeyVerifier implements ProofKeyVerifierInterface
 {
     /**
-     * RFC 7518 §6: what a key of a pair keeps to itself, and the one member of a symmetric key.
+     * RFC 7518 §6
      */
     private const array PRIVATE_MEMBERS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'k'];
 
@@ -39,9 +35,6 @@ final readonly class JwtLibraryProofKeyVerifier implements ProofKeyVerifierInter
 
     private CompactSerializer $serializer;
 
-    /**
-     * @param AlgorithmManager $algorithms the algorithms the provider is wired with
-     */
     public function __construct(AlgorithmManager $algorithms)
     {
         $this->verifier = new JWSVerifier($algorithms);

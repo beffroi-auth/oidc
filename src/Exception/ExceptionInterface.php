@@ -6,9 +6,6 @@ namespace Beffroi\Oidc\Exception;
 
 use Throwable;
 
-/**
- * Marker implemented by every exception thrown by this package.
- */
 interface ExceptionInterface extends Throwable
 {
 }

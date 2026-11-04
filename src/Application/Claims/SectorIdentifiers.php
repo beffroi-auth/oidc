@@ -13,24 +13,14 @@ use Beffroi\Oidc\Port\SectorIdentifierSourceInterface;
 use function sprintf;
 
 /**
- * The ways a client may say which sector it is of, in the order they are wired (OIDC Core §8.1, CIBA Core
- * §4). The one place the set of them is read, so that a source added later brings no rule with it and no
- * rule is written a second time.
+ * OIDC Core §8.1, CIBA Core §4
  *
- * **The order is the answer.** The first source that reads a sector for a client is the one that decides,
- * which is how the URI a client registered to name its sector outranks what its other URIs would have
- * said. A source that says nothing of a client is passed over; a source that reads that client and finds
- * its registration names no one sector refuses there and then, because being unable to say is not the
- * same as having nothing to say.
- *
- * A client no wired source reads a sector for is refused rather than assigned one computed from something
- * else. There is no last resort here on purpose: whatever stood in would decide whom that client shares a
- * user with, and nobody asked for it.
+ * No fallback on purpose: a sector read from anything else would decide whom the client shares a user with.
  */
 final readonly class SectorIdentifiers implements SectorIdentifiersInterface
 {
     /**
-     * @param iterable<SectorIdentifierSourceInterface> $sources the ways a client may say it, in the order they are wired
+     * @param iterable<SectorIdentifierSourceInterface> $sources in order of precedence
      */
     public function __construct(
         private iterable $sources,
@@ -53,9 +43,7 @@ final readonly class SectorIdentifiers implements SectorIdentifiersInterface
     }
 
     /**
-     * What every source reads of that client, and not only what the one that answered read: a document
-     * that vouches for a client vouches for what that client would have been judged on wherever it is
-     * read from.
+     * From every source, not only the one that answered: the document backs all the client could be judged on.
      *
      * @return list<string>
      */

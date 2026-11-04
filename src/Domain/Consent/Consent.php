@@ -20,27 +20,14 @@ use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
-/**
- * What a user agreed to let a client obtain about them (architecture §4.3). A new grant to the same client
- * supersedes the previous one, which is revoked.
- */
 final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
     public readonly Tenant $tenant;
 
-    /**
-     * What a store keeps; the object is what the client repository resolved for it.
-     */
     public readonly string $clientId;
 
     public private(set) ?DateTimeImmutable $revokedAt = null;
 
-    /**
-     * @param AuthorizationDetails|null $authorizationDetails what the user agreed to beyond the scopes
-     *                                                        (RFC 9396 §2), null when they agreed to none
-     * @param ClaimNames $claims the claims the user agreed to one by name, beyond what the scopes stand for
-     *                           (OIDC Core §5.5), none when no request asked for one
-     */
     public function __construct(
         public private(set) Uuid $id,
         public readonly User $user,
@@ -58,14 +45,7 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
     }
 
     /**
-     * The consent that supersedes this one when the user agrees to more: its scopes and the ones given,
-     * its details and the ones given, its claims and the ones given, each once, from now; this one is
-     * revoked. What a user agreed to is never taken back by a new agreement (architecture §4.3).
-     *
-     * @param AuthorizationDetails|null $authorizationDetails what was just agreed to beyond the scopes,
-     *                                                        null when the request asked for none, which
-     *                                                        leaves what this consent already carries
-     * @param ClaimNames $claims what was just agreed to by name, none when the request asked for none
+     * Revokes this consent and returns the one that supersedes it, holding what both were given.
      */
     public function extendedWith(Scopes $scopes, ?AuthorizationDetails $authorizationDetails, ClaimNames $claims, Uuid $id, DateTimeImmutable $now): self
     {
@@ -82,11 +62,6 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
         );
     }
 
-    /**
-     * What a consent carries once it has been given twice: both sets as one, each detail once, the ones
-     * already held first (RFC 9396 §2). Either side may be nothing, a request that asks for no detail
-     * taking nothing back from one that did.
-     */
     private static function merged(?AuthorizationDetails $held, ?AuthorizationDetails $given): ?AuthorizationDetails
     {
         if ($held === null) {
@@ -101,9 +76,6 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
         return $this->revokedAt === null;
     }
 
-    /**
-     * The first revocation wins.
-     */
     public function revoke(DateTimeImmutable $now): void
     {
         if ($this->revokedAt !== null) {
@@ -112,30 +84,18 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
         $this->revokedAt = $now;
     }
 
-    /**
-     * Whether what a session obtained from this provider for a client was obtained under this consent:
-     * the same user, the same client. The one place the rule is written for the stores that answer what
-     * a consent taken back reaches, a grant, a refresh token, an access token (architecture §4.3).
-     */
     public function covers(AuthenticationSession $session, string $clientId): bool
     {
         return $this->coversUser($session->user, $clientId);
     }
 
-    /**
-     * The same rule where no session is known yet: a record a client drew for a user it named, waiting for
-     * that user to answer (RFC 8628 §3.2, CIBA Core §7), is a grant this consent covers before anybody has
-     * signed in for it.
-     */
     public function coversUser(User $user, string $clientId): bool
     {
         return $this->clientId === $clientId && $user->id->equals($this->user->id);
     }
 
     /**
-     * Whether this consent answers for a request asking for these details (RFC 9396 §7): every detail is
-     * one the user has already agreed to, or the page asks again. A request that asks for none is covered
-     * by every consent, there being nothing structured to agree to.
+     * RFC 9396 §7
      */
     public function coversAuthorizationDetails(?AuthorizationDetails $details): bool
     {
@@ -147,9 +107,9 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
     }
 
     /**
-     * Whether this consent answers for these claims asked for by name (OIDC Core §5.5): every one is a claim
-     * the user has already agreed to by name, or the page asks again. Which claims the scopes it holds stand
-     * for is what the wiring says and not this entity, so the caller has taken those out already.
+     * OIDC Core §5.5
+     *
+     * The caller has already taken out the claims the scopes of this consent stand for.
      */
     public function coversClaims(ClaimNames $claims): bool
     {
@@ -167,8 +127,6 @@ final class Consent implements ResolvesItsClientInterface, ClassifiedFieldsInter
     }
 
     /**
-     * A permission one person gave one client: what was permitted, and the instants it was given and taken back at.
-     *
      * @return array<string, FieldClassificationInterface>
      */
     public static function classifiedFields(): array

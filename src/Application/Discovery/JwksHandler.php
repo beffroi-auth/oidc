@@ -10,21 +10,19 @@ use Beffroi\Oidc\Domain\Discovery\JwkSetResponse;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * The JWK Set endpoint (RFC 7517 §5, architecture §4.8): the published keys of a tenant, those that
- * sign and those a client encrypts to, each saying which it is.
+ * RFC 7517 §5
  */
 final readonly class JwksHandler
 {
     /**
-     * The staging window of a rotation derives from it (architecture §3.3).
+     * The staging window of a key rotation derives from it.
      */
     public const int DEFAULT_MAX_AGE = 300;
 
     /**
-     * @param int $maxAge how long a client may cache the set, in seconds
+     * @param int $maxAge in seconds
      *
-     * @throws InvalidArgumentException when the lifetime is not a number of seconds: a deployment learns
-     *                                  it at boot rather than on the first request
+     * @throws InvalidArgumentException when the lifetime is not a number of seconds
      */
     public function __construct(
         private PublicKeySetProviderInterface $keys,

@@ -13,7 +13,7 @@ use function strlen;
 use function substr;
 
 /**
- * OIDC Core §3.1.3.6 "at_hash": the left-most half of the digest of the "alg", base64url encoded.
+ * OIDC Core §3.1.3.6
  */
 final readonly class TokenHash
 {

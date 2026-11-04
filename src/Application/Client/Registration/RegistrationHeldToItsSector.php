@@ -14,24 +14,9 @@ use Beffroi\Oidc\Port\SectorIdentifiersInterface;
 use function sprintf;
 
 /**
- * OIDC Registration §5: a client that registers a "sector_identifier_uri" publishes, behind it, the JSON
- * array of the redirection URIs of the clients of that sector, and every URI it registers is in that array.
+ * OIDC Registration §5
  *
- * It is what makes a sector a claim a client can back rather than a string it wrote. A sector decides which
- * clients see a user under the same pairwise identifier (OIDC Core §8.1), so a client able to name any
- * sector could put itself in somebody else's and read their users under their own identifiers. Publishing on
- * the host of the sector is the proof, and it is asked for once, when the registration is written.
- *
- * It is read here, for a registration the provider is about to write, the creation of RFC 7591 §3.1 and the
- * replacement of RFC 7592 §2.2, and nowhere else: reading a stored client back is not the moment a claim is
- * made, and a declaration of a deployment claims nothing, the deployment being the authority over what it
- * declares. A document that cannot be read is a refusal and never a client registered anyway.
- *
- * **Which URIs the document must list is the sources' to say and not this class's** (`SectorIdentifiers`):
- * what a client publishes to back its claim is what it would otherwise have been judged on, so an ordinary
- * client publishes its redirection URIs (OIDC Registration §5) and a client that registers none publishes
- * the "jwks_uri" its sector would have been read from (CIBA Core §4). A source wired later is asked for its
- * own the same way, and nothing here enumerates them.
+ * A sector document that cannot be read refuses the registration.
  */
 final readonly class RegistrationHeldToItsSector
 {
@@ -42,7 +27,7 @@ final readonly class RegistrationHeldToItsSector
     }
 
     /**
-     * @throws InvalidClientMetadataException when the sector cannot be read, or does not name this client
+     * @throws InvalidClientMetadataException
      */
     public function assertHolds(ClientRegistration $registration, ClientMetadata $metadata): void
     {

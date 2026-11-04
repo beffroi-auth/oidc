@@ -10,13 +10,7 @@ use Beffroi\Oidc\Port\MutualTlsEndpointLocatorInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
 
 /**
- * RFC 8705 §5: where a client reaches the endpoints that ask for a certificate, when the deployment
- * serves them on a host of their own. One that has no such host announces no aliases at all, rather than
- * aliases that point back at the ordinary endpoints.
- *
- * An alias names an endpoint the document announces: the device authorization endpoint has one only when
- * a grant whose user is asked on another device is wired, as it is announced only then
- * (AnnouncedDeviceAuthorization).
+ * RFC 8705 §5
  */
 final readonly class AnnouncedMutualTlsEndpoints implements MetadataContributorInterface
 {

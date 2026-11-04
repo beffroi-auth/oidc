@@ -35,31 +35,12 @@ use function str_contains;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Reads back a self-contained access token (RFC 9068 §4), the counterpart of JwtAccessTokenIssuer: every
- * claim the issuer wrote, read strictly, and nothing believed that the signature does not cover. A token
- * of this shape carries what it says, so it expires on its own and no endpoint takes it back
- * (RFC 7009 §2.2.1).
- *
- * A token that names a sign-in says all of it, and a token that names none says nothing of one: a "sid"
- * without the claims of its session, or those claims without a "sid", is not what this provider writes
- * and is refused here (RFC 6749 §4.4).
- *
- * The chain of actors is read as it was written, the most recent actor outermost (RFC 8693 §4.1), so that a
- * delegation stays a delegation on the way back and a resource server of the provider reads what a resource
- * server verifying offline reads.
- *
- * A token whose subject a client named says who it is about, sealed (SealedPerson, issue #641), and this is
- * where that is opened: the record the opaque shape reads the person off has no counterpart here, the token
- * being its own record, so what the exchange resolved once travels in the token and is read back by the one
- * party that can open it. A token that carries no such claim is about whoever its "sub" names for the client
- * it was written for, and a claim this provider did not write there is refused like every other.
+ * RFC 9068 §4
  */
 final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterface
 {
     /**
-     * Deeper than the lists of strings ("amr", "userinfo_claims"), a chain of actors nested a few
-     * exchanges deep ("act", RFC 8693 §4.1) and an "authorization_details" as deep as the parameter it
-     * came from (RFC 9396 §2, §7) was not issued here.
+     * A token nested deeper than its "act" chain and its "authorization_details" need was not issued here.
      */
     private const int MAX_DEPTH = 7;
 
@@ -72,17 +53,15 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     ) {
     }
 
-    /**
-     * The shape JwtAccessTokenIssuer writes, which a client registers by this name.
-     */
     public function name(): string
     {
         return 'jwt';
     }
 
     /**
-     * RFC 7515 §3.1: a compact serialization is three parts separated by dots, which nothing this
-     * provider draws for an opaque token ever contains.
+     * RFC 7515 §3.1
+     *
+     * No opaque token this provider draws contains a dot.
      */
     public function recognises(#[SensitiveParameter] string $accessToken): bool
     {
@@ -113,7 +92,7 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         if (! is_int($exp) || ! is_int($iat) || $exp <= $iat) {
             throw InvalidTokenException::notIssuedHere();
         }
-        // RFC 7519 §4.1.4, no leeway: the clocks are the provider's own
+        // RFC 7519 §4.1.4: no leeway, the clocks being the provider's own.
         if ($exp <= $now->getTimestamp()) {
             throw InvalidTokenException::expired();
         }
@@ -122,9 +101,6 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         if ($client === null) {
             throw InvalidTokenException::notIssuedHere();
         }
-        // RFC 8707 §2: the token is addressed to the resources it was asked for, or to the client when
-        // it was asked for none; an "aud" this provider would never have written for this client is
-        // refused before anything else the token says is believed
         try {
             $audience = TokenAudience::fromClaim($claims['aud'] ?? null);
         } catch (OidcInvalidArgumentException $exception) {
@@ -148,8 +124,6 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
         } catch (InvalidArgumentException|OidcInvalidArgumentException $exception) {
             throw InvalidTokenException::notIssuedHere($exception);
         }
-        // issue #641: who the token is about, opened under the KMS of the tenant, null when it carries
-        // nobody and its "sub" is all there is to read
         $person = $this->persons->of($tenant, $claims[JwtAccessTokenIssuer::PERSON] ?? null);
 
         return new VerifiedAccessToken(
@@ -170,14 +144,13 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     }
 
     /**
-     * RFC 9396 §7: what the token carries beyond its scopes, read back through the types the provider is
-     * wired with, null when it carries none. A token naming a type this provider no longer serves is a
-     * token it can no longer describe, and it is refused rather than described without the part that says
-     * what it was for.
+     * RFC 9396 §7
+     *
+     * A token naming a type no longer served is refused, never described without the part saying what it was for.
      *
      * @param array<array-key, mixed> $claims
      *
-     * @throws OidcInvalidArgumentException when what the claim carries is not what this provider writes there
+     * @throws OidcInvalidArgumentException
      */
     private static function authorizationDetails(array $claims, AuthorizationDetailsReaderInterface $types): ?AuthorizationDetails
     {
@@ -201,14 +174,10 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     }
 
     /**
-     * The sign-in the token descends from, null when it names none, which is what a token a client holds
-     * for itself looks like (RFC 6749 §4.4). A "sid" is answered for by the claims of its session and they
-     * by it: half of a sign-in was not written here.
-     *
      * @param array<array-key, mixed> $claims
      *
      * @throws InvalidTokenException
-     * @throws OidcInvalidArgumentException when what the claims say of a session is not what one says
+     * @throws OidcInvalidArgumentException
      */
     private static function signIn(array $claims): ?TokenSignIn
     {
@@ -228,9 +197,9 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     }
 
     /**
-     * RFC 9068 §2.2.3, RFC 8693 §4.2; absent, the token carries none.
+     * RFC 9068 §2.2.3, RFC 8693 §4.2
      *
-     * @throws OidcInvalidArgumentException when a scope token is not one
+     * @throws OidcInvalidArgumentException
      */
     private static function scopes(mixed $scope): ?Scopes
     {
@@ -245,8 +214,6 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
     }
 
     /**
-     * As "userinfo_claims" (architecture §4.6) is written.
-     *
      * @throws InvalidTokenException
      * @return list<string>
      */

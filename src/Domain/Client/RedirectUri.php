@@ -8,44 +8,26 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function in_array;
 use Stringable;
 
-/**
- * A redirection URI registered for a client (RFC 6749 §3.1.2, RP-Initiated Logout §2), compared byte for
- * byte (RFC 6749 §3.1.2.3, RFC 9700 §4.1.3). What may be registered at all is ClientUri; this is what a
- * redirection does with it, matching a request and carrying a response back.
- *
- * A redirection in plain HTTP on one of the two loopback IP literals is the loopback interface of a native
- * client (RFC 8252 §7.3), and the port of such a URI is the one named exception to the exact match
- * (architecture §8): a native client listens on a port the operating system hands it when it starts, so it
- * cannot register the port it will be reachable on. Nothing else varies.
- *
- * Both questions are asked by whoever may claim the exception, which is the registration of a public client
- * (ClientRegistration) and no option of a deployment: this class says what a URI is, never who may relax
- * what.
- */
 final readonly class RedirectUri implements Stringable
 {
     public string $value;
 
-    /**
-     * RFC 6454 §3.2, see ClientUri.
-     */
     public string $origin;
 
     /**
-     * RFC 3986 §3.2.2, lowercased, see ClientUri: what a set of clients has in common when it has one
-     * administrative domain (OIDC Core §8.1, SectorIdentifier).
+     * RFC 3986 §3.2.2, lowercased
      */
     public string $host;
 
     private ClientUri $uri;
 
     /**
-     * RFC 8252 §7.3: the two loopback IP literals, and nothing else.
+     * RFC 8252 §7.3: the two IP literals, never a name
      */
     private const array LOOPBACK_HOSTS = ['127.0.0.1', '[::1]'];
 
     /**
-     * @throws InvalidArgumentException when it is not a URI a client may register
+     * @throws InvalidArgumentException
      */
     public function __construct(string $value)
     {
@@ -56,9 +38,9 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * Whether this is the loopback interface of a native client (RFC 8252 §7.3): plain HTTP on one of the
-     * two IP literals. A client that registered HTTPS registered a host it controls and the port with it,
-     * so it is held to both.
+     * RFC 8252 §7.3
+     *
+     * Plain HTTP only: a client that registered HTTPS controls its host and is held to its port.
      */
     public function isLoopback(): bool
     {
@@ -66,12 +48,7 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * RFC 8252 §8.3: whether this URI is in plain HTTP somewhere a native client must not put one. The
-     * specification requires the IP literal and forbids the name, "localhost" included, because a name is
-     * resolved: what answers for it on the machine of the user is not something the client chose, and a
-     * redirection carrying a code is not a thing to hand to whatever answers. Which URIs may be in plain
-     * HTTP at all is the rule of every URI a client registers (ClientUri); this says which of those a
-     * native client may be sent back to.
+     * RFC 8252 §8.3
      */
     public function isPlainHttpOnAName(): bool
     {
@@ -79,13 +56,7 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * RFC 8252 §7.3: the same URI on whatever port the browser reached the client on, which is the one
-     * named exception to the byte for byte comparison above. Everything else is compared as it is
-     * everywhere else: another path, another host and a name in place of a literal are not this URI.
-     *
-     * Only a loopback URI answers true to this, and only the registration of a public client asks
-     * (ClientRegistration::hasRedirectUri()): the port a request names is read from a request, so nothing
-     * a confidential client registers is relaxed by it.
+     * RFC 8252 §7.3
      */
     public function matchesOnAnyPort(string $requested): bool
     {
@@ -102,7 +73,7 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * RFC 6749 §3.1.2.3: simple string comparison.
+     * RFC 6749 §3.1.2.3
      */
     public function matches(string $requested): bool
     {
@@ -115,8 +86,6 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
-     * RFC 6749 §4.1.2, see ClientUri.
-     *
      * @param non-empty-array<string, string> $parameters
      */
     public function withParameters(array $parameters): string

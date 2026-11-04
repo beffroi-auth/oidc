@@ -12,7 +12,7 @@ enum ClientAuthenticationFailureReason: string
     case MalformedCredentials = 'malformed_credentials';
 
     /**
-     * RFC 6749 §2.3: a secret in the header and another in the body.
+     * RFC 6749 §2.3
      */
     case MultipleMechanisms = 'multiple_mechanisms';
 
@@ -24,36 +24,26 @@ enum ClientAuthenticationFailureReason: string
 
     case UnknownClient = 'unknown_client';
 
-    /**
-     * Not the method the client is registered with.
-     */
     case UnexpectedMethod = 'unexpected_method';
 
     case InvalidSecret = 'invalid_secret';
 
     /**
-     * RFC 7523 §3: the assertion does not verify, or a claim it must carry is missing or wrong.
+     * RFC 7523 §3
      */
     case InvalidAssertion = 'invalid_assertion';
 
     /**
-     * RFC 7523 §3: an assertion whose "jti" was already used inside its validity.
+     * RFC 7523 §3
      */
     case ReplayedAssertion = 'replayed_assertion';
 
-    /**
-     * The keys of the client could not be read back from its "jwks_uri".
-     */
     case UnreadableClientKeys = 'unreadable_client_keys';
 
     /**
-     * RFC 8705 §2: the certificate presented is not the one the client registered, or is not one the
-     * client publishes.
+     * RFC 8705 §2
      */
     case UnexpectedCertificate = 'unexpected_certificate';
 
-    /**
-     * What the edge handed over is not an X.509 certificate.
-     */
     case UnreadableCertificate = 'unreadable_certificate';
 }

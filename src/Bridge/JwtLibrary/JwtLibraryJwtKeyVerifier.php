@@ -17,11 +17,7 @@ use function sprintf;
 use Throwable;
 
 /**
- * The signature of a JWT a client signed, on web-token/jwt-library: the assertion of "private_key_jwt"
- * (OIDC Core §9) and the request object of RFC 9101 §6.2. The key is looked for among the keys the
- * client publishes and nowhere else: a "kid" in the header names one of them, a header without one is
- * tried against all of them, and "jwk", "jku" and "x5c" are ignored (RFC 8725 §3.10). A key that names
- * another algorithm than the signature, or another use than signing, is not tried (RFC 7517 §4.2, §4.4).
+ * Only the keys the client publishes are tried; "jwk", "jku" and "x5c" are ignored (RFC 8725 §3.10).
  */
 final readonly class JwtLibraryJwtKeyVerifier implements JwtKeyVerifierInterface
 {
@@ -29,10 +25,6 @@ final readonly class JwtLibraryJwtKeyVerifier implements JwtKeyVerifierInterface
 
     private CompactSerializer $serializer;
 
-    /**
-     * @param AlgorithmManager $algorithms the algorithms the provider is wired with, the same list the
-     *                                     methods announce in "token_endpoint_auth_signing_alg_values_supported"
-     */
     public function __construct(AlgorithmManager $algorithms)
     {
         $this->verifier = new JWSVerifier($algorithms);

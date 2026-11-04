@@ -12,30 +12,26 @@ use function preg_match;
 use function sprintf;
 
 /**
- * A proof of possession as a client sends it (RFC 9449 §4.2), read but not yet verified: a JWS whose
- * header carries the public key it is signed with, and whose claims name the request it was made for.
+ * RFC 9449 §4.2
  *
- * Nothing here is trusted. What the proof says of itself is read strictly, because a proof is the one
- * thing a request brings that nobody else vouches for; whether it was signed by the key it carries is
- * the verifier's, and whether what it names is this request is the validator's.
+ * Read but not verified: nothing it says is trusted yet.
  */
 final readonly class DpopProof
 {
     /**
-     * RFC 9449 §4.1: the header field a proof travels in, and §4.2, the "typ" that tells it from every
-     * other JWT a client signs, so that one is never taken for another (RFC 8725 §3.11).
+     * RFC 9449 §4.1
      */
     public const string HEADER = 'DPoP';
 
     public const string TYPE = 'dpop+jwt';
 
     /**
-     * RFC 7515 §4.1.3: the public key of the pair the proof is signed with.
+     * RFC 7515 §4.1.3
      */
     public const string KEY = 'jwk';
 
     /**
-     * RFC 9449 §4.2 "htm": a method token of RFC 9110 §9.1.
+     * RFC 9449 §4.2, RFC 9110 §9.1
      */
     private const string METHOD = '/^[!#$%&\'*+\-.^_`|~0-9A-Za-z]+$/D';
 
@@ -45,8 +41,6 @@ final readonly class DpopProof
     }
 
     /**
-     * RFC 9449 §4.2 "jti": what tells one proof from the next, so that one is used once.
-     *
      * @throws InvalidDpopProofException
      *
      * @return non-empty-string
@@ -57,8 +51,6 @@ final readonly class DpopProof
     }
 
     /**
-     * RFC 9449 §4.2 "htm": the method of the request the proof was made for.
-     *
      * @throws InvalidDpopProofException
      *
      * @return non-empty-string
@@ -74,9 +66,6 @@ final readonly class DpopProof
     }
 
     /**
-     * RFC 9449 §4.2 "htu": the URL of the endpoint the proof was made for, which the provider compares
-     * with the one it publishes and never with what a proxy wrote in a header.
-     *
      * @throws InvalidDpopProofException
      *
      * @return non-empty-string
@@ -87,8 +76,6 @@ final readonly class DpopProof
     }
 
     /**
-     * RFC 9449 §4.2 "iat": when the client made the proof, which bounds how long it may be used.
-     *
      * @throws InvalidDpopProofException
      */
     public function issuedAt(): DateTimeImmutable
@@ -97,12 +84,9 @@ final readonly class DpopProof
     }
 
     /**
-     * RFC 9449 §4.2 "ath": the access token the proof accompanies, named by the base64url of its
-     * SHA-256, so that a proof made for one request cannot be presented with another token (§7.1).
+     * @throws InvalidDpopProofException
      *
-     * @throws InvalidDpopProofException when it is there and is not a string
-     *
-     * @return non-empty-string|null null when the proof accompanies no access token
+     * @return non-empty-string|null
      */
     public function accessTokenHash(): ?string
     {
@@ -110,9 +94,7 @@ final readonly class DpopProof
     }
 
     /**
-     * RFC 9449 §8: the nonce this provider handed the client, when it asks for one.
-     *
-     * @throws InvalidDpopProofException when it is there and is not a string
+     * @throws InvalidDpopProofException
      *
      * @return non-empty-string|null
      */
@@ -132,7 +114,7 @@ final readonly class DpopProof
     }
 
     /**
-     * @throws InvalidDpopProofException when the claim is there and is not a non-empty string
+     * @throws InvalidDpopProofException
      *
      * @return non-empty-string|null
      */

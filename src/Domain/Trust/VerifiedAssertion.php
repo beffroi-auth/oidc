@@ -8,20 +8,12 @@ use DateTimeImmutable;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 
 /**
- * What an assertion of a trusted issuer says once its signature and its claims have been judged
- * (RFC 7523 §3): who signed it, whom it is about, and what spends it, the identifier its issuer gave it and
- * the instant it expires, until which that identifier is remembered.
+ * RFC 7523 §3
  *
- * The subject is the string the issuer wrote and not a user of this tenant: which user it names, if any, is
- * the linked identity of that issuer's source (decision 0002), and that is asked of the identities and not of
- * the assertion.
+ * The subject is the string the issuer wrote; it names a user only through a linked identity (decision 0002).
  */
 final readonly class VerifiedAssertion
 {
-    /**
-     * @param string $jti the identifier of the assertion, unique to the issuer that signed it
-     * @param DateTimeImmutable $expiresAt when the assertion stops being valid
-     */
     public function __construct(
         public TrustedIssuer $issuer,
         public string $subject,
