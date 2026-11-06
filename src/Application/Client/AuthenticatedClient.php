@@ -7,6 +7,7 @@ namespace Beffroi\Oidc\Application\Client;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\CertificateConfirmation;
 use Beffroi\Oidc\Domain\Token\ConfirmationInterface;
+use Beffroi\Oidc\Domain\Token\KeyConfirmation;
 use Beffroi\Oidc\Exception\InvalidDpopProofException;
 
 final readonly class AuthenticatedClient
@@ -46,5 +47,13 @@ final readonly class AuthenticatedClient
     public function provesTheCertificateItsTokensAreBoundTo(): bool
     {
         return ! $this->client->registration->requiresCertificateBoundTokens || $this->confirmation?->member() === CertificateConfirmation::MEMBER;
+    }
+
+    /**
+     * RFC 9449 §5.2
+     */
+    public function provesTheKeyItsTokensAreBoundTo(): bool
+    {
+        return ! $this->client->registration->requiresDpopBoundTokens || $this->confirmation?->member() === KeyConfirmation::MEMBER;
     }
 }

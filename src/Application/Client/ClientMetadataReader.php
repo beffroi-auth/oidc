@@ -106,6 +106,7 @@ final readonly class ClientMetadataReader
         'require_sender_constrained_tokens',
         'require_signed_request_object',
         'tls_client_certificate_bound_access_tokens',
+        'dpop_bound_access_tokens',
         'access_token_format',
         'backchannel_logout_uri',
         'backchannel_logout_session_required',
@@ -228,6 +229,7 @@ final readonly class ClientMetadataReader
                 $this->initiateLoginUri($clientId, $metadata),
                 $this->text($clientId, 'software_id', $metadata),
                 $this->text($clientId, 'software_version', $metadata),
+                $this->flag($clientId, 'dpop_bound_access_tokens', $metadata),
             );
         } catch (InvalidArgumentException $exception) {
             throw $exception instanceof UnreadableClientMetadataException

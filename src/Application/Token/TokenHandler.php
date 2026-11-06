@@ -60,6 +60,9 @@ final readonly class TokenHandler
         if (! $client->provesTheCertificateItsTokensAreBoundTo()) {
             throw new InvalidRequestException('The tokens of this client are bound to the certificate it presents, and this request proves none (RFC 8705 section 3.4).');
         }
+        if (! $client->provesTheKeyItsTokensAreBoundTo()) {
+            throw new InvalidRequestException('The tokens of this client are bound to a key it proves with DPoP, and this request carries no DPoP proof (RFC 9449 section 5.2).');
+        }
         $request = RequestParameters::of($parameters);
 
         $grant = $this->grants->named($request->required('grant_type'));
