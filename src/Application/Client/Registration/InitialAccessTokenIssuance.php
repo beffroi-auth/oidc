@@ -6,7 +6,9 @@ namespace Beffroi\Oidc\Application\Client\Registration;
 
 use DateInterval;
 use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Client\ClientMetadataReader;
 use Beffroi\Oidc\Application\Secret\SecretDrawer;
+use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 use Beffroi\Oidc\Domain\Client\Registration\InitialAccessToken;
 use Beffroi\Oidc\Domain\Client\Registration\IssuedInitialAccessToken;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
@@ -24,6 +26,7 @@ final readonly class InitialAccessTokenIssuance
         private SecretDrawer $secrets,
         private InitialAccessTokenRepositoryInterface $tokens,
         private ClockInterface $clock,
+        private ClientMetadataReader $reader,
     ) {
     }
 
@@ -33,8 +36,16 @@ final readonly class InitialAccessTokenIssuance
      *
      * @throws InvalidArgumentException
      */
-    public function issue(Tenant $tenant, string $name, int $registrationsAllowed, DateInterval $validFor): IssuedInitialAccessToken
-    {
+    public function issue(
+        Tenant $tenant,
+        string $name,
+        int $registrationsAllowed,
+        DateInterval $validFor,
+        ?GrantedMembers $granted = null,
+    ): IssuedInitialAccessToken {
+        if ($granted !== null) {
+            $this->reader->assertGivable($name, $granted);
+        }
         $value = $this->secrets->draw();
         $issuedAt = $this->clock->now();
         $token = new InitialAccessToken(
@@ -45,6 +56,7 @@ final readonly class InitialAccessTokenIssuance
             $registrationsAllowed,
             $issuedAt,
             $issuedAt->add($validFor),
+            $granted,
         );
         $this->tokens->save($token);
 

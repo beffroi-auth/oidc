@@ -9,7 +9,8 @@ use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use function sprintf;
 
 /**
- * The members this provider defines: written by a deployment or a tenant's policy, refused from a client.
+ * The members this provider defines: written by a deployment, a tenant's policy or its initial access token, refused from a
+ * client.
  */
 final readonly class MembersOfTheDeployment
 {
@@ -40,7 +41,7 @@ final readonly class MembersOfTheDeployment
                     $member,
                     $source->source(),
                     sprintf(
-                        'The member "%s" is not one a client registers: it is written by whoever declares a client or by the registration policy of the tenant, and never asked for (decision 0009).',
+                        'The member "%s" is not one a client registers: it is written by whoever declares a client, by the registration policy of the tenant or by the initial access token the tenant issued, and never asked for (decisions 0009 and 0043).',
                         $member,
                     ),
                 );

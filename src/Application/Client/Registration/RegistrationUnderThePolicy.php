@@ -14,6 +14,7 @@ use Beffroi\Oidc\Domain\Client\ClientSecretInterface;
 use Beffroi\Oidc\Domain\Client\Metadata\AssignedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
+use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
 use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
@@ -65,13 +66,14 @@ final readonly class RegistrationUnderThePolicy
         array $members,
         ?ClientRegistrationPolicy $policy,
         ?ClientSecretInterface $kept = null,
+        ?GrantedMembers $granted = null,
     ): KeptRegistration {
         $sent = [...$inFront, new RegisteredMembers($members)];
 
         $registered = new ClientMetadata([...$sent, new SpecifiedDefaults()]);
         $method = $this->reader->authenticationMethodOf($clientId, $registered);
         $assigned = new AssignedMembers($policy?->membersWrittenOn($method, $registered) ?? []);
-        $metadata = new ClientMetadata([...$sent, $assigned, new SpecifiedDefaults()]);
+        $metadata = new ClientMetadata([...$sent, ...($granted === null ? [] : [$granted]), $assigned, new SpecifiedDefaults()]);
 
         $drawn = null;
         $secret = null;

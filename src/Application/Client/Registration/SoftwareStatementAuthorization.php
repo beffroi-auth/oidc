@@ -38,13 +38,13 @@ final readonly class SoftwareStatementAuthorization implements RegistrationAutho
      * @throws InvalidSoftwareStatementException
      * @throws InvalidClientMetadataException when the statement carries a member of this provider alone
      */
-    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): array
+    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): AuthorizedRegistration
     {
         $presented = $request->members()[self::MEMBER] ?? null;
         if (! is_string($presented) || $presented === '') {
             throw new UnauthorizedRegistrationException();
         }
 
-        return [$this->statements->verify($tenant, $policy, $presented, $this->clock->now())];
+        return new AuthorizedRegistration([$this->statements->verify($tenant, $policy, $presented, $this->clock->now())]);
     }
 }

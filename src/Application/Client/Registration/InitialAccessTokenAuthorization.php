@@ -36,7 +36,7 @@ final readonly class InitialAccessTokenAuthorization implements RegistrationAuth
         return self::MODE;
     }
 
-    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): array
+    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): AuthorizedRegistration
     {
         $presented = self::presented($request->authorizationHeader);
         if ($presented === null) {
@@ -52,7 +52,7 @@ final readonly class InitialAccessTokenAuthorization implements RegistrationAuth
             throw new UnauthorizedRegistrationException();
         }
 
-        return [];
+        return new AuthorizedRegistration(granted: $token->granted);
     }
 
     private static function presented(?string $header): ?string

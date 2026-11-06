@@ -10,6 +10,7 @@ use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
 use Beffroi\Core\Domain\PersonalData\Reason;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 use Beffroi\Oidc\Domain\Record\ExpiringRecord;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
@@ -36,6 +37,7 @@ final class InitialAccessToken extends ExpiringRecord implements ClassifiedField
         public readonly int $registrationsAllowed,
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
+        public readonly ?GrantedMembers $granted = null,
     ) {
         if (! DrawnSecret::isDigest($digest)) {
             throw new InvalidArgumentException('An initial access token is stored as the hex SHA-256 of its value, never as the value.');
@@ -110,6 +112,8 @@ final class InitialAccessToken extends ExpiringRecord implements ClassifiedField
             'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'expiresAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'revokedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
+            'granted' =>
+                new NoPersonalDatum('what the token gives the clients it registers: identifiers of APIs, the shape and binding of their access tokens, the types of token they may exchange, and the subject that may act for the subject of their tokens, a pseudonym every token carries in the clear'),
             'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
             'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
         ];

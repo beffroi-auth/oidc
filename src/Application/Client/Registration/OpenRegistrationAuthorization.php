@@ -20,8 +20,8 @@ final readonly class OpenRegistrationAuthorization implements RegistrationAuthor
         return self::MODE;
     }
 
-    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): array
+    public function authorize(Tenant $tenant, RegistrationRequest $request, ClientRegistrationPolicy $policy): AuthorizedRegistration
     {
-        return [];
+        return new AuthorizedRegistration();
     }
 }

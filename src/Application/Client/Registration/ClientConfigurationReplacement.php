@@ -24,7 +24,8 @@ use function sprintf;
 /**
  * RFC 7592 §2.2
  *
- * A signed statement's members still outrank the replacement: an attested client keeps what its authority signed.
+ * A signed statement's members still outrank the replacement: an attested client keeps what its authority signed, and a
+ * client keeps what the initial access token that registered it gave.
  */
 final readonly class ClientConfigurationReplacement
 {
@@ -72,6 +73,7 @@ final readonly class ClientConfigurationReplacement
             $members,
             $this->policies->policyFor($tenant),
             $record->secret,
+            $record->grants(),
         );
         $record->replaceWith($kept->metadata, $kept->assigned, $kept->secret);
         $this->clients->save($record);

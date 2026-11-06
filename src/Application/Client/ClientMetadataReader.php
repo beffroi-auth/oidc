@@ -34,6 +34,7 @@ use Beffroi\Oidc\Domain\Client\ClientUri;
 use Beffroi\Oidc\Domain\Client\GrantTypeName;
 use Beffroi\Oidc\Domain\Client\InitiateLoginUri;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
+use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\NestedMembers;
 use Beffroi\Oidc\Domain\Client\RedirectUri;
 use Beffroi\Oidc\Domain\Client\RequestUri;
@@ -387,6 +388,22 @@ final readonly class ClientMetadataReader
                 $encryption->algorithm->keyType(),
             ),
         );
+    }
+
+    /**
+     * What an initial access token gives, read as the registration of each client it registers reads it, so that a token
+     * that gives what this provider cannot serve is never issued.
+     *
+     * @throws UnreadableClientMetadataException
+     */
+    public function assertGivable(string $tokenName, GrantedMembers $granted): void
+    {
+        $metadata = new ClientMetadata([$granted]);
+        $this->resources($tokenName, $metadata);
+        $this->accessTokenShape($tokenName, $metadata);
+        $this->flag($tokenName, 'require_sender_constrained_tokens', $metadata);
+        $this->tokenExchange($tokenName, $metadata);
+        $this->mayAct($tokenName, $metadata);
     }
 
     /**

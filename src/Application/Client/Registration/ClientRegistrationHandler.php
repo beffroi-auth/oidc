@@ -50,9 +50,9 @@ final readonly class ClientRegistrationHandler
         if ($policy === null) {
             throw new ClientRegistrationNotOfferedException();
         }
-        $inFront = $this->authorizations->authorizing($policy)->authorize($tenant, $request, $policy);
+        $authorized = $this->authorizations->authorizing($policy)->authorize($tenant, $request, $policy);
         $clientId = $this->identifiers->drawFor($tenant);
-        $kept = $this->registrations->read($tenant, $clientId, $inFront, $request->members(), $policy);
+        $kept = $this->registrations->read($tenant, $clientId, $authorized->inFront, $request->members(), $policy, granted: $authorized->granted);
 
         $registrationAccessToken = $this->secrets->draw();
         $record = new ClientRecord(
@@ -65,6 +65,7 @@ final readonly class ClientRegistrationHandler
             DrawnSecret::digestOf($registrationAccessToken),
             $this->clock->now(),
             attested: $kept->attested,
+            granted: $authorized->granted?->toDocument(),
         );
         $this->clients->save($record);
 

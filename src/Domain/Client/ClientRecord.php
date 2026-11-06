@@ -16,6 +16,7 @@ use Beffroi\Oidc\Domain\Client\Metadata\AssignedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\AttestedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
+use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
@@ -36,6 +37,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
      * @param array<string, mixed> $metadata the RFC 7591 §2 members, as the client registered them
      * @param array<string, mixed> $assigned the members the tenant's registration policy wrote
      * @param array<string, mixed>|null $attested what a software statement signed, which no replacement overwrites
+     * @param array<string, mixed>|null $granted what the initial access token that registered it gave, which no replacement overwrites
      *
      * @throws InvalidArgumentException
      */
@@ -51,6 +53,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
         public readonly DateTimeImmutable $issuedAt,
         public private(set) ?DateTimeImmutable $secretExpiresAt = null,
         public readonly ?array $attested = null,
+        public readonly ?array $granted = null,
     ) {
         if ($clientId === '') {
             throw new InvalidArgumentException('A registered client carries the identifier the provider drew for it (RFC 7591 section 3.2.1).');
@@ -79,13 +82,27 @@ final class ClientRecord implements ClassifiedFieldsInterface
         }
     }
 
+    /**
+     * @throws InvalidClientMetadataException
+     */
     public function asRegistered(): ClientMetadata
     {
+        $grants = $this->grants();
+
         return new ClientMetadata([
+            ...($grants === null ? [] : [$grants]),
             new AssignedMembers($this->assigned),
             new RegisteredMembers($this->metadata),
             new SpecifiedDefaults(),
         ]);
+    }
+
+    /**
+     * @throws InvalidClientMetadataException
+     */
+    public function grants(): ?GrantedMembers
+    {
+        return $this->granted === null ? null : new GrantedMembers($this->granted);
     }
 
     /**
@@ -151,6 +168,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
             'metadata' => new Sealed('client'),
             'assigned' => new Sealed('client'),
             'attested' => new Sealed('client'),
+            'granted' => new Sealed('client'),
             'registrationAccessTokenDigest' => new NoPersonalDatum(Reason::HASHED),
             'secret' => new Sealed('client'),
             'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
