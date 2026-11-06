@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client\Metadata;
 
+use function array_diff_key;
+use function array_flip;
 use function array_key_exists;
 use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use function sprintf;
@@ -26,6 +28,16 @@ final readonly class MembersOfTheDeployment
         'may_act',
         'require_sender_constrained_tokens',
     ];
+
+    /**
+     * @param array<string, mixed> $members
+     *
+     * @return array<string, mixed> those a client may register as well
+     */
+    public static function without(array $members): array
+    {
+        return array_diff_key($members, array_flip(self::NAMES));
+    }
 
     /**
      * A member carried as null is refused all the same: naming it is what is refused.

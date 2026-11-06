@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Domain\Client\Registration;
 
 use DateTimeImmutable;
 use Beffroi\Oidc\Domain\Client\ClientRecord;
+use Beffroi\Oidc\Domain\Client\Metadata\MembersOfTheDeployment;
 use SensitiveParameter;
 
 /**
@@ -38,6 +39,9 @@ final readonly class ClientInformationResponse
     }
 
     /**
+     * What the policy wrote is answered with what the client registered (RFC 7591 §3.2.1), the members of the provider
+     * excepted, which a client would send back to replace itself and be refused (RFC 7592 §2.2).
+     *
      * @return array<string, mixed>
      */
     public function parameters(): array
@@ -57,6 +61,6 @@ final readonly class ClientInformationResponse
         }
         $parameters['registration_client_uri'] = $this->registrationClientUri;
 
-        return $parameters + $this->record->metadata;
+        return $parameters + $this->record->metadata + MembersOfTheDeployment::without($this->record->assigned);
     }
 }
