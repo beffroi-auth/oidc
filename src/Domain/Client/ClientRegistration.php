@@ -122,6 +122,7 @@ final readonly class ClientRegistration
         public ?InitiateLoginUri $initiateLoginUri = null,
         public ?string $softwareId = null,
         public ?string $softwareVersion = null,
+        public bool $requiresDpopBoundTokens = false,
     ) {
         $this->allowedScopes = $allowedScopes ?? new Scopes([Scope::openid()]);
         $this->idToken = $idToken ?? ResponseFormat::signed();
@@ -311,6 +312,15 @@ final readonly class ClientRegistration
                 'The client "%s" authenticates with %s, which reads nothing of a certificate, and therefore registers none of the values of RFC 8705 section 2.1.2.',
                 $this->clientId,
                 $this->authenticationMethod->name(),
+            ));
+        }
+        if (
+            $this->requiresDpopBoundTokens
+            && ($this->requiresCertificateBoundTokens || $this->authenticationMethod instanceof CertificateBindingMethodInterface)
+        ) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" registers dpop_bound_access_tokens while its tokens are bound to its certificate, by tls_client_certificate_bound_access_tokens or by the mutual TLS it authenticates with, and a token is bound to one thing (RFC 9449 section 5.2, RFC 8705 section 3).',
+                $this->clientId,
             ));
         }
         if ($this->grantTypes === []) {
