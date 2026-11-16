@@ -19,6 +19,7 @@ use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadataSourceInterface;
 use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\RegisteredMembers;
 use Beffroi\Oidc\Domain\Client\Metadata\SpecifiedDefaults;
+use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\InvalidClientMetadataException;
@@ -54,6 +55,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
         public private(set) ?DateTimeImmutable $secretExpiresAt = null,
         public readonly ?array $attested = null,
         public readonly ?array $granted = null,
+        public readonly bool $administration = false,
     ) {
         if ($clientId === '') {
             throw new InvalidArgumentException('A registered client carries the identifier the provider drew for it (RFC 7591 section 3.2.1).');
@@ -83,15 +85,22 @@ final class ClientRecord implements ClassifiedFieldsInterface
     }
 
     /**
+     * A client of the administration is given the API the deployment names when the row is read, so that it follows
+     * the one the deployment names now (decision 0038).
+     *
      * @throws InvalidClientMetadataException
      */
-    public function asRegistered(): ClientMetadata
+    public function asRegistered(?ResourceIndicator $administrationApi = null): ClientMetadata
     {
         $grants = $this->grants();
+        $assigned = $this->assigned;
+        if ($this->administration && $administrationApi !== null) {
+            $assigned['resources'] = [$administrationApi->value];
+        }
 
         return new ClientMetadata([
             ...($grants === null ? [] : [$grants]),
-            new AssignedMembers($this->assigned),
+            new AssignedMembers($assigned),
             new RegisteredMembers($this->metadata),
             new SpecifiedDefaults(),
         ]);
@@ -169,6 +178,7 @@ final class ClientRecord implements ClassifiedFieldsInterface
             'assigned' => new Sealed('client'),
             'attested' => new Sealed('client'),
             'granted' => new Sealed('client'),
+            'administration' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'registrationAccessTokenDigest' => new NoPersonalDatum(Reason::HASHED),
             'secret' => new Sealed('client'),
             'issuedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),

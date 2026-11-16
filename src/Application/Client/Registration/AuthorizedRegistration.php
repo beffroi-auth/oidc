@@ -9,7 +9,9 @@ use Beffroi\Oidc\Domain\Client\Metadata\GrantedMembers;
 
 /**
  * What a mode of registration answers once it authorised a registration (decision 0009): what it puts in front of the
- * members the client sent, and what the tenant gives the client beside them (decision 0043).
+ * members the client sent, what the tenant gives the client beside them (decision 0043), and whether the client is a
+ * client of the administration API of the tenant (decision 0038), which only a token the tenant issued for its
+ * administration says.
  */
 final readonly class AuthorizedRegistration
 {
@@ -19,6 +21,7 @@ final readonly class AuthorizedRegistration
     public function __construct(
         public array $inFront = [],
         public ?GrantedMembers $granted = null,
+        public bool $administration = false,
     ) {
     }
 }

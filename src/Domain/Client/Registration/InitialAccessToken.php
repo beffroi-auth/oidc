@@ -38,6 +38,7 @@ final class InitialAccessToken extends ExpiringRecord implements ClassifiedField
         public readonly DateTimeImmutable $issuedAt,
         public readonly DateTimeImmutable $expiresAt,
         public readonly ?GrantedMembers $granted = null,
+        public readonly bool $administration = false,
     ) {
         if (! DrawnSecret::isDigest($digest)) {
             throw new InvalidArgumentException('An initial access token is stored as the hex SHA-256 of its value, never as the value.');
@@ -114,6 +115,7 @@ final class InitialAccessToken extends ExpiringRecord implements ClassifiedField
             'revokedAt' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'granted' =>
                 new NoPersonalDatum('what the token gives the clients it registers: identifiers of APIs, the shape and binding of their access tokens, the types of token they may exchange, and the subject that may act for the subject of their tokens, a pseudonym every token carries in the clear'),
+            'administration' => new NoPersonalDatum(Reason::NAMES_NO_PERSON),
             'id' => new NoPersonalDatum(Reason::DRAWN_AT_RANDOM),
             'tenant' => new NoPersonalDatum(Reason::THE_TENANT),
         ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Device;
 
 use function array_any;
+use Beffroi\Oidc\Application\Administration\AdministrationAudience;
 use DateInterval;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
@@ -53,6 +54,7 @@ final readonly class DeviceAuthorizationHandler
         private SecretDrawer $secrets,
         private UserCodeDrawer $userCodes,
         private UuidGeneratorInterface $uuids,
+        private AdministrationAudience $administration,
         private ClockInterface $clock,
         public DateInterval $lifetime = new DateInterval('PT10M'),
         public int $interval = DeviceAuthorizationRecord::DEFAULT_INTERVAL,
@@ -87,6 +89,7 @@ final readonly class DeviceAuthorizationHandler
         $request = RequestParameters::of($parameters);
         $scopes = self::scopes($request->required('scope'), $registration);
         $resources = self::resources($request, $registration);
+        $this->administration->assertNotNamedIn($client->tenant, $resources);
 
         $now = $this->clock->now();
         $deviceCode = $this->secrets->draw();

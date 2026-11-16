@@ -58,4 +58,17 @@ final class InvalidTargetException extends OAuth2Exception
     {
         return new self('The requested resource is not among the resources of this authorization (RFC 8707 section 2.2).');
     }
+
+    /**
+     * Decision 0038: the administration API of the tenant is addressed only for a person who administers the tenant,
+     * signed in at the authorization endpoint by a session whose proofs satisfy phishing_resistant, and only by a token
+     * bound to a key of the client. The description names no condition the request missed: the client learns that the
+     * resource is reserved, and nothing of the person.
+     *
+     * @param bool $redirectable only from the authorization endpoint, once the redirect URI is known
+     */
+    public static function reserved(bool $redirectable = false): self
+    {
+        return new self('The requested resource is reserved to the administrators of the tenant (RFC 8707 section 2).', $redirectable);
+    }
 }

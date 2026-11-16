@@ -74,6 +74,7 @@ final readonly class ClientConfigurationReplacement
             $this->policies->policyFor($tenant),
             $record->secret,
             $record->grants(),
+            $record->administration,
         );
         $record->replaceWith($kept->metadata, $kept->assigned, $kept->secret);
         $this->clients->save($record);

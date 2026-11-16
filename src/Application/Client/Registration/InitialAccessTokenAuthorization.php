@@ -52,7 +52,7 @@ final readonly class InitialAccessTokenAuthorization implements RegistrationAuth
             throw new UnauthorizedRegistrationException();
         }
 
-        return new AuthorizedRegistration(granted: $token->granted);
+        return new AuthorizedRegistration(granted: $token->granted, administration: $token->administration);
     }
 
     private static function presented(?string $header): ?string

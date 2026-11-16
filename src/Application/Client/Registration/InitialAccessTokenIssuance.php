@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Client\Registration;
 
+use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
+use Beffroi\Oidc\Port\AdministrationResourceInterface;
 use DateInterval;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Client\ClientMetadataReader;
@@ -14,7 +16,10 @@ use Beffroi\Oidc\Domain\Client\Registration\IssuedInitialAccessToken;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
+use function in_array;
+use function is_array;
 use Psr\Clock\ClockInterface;
+use function sprintf;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -27,6 +32,7 @@ final readonly class InitialAccessTokenIssuance
         private InitialAccessTokenRepositoryInterface $tokens,
         private ClockInterface $clock,
         private ClientMetadataReader $reader,
+        private AdministrationResourceInterface $administration,
     ) {
     }
 
@@ -42,9 +48,18 @@ final readonly class InitialAccessTokenIssuance
         int $registrationsAllowed,
         DateInterval $validFor,
         ?GrantedMembers $granted = null,
+        bool $administration = false,
     ): IssuedInitialAccessToken {
+        $api = $this->administration->administrationResourceOf($tenant);
+        if ($administration && $api === null) {
+            throw new InvalidArgumentException(sprintf(
+                'The tenant "%s" names no administration API (BEFFROI_TENANT_ADMINISTRATION_RESOURCE): a token for its administration would register clients of nothing.',
+                $tenant->slug,
+            ));
+        }
         if ($granted !== null) {
             $this->reader->assertGivable($name, $granted);
+            self::assertGivesNoAdministrationResource($name, $granted, $api, $administration);
         }
         $value = $this->secrets->draw();
         $issuedAt = $this->clock->now();
@@ -57,9 +72,35 @@ final readonly class InitialAccessTokenIssuance
             $issuedAt,
             $issuedAt->add($validFor),
             $granted,
+            $administration,
         );
         $this->tokens->save($token);
 
         return new IssuedInitialAccessToken($token, $value);
+    }
+
+    /**
+     * Decision 0038. The resources a token gives would hide the API a client of the administration is given.
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function assertGivesNoAdministrationResource(string $name, GrantedMembers $granted, ?ResourceIndicator $api, bool $administration): void
+    {
+        $resources = $granted->members()['resources'] ?? null;
+        if (! is_array($resources)) {
+            return;
+        }
+        if ($administration) {
+            throw new InvalidArgumentException(sprintf(
+                'The token "%s" is issued for the administration of the tenant, whose clients are given its administration API and no other resource (decision 0038).',
+                $name,
+            ));
+        }
+        if ($api !== null && in_array($api->value, $resources, true)) {
+            throw new InvalidArgumentException(sprintf(
+                'The token "%s" names the administration API of the tenant among its resources, which only a token issued for the administration gives, to clients that authenticate with a key (decision 0038).',
+                $name,
+            ));
+        }
     }
 }

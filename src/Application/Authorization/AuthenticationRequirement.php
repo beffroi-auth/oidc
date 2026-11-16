@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Authorization;
 
+use Beffroi\Oidc\Application\Administration\AdministrationAudience;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
@@ -27,18 +28,23 @@ final readonly class AuthenticationRequirement
         private CredentialRepositoryInterface $credentials,
         private IdTokenHintVerifier $idTokenHints,
         private PresentedSubjectReaderInterface $subjects,
+        private AdministrationAudience $administration,
     ) {
     }
 
     /**
-     * OIDC Core §3.1.2.1, §5.5.1.1
+     * OIDC Core §3.1.2.1, §5.5.1.1, decision 0038
      *
      * @throws OAuth2Exception
      */
     public function beforeAnyLogin(AuthorizationRequest $request): RequestedAuthentication
     {
         $hinted = $this->hintedPerson($request);
-        $context = RequestedAuthenticationContext::of($request, $this->provable->provableMethods($request->client->tenant));
+        $context = RequestedAuthenticationContext::against(
+            $this->administration->authenticationAskedBy($request),
+            $request->client->tenant,
+            $this->provable->provableMethods($request->client->tenant),
+        );
         $context->assertTheProviderCanProveOne();
 
         return new RequestedAuthentication($context, $hinted);

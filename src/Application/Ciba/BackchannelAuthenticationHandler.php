@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Ciba;
 
 use function array_any;
+use Beffroi\Oidc\Application\Administration\AdministrationAudience;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\RequestContext;
@@ -74,6 +75,7 @@ final readonly class BackchannelAuthenticationHandler
         private UuidGeneratorInterface $uuids,
         private SecretSealerInterface $sealer,
         private PendingApprovalNotifierInterface $notifier,
+        private AdministrationAudience $administration,
         private ClockInterface $clock,
         public DateInterval $lifetime = new DateInterval('PT5M'),
         public DateInterval $maxRequestedExpiry = new DateInterval('PT30M'),
@@ -122,6 +124,7 @@ final readonly class BackchannelAuthenticationHandler
         // Read before anybody is looked up: a request refused here costs no lookup.
         $scopes = self::scopes($request->required('scope'), $registration);
         $resources = self::resources($request, $registration);
+        $this->administration->assertNotNamedIn($client->tenant, $resources);
         $bindingMessage = self::bindingMessage($request);
         // acr_values is judged on the approval page, against the session of whoever answers, not here.
         $acrValues = $request->acrValues();

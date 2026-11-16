@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Authorization;
 
+use Beffroi\Oidc\Application\Administration\AdministrationAudience;
 use DateInterval;
 use DateTimeImmutable;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
@@ -50,6 +51,7 @@ final readonly class AuthorizationHandler
         private SecretDrawer $secrets,
         private AuthenticationRequirement $authentication,
         private AuthorizationCodeIssuer $codes,
+        private AdministrationAudience $administration,
         private ClockInterface $clock,
         private DateInterval $interactionLifetime = new DateInterval('PT10M'),
     ) {
@@ -154,6 +156,7 @@ final readonly class AuthorizationHandler
                 return $this->loginRequired($interaction, $login->requirement, $login->stepUp);
             }
             $requested->context->assertMetBy($session);
+            $this->administration->assertAdministeredBy($request, $session->user);
             $interaction->authenticate($session, $now);
 
             $consentRequirement = $this->consent->of($interaction, $session, $now);

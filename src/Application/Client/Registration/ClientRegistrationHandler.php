@@ -52,7 +52,15 @@ final readonly class ClientRegistrationHandler
         }
         $authorized = $this->authorizations->authorizing($policy)->authorize($tenant, $request, $policy);
         $clientId = $this->identifiers->drawFor($tenant);
-        $kept = $this->registrations->read($tenant, $clientId, $authorized->inFront, $request->members(), $policy, granted: $authorized->granted);
+        $kept = $this->registrations->read(
+            $tenant,
+            $clientId,
+            $authorized->inFront,
+            $request->members(),
+            $policy,
+            granted: $authorized->granted,
+            administration: $authorized->administration,
+        );
 
         $registrationAccessToken = $this->secrets->draw();
         $record = new ClientRecord(
@@ -66,6 +74,7 @@ final readonly class ClientRegistrationHandler
             $this->clock->now(),
             attested: $kept->attested,
             granted: $authorized->granted?->toDocument(),
+            administration: $authorized->administration,
         );
         $this->clients->save($record);
 

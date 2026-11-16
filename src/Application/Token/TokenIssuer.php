@@ -24,6 +24,7 @@ use Beffroi\Oidc\Domain\Token\IssuedTokens;
 use Beffroi\Oidc\Domain\Token\RefreshToken;
 use Beffroi\Oidc\Domain\Token\RefreshTokenFamily;
 use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
+use Beffroi\Oidc\Exception\InvalidTargetException;
 use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\LogicException;
@@ -93,6 +94,7 @@ final readonly class TokenIssuer
      * @throws KeyNotFoundException when the response is addressed here
      * @throws KmsUnavailableException when the response is addressed here
      * @throws LogicException when a response somebody signed in for was not addressed by its grant first
+     * @throws InvalidTargetException when the access token is addressed to the administration API and the authorization holds to less than its reservation (decision 0038)
      */
     public function issue(
         AuthorizationInterface $authorization,
