@@ -10,6 +10,8 @@ use Beffroi\Oidc\Domain\Event\InitialAccessTokenIssued;
 use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
 use Beffroi\Oidc\Port\AdministrationResourceInterface;
 use DateInterval;
+use DateMalformedIntervalStringException;
+use DateTimeImmutable;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Client\ClientMetadataReader;
 use Beffroi\Oidc\Application\Secret\SecretDrawer;
@@ -32,6 +34,11 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class InitialAccessTokenIssuance
 {
+    /**
+     * RFC 3339 §5.6 writes a year in four digits, as every date this provider answers is written.
+     */
+    private const string LAST_EXPIRY = '9999-12-31T23:59:59+00:00';
+
     public function __construct(
         private SecretDrawer $secrets,
         private InitialAccessTokenRepositoryInterface $tokens,
@@ -45,6 +52,7 @@ final readonly class InitialAccessTokenIssuance
     /**
      * @param string $name never empty
      * @param int $registrationsAllowed at least one
+     * @param int $days at least one, counted from now
      *
      * @throws InvalidArgumentException
      */
@@ -52,12 +60,12 @@ final readonly class InitialAccessTokenIssuance
         Tenant $tenant,
         string $name,
         int $registrationsAllowed,
-        DateInterval $validFor,
+        int $days,
         RequestContext $context,
         ?GrantedMembers $granted = null,
         bool $administration = false,
     ): IssuedInitialAccessToken {
-        return $this->issueOnce($tenant, $name, $registrationsAllowed, $validFor, $context, null, $granted, $administration);
+        return $this->issueOnce($tenant, $name, $registrationsAllowed, $days, $context, null, $granted, $administration);
     }
 
     /**
@@ -65,6 +73,7 @@ final readonly class InitialAccessTokenIssuance
      *
      * @param string $name never empty
      * @param int $registrationsAllowed at least one
+     * @param int $days at least one, counted from now
      *
      * @throws InvalidArgumentException
      */
@@ -72,13 +81,13 @@ final readonly class InitialAccessTokenIssuance
         Tenant $tenant,
         string $name,
         int $registrationsAllowed,
-        DateInterval $validFor,
+        int $days,
         Subject $administrator,
         RequestContext $context,
         ?GrantedMembers $granted = null,
         bool $administration = false,
     ): IssuedInitialAccessToken {
-        return $this->issueOnce($tenant, $name, $registrationsAllowed, $validFor, $context, $administrator, $granted, $administration);
+        return $this->issueOnce($tenant, $name, $registrationsAllowed, $days, $context, $administrator, $granted, $administration);
     }
 
     /**
@@ -88,7 +97,7 @@ final readonly class InitialAccessTokenIssuance
         Tenant $tenant,
         string $name,
         int $registrationsAllowed,
-        DateInterval $validFor,
+        int $days,
         RequestContext $context,
         ?Subject $administrator,
         ?GrantedMembers $granted,
@@ -105,8 +114,9 @@ final readonly class InitialAccessTokenIssuance
             $this->reader->assertGivable($name, $granted);
             self::assertGivesNoAdministrationResource($name, $granted, $api, $administration);
         }
-        $value = $this->secrets->draw();
         $issuedAt = $this->clock->now();
+        $expiresAt = self::expiry($issuedAt, $days);
+        $value = $this->secrets->draw();
         $token = new InitialAccessToken(
             Uuid::v7(),
             $tenant,
@@ -114,7 +124,7 @@ final readonly class InitialAccessTokenIssuance
             $name,
             $registrationsAllowed,
             $issuedAt,
-            $issuedAt->add($validFor),
+            $expiresAt,
             $granted,
             $administration,
         );
@@ -122,6 +132,26 @@ final readonly class InitialAccessTokenIssuance
         $this->events->dispatch(new InitialAccessTokenIssued($issuedAt, $tenant, $token->id, $context, $administrator));
 
         return new IssuedInitialAccessToken($token, $value);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private static function expiry(DateTimeImmutable $issuedAt, int $days): DateTimeImmutable
+    {
+        if ($days < 1) {
+            throw new InvalidArgumentException('An initial access token is worth something for a day at least.');
+        }
+        try {
+            $expiresAt = $issuedAt->add(new DateInterval(sprintf('P%dD', $days)));
+        } catch (DateMalformedIntervalStringException) {
+            $expiresAt = null;
+        }
+        if ($expiresAt === null || $expiresAt > new DateTimeImmutable(self::LAST_EXPIRY)) {
+            throw new InvalidArgumentException('An initial access token expires within the year 9999 at the latest, the last a date of RFC 3339 writes (section 5.6).');
+        }
+
+        return $expiresAt;
     }
 
     /**
