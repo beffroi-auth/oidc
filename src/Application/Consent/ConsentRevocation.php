@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Consent;
 
 use function array_map;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Oidc\Application\Token\RefreshTokenRevocation;
 use Beffroi\Oidc\Domain\Consent\Consent;
@@ -37,6 +38,19 @@ final readonly class ConsentRevocation
 
     public function revoke(Consent $consent, RequestContext $context): void
     {
+        $this->revokeOnce($consent, $context, null);
+    }
+
+    /**
+     * The act names the administrator (decision 0038).
+     */
+    public function revokeByAnAdministrator(Consent $consent, Subject $administrator, RequestContext $context): void
+    {
+        $this->revokeOnce($consent, $context, $administrator);
+    }
+
+    private function revokeOnce(Consent $consent, RequestContext $context, ?Subject $administrator): void
+    {
         $now = $this->clock->now();
         $consent->revoke($now);
         $this->consents->save($consent);
@@ -53,6 +67,7 @@ final readonly class ConsentRevocation
             RevokedTokenHashes::of($refreshTokens),
             RevokedTokenHashes::of($accessTokens),
             $context,
+            $administrator,
         ));
     }
 }
