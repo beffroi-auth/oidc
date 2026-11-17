@@ -82,7 +82,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 
             throw new InvalidGrantException(self::INVALID);
         }
-        if ($token->isExpired($now) || ! $token->isRefreshedBy($client->confirmation)) {
+        if ($token->isExpired($now) || ! $token->isRefreshedBy($client->confirmation) || ! $token->session->user->isEnabled()) {
             throw new InvalidGrantException(self::INVALID);
         }
         if ($scopes !== null && ! $token->scopes->covers($scopes)) {
