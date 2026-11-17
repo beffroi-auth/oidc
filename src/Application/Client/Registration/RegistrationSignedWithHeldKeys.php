@@ -8,7 +8,7 @@ use Beffroi\Core\Application\Key\HeldSigningAlgorithms;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\ClientRegistration;
 use Beffroi\Oidc\Domain\Client\Metadata\ClientMetadata;
-use Beffroi\Oidc\Domain\Client\ResponseFormat;
+use Beffroi\Oidc\Domain\Client\SignedDocument;
 use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use function sprintf;
 
@@ -30,43 +30,22 @@ final readonly class RegistrationSignedWithHeldKeys
      */
     public function assertHolds(Tenant $tenant, ClientRegistration $registration, ClientMetadata $metadata): void
     {
-        $this->assertSignedWithAHeldKey($tenant, $registration, 'id_token_signed_response_alg', 'ID tokens', $registration->idToken, $metadata);
-        $this->assertSignedWithAHeldKey(
-            $tenant,
-            $registration,
-            'authorization_signed_response_alg',
-            'authorization responses',
-            $registration->authorizationResponse,
-            $metadata,
-        );
-        $this->assertSignedWithAHeldKey($tenant, $registration, 'userinfo_signed_response_alg', 'UserInfo responses', $registration->userInfo, $metadata);
-    }
+        foreach (SignedDocument::of($registration) as $document) {
+            $algorithm = $document->format->signature;
+            if ($algorithm === null || ! $metadata->has($document->member) || $this->held->holds($tenant, $algorithm)) {
+                continue;
+            }
 
-    /**
-     * @throws InvalidClientMetadataException
-     */
-    private function assertSignedWithAHeldKey(
-        Tenant $tenant,
-        ClientRegistration $registration,
-        string $member,
-        string $documents,
-        ResponseFormat $format,
-        ClientMetadata $metadata,
-    ): void {
-        $algorithm = $format->signature;
-        if ($algorithm === null || ! $metadata->has($member) || $this->held->holds($tenant, $algorithm)) {
-            return;
+            throw new InvalidClientMetadataException(
+                $document->member,
+                $metadata->sourceOf($document->member),
+                sprintf(
+                    'The client "%s" would receive its %s signed with %s, which this tenant holds no active key for.',
+                    $registration->clientId,
+                    $document->documents,
+                    $algorithm->name(),
+                ),
+            );
         }
-
-        throw new InvalidClientMetadataException(
-            $member,
-            $metadata->sourceOf($member),
-            sprintf(
-                'The client "%s" would receive its %s signed with %s, which this tenant holds no active key for.',
-                $registration->clientId,
-                $documents,
-                $algorithm->name(),
-            ),
-        );
     }
 }
