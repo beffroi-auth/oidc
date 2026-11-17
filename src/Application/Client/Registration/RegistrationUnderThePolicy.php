@@ -35,6 +35,7 @@ final readonly class RegistrationUnderThePolicy
     public function __construct(
         private ClientMetadataReader $reader,
         private RegistrationHeldToTheTenant $tenantOffer,
+        private RegistrationSignedWithHeldKeys $tenantKeys,
         private RegistrationHeldToItsSector $sector,
         private SecretDrawer $secrets,
         private PasswordHasherInterface $hasher,
@@ -96,6 +97,7 @@ final readonly class RegistrationUnderThePolicy
 
         $registration = $this->reader->read($clientId, $metadata, $secret !== null);
         $this->tenantOffer->assertHolds($tenant, $registration, $metadata);
+        $this->tenantKeys->assertHolds($tenant, $registration, $metadata);
         $this->sector->assertHolds($registration, $metadata);
 
         return new KeptRegistration(

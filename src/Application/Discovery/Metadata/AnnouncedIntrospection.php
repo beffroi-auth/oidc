@@ -6,9 +6,11 @@ namespace Beffroi\Oidc\Application\Discovery\Metadata;
 
 use function array_filter;
 use function array_values;
+use Beffroi\Core\Application\Key\HeldSigningAlgorithms;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Application\Client\MethodNames;
 use Beffroi\Oidc\Application\Discovery\AnnouncedAlgorithms;
+use Beffroi\Oidc\Application\Key\AlgorithmNames;
 use Beffroi\Oidc\Domain\Client\ClientAuthenticationMethodInterface;
 use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Beffroi\Oidc\Port\EndpointLocatorInterface;
@@ -23,6 +25,7 @@ final readonly class AnnouncedIntrospection implements MetadataContributorInterf
         private EndpointLocatorInterface $endpoints,
         private ClientAuthenticationMethodsInterface $methods,
         private AnnouncedAlgorithms $algorithms,
+        private HeldSigningAlgorithms $held,
     ) {
     }
 
@@ -37,7 +40,7 @@ final readonly class AnnouncedIntrospection implements MetadataContributorInterf
             'introspection_endpoint' => $this->endpoints->locate($tenant)->introspection,
             'introspection_endpoint_auth_methods_supported' => MethodNames::of($methods),
             'introspection_endpoint_auth_signing_alg_values_supported' => $this->algorithms->assertionSigning($methods),
-            'introspection_signing_alg_values_supported' => $this->algorithms->defaultSigning(),
+            'introspection_signing_alg_values_supported' => AlgorithmNames::of($this->held->defaultOf($tenant)),
         ];
     }
 }

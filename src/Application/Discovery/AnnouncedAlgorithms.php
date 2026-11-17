@@ -24,19 +24,14 @@ final readonly class AnnouncedAlgorithms
     }
 
     /**
+     * The wired algorithms, those a signature of a client is verified with: what the tenant signs with is what it holds
+     * a key for (HeldSigningAlgorithms).
+     *
      * @return non-empty-list<string>
      */
     public function signing(): array
     {
         return AlgorithmNames::of($this->signature->all());
-    }
-
-    /**
-     * @return non-empty-list<string>
-     */
-    public function defaultSigning(): array
-    {
-        return AlgorithmNames::of([$this->signature->defaultAlgorithm()]);
     }
 
     /**
