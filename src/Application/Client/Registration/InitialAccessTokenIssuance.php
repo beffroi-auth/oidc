@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Client\Registration;
 
+use Beffroi\Core\Domain\Identity\Subject;
+use Beffroi\Core\Domain\Session\RequestContext;
+use Beffroi\Oidc\Domain\Event\InitialAccessTokenIssued;
 use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
 use Beffroi\Oidc\Port\AdministrationResourceInterface;
 use DateInterval;
@@ -19,11 +22,13 @@ use Beffroi\Oidc\Port\InitialAccessTokenRepositoryInterface;
 use function in_array;
 use function is_array;
 use Psr\Clock\ClockInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use function sprintf;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Checks no permission: whoever can call it already runs the deployment.
+ * Checks no permission: the console holds the authority of the host, and the administration API calls it for an
+ * administrator it has found (decision 0038).
  */
 final readonly class InitialAccessTokenIssuance
 {
@@ -33,6 +38,7 @@ final readonly class InitialAccessTokenIssuance
         private ClockInterface $clock,
         private ClientMetadataReader $reader,
         private AdministrationResourceInterface $administration,
+        private EventDispatcherInterface $events,
     ) {
     }
 
@@ -47,8 +53,46 @@ final readonly class InitialAccessTokenIssuance
         string $name,
         int $registrationsAllowed,
         DateInterval $validFor,
+        RequestContext $context,
         ?GrantedMembers $granted = null,
         bool $administration = false,
+    ): IssuedInitialAccessToken {
+        return $this->issueOnce($tenant, $name, $registrationsAllowed, $validFor, $context, null, $granted, $administration);
+    }
+
+    /**
+     * The act names the administrator (decision 0038).
+     *
+     * @param string $name never empty
+     * @param int $registrationsAllowed at least one
+     *
+     * @throws InvalidArgumentException
+     */
+    public function issueByAnAdministrator(
+        Tenant $tenant,
+        string $name,
+        int $registrationsAllowed,
+        DateInterval $validFor,
+        Subject $administrator,
+        RequestContext $context,
+        ?GrantedMembers $granted = null,
+        bool $administration = false,
+    ): IssuedInitialAccessToken {
+        return $this->issueOnce($tenant, $name, $registrationsAllowed, $validFor, $context, $administrator, $granted, $administration);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function issueOnce(
+        Tenant $tenant,
+        string $name,
+        int $registrationsAllowed,
+        DateInterval $validFor,
+        RequestContext $context,
+        ?Subject $administrator,
+        ?GrantedMembers $granted,
+        bool $administration,
     ): IssuedInitialAccessToken {
         $api = $this->administration->administrationResourceOf($tenant);
         if ($administration && $api === null) {
@@ -75,6 +119,7 @@ final readonly class InitialAccessTokenIssuance
             $administration,
         );
         $this->tokens->save($token);
+        $this->events->dispatch(new InitialAccessTokenIssued($issuedAt, $tenant, $token->id, $context, $administrator));
 
         return new IssuedInitialAccessToken($token, $value);
     }

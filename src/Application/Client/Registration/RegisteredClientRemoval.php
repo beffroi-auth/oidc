@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Client\Registration;
 
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Oidc\Domain\Client\ClientRecord;
 use Beffroi\Oidc\Domain\Event\RegisteredClientDeleted;
@@ -25,7 +26,20 @@ final readonly class RegisteredClientRemoval
 
     public function remove(ClientRecord $record, RequestContext $context): void
     {
+        $this->removeOnce($record, $context, null);
+    }
+
+    /**
+     * The act names the administrator (decision 0038).
+     */
+    public function removeByAnAdministrator(ClientRecord $record, Subject $administrator, RequestContext $context): void
+    {
+        $this->removeOnce($record, $context, $administrator);
+    }
+
+    private function removeOnce(ClientRecord $record, RequestContext $context, ?Subject $administrator): void
+    {
         $this->clients->remove($record);
-        $this->events->dispatch(new RegisteredClientDeleted($context->receivedAt, $record->tenant, $record->clientId, $context));
+        $this->events->dispatch(new RegisteredClientDeleted($context->receivedAt, $record->tenant, $record->clientId, $context, $administrator));
     }
 }
