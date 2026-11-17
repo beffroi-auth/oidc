@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Administration;
 
 use Beffroi\Oidc\Domain\Event\JournalReadByAnAdministrator;
+use Beffroi\Oidc\Domain\Event\MembershipReadByAnAdministrator;
 use Beffroi\Oidc\Domain\Event\PersonReadByAnAdministrator;
 use Beffroi\Oidc\Domain\Event\SessionsReadByAnAdministrator;
 
@@ -21,5 +22,6 @@ final class ReadsByAnAdministrator
         PersonReadByAnAdministrator::NAME,
         SessionsReadByAnAdministrator::NAME,
         JournalReadByAnAdministrator::NAME,
+        MembershipReadByAnAdministrator::NAME,
     ];
 }
