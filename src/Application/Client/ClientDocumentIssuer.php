@@ -63,10 +63,12 @@ final readonly class ClientDocumentIssuer
 
     /**
      * @param array<string, mixed> $claims
+     * @param array<string, mixed> $signatureHeader the members of the JWS header besides "alg" and "kid"
+     * @param array<string, mixed> $encryptionHeader the members of the JWE header besides "alg", "enc", "kid" and "cty"
      *
      * @throws LogicException when the shape neither signs nor encrypts
      */
-    public function issue(Client $client, AddressedFormat $addressed, array $claims): string
+    public function issue(Client $client, AddressedFormat $addressed, array $claims, array $signatureHeader = [], array $encryptionHeader = []): string
     {
         $format = $addressed->format;
         if ($format->isPlain()) {
@@ -76,18 +78,15 @@ final readonly class ClientDocumentIssuer
             ));
         }
         $payload = JwtPayload::encode($claims);
-        $header = [];
         if ($format->isSigned) {
-            $payload = $addressed->signingKey()->sign($payload);
-            $header = [
-                'cty' => self::NESTED,
-            ];
+            $payload = $addressed->signingKey()->sign($payload, $signatureHeader);
+            $encryptionHeader['cty'] = self::NESTED;
         }
         $encryption = $format->encryption;
         if ($encryption === null) {
             return $payload;
         }
 
-        return $this->encrypter->encrypt($addressed->recipient(), $encryption, $payload, $header);
+        return $this->encrypter->encrypt($addressed->recipient(), $encryption, $payload, $encryptionHeader);
     }
 }
