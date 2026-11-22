@@ -34,7 +34,7 @@ final readonly class AuthenticatedClient
     }
 
     /**
-     * FAPI 2.0 Security Profile §5.3.1
+     * FAPI 2.0 Security Profile §5.3.2.1
      */
     public function provesWhatItsClientRequires(): bool
     {

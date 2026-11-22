@@ -53,7 +53,7 @@ final readonly class TokenHandler
             ->authenticate($tenant, $endpoint, $authorizationHeader, $parameters, $context, $certificate)
             ->alsoProving($this->proofs->verify($dpopProof, 'POST', $endpoint, $context->receivedAt));
         if (! $client->provesWhatItsClientRequires()) {
-            throw new InvalidRequestException('The tokens of this client are bound to what the request proves it holds, and this request proves neither a certificate nor a key (FAPI 2.0 Security Profile section 5.3.1).');
+            throw new InvalidRequestException('The tokens of this client are bound to what the request proves it holds, and this request proves neither a certificate nor a key (FAPI 2.0 Security Profile section 5.3.2.1).');
         }
         // Checked before any grant reads what the request spends, so that a request proving nothing is refused
         // rather than told to come back later.
