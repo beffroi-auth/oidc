@@ -223,7 +223,7 @@ final readonly class ClientMetadataReader
                 $tokenExchange,
                 $this->mayAct($clientId, $metadata),
                 $this->authorizationDetailsTypes($clientId, $metadata),
-                $this->flag($clientId, 'tls_client_certificate_bound_access_tokens', $metadata),
+                $this->certificateBoundTokens($clientId, $metadata),
                 $this->subjectType($clientId, $metadata),
                 $this->clientUri($clientId, 'sector_identifier_uri', $metadata),
                 $this->initiateLoginUri($clientId, $metadata),
@@ -966,6 +966,30 @@ final readonly class ClientMetadataReader
             sprintf('The %s option of the client "%s" must be one of: %s.', $option, $clientId, implode(', ', $wired)),
             $previous,
         );
+    }
+
+    /**
+     * RFC 8705 §3.4
+     *
+     * @throws UnreadableClientMetadataException
+     */
+    private function certificateBoundTokens(string $clientId, ClientMetadata $metadata): bool
+    {
+        $option = 'tls_client_certificate_bound_access_tokens';
+        $bound = $this->flag($clientId, $option, $metadata);
+        if ($bound && ! CertificateBinding::servedBy($this->methods->clientAuthenticationMethods())) {
+            throw new InvalidClientMetadataException(
+                $option,
+                $metadata->sourceOf($option),
+                sprintf(
+                    'The client "%s" registers %s, and no client authentication method of this provider reads the certificate of a connection to bind a token to (RFC 8705 section 3).',
+                    $clientId,
+                    $option,
+                ),
+            );
+        }
+
+        return $bound;
     }
 
     /**
