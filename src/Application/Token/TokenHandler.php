@@ -37,7 +37,7 @@ final readonly class TokenHandler
      * @param array<string, mixed> $parameters the form parameters of the request body
      *
      * @throws OAuth2Exception
-     * @throws ClientKeysUnavailableException before anything the request presented is spent
+     * @throws ClientKeysUnavailableException before anything the request presented is spent, unless the key the ID token is addressed to receives no JWE
      * @throws KmsUnavailableException before anything the request presented is spent
      */
     public function handle(

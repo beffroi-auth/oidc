@@ -32,6 +32,8 @@ interface IdTokenIssuerInterface
 
     /**
      * @return string the compact JWS, or the compact JWE that carries it
+     *
+     * @throws ClientKeysUnavailableException when the key the token is addressed to receives no JWE
      */
     public function issue(UserAuthorizationInterface $authorization, AccessToken $accessToken, AddressedIdToken $addressed, DateTimeImmutable $now): string;
 }

@@ -67,6 +67,7 @@ final readonly class ClientDocumentIssuer
      * @param array<string, mixed> $encryptionHeader the members of the JWE header besides "alg", "enc", "kid" and "cty"
      *
      * @throws LogicException when the shape neither signs nor encrypts
+     * @throws ClientKeysUnavailableException when the key the document is addressed to receives no JWE
      */
     public function issue(Client $client, AddressedFormat $addressed, array $claims, array $signatureHeader = [], array $encryptionHeader = []): string
     {
