@@ -27,11 +27,20 @@ final readonly class RefreshTokenRevocation
     }
 
     /**
+     * Read again after each pass until a pass revokes nothing, so that a successor a refresh in flight wrote meanwhile
+     * is revoked too (RFC 9700 §4.14.2).
+     *
      * @return list<RefreshToken> the tokens revoked by this call
      */
     public function revokeFamily(Uuid $family, DateTimeImmutable $now): array
     {
-        return $this->revokeAll($this->refreshTokens->findByFamily($family), $now);
+        $revoked = [];
+        do {
+            $pass = $this->revokeAll($this->refreshTokens->findByFamily($family), $now);
+            $revoked = [...$revoked, ...$pass];
+        } while ($pass !== []);
+
+        return $revoked;
     }
 
     /**

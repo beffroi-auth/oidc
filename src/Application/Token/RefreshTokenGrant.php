@@ -24,6 +24,7 @@ use Beffroi\Oidc\Exception\InvalidGrantException;
 use Beffroi\Oidc\Exception\InvalidScopeException;
 use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Oidc\Port\RefreshTokenRotationInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
@@ -32,7 +33,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  *
  * Only a token protected by neither client authentication nor a binding is rotated: rotating another would lock
  * out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9). What the KMS opens is read before the
- * token is rotated, so a KMS that does not answer leaves the token as it was.
+ * token is rotated, so a KMS that does not answer leaves the token as it was. Of two requests presenting one token,
+ * the one that loses the rotation in the store presented a token that is no longer valid: a reuse.
  */
 final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 {
@@ -40,6 +42,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 
     public function __construct(
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private RefreshTokenRotationInterface $rotations,
         private RecordedGrantsInterface $grants,
         private RefreshTokenRevocation $revocation,
         private SubjectsOfSessionsInterface $subjects,
@@ -108,9 +111,13 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
         if (! $token->rotatesOnUse()) {
             return $this->issuer->issue($authorization, null, $context, $now, $addressed);
         }
-        $token->rotate($now);
-        $this->refreshTokens->save($token);
+        // Written before the rotation is claimed, so that a revocation of the family running meanwhile finds it.
         $successor = $this->issuer->refreshToken($token->family, $authorization, $now);
+        if (! $this->rotations->rotate($token, $now)) {
+            $this->reused($token, $context, $now);
+
+            throw new InvalidGrantException(self::INVALID);
+        }
         $this->events->dispatch(new RefreshTokenRotated(
             $successor->token->issuedAt,
             $successor->token->tenant,

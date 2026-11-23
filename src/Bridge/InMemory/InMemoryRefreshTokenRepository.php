@@ -6,13 +6,15 @@ namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_filter;
 use function array_values;
+use DateTimeImmutable;
 use Beffroi\Oidc\Domain\Consent\Consent;
 use Beffroi\Oidc\Domain\Token\RefreshToken;
 use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
+use Beffroi\Oidc\Port\RefreshTokenRotationInterface;
 use Beffroi\Oidc\Port\RefreshTokensOfAConsentInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInterface, RefreshTokensOfAConsentInterface
+final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInterface, RefreshTokenRotationInterface, RefreshTokensOfAConsentInterface
 {
     /**
      * @var array<string, RefreshToken> by token hash
@@ -44,6 +46,20 @@ final class InMemoryRefreshTokenRepository implements RefreshTokenRepositoryInte
     public function ofConsent(Consent $consent): array
     {
         return array_values(array_filter($this->tokens, static fn (RefreshToken $token): bool => $consent->covers($token->session, $token->clientId)));
+    }
+
+    public function rotate(RefreshToken $token, DateTimeImmutable $now): bool
+    {
+        $stored = $this->tokens[$token->tokenHash] ?? null;
+        if ($stored === null || $stored->isRotated() || $stored->isRevoked()) {
+            return false;
+        }
+        $stored->rotate($now);
+        if ($token !== $stored) {
+            $token->rotate($now);
+        }
+
+        return true;
     }
 
     public function save(RefreshToken $token): void
