@@ -16,9 +16,9 @@ use function sprintf;
 final class InMemorySoftwareStatementReplayGuard implements SoftwareStatementReplayGuardInterface
 {
     /**
-     * @var array<string, DateTimeImmutable>
+     * @var array<string, DateTimeImmutable> until when each identifier is remembered
      */
-    private array $seen = [];
+    public private(set) array $seen = [];
 
     public function remember(Tenant $tenant, StatementIssuer $issuer, string $jti, DateTimeImmutable $expiresAt): bool
     {

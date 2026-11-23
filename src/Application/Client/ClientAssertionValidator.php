@@ -64,19 +64,19 @@ final readonly class ClientAssertionValidator
         if ($issuedAt > $now->add($this->leeway)) {
             throw $this->refuse($method, $clientId, 'the client assertion is issued in the future');
         }
-        $this->rememberOnce($method, $assertion, $client, $expiresAt);
+        $this->rememberOnce($method, $assertion, $client, $expiresAt->add($this->leeway));
     }
 
     /**
      * @throws ClientAuthenticationFailure
      */
-    private function rememberOnce(AssertionMethodInterface $method, UnverifiedJwt $assertion, Client $client, DateTimeImmutable $expiresAt): void
+    private function rememberOnce(AssertionMethodInterface $method, UnverifiedJwt $assertion, Client $client, DateTimeImmutable $lastAccepted): void
     {
         $jti = $assertion->claim('jti');
         if ($jti === null) {
             throw $this->refuse($method, $client->registration->clientId, 'a client assertion carries a "jti"');
         }
-        if (! $this->replays->remember($client, $jti, $expiresAt)) {
+        if (! $this->replays->remember($client, $jti, $lastAccepted)) {
             throw ClientAuthenticationFailure::refused(ClientAuthenticationFailureReason::ReplayedAssertion, $client->registration->clientId, $method->name());
         }
     }
