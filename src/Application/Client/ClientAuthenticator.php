@@ -170,7 +170,15 @@ final readonly class ClientAuthenticator
      */
     private function announce(Tenant $tenant, RequestContext $context, ?string $authorizationHeader, ClientAuthenticationFailure $failure): OAuth2Exception
     {
-        $this->events->dispatch(new ClientAuthenticationFailed($this->clock->now(), $tenant, $context, $failure->reason, $failure->clientId, $failure->method));
+        $held = $failure->clientId === null ? null : $this->clients->findByClientId($tenant, $failure->clientId);
+        $this->events->dispatch(new ClientAuthenticationFailed(
+            $this->clock->now(),
+            $tenant,
+            $context,
+            $failure->reason,
+            $held?->registration->clientId,
+            $failure->method,
+        ));
         if ($failure->malformedRequest) {
             return new InvalidRequestException($failure->description);
         }
