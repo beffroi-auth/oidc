@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client\Registration;
 
+use DateInterval;
 use DateTimeImmutable;
 
 /**
@@ -15,5 +16,10 @@ final readonly class ClientRetention
         public DateTimeImmutable $usedSince,
         public DateTimeImmutable $registeredSince,
     ) {
+    }
+
+    public static function at(DateTimeImmutable $now, DateInterval $unusedFor, DateInterval $neverUsedFor): self
+    {
+        return new self($now->sub($unusedFor), $now->sub($neverUsedFor));
     }
 }

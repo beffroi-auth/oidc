@@ -7,7 +7,7 @@ namespace Beffroi\Oidc\Application\Client\Registration;
 use function count;
 use Beffroi\Core\Domain\Session\RequestContext;
 use Beffroi\Core\Domain\Tenant\Tenant;
-use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
+use Beffroi\Oidc\Port\ClientRetentionPolicyInterface;
 use Beffroi\Oidc\Port\UnusedClientsInterface;
 use Psr\Clock\ClockInterface;
 
@@ -23,7 +23,7 @@ final readonly class UnusedClientRemoval
      */
     public function __construct(
         private iterable $sources,
-        private ClientRegistrationPolicyInterface $policies,
+        private ClientRetentionPolicyInterface $retentions,
         private RegisteredClientRemoval $removal,
         private ClockInterface $clock,
         private int $perRun = self::PER_RUN,
@@ -35,11 +35,10 @@ final readonly class UnusedClientRemoval
      */
     public function removeUnused(Tenant $tenant, RequestContext $context): array
     {
-        $policy = $this->policies->policyFor($tenant);
-        if ($policy === null) {
+        $retention = $this->retentions->retentionFor($tenant, $this->clock->now());
+        if ($retention === null) {
             return [];
         }
-        $retention = $policy->retentionAt($this->clock->now());
         $removed = [];
         foreach ($this->sources as $source) {
             $left = $this->perRun - count($removed);
