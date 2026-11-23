@@ -85,6 +85,7 @@ final readonly class AuthorizationCodeGrant implements IssuesRefreshTokensInterf
 
         if (
             ! $record->client->equals($client->client)
+            || $record->isRevoked()
             || $record->isExpired($now)
             || ! $record->redirectUri->matches($redirectUri)
             || ! self::pkceSatisfied($record, $codeVerifier)

@@ -80,7 +80,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
         if (! $this->records->consume($record, $now)) {
             throw new InvalidGrantException(self::INVALID);
         }
-        if (! $granted) {
+        if (! $granted || $record->isRevoked()) {
             throw new InvalidGrantException(self::INVALID);
         }
 
