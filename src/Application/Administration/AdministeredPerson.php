@@ -9,6 +9,7 @@ use Beffroi\Core\Port\CredentialRepositoryInterface;
 use Beffroi\Core\Port\GroupsOfAPersonInterface;
 use Beffroi\Oidc\Domain\Administration\ActingAdministrator;
 use Beffroi\Oidc\Domain\Administration\ReadPerson;
+use Beffroi\Oidc\Exception\PersonsBudgetSpentException;
 use function trim;
 
 /**
@@ -24,15 +25,20 @@ final readonly class AdministeredPerson
         private CredentialRepositoryInterface $credentials,
         private GroupsOfAPersonInterface $groups,
         private PersonDelivery $delivery,
+        private PersonsDelivered $delivered,
     ) {
     }
 
+    /**
+     * @throws PersonsBudgetSpentException when the budget of the administrator has no person left
+     */
     public function named(ActingAdministrator $administrator, string $username, RequestContext $context): ?ReadPerson
     {
         $user = $this->persons->named($administrator->tenant, trim($username));
         if ($user === null) {
             return null;
         }
+        $this->delivered->spend($administrator, 1, $context);
         $read = new ReadPerson($user, $this->credentials->findByUser($user), $this->groups->of($user));
         $this->delivery->to($administrator, $user, $context);
 
