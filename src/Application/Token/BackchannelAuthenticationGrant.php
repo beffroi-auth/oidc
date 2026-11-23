@@ -62,6 +62,9 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
         if ($record->isDenied()) {
             throw new AccessDeniedException('The end user denied the request.', false);
         }
+        if ($record->isRevoked()) {
+            throw new InvalidGrantException(self::INVALID);
+        }
         if (! $record->isApproved()) {
             // CIBA Core §11: every poll is saved, the refused ones included, so asking again buys no faster answer.
             $tooSoon = $record->polledTooSoon($now);
@@ -80,7 +83,7 @@ final readonly class BackchannelAuthenticationGrant implements AsksTheUserThroug
         if (! $this->records->consume($record, $now)) {
             throw new InvalidGrantException(self::INVALID);
         }
-        if (! $granted || $record->isRevoked()) {
+        if (! $granted) {
             throw new InvalidGrantException(self::INVALID);
         }
 

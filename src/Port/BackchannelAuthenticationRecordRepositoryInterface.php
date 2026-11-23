@@ -19,6 +19,8 @@ interface BackchannelAuthenticationRecordRepositoryInterface
     public function findByAuthRequestIdHash(string $authRequestIdHash): ?BackchannelAuthenticationRecord;
 
     /**
+     * The requests made for this user that are neither answered, spent, revoked nor expired.
+     *
      * @return list<BackchannelAuthenticationRecord> oldest first
      */
     public function awaitingAnAnswerBy(User $user, DateTimeImmutable $now): array;

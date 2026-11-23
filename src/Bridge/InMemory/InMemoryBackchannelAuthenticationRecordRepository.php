@@ -61,7 +61,7 @@ final class InMemoryBackchannelAuthenticationRecordRepository implements
     {
         $waiting = [];
         foreach ($this->records as $record) {
-            if (! $record->mayBeAnsweredBy($user) || $record->isAnswered() || $record->isUsed() || $record->isExpired($now)) {
+            if (! $record->mayBeAnsweredBy($user) || $record->isAnswered() || $record->isUsed() || $record->isRevoked() || $record->isExpired($now)) {
                 continue;
             }
             $waiting[] = $record;
