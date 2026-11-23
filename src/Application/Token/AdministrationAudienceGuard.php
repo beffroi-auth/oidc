@@ -9,6 +9,7 @@ use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\AccessToken;
 use Beffroi\Oidc\Domain\Token\AddressedAccessToken;
 use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
+use Beffroi\Oidc\Exception\InvalidGrantException;
 use Beffroi\Oidc\Exception\InvalidTargetException;
 use Beffroi\Oidc\Port\AccessTokenIssuerInterface;
 use DateTimeImmutable;
@@ -38,10 +39,11 @@ final readonly class AdministrationAudienceGuard implements AccessTokenIssuerInt
 
     /**
      * @throws InvalidTargetException when the token would be addressed to the administration API of its tenant and its authorization holds to less than the reservation
+     * @throws InvalidGrantException  when the token would be addressed to that API and the session it descends from has ended or expired
      */
     public function issue(AuthorizationInterface $authorization, AddressedAccessToken $addressed, DateTimeImmutable $now): AccessToken
     {
-        $this->administration->assertMayBeAddressedBy($authorization);
+        $this->administration->assertMayBeAddressedBy($authorization, $now);
 
         return $this->issuer->issue($authorization, $addressed, $now);
     }

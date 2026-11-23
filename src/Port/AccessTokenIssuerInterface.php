@@ -12,6 +12,7 @@ use Beffroi\Oidc\Domain\Token\AccessToken;
 use Beffroi\Oidc\Domain\Token\AddressedAccessToken;
 use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
+use Beffroi\Oidc\Exception\InvalidGrantException;
 use Beffroi\Oidc\Exception\InvalidTargetException;
 use Beffroi\Oidc\Exception\LogicException;
 
@@ -37,6 +38,7 @@ interface AccessTokenIssuerInterface
     /**
      * @throws LogicException when the token needs something that was not read when it was addressed
      * @throws InvalidTargetException when the token is addressed to the administration API and its authorization holds to less than its reservation (decision 0038)
+     * @throws InvalidGrantException  when the token is addressed to the administration API and the session it descends from has ended or expired (decision 0038)
      */
     public function issue(AuthorizationInterface $authorization, AddressedAccessToken $addressed, DateTimeImmutable $now): AccessToken;
 }
