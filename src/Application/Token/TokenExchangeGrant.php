@@ -58,7 +58,7 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
             throw new InvalidRequestException('The client is not registered to act for a user, and the token it presented is about one (RFC 8693 section 2.1).');
         }
         $actor = $this->actorOf($client, $request, $registered, $subjectToken, $now);
-        self::assertTheSubjectAllows($client, $subjectToken, $actor);
+        self::assertTheSubjectAllows($client, $subjectToken);
 
         $registration = $client->client->registration;
         $granted = self::grantedResources($subjectToken);
@@ -110,7 +110,8 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     /**
      * RFC 8693 §1.3, §4.1
      *
-     * The actor token must name the client that presents it, or a client could write somebody else into the "act".
+     * The actor token is one the client holds for itself, or a client could write somebody else, a person included,
+     * into the "act".
      *
      * @throws InvalidArgumentException when the wiring does not hold together
      * @throws InvalidRequestException
@@ -130,8 +131,8 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
             return $subjectToken->actor;
         }
         $actorToken = $this->present($client, $request, $registered, 'actor_token', $now);
-        if ($actorToken->client->registration->clientId !== $client->client->registration->clientId) {
-            throw new InvalidRequestException('The actor token names the client that presents it (RFC 8693 section 2.1).');
+        if (! $actorToken->isHeldForItselfBy($client->client)) {
+            throw new InvalidRequestException('The actor token is one the client that presents it holds for itself, and names no person (RFC 8693 section 2.1).');
         }
 
         return new Actor($actorToken->subject, $subjectToken->actor);
@@ -162,17 +163,18 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     /**
      * RFC 8693 §4.4
      *
-     * Without an actor the client itself is compared, impersonation being acting in the strongest sense.
+     * The client that will hold the new token is compared, never an actor the presented token names: it is the actor
+     * of a delegation, and an impersonation is acting in the strongest sense.
      *
      * @throws InvalidRequestException
      */
-    private static function assertTheSubjectAllows(AuthenticatedClient $client, PresentedToken $subjectToken, ?Actor $actor): void
+    private static function assertTheSubjectAllows(AuthenticatedClient $client, PresentedToken $subjectToken): void
     {
         $mayAct = $subjectToken->mayAct;
         if ($mayAct === null) {
             return;
         }
-        if (! $mayAct->allows($actor ?? new Actor(ClientSubject::of($client->client)))) {
+        if (! $mayAct->allows(new Actor(ClientSubject::of($client->client)))) {
             throw new InvalidRequestException('The presented token names somebody else as the party that may act for its subject (RFC 8693 section 4.4).');
         }
     }
@@ -221,17 +223,21 @@ final readonly class TokenExchangeGrant implements ExchangesATokenInterface
     /**
      * RFC 8693 §2.1, RFC 8707 §2
      *
-     * A token addressed to its own client is refused: the new one could only reach where the old one never did.
+     * A token addressed to its own client is refused: the new one could only reach where the old one never did. It is
+     * refused before its audience is read as resources, which a client identifier in the form of a URI would pass for.
      *
      * @throws InvalidTargetException
      */
     private static function grantedResources(PresentedToken $subjectToken): ResourceIndicators
     {
+        if ($subjectToken->audience->has($subjectToken->client->registration->clientId)) {
+            throw new InvalidTargetException('The presented token is addressed to the client that holds it and to no resource, and an exchange narrows what it is addressed to (RFC 8693 section 2.1).');
+        }
         try {
             return ResourceIndicators::of($subjectToken->audience->values);
         } catch (InvalidArgumentException $exception) {
             throw new InvalidTargetException(
-                'The presented token is addressed to the client that holds it and to no resource, and an exchange narrows what it is addressed to (RFC 8693 section 2.1).',
+                'The presented token is addressed to something that is not a resource, and an exchange narrows what it is addressed to (RFC 8707 section 2).',
                 previous: $exception,
             );
         }

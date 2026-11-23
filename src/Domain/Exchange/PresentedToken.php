@@ -37,4 +37,14 @@ final readonly class PresentedToken
     {
         return $this->signIn !== null || $this->person !== null;
     }
+
+    /**
+     * RFC 6749 §4.4
+     */
+    public function isHeldForItselfBy(Client $client): bool
+    {
+        $clientId = $client->registration->clientId;
+
+        return ! $this->isAboutAUser() && $this->client->registration->clientId === $clientId && $this->subject->value === $clientId;
+    }
 }
