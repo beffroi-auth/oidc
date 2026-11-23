@@ -15,6 +15,7 @@ use Beffroi\Oidc\Domain\Authorization\AuthenticationSnapshot;
 use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Beffroi\Oidc\Domain\Exchange\Actor;
 use Beffroi\Oidc\Domain\Scope\Scopes;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
 use Beffroi\Oidc\Domain\Token\TokenAudience;
 use Beffroi\Oidc\Domain\Token\TokenSignIn;
 use Beffroi\Oidc\Domain\Token\VerifiedAccessToken;
@@ -27,8 +28,6 @@ use Beffroi\Oidc\Port\ConfirmationReaderInterface;
 use function is_array;
 use function is_int;
 use function is_string;
-use function json_decode;
-use const JSON_THROW_ON_ERROR;
 use JsonException;
 use SensitiveParameter;
 use function str_contains;
@@ -165,8 +164,8 @@ final readonly class JwtAccessTokenVerifier implements AccessTokenVerifierInterf
      */
     private static function decode(string $payload): array
     {
-        $claims = json_decode($payload, true, self::MAX_DEPTH, JSON_THROW_ON_ERROR);
-        if (! is_array($claims)) {
+        $claims = JwtPayload::decode($payload, self::MAX_DEPTH);
+        if ($claims === null) {
             throw InvalidTokenException::notIssuedHere();
         }
 

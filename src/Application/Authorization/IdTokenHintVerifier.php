@@ -12,12 +12,10 @@ use Beffroi\Core\Exception\InvalidJwsException;
 use Beffroi\Core\Port\JwsVerifierInterface;
 use Beffroi\Oidc\Domain\Authorization\IdTokenHint;
 use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
 use Beffroi\Oidc\Domain\Token\TokenAudience;
 use Beffroi\Oidc\Exception\InvalidRequestException;
-use function is_array;
 use function is_string;
-use function json_decode;
-use const JSON_THROW_ON_ERROR;
 use JsonException;
 use Symfony\Component\Uid\Uuid;
 
@@ -91,8 +89,8 @@ final readonly class IdTokenHintVerifier
      */
     private static function decode(string $payload, bool $redirectable): array
     {
-        $claims = json_decode($payload, true, self::MAX_DEPTH, JSON_THROW_ON_ERROR);
-        if (! is_array($claims)) {
+        $claims = JwtPayload::decode($payload, self::MAX_DEPTH);
+        if ($claims === null) {
             throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable);
         }
 

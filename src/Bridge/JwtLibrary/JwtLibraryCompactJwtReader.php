@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
 use Beffroi\Core\Domain\Encoding\JoseExtension;
+use Beffroi\Oidc\Domain\Token\JwtPayload;
 use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
 use Beffroi\Oidc\Exception\InvalidJwtException;
 use Beffroi\Oidc\Port\CompactJwtReaderInterface;
-use function is_array;
 use Jose\Component\Signature\Serializer\CompactSerializer;
-use function json_decode;
-use const JSON_THROW_ON_ERROR;
 use Throwable;
 
 /**
@@ -47,11 +45,11 @@ final readonly class JwtLibraryCompactJwtReader implements CompactJwtReaderInter
             throw new InvalidJwtException('A token a client signs carries its claims; a detached payload is refused.');
         }
         try {
-            $claims = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+            $claims = JwtPayload::decode($payload, 512);
         } catch (Throwable $exception) {
             throw new InvalidJwtException('The claims of a token are a JSON object (RFC 7519 section 7.2).', 0, $exception);
         }
-        if (! is_array($claims)) {
+        if ($claims === null) {
             throw new InvalidJwtException('The claims of a token are a JSON object (RFC 7519 section 7.2).');
         }
 
