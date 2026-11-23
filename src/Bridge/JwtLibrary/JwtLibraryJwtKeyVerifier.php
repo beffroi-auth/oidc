@@ -10,25 +10,18 @@ use Beffroi\Oidc\Exception\InvalidJwtException;
 use Beffroi\Oidc\Port\JwtKeyVerifierInterface;
 use function in_array;
 use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\Core\JWK;
-use Jose\Component\Signature\JWSVerifier;
-use Jose\Component\Signature\Serializer\CompactSerializer;
 use function sprintf;
-use Throwable;
 
 /**
  * Only the keys the client publishes are tried; "jwk", "jku" and "x5c" are ignored (RFC 8725 §3.10).
  */
 final readonly class JwtLibraryJwtKeyVerifier implements JwtKeyVerifierInterface
 {
-    private JWSVerifier $verifier;
-
-    private CompactSerializer $serializer;
+    private JwtLibrarySignature $signature;
 
     public function __construct(AlgorithmManager $algorithms)
     {
-        $this->verifier = new JWSVerifier($algorithms);
-        $this->serializer = new CompactSerializer();
+        $this->signature = new JwtLibrarySignature($algorithms);
     }
 
     public function verify(UnverifiedJwt $jwt, ClientJwks $keys, array $algorithms): void
@@ -39,16 +32,11 @@ final readonly class JwtLibraryJwtKeyVerifier implements JwtKeyVerifierInterface
         }
         $keyId = $jwt->keyId();
         $candidates = $keyId === null ? $keys->keys : [$keys->find($keyId)];
-        try {
-            $jws = $this->serializer->unserialize($jwt->compact);
-        } catch (Throwable $exception) {
-            throw new InvalidJwtException('The token is not a compact JWS.', 0, $exception);
-        }
         foreach ($candidates as $candidate) {
             if ($candidate === null || ($candidate['alg'] ?? $alg) !== $alg || ($candidate['use'] ?? 'sig') !== 'sig') {
                 continue;
             }
-            if ($this->verifier->verifyWithKey($jws, new JWK($candidate), 0)) {
+            if ($this->signature->holdsUnder($jwt, $candidate)) {
                 return;
             }
         }

@@ -11,25 +11,18 @@ use Beffroi\Oidc\Exception\InvalidJwtException;
 use Beffroi\Oidc\Port\ClientAssertionSecretVerifierInterface;
 use function in_array;
 use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\Core\JWK;
-use Jose\Component\Signature\JWSVerifier;
-use Jose\Component\Signature\Serializer\CompactSerializer;
 use function sprintf;
-use Throwable;
 
 /**
  * OIDC Core §9, RFC 7518 §6.4
  */
 final readonly class JwtLibraryClientAssertionSecretVerifier implements ClientAssertionSecretVerifierInterface
 {
-    private JWSVerifier $verifier;
-
-    private CompactSerializer $serializer;
+    private JwtLibrarySignature $signature;
 
     public function __construct(AlgorithmManager $algorithms)
     {
-        $this->verifier = new JWSVerifier($algorithms);
-        $this->serializer = new CompactSerializer();
+        $this->signature = new JwtLibrarySignature($algorithms);
     }
 
     public function verify(UnverifiedJwt $assertion, SharedClientSecret $secret, array $algorithms): void
@@ -38,16 +31,11 @@ final readonly class JwtLibraryClientAssertionSecretVerifier implements ClientAs
         if ($alg === null || ! in_array($alg, $algorithms, true)) {
             throw new InvalidJwtException(sprintf('The client assertion is signed with "%s", which this method does not take.', $alg ?? '?'));
         }
-        try {
-            $jws = $this->serializer->unserialize($assertion->compact);
-        } catch (Throwable $exception) {
-            throw new InvalidJwtException('The client assertion is not a compact JWS.', 0, $exception);
-        }
-        $key = new JWK([
+        $key = [
             'kty' => 'oct',
             'k' => Base64Url::encode($secret->value),
-        ]);
-        if (! $this->verifier->verifyWithKey($jws, $key, 0)) {
+        ];
+        if (! $this->signature->holdsUnder($assertion, $key)) {
             throw new InvalidJwtException('The MAC of the client assertion does not verify against the secret of the client.');
         }
     }

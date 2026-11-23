@@ -44,7 +44,6 @@ use Beffroi\Oidc\Port\BackchannelAuthenticationRecordRepositoryInterface;
 use Beffroi\Oidc\Port\EndpointLocatorInterface;
 use Beffroi\Oidc\Port\PendingApprovalNotifierInterface;
 use Beffroi\Oidc\Port\ServedGrantsInterface;
-use function max;
 use function min;
 use function preg_match;
 use Psr\Clock\ClockInterface;
@@ -287,13 +286,14 @@ final readonly class BackchannelAuthenticationHandler
         if ($requested === null) {
             return min($now->add($this->lifetime), $maximum);
         }
+        $served = $maximum->getTimestamp() - $now->getTimestamp();
         if (preg_match(self::REQUESTED_EXPIRY_PATTERN, $requested) !== 1 || (int) $requested < 1) {
             throw new InvalidRequestException(sprintf(
                 'The requested_expiry parameter is a positive number of seconds (CIBA Core section 7.1); at most %d are served.',
-                $maximum->getTimestamp() - $now->getTimestamp(),
+                $served,
             ));
         }
 
-        return min($now->add(new DateInterval(sprintf('PT%dS', max(1, (int) $requested)))), $maximum);
+        return (int) $requested >= $served ? $maximum : $now->add(new DateInterval(sprintf('PT%dS', (int) $requested)));
     }
 }
