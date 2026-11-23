@@ -7,6 +7,7 @@ namespace Beffroi\Oidc\Domain\Client\Metadata;
 use function array_diff_key;
 use function array_flip;
 use function array_key_exists;
+use Beffroi\Oidc\Domain\Client\RequestObject\UnsignedRequestObjects;
 use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use function sprintf;
 
@@ -28,6 +29,11 @@ final readonly class MembersOfTheDeployment
         'may_act',
         'require_sender_constrained_tokens',
     ];
+
+    /**
+     * Decision 0012: what reads a request object unsigned, written only by whoever declares the client.
+     */
+    private const string UNSIGNED_REQUEST_OBJECTS = 'request_object_signing_alg';
 
     /**
      * @param array<string, mixed> $members
@@ -58,6 +64,16 @@ final readonly class MembersOfTheDeployment
                     ),
                 );
             }
+        }
+        if (($members[self::UNSIGNED_REQUEST_OBJECTS] ?? null) === UnsignedRequestObjects::ALGORITHM) {
+            throw new InvalidClientMetadataException(
+                self::UNSIGNED_REQUEST_OBJECTS,
+                $source->source(),
+                sprintf(
+                    'A client does not register "%s" as its request_object_signing_alg: a request object is read unsigned only for a client whoever declares it names so (decision 0012).',
+                    UnsignedRequestObjects::ALGORITHM,
+                ),
+            );
         }
     }
 }
