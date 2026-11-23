@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use function array_all;
 use function array_is_list;
 use function array_unique;
 use function array_values;
@@ -67,19 +68,27 @@ final readonly class TokenAudience implements Countable, IteratorAggregate
      */
     public static function fromClaim(mixed $aud): self
     {
+        return new self(
+            self::valuesOf($aud) ?? throw new InvalidArgumentException('An "aud" claim is a string or a list of strings (RFC 7519 section 4.1.3).'),
+        );
+    }
+
+    /**
+     * RFC 7519 §4.1.3
+     *
+     * @return list<string>|null in the order of the claim, repeats kept; null when it is neither a string nor a list of strings
+     */
+    public static function valuesOf(mixed $aud): ?array
+    {
         if (is_string($aud)) {
-            return new self([$aud]);
+            return [$aud];
         }
-        if (! is_array($aud) || ! array_is_list($aud)) {
-            throw new InvalidArgumentException('An "aud" claim is a string or a list of strings (RFC 7519 section 4.1.3).');
-        }
-        foreach ($aud as $value) {
-            if (! is_string($value)) {
-                throw new InvalidArgumentException('An "aud" claim is a string or a list of strings (RFC 7519 section 4.1.3).');
-            }
+        if (! is_array($aud) || ! array_is_list($aud) || ! array_all($aud, static fn (mixed $value): bool => is_string($value))) {
+            return null;
         }
 
-        return new self($aud);
+        /** @var list<string> $aud */
+        return $aud;
     }
 
     /**

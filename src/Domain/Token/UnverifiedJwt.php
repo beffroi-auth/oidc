@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Token;
 
+use function array_key_exists;
 use DateTimeImmutable;
 use function is_int;
 use function is_string;
@@ -63,23 +64,27 @@ final readonly class UnverifiedJwt
     }
 
     /**
+     * RFC 7519 §4.1.5
+     *
+     * A JWT without "nbf" has started; one whose "nbf" is not a numeric date never starts.
+     */
+    public function startsAfter(DateTimeImmutable $instant): bool
+    {
+        if (! array_key_exists('nbf', $this->claims)) {
+            return false;
+        }
+        $notBefore = $this->time('nbf');
+
+        return $notBefore === null || $notBefore > $instant;
+    }
+
+    /**
      * RFC 7519 §4.1.3
      *
-     * @return list<string>
+     * @return list<string> none when "aud" is neither a string nor a list of strings
      */
     public function audiences(): array
     {
-        $audience = $this->claims['aud'] ?? null;
-        if (is_string($audience)) {
-            return [$audience];
-        }
-        $audiences = [];
-        foreach ((array) $audience as $value) {
-            if (is_string($value)) {
-                $audiences[] = $value;
-            }
-        }
-
-        return $audiences;
+        return TokenAudience::valuesOf($this->claims['aud'] ?? null) ?? [];
     }
 }

@@ -64,6 +64,9 @@ final readonly class ClientAssertionValidator
         if ($issuedAt > $now->add($this->leeway)) {
             throw $this->refuse($method, $clientId, 'the client assertion is issued in the future');
         }
+        if ($assertion->startsAfter($now->add($this->leeway))) {
+            throw $this->refuse($method, $clientId, 'a client assertion is not accepted before its "nbf" (RFC 7523 section 3)');
+        }
         $this->rememberOnce($method, $assertion, $client, $expiresAt->add($this->leeway));
     }
 
