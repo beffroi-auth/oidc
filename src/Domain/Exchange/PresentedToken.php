@@ -35,6 +35,6 @@ final readonly class PresentedToken
 
     public function isAboutAUser(): bool
     {
-        return $this->signIn !== null;
+        return $this->signIn !== null || $this->person !== null;
     }
 }
