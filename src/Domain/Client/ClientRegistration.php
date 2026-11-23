@@ -327,6 +327,12 @@ final readonly class ClientRegistration
         if ($this->grantTypes === []) {
             throw new InvalidArgumentException(sprintf('The client "%s" is allowed at least one grant type.', $this->clientId));
         }
+        if (array_any($this->resources, fn (ResourceIndicator $resource): bool => $resource->value === $this->clientId)) {
+            throw new InvalidArgumentException(sprintf(
+                'The client "%s" names itself among its resources, and a token asked for a resource would be addressed to the client, which reads UserInfo with it (RFC 8707 section 2, OIDC Core section 5.3).',
+                $this->clientId,
+            ));
+        }
         foreach ([...$this->redirectUris, ...$this->postLogoutRedirectUris] as $redirectUri) {
             if ($this->isPublic() && $redirectUri->isPlainHttpOnAName()) {
                 throw new InvalidArgumentException(sprintf(
