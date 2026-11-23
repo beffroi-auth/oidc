@@ -10,6 +10,7 @@ use function array_find;
 use function array_keys;
 use function array_map;
 use function array_search;
+use function count;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Key\SignatureAlgorithmInterface;
 use Beffroi\Core\Exception\InvalidArgumentException as CoreInvalidArgumentException;
@@ -84,6 +85,8 @@ final readonly class ClientMetadataReader
      * In characters: a name the provider writes into a sentence of a page and of a text message is read at a glance.
      */
     public const int MAX_NAME_LENGTH = 100;
+
+    public const int MOST_VALUES = 100;
 
     private const array MEMBERS = [
         'client_name',
@@ -272,7 +275,7 @@ final readonly class ClientMetadataReader
         }
 
         try {
-            return new Scopes(Scope::parseList($scope));
+            return Scopes::parse($scope);
         } catch (InvalidArgumentException $exception) {
             throw self::keeping($exception, 'scope', $metadata->sourceOf('scope'));
         }
@@ -1063,6 +1066,13 @@ final readonly class ClientMetadataReader
         );
         if (! is_array($value)) {
             throw $refusal;
+        }
+        if (count($value) > self::MOST_VALUES) {
+            throw new InvalidClientMetadataException(
+                $key,
+                $metadata->sourceOf($key),
+                sprintf('The %s option of the client "%s" lists %d values at most.', $key, $clientId, self::MOST_VALUES),
+            );
         }
         $list = [];
         foreach ($value as $item) {

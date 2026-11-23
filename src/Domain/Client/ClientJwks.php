@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Domain\Client;
 
 use function array_any;
 use function array_find;
+use function count;
 use function hash_equals;
 use Beffroi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
 use Beffroi\Core\Domain\Key\KeyUse;
@@ -23,6 +24,8 @@ use function sprintf;
  */
 final readonly class ClientJwks
 {
+    public const int MOST_KEYS = 100;
+
     /**
      * @var non-empty-list<array<string, mixed>>
      */
@@ -35,6 +38,9 @@ final readonly class ClientJwks
     {
         if ($keys === []) {
             throw new InvalidArgumentException('A JWK Set of a client holds at least one key (RFC 7517 section 5).');
+        }
+        if (count($keys) > self::MOST_KEYS) {
+            throw new InvalidArgumentException(sprintf('A JWK Set of a client holds %d keys at most.', self::MOST_KEYS));
         }
         foreach ($keys as $key) {
             $kty = $key['kty'] ?? null;
