@@ -13,7 +13,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * The persons a read of the administration API is about to deliver, spent from the budget of the administrator before
- * any of them is answered or written down as read (decision 0059): a read past the budget delivers nobody, and its
+ * any of them is answered or written down as read (decision 0014): a read past the budget delivers nobody, and its
  * refusal is an act of the administrator.
  */
 final readonly class PersonsDelivered

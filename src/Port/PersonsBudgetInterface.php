@@ -8,7 +8,7 @@ use Beffroi\Oidc\Domain\Administration\ActingAdministrator;
 use Beffroi\Oidc\Exception\PersonsBudgetSpentException;
 
 /**
- * How many persons the reads of one administrator deliver in a window (decision 0059), counted by tenant and by the
+ * How many persons the reads of one administrator deliver in a window (decision 0014), counted by tenant and by the
  * person the token of the request was issued for: never by a client or an address, which several administrators may
  * share.
  */

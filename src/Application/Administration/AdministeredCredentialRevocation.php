@@ -17,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
  * A credential of a person of the tenant, revoked by an administrator through the administration API on the use case
  * `beffroi:user:revoke-credential` calls (decision 0038): it never authenticates again, the sessions it opened stay
  * open, and the act of its revocation names the administrator. One revoked already is left as it is and answered, which
- * is a read of the person (decision 0022) and spends one person of the budget of the administrator (decision 0059).
+ * is a read of the person (decision 0022) and spends one person of the budget of the administrator (decision 0014).
  */
 final readonly class AdministeredCredentialRevocation
 {

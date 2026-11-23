@@ -15,7 +15,7 @@ use Symfony\Component\Uid\Uuid;
  * A person of the tenant enabled again by an administrator through the administration API (decision 0038), on the use
  * case `beffroi:user:enable` calls: the act names the administrator. A person enabled already is answered as they are,
  * which is a read of them (decision 0022). The answer delivers the person, so it spends one person of the budget of the
- * administrator first (decision 0059).
+ * administrator first (decision 0014).
  */
 final readonly class AdministeredEnabling
 {

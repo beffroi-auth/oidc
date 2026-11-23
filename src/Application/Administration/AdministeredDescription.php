@@ -17,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
  * What an administrator says of a person of the tenant through the administration API (decision 0038): each value that
  * changed is a row of the history of the person, and the description one act of theirs, both naming the administrator.
  * A description that changes nothing answers the person as they are, which is a read of them (decision 0022). The
- * answer delivers the person, so it spends one person of the budget of the administrator first (decision 0059).
+ * answer delivers the person, so it spends one person of the budget of the administrator first (decision 0014).
  */
 final readonly class AdministeredDescription
 {

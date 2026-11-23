@@ -26,7 +26,7 @@ use Symfony\Component\Uid\Uuid;
  * The groups of the tenant read by an administrator through the administration API (decision 0038). Counting the
  * members of a group delivers none of them; reading them delivers each one, a page at a time, so each is an act of
  * theirs that names the administrator (decision 0022) and spends one person of the budget of the administrator
- * (decision 0059).
+ * (decision 0014).
  */
 final readonly class AdministeredGroups
 {

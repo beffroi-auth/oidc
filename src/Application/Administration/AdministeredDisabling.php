@@ -16,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
  * A person of the tenant disabled by an administrator through the administration API (decision 0038), on the use case
  * `beffroi:user:disable` calls: the act and the end of each session of theirs name the administrator. A person disabled
  * already is answered as they are, which is a read of them (decision 0022). The answer delivers the person, so it spends
- * one person of the budget of the administrator first (decision 0059).
+ * one person of the budget of the administrator first (decision 0014).
  */
 final readonly class AdministeredDisabling
 {
