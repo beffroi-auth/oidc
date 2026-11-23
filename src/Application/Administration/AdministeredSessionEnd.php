@@ -12,9 +12,9 @@ use Beffroi\Oidc\Domain\Administration\ActingAdministrator;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * An open session of a person of the tenant, ended by an administrator through the administration API on the use case
- * `beffroi:user:revoke-session` calls (decision 0038): its relying parties are told by the back-channel, and the act of
- * its end names the administrator.
+ * A session of a person of the tenant that has not ended, past its expiry or not, ended by an administrator through the
+ * administration API on the use case `beffroi:user:revoke-session` calls (decisions 0031 and 0038): its refresh tokens
+ * are revoked, its relying parties are told by the back-channel, and the act of its end names the administrator.
  */
 final readonly class AdministeredSessionEnd
 {
@@ -26,13 +26,13 @@ final readonly class AdministeredSessionEnd
     }
 
     /**
-     * @return AuthenticationSession|null the session ended, null when the tenant has no person of that identifier or the person no open session of that identifier
+     * @return AuthenticationSession|null the session ended, null when the tenant has no person of that identifier or the person no session of that identifier that has not ended
      */
     public function end(ActingAdministrator $administrator, Uuid $person, Uuid $session, RequestContext $context): ?AuthenticationSession
     {
         $user = $this->persons->find($administrator->tenant, $person);
         $open = $user === null ? null : $this->sessions->find($session);
-        if ($user === null || $open === null || ! $open->user->id->equals($user->id) || ! $open->isActive($context->receivedAt)) {
+        if ($user === null || $open === null || ! $open->user->id->equals($user->id) || $open->hasEnded()) {
             return null;
         }
         $this->terminator->endByAnAdministrator($open, $administrator->user->subject, $context);
