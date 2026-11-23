@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\AuthorizationDetails;
 
+use function array_map;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
+use function is_array;
+use function is_float;
+use function serialize;
 use function sprintf;
 
 /**
@@ -56,5 +60,31 @@ final readonly class AuthorizationDetail
     public function equals(self $other): bool
     {
         return $this->type === $other->type && $this->members === $other->members;
+    }
+
+    /**
+     * The type and the members as one string, the same for two identical details and different for any other two
+     * that JSON can write: a negative zero is written as zero, since -0.0 === 0.0.
+     */
+    public function identity(): string
+    {
+        return serialize([$this->type, self::zeroed($this->members)]);
+    }
+
+    /**
+     * @param array<array-key, mixed> $members
+     *
+     * @return array<array-key, mixed>
+     */
+    private static function zeroed(array $members): array
+    {
+        return array_map(
+            static fn (mixed $value): mixed => match (true) {
+                is_float($value) => $value + 0.0,
+                is_array($value) => self::zeroed($value),
+                default => $value,
+            },
+            $members,
+        );
     }
 }

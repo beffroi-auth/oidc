@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Request;
 
 use function array_is_list;
+use function array_unique;
+use function array_values;
 use function explode;
 use Beffroi\Oidc\Exception\InvalidRequestException;
-use function in_array;
 use function is_array;
 use function is_string;
 use function preg_match;
@@ -191,12 +192,10 @@ final readonly class RequestParameters
             if (! is_string($item) || $item === '') {
                 throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $this->redirectable);
             }
-            if (! in_array($item, $values, true)) {
-                $values[] = $item;
-            }
+            $values[] = $item;
         }
 
-        return $values;
+        return array_values(array_unique($values));
     }
 
     /**
@@ -210,16 +209,13 @@ final readonly class RequestParameters
         if ($value === null) {
             return [];
         }
-        $items = [];
-        foreach (explode(' ', $value) as $item) {
+        $items = explode(' ', $value);
+        foreach ($items as $item) {
             if (preg_match($pattern, $item) !== 1) {
                 throw new InvalidRequestException($description, $this->redirectable);
             }
-            if (! in_array($item, $items, true)) {
-                $items[] = $item;
-            }
         }
 
-        return $items;
+        return array_values(array_unique($items));
     }
 }

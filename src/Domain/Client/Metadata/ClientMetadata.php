@@ -7,7 +7,6 @@ namespace Beffroi\Oidc\Domain\Client\Metadata;
 use function array_key_exists;
 use function array_keys;
 use Beffroi\Oidc\Exception\LogicException;
-use function in_array;
 use function sprintf;
 
 /**
@@ -59,14 +58,10 @@ final readonly class ClientMetadata
     {
         $members = [];
         foreach ($this->sources as $source) {
-            foreach (array_keys($source->members()) as $member) {
-                if (! in_array($member, $members, true)) {
-                    $members[] = $member;
-                }
-            }
+            $members += $source->members();
         }
 
-        return $members;
+        return array_keys($members);
     }
 
     private function carrying(string $member): ?ClientMetadataSourceInterface

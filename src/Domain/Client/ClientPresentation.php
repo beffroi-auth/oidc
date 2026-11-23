@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client;
 
-use function in_array;
+use function array_unique;
+use function array_values;
 
 /**
  * OIDC Registration §2
@@ -28,12 +29,6 @@ final readonly class ClientPresentation
         public ?ClientUri $tosUri = null,
         array $contacts = [],
     ) {
-        $kept = [];
-        foreach ($contacts as $contact) {
-            if (! in_array($contact, $kept, true)) {
-                $kept[] = $contact;
-            }
-        }
-        $this->contacts = $kept;
+        $this->contacts = array_values(array_unique($contacts));
     }
 }

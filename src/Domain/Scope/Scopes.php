@@ -6,7 +6,9 @@ namespace Beffroi\Oidc\Domain\Scope;
 
 use function array_all;
 use function array_any;
+use function array_flip;
 use function array_map;
+use function array_values;
 use function count;
 use ArrayIterator;
 use Countable;
@@ -37,14 +39,12 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
     {
         $kept = [];
         foreach ($scopes as $scope) {
-            if (! array_any($kept, static fn (Scope $seen): bool => $seen->equals($scope))) {
-                $kept[] = $scope;
-            }
+            $kept[$scope->value] ??= $scope;
         }
         if ($kept === []) {
             throw new InvalidArgumentException('A set of scopes holds at least one scope (RFC 6749 section 3.3).');
         }
-        $this->all = $kept;
+        $this->all = array_values($kept);
     }
 
     /**
@@ -62,7 +62,9 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
 
     public function covers(self $scopes): bool
     {
-        return array_all($scopes->all, fn (Scope $scope): bool => $this->has($scope));
+        $held = array_flip($this->values());
+
+        return array_all($scopes->all, static fn (Scope $scope): bool => isset($held[$scope->value]));
     }
 
     /**

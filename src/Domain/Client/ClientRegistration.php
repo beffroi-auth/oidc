@@ -7,6 +7,10 @@ namespace Beffroi\Oidc\Domain\Client;
 use function array_all;
 use function array_any;
 use function array_find;
+use function array_flip;
+use function array_map;
+use function array_unique;
+use function array_values;
 use Beffroi\Oidc\Domain\AuthorizationDetails\AuthorizationDetails;
 use Beffroi\Oidc\Domain\Ciba\DeliveryModeInterface;
 use Beffroi\Oidc\Domain\Ciba\NotifiesTheClientInterface;
@@ -129,12 +133,11 @@ final readonly class ClientRegistration
         $this->authorizationResponse = $authorizationResponse ?? ResponseFormat::signed();
         $this->userInfo = $userInfo ?? ResponseFormat::unsigned();
 
-        $sameUri = static fn (RedirectUri $a, RedirectUri $b): bool => $a->equals($b);
-        $this->redirectUris = self::unique($redirectUris, $sameUri);
-        $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris, $sameUri);
-        $this->grantTypes = self::unique($grantTypes, static fn (GrantTypeName $a, GrantTypeName $b): bool => $a->equals($b));
-        $this->requestUris = self::unique($requestUris, static fn (RequestUri $a, RequestUri $b): bool => $a->equals($b));
-        $this->resources = self::unique($resources, static fn (ResourceIndicator $a, ResourceIndicator $b): bool => $a->equals($b));
+        $this->redirectUris = self::unique($redirectUris);
+        $this->postLogoutRedirectUris = self::unique($postLogoutRedirectUris);
+        $this->grantTypes = self::unique($grantTypes);
+        $this->requestUris = self::unique($requestUris);
+        $this->resources = self::unique($resources);
         $this->authorizationDetailsTypes = self::uniqueNames($authorizationDetailsTypes);
 
         $this->assertHoldsTogether();
@@ -189,10 +192,7 @@ final readonly class ClientRegistration
      */
     public function allowsResources(ResourceIndicators $resources): bool
     {
-        return array_all(
-            $resources->all,
-            fn (ResourceIndicator $asked): bool => array_any($this->resources, static fn (ResourceIndicator $registered): bool => $registered->equals($asked)),
-        );
+        return $this->resources !== [] && new ResourceIndicators($this->resources)->covers($resources);
     }
 
     /**
@@ -211,16 +211,12 @@ final readonly class ClientRegistration
      */
     public function mayBeAddressedTo(TokenAudience $audience): bool
     {
-        return array_all(
-            $audience->values,
-            fn (string $value): bool => (
-                $value === $this->clientId
-                || array_any(
-                    $this->resources,
-                    static fn (ResourceIndicator $registered): bool => $registered->value === $value,
-                )
-            ),
-        );
+        $addressable = array_flip([
+            $this->clientId,
+            ...array_map(static fn (ResourceIndicator $registered): string => $registered->value, $this->resources),
+        ]);
+
+        return array_all($audience->values, static fn (string $value): bool => isset($addressable[$value]));
     }
 
     public function registersAnEncryption(): bool
@@ -377,36 +373,33 @@ final readonly class ClientRegistration
      */
     private function uniqueNames(array $names): array
     {
-        $unique = [];
+        $named = [];
         foreach ($names as $name) {
             if ($name === '') {
                 throw new InvalidArgumentException(sprintf('The client "%s" registers no empty name in a closed list.', $this->clientId));
             }
-            if (! in_array($name, $unique, true)) {
-                $unique[] = $name;
-            }
+            $named[] = $name;
         }
 
-        return $unique;
+        return array_values(array_unique($named));
     }
 
     /**
-     * @template T of object
+     * Each once, keyed on the value its equals() compares.
+     *
+     * @template T of RedirectUri|GrantTypeName|RequestUri|ResourceIndicator
      *
      * @param list<T> $items
-     * @param callable(T, T): bool $same
      *
      * @return list<T>
      */
-    private static function unique(array $items, callable $same): array
+    private static function unique(array $items): array
     {
         $unique = [];
         foreach ($items as $item) {
-            if (! array_any($unique, static fn (object $kept): bool => $same($kept, $item))) {
-                $unique[] = $item;
-            }
+            $unique[$item->value] ??= $item;
         }
 
-        return $unique;
+        return array_values($unique);
     }
 }

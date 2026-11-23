@@ -6,7 +6,9 @@ namespace Beffroi\Oidc\Domain\AuthorizationDetails;
 
 use function array_all;
 use function array_any;
+use function array_flip;
 use function array_map;
+use function array_values;
 use ArrayIterator;
 use function count;
 use Countable;
@@ -36,14 +38,12 @@ final readonly class AuthorizationDetails implements Countable, IteratorAggregat
     {
         $kept = [];
         foreach ($details as $detail) {
-            if (! array_any($kept, static fn (AuthorizationDetail $seen): bool => $seen->equals($detail))) {
-                $kept[] = $detail;
-            }
+            $kept[$detail->identity()] ??= $detail;
         }
         if ($kept === []) {
             throw new InvalidArgumentException('A set of authorization details holds at least one detail (RFC 9396 section 2).');
         }
-        $this->all = $kept;
+        $this->all = array_values($kept);
     }
 
     public function has(AuthorizationDetail $detail): bool
@@ -53,7 +53,9 @@ final readonly class AuthorizationDetails implements Countable, IteratorAggregat
 
     public function covers(self $details): bool
     {
-        return array_all($details->all, fn (AuthorizationDetail $detail): bool => $this->has($detail));
+        $held = array_flip(array_map(static fn (AuthorizationDetail $detail): string => $detail->identity(), $this->all));
+
+        return array_all($details->all, static fn (AuthorizationDetail $detail): bool => isset($held[$detail->identity()]));
     }
 
     public function mergedWith(self $details): self

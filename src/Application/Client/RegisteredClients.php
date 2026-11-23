@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Application\Client;
 
 use function array_all;
-use function array_any;
+use function array_values;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Client\AccessTokenShapeInterface;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\ClientRegistration;
-use Beffroi\Oidc\Domain\Resource\ResourceIndicator;
-use Beffroi\Oidc\Domain\Scope\Scope;
 use Beffroi\Oidc\Port\ClientRepositoryInterface;
 use Beffroi\Oidc\Port\ClientSourceInterface;
 use Beffroi\Oidc\Port\PushedAuthorizationRequirementInterface;
@@ -53,13 +51,11 @@ final readonly class RegisteredClients implements
         $resources = [];
         foreach ($this->registrationsIn($tenant) as $registration) {
             foreach ($registration->resources as $resource) {
-                if (! array_any($resources, static fn (ResourceIndicator $kept): bool => $kept->equals($resource))) {
-                    $resources[] = $resource;
-                }
+                $resources[$resource->value] ??= $resource;
             }
         }
 
-        return $resources;
+        return array_values($resources);
     }
 
     public function scopesRegisteredIn(Tenant $tenant): array
@@ -67,13 +63,11 @@ final readonly class RegisteredClients implements
         $scopes = [];
         foreach ($this->registrationsIn($tenant) as $registration) {
             foreach ($registration->allowedScopes as $scope) {
-                if (! array_any($scopes, static fn (Scope $kept): bool => $kept->equals($scope))) {
-                    $scopes[] = $scope;
-                }
+                $scopes[$scope->value] ??= $scope;
             }
         }
 
-        return $scopes;
+        return array_values($scopes);
     }
 
     public function issuesAccessTokensIn(Tenant $tenant, AccessTokenShapeInterface $shape): bool

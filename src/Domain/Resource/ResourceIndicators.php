@@ -6,7 +6,9 @@ namespace Beffroi\Oidc\Domain\Resource;
 
 use function array_all;
 use function array_any;
+use function array_flip;
 use function array_map;
+use function array_values;
 use ArrayIterator;
 use function count;
 use Countable;
@@ -39,14 +41,12 @@ final readonly class ResourceIndicators implements Countable, IteratorAggregate
     {
         $kept = [];
         foreach ($resources as $resource) {
-            if (! array_any($kept, static fn (ResourceIndicator $seen): bool => $seen->equals($resource))) {
-                $kept[] = $resource;
-            }
+            $kept[$resource->value] ??= $resource;
         }
         if ($kept === []) {
             throw new InvalidArgumentException('A set of resources holds at least one resource (RFC 8707 section 2).');
         }
-        $this->all = $kept;
+        $this->all = array_values($kept);
     }
 
     /**
@@ -66,7 +66,9 @@ final readonly class ResourceIndicators implements Countable, IteratorAggregate
 
     public function covers(self $resources): bool
     {
-        return array_all($resources->all, fn (ResourceIndicator $resource): bool => $this->has($resource));
+        $held = array_flip($this->values());
+
+        return array_all($resources->all, static fn (ResourceIndicator $resource): bool => isset($held[$resource->value]));
     }
 
     /**

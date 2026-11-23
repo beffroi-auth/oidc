@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Domain\Token;
 
 use function array_is_list;
+use function array_unique;
+use function array_values;
 use ArrayIterator;
 use function count;
 use Countable;
@@ -36,19 +38,15 @@ final readonly class TokenAudience implements Countable, IteratorAggregate
      */
     public function __construct(array $values)
     {
-        $kept = [];
         foreach ($values as $value) {
             if ($value === '') {
                 throw new InvalidArgumentException('An audience names something (RFC 7519 section 4.1.3).');
             }
-            if (! in_array($value, $kept, true)) {
-                $kept[] = $value;
-            }
         }
-        if ($kept === []) {
+        if ($values === []) {
             throw new InvalidArgumentException('An access token is addressed to at least one audience (RFC 7519 section 4.1.3).');
         }
-        $this->values = $kept;
+        $this->values = array_values(array_unique($values));
     }
 
     /**

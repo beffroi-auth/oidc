@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Scope;
 
-use function array_any;
+use function array_values;
 use function explode;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function preg_match;
@@ -49,14 +49,10 @@ final readonly class Scope implements Stringable
     {
         $scopes = [];
         foreach (explode(' ', $scope) as $token) {
-            $candidate = new self($token);
-            if (! array_any($scopes, static fn (self $kept): bool => $kept->equals($candidate))) {
-                $scopes[] = $candidate;
-            }
+            $scopes[$token] ??= new self($token);
         }
 
-        /** @var non-empty-list<self> $scopes */
-        return $scopes;
+        return array_values($scopes);
     }
 
     public function equals(self $other): bool
