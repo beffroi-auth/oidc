@@ -45,5 +45,10 @@ enum ClientAuthenticationFailureReason: string
      */
     case UnexpectedCertificate = 'unexpected_certificate';
 
+    /**
+     * RFC 8705 §2.1, RFC 5280 §6.1
+     */
+    case UntrustedCertificate = 'untrusted_certificate';
+
     case UnreadableCertificate = 'unreadable_certificate';
 }
