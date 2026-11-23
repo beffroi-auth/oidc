@@ -34,8 +34,14 @@ final readonly class RegisteredClients implements
     ) {
     }
 
+    /**
+     * No source is asked for an identifier no registration may carry: a database refuses bytes that are not text.
+     */
     public function findByClientId(Tenant $tenant, string $clientId): ?Client
     {
+        if (! ClientRegistration::isClientIdentifier($clientId)) {
+            return null;
+        }
         foreach ($this->sources as $source) {
             $client = $source->findByClientId($tenant, $clientId);
             if ($client !== null) {

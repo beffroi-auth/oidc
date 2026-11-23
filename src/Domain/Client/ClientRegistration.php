@@ -33,9 +33,6 @@ use function sprintf;
  */
 final readonly class ClientRegistration
 {
-    /**
-     * RFC 6749 appendix A.1, without a leading or trailing space
-     */
     private const string CLIENT_ID_PATTERN = '/^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$/D';
 
     /**
@@ -143,6 +140,14 @@ final readonly class ClientRegistration
         $this->assertHoldsTogether();
     }
 
+    /**
+     * RFC 6749 appendix A.1, without a leading or trailing space
+     */
+    public static function isClientIdentifier(string $value): bool
+    {
+        return preg_match(self::CLIENT_ID_PATTERN, $value) === 1;
+    }
+
     public function isPublic(): bool
     {
         return ! $this->authenticationMethod->authenticatesClient();
@@ -239,7 +244,7 @@ final readonly class ClientRegistration
      */
     private function assertHoldsTogether(): void
     {
-        if (preg_match(self::CLIENT_ID_PATTERN, $this->clientId) !== 1) {
+        if (! self::isClientIdentifier($this->clientId)) {
             throw new InvalidArgumentException(sprintf(
                 'The client identifier "%s" must be made of visible ASCII characters (RFC 6749 appendix A.1).',
                 $this->clientId,

@@ -13,10 +13,7 @@ use function in_array;
 use function is_array;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
-use Jose\Component\Signature\JWSVerifier;
-use Jose\Component\Signature\Serializer\CompactSerializer;
 use function sprintf;
-use Throwable;
 
 /**
  * RFC 9449 §4.2
@@ -31,14 +28,11 @@ final readonly class JwtLibraryProofKeyVerifier implements ProofKeyVerifierInter
      */
     private const array PRIVATE_MEMBERS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'k'];
 
-    private JWSVerifier $verifier;
-
-    private CompactSerializer $serializer;
+    private JwtLibrarySignature $signature;
 
     public function __construct(AlgorithmManager $algorithms)
     {
-        $this->verifier = new JWSVerifier($algorithms);
-        $this->serializer = new CompactSerializer();
+        $this->signature = new JwtLibrarySignature($algorithms);
     }
 
     public function keyThatSigned(UnverifiedJwt $jwt, array $algorithms): string
@@ -47,17 +41,12 @@ final readonly class JwtLibraryProofKeyVerifier implements ProofKeyVerifierInter
         if ($alg === null || ! in_array($alg, $algorithms, true)) {
             throw new InvalidJwtException(sprintf('The proof is signed with "%s", which this provider does not take.', $alg ?? '?'));
         }
-        $key = new JWK(self::publicKey($jwt));
-        try {
-            $jws = $this->serializer->unserialize($jwt->compact);
-        } catch (Throwable $exception) {
-            throw new InvalidJwtException('The proof is not a compact JWS.', 0, $exception);
-        }
-        if (! $this->verifier->verifyWithKey($jws, $key, 0)) {
+        $key = self::publicKey($jwt);
+        if (! $this->signature->holdsUnder($jwt, $key)) {
             throw new InvalidJwtException('The signature of the proof does not verify against the key the proof carries.');
         }
 
-        return $key->thumbprint('sha256');
+        return new JWK($key)->thumbprint('sha256');
     }
 
     /**
