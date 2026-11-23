@@ -46,7 +46,7 @@ final readonly class ClientRegistrationPolicy
 
     public function retentionAt(DateTimeImmutable $now): ClientRetention
     {
-        return new ClientRetention($now->sub($this->keepsAClientUnusedFor), $now->sub($this->keepsAClientNeverUsedFor));
+        return ClientRetention::at($now, $this->keepsAClientUnusedFor, $this->keepsAClientNeverUsedFor);
     }
 
     /**

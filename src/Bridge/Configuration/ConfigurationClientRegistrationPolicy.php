@@ -5,21 +5,24 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Bridge\Configuration;
 
 use DateInterval;
+use DateTimeImmutable;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Core\Port\SignatureAlgorithmsInterface;
 use Beffroi\Oidc\Domain\Client\Registration\ClientRegistrationPolicy;
+use Beffroi\Oidc\Domain\Client\Registration\ClientRetention;
 use Beffroi\Oidc\Domain\Client\Registration\StatementIssuer;
 use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\LogicException;
 use Beffroi\Oidc\Port\ClientRegistrationPolicyInterface;
+use Beffroi\Oidc\Port\ClientRetentionPolicyInterface;
 
 /**
  * Decision 0009
  *
  * An empty value is no value: it is what an environment variable declared empty gives.
  */
-final readonly class ConfigurationClientRegistrationPolicy implements ClientRegistrationPolicyInterface
+final readonly class ConfigurationClientRegistrationPolicy implements ClientRegistrationPolicyInterface, ClientRetentionPolicyInterface
 {
     /**
      * @var list<StatementIssuer>
@@ -70,10 +73,25 @@ final readonly class ConfigurationClientRegistrationPolicy implements ClientRegi
         return new ClientRegistrationPolicy(
             $this->mode,
             $this->exemptsConfidentialClientsFromPkce,
-            $this->keepsAClientUnusedFor ?? new DateInterval(ClientRegistrationPolicy::UNUSED_FOR),
-            $this->keepsAClientNeverUsedFor ?? new DateInterval(ClientRegistrationPolicy::NEVER_USED_FOR),
+            $this->unusedFor(),
+            $this->neverUsedFor(),
             $this->pinned,
             $this->defaultScopes,
         );
+    }
+
+    public function retentionFor(Tenant $tenant, DateTimeImmutable $now): ?ClientRetention
+    {
+        return $tenant->slug === $this->tenantSlug ? ClientRetention::at($now, $this->unusedFor(), $this->neverUsedFor()) : null;
+    }
+
+    private function unusedFor(): DateInterval
+    {
+        return $this->keepsAClientUnusedFor ?? new DateInterval(ClientRegistrationPolicy::UNUSED_FOR);
+    }
+
+    private function neverUsedFor(): DateInterval
+    {
+        return $this->keepsAClientNeverUsedFor ?? new DateInterval(ClientRegistrationPolicy::NEVER_USED_FOR);
     }
 }
