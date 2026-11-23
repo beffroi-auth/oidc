@@ -12,7 +12,7 @@ use SensitiveParameter;
 /**
  * OIDC Core §3.1.2.1, CIBA Core §7.1
  */
-final readonly class UsernameLoginHint implements UserHintInterface
+final readonly class UsernameLoginHint implements HintShownAsSentInterface
 {
     public const string PARAMETER = 'login_hint';
 
@@ -29,5 +29,10 @@ final readonly class UsernameLoginHint implements UserHintInterface
     public function userNamedBy(Client $client, #[SensitiveParameter] string $value): ?User
     {
         return $this->users->findByUsername($client->tenant, $value);
+    }
+
+    public function shownAsSent(#[SensitiveParameter] string $value): string
+    {
+        return $value;
     }
 }
