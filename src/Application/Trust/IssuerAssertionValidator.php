@@ -116,7 +116,7 @@ final readonly class IssuerAssertionValidator
             throw new InvalidGrantException(self::REFUSED);
         }
         $issuedAt = $jwt->time('iat');
-        if ($issuedAt === null || $issuedAt > $now->add($this->leeway)) {
+        if ($issuedAt === null || $issuedAt > $now->add($this->leeway) || $jwt->startsAfter($now->add($this->leeway))) {
             throw new InvalidGrantException(self::REFUSED);
         }
         $jti = $jwt->claim('jti');

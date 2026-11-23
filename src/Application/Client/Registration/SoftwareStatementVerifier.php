@@ -94,7 +94,7 @@ final readonly class SoftwareStatementVerifier
             throw new InvalidSoftwareStatementException();
         }
         $issuedAt = $jwt->time('iat');
-        if ($issuedAt === null || $issuedAt > $now->add($this->leeway)) {
+        if ($issuedAt === null || $issuedAt > $now->add($this->leeway) || $jwt->startsAfter($now->add($this->leeway))) {
             throw new InvalidSoftwareStatementException();
         }
         $jti = $jwt->claim('jti');

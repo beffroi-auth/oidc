@@ -48,7 +48,7 @@ final readonly class RequestObjectValidator
         if ($notBefore === null) {
             throw new InvalidRequestObjectException('A request object carries an nbf (RFC 9101 section 4).');
         }
-        if ($notBefore > $now->add($this->leeway)) {
+        if ($jwt->startsAfter($now->add($this->leeway))) {
             throw new InvalidRequestObjectException('The request object is not valid yet.');
         }
         $expiresAt = $jwt->time('exp');

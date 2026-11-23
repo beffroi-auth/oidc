@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Authorization;
 
-use function array_all;
-use function array_is_list;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Core\Exception\InvalidArgumentException;
@@ -13,6 +11,7 @@ use Beffroi\Core\Exception\InvalidJwsException;
 use Beffroi\Core\Port\JwsVerifierInterface;
 use Beffroi\Oidc\Domain\Authorization\IdTokenHint;
 use Beffroi\Oidc\Domain\Client\Client;
+use Beffroi\Oidc\Domain\Token\TokenAudience;
 use Beffroi\Oidc\Exception\InvalidRequestException;
 use function is_array;
 use function is_string;
@@ -77,7 +76,7 @@ final readonly class IdTokenHintVerifier
             throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable);
         }
 
-        return new IdTokenHint($subject, self::audiences($claims['aud'] ?? null), self::sessionId($claims['sid'] ?? null, $redirectable));
+        return new IdTokenHint($subject, TokenAudience::valuesOf($claims['aud'] ?? null) ?? [], self::sessionId($claims['sid'] ?? null, $redirectable));
     }
 
     /**
@@ -92,22 +91,6 @@ final readonly class IdTokenHintVerifier
         }
 
         return $claims;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function audiences(mixed $aud): array
-    {
-        if (is_string($aud)) {
-            return [$aud];
-        }
-        if (is_array($aud) && array_is_list($aud) && array_all($aud, static fn (mixed $value): bool => is_string($value))) {
-            /** @var list<string> $aud */
-            return $aud;
-        }
-
-        return [];
     }
 
     private static function sessionId(mixed $sid, bool $redirectable): ?Uuid
