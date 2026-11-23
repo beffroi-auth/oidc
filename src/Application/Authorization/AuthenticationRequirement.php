@@ -6,7 +6,9 @@ namespace Beffroi\Oidc\Application\Authorization;
 
 use Beffroi\Oidc\Application\Administration\AdministrationAudience;
 use DateTimeImmutable;
+use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Core\Exception\InvalidArgumentException;
 use Beffroi\Core\Domain\Session\AuthenticationSession;
 use Beffroi\Core\Port\CredentialRepositoryInterface;
 use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
@@ -18,10 +20,15 @@ use Beffroi\Oidc\Exception\LoginRequiredException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use Beffroi\Oidc\Port\PresentedSubjectReaderInterface;
 use Beffroi\Oidc\Port\ProvableMethodsInterface;
+use function is_string;
 
 final readonly class AuthenticationRequirement
 {
     private const string HINTS_NOBODY = 'The id_token_hint parameter names no end user of this client.';
+
+    private const string ASKS_FOR_NOBODY = 'The sub the claims parameter asks the ID token for names no end user of this client.';
+
+    private const string NAMES_TWO = 'The id_token_hint parameter and the sub the claims parameter asks the ID token for name two end users.';
 
     public function __construct(
         private ProvableMethodsInterface $provable,
@@ -71,18 +78,42 @@ final readonly class AuthenticationRequirement
     }
 
     /**
-     * OIDC Core §3.1.2.1, §8
+     * OIDC Core §3.1.2.1, §3.1.2.2, §5.5.1, §8
      *
      * @throws OAuth2Exception
      */
     private function hintedPerson(AuthorizationRequest $request): ?User
     {
-        if ($request->idTokenHint === null) {
+        $hinted = $request->idTokenHint === null
+            ? null
+            : $this->subjects->findUser(
+                $request->client,
+                $this->idTokenHints->verify($request->client, $request->idTokenHint),
+            ) ?? throw new LoginRequiredException(self::HINTS_NOBODY);
+        $asked = $this->personAskedFor($request);
+        if ($hinted !== null && $asked !== null && ! $hinted->id->equals($asked->id)) {
+            throw new LoginRequiredException(self::NAMES_TWO);
+        }
+
+        return $hinted ?? $asked;
+    }
+
+    /**
+     * @throws LoginRequiredException
+     */
+    private function personAskedFor(AuthorizationRequest $request): ?User
+    {
+        $value = $request->claims?->subjectAskedFor();
+        if ($value === null) {
             return null;
         }
-        $subject = $this->idTokenHints->verify($request->client, $request->idTokenHint);
+        try {
+            $subject = is_string($value) ? new Subject($value) : null;
+        } catch (InvalidArgumentException) {
+            $subject = null;
+        }
 
-        return $this->subjects->findUser($request->client, $subject) ?? throw new LoginRequiredException(self::HINTS_NOBODY);
+        return ($subject === null ? null : $this->subjects->findUser($request->client, $subject)) ?? throw new LoginRequiredException(self::ASKS_FOR_NOBODY);
     }
 
     private static function hintsAnotherUser(RequestedAuthentication $requested, AuthenticationSession $session): bool

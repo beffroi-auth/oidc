@@ -104,6 +104,14 @@ final readonly class ClaimsRequest
         ];
     }
 
+    /**
+     * OIDC Core §3.1.2.2, §5.5.1: the end user the ID token is to be about, when the request names one.
+     */
+    public function subjectAskedFor(): string|int|float|bool|null
+    {
+        return ($this->idToken['sub'] ?? null)?->value;
+    }
+
     public function claimNames(): ClaimNames
     {
         return new ClaimNames([...array_keys($this->userinfo), ...array_keys($this->idToken)]);
