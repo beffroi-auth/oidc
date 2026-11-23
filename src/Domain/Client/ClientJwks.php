@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Domain\Client;
 
 use function array_any;
 use function array_find;
+use function array_key_exists;
 use function count;
 use function hash_equals;
 use Beffroi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
@@ -25,6 +26,13 @@ use function sprintf;
 final readonly class ClientJwks
 {
     public const int MOST_KEYS = 100;
+
+    /**
+     * RFC 7518 §6.2.2 and §6.3.2, RFC 8037 §2: what a private key carries beyond its public half.
+     *
+     * @var list<string>
+     */
+    private const array PRIVATE_MEMBERS = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth'];
 
     /**
      * @var non-empty-list<array<string, mixed>>
@@ -49,6 +57,13 @@ final readonly class ClientJwks
             }
             if ($kty === 'oct') {
                 throw new InvalidArgumentException('A client publishes public keys; a symmetric key in a JWK Set is refused (RFC 8725 section 3.5).');
+            }
+            $private = array_find(self::PRIVATE_MEMBERS, static fn (string $member): bool => array_key_exists($member, $key));
+            if ($private !== null) {
+                throw new InvalidArgumentException(sprintf(
+                    'A client publishes public keys; a key carrying the private member "%s" is refused (OpenID Connect Dynamic Client Registration section 2).',
+                    $private,
+                ));
             }
             if ($kty === 'RSA' && ! RsaModulus::isLongEnough($key['n'] ?? null)) {
                 throw new InvalidArgumentException(sprintf(
