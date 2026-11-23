@@ -56,6 +56,8 @@ use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 use Beffroi\Oidc\Exception\InvalidRedirectUriException;
 use Beffroi\Oidc\Exception\UnreadableCertificateException;
 use Beffroi\Oidc\Exception\UnreadableClientMetadataException;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
+use Beffroi\Oidc\Port\JweEncrypterInterface;
 use Beffroi\Oidc\Port\CertificateReaderInterface;
 use Beffroi\Oidc\Port\ClientAuthenticationMethodsInterface;
 use Beffroi\Oidc\Port\PresentedTokenTypesInterface;
@@ -151,6 +153,7 @@ final readonly class ClientMetadataReader
         private PresentedTokenTypesInterface $tokenTypes,
         private ServedAuthorizationDetailTypesInterface $authorizationDetailTypes,
         private AssignedSubjectTypesInterface $subjects,
+        private JweEncrypterInterface $encrypter,
     ) {
     }
 
@@ -245,7 +248,7 @@ final readonly class ClientMetadataReader
         }
 
         foreach ([$idToken, $userInfo, $authorizationResponse] as $format) {
-            self::assertAddressable($clientId, $format, $jwks);
+            $this->assertAddressable($clientId, $format, $jwks);
         }
         $this->subjects->assertAssignable($registration);
 
@@ -377,13 +380,29 @@ final readonly class ClientMetadataReader
     /**
      * A set behind a "jwks_uri" is read only when a document is minted, so only an inline set is checked here.
      */
-    private static function assertAddressable(string $clientId, ResponseFormat $format, ?ClientJwks $jwks): void
+    private function assertAddressable(string $clientId, ResponseFormat $format, ?ClientJwks $jwks): void
     {
         $encryption = $format->encryption;
         if ($encryption === null || $jwks === null) {
             return;
         }
-        if ($jwks->encryptionKeyFor($encryption->algorithm) !== null) {
+        $recipient = $jwks->encryptionKeyFor($encryption->algorithm);
+        if ($recipient !== null) {
+            try {
+                $this->encrypter->assertReceives($recipient, $encryption);
+            } catch (ClientKeysUnavailableException $exception) {
+                throw new InvalidClientMetadataException(
+                    'jwks',
+                    null,
+                    sprintf(
+                        'The client "%s" registers a response encrypted under "%s" to a key of its "jwks" that cannot receive one: its curve, its point or its size is not one the algorithm takes (RFC 7518 section 4).',
+                        $clientId,
+                        $encryption->algorithm->name(),
+                    ),
+                    $exception,
+                );
+            }
+
             return;
         }
 

@@ -17,6 +17,8 @@ use Throwable;
 
 final readonly class JwtLibraryJweEncrypter implements JweEncrypterInterface
 {
+    private const string PROBE = '{}';
+
     private JWEBuilder $builder;
 
     private CompactSerializer $serializer;
@@ -25,6 +27,14 @@ final readonly class JwtLibraryJweEncrypter implements JweEncrypterInterface
     {
         $this->builder = new JWEBuilder($algorithms);
         $this->serializer = new CompactSerializer();
+    }
+
+    /**
+     * Encrypts to the key what a document would carry, so that a key the library refuses is refused the same way.
+     */
+    public function assertReceives(array $recipient, ResponseEncryption $encryption): void
+    {
+        $this->encrypt($recipient, $encryption, self::PROBE);
     }
 
     public function encrypt(array $recipient, ResponseEncryption $encryption, string $payload, array $protectedHeader = []): string
