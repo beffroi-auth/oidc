@@ -95,6 +95,7 @@ final readonly class TokenIssuer
      * @throws KmsUnavailableException when the response is addressed here
      * @throws LogicException when a response somebody signed in for was not addressed by its grant first
      * @throws InvalidTargetException when the access token is addressed to the administration API and the authorization holds to less than its reservation (decision 0038)
+     * @throws ClientKeysUnavailableException when the key the ID token is addressed to receives no JWE
      */
     public function issue(
         AuthorizationInterface $authorization,

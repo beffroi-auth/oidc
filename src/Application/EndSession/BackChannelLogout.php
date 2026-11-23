@@ -53,7 +53,7 @@ final readonly class BackChannelLogout
     /**
      * @throws KeyNotFoundException
      * @throws KmsUnavailableException
-     * @throws ClientKeysUnavailableException when the client encrypts its ID tokens and publishes no key that can be read for it
+     * @throws ClientKeysUnavailableException when the client encrypts its ID tokens and publishes no key that can be read for it, or one that receives no JWE
      */
     public function tell(Client $client, AuthenticationSession $session, RequestContext $context): void
     {

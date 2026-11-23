@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
 use Beffroi\Oidc\Domain\Client\ResponseEncryption;
-use Beffroi\Oidc\Exception\RuntimeException;
+use Beffroi\Oidc\Exception\ClientKeysUnavailableException;
 use Beffroi\Oidc\Port\JweEncrypterInterface;
 use function is_string;
 use Jose\Component\Core\AlgorithmManager;
@@ -49,7 +49,7 @@ final readonly class JwtLibraryJweEncrypter implements JweEncrypterInterface
 
             return $this->serializer->serialize($jwe, 0);
         } catch (Throwable $exception) {
-            throw new RuntimeException(
+            throw new ClientKeysUnavailableException(
                 sprintf('The document could not be encrypted under "%s": the key it is addressed to does not receive one.', $encryption->algorithm->name()),
                 0,
                 $exception,

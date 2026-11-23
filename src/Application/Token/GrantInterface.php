@@ -22,7 +22,7 @@ interface GrantInterface
 
     /**
      * @throws OAuth2Exception an error of RFC 6749 §5.2
-     * @throws ClientKeysUnavailableException before anything the request presented is spent
+     * @throws ClientKeysUnavailableException before anything the request presented is spent, unless the key the ID token is addressed to receives no JWE
      * @throws KmsUnavailableException before anything the request presented is spent
      */
     public function grant(AuthenticatedClient $client, RequestParameters $request, RequestContext $context): IssuedTokens;
