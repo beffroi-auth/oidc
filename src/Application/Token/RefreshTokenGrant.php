@@ -22,6 +22,7 @@ use Beffroi\Oidc\Domain\Token\RevokedTokenHashes;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\InvalidGrantException;
 use Beffroi\Oidc\Exception\InvalidScopeException;
+use Beffroi\Oidc\Port\RecordedGrantsInterface;
 use Beffroi\Oidc\Port\RefreshTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -39,6 +40,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
 
     public function __construct(
         private RefreshTokenRepositoryInterface $refreshTokens,
+        private RecordedGrantsInterface $grants,
         private RefreshTokenRevocation $revocation,
         private SubjectsOfSessionsInterface $subjects,
         private TokenIssuer $issuer,
@@ -83,6 +85,10 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
             throw new InvalidGrantException(self::INVALID);
         }
         if ($token->isExpired($now) || ! $token->isRefreshedBy($client->confirmation) || ! $token->session->user->isEnabled()) {
+            throw new InvalidGrantException(self::INVALID);
+        }
+        $grant = $this->grants->findByGrantId($token->family->grantId);
+        if ($grant === null || $grant->isRevoked()) {
             throw new InvalidGrantException(self::INVALID);
         }
         if ($scopes !== null && ! $token->scopes->covers($scopes)) {
