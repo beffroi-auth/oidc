@@ -6,13 +6,16 @@ namespace Beffroi\Oidc\Application\Hint;
 
 use function count;
 use Beffroi\Core\Domain\Identity\User;
+use Beffroi\Oidc\Application\Consent\SharedIdentity;
 use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Beffroi\Oidc\Exception\LogicException;
 use Beffroi\Oidc\Exception\OAuth2Exception;
 use function sprintf;
 
 /**
- * OIDC Core §3.1.2.1
+ * OIDC Core §3.1.2.1, decision 0006
+ *
+ * A hint names only a person the client may be told of, the login page offering whoever it names.
  */
 final readonly class LoginHints
 {
@@ -23,6 +26,7 @@ final readonly class LoginHints
      */
     public function __construct(
         private iterable $readings,
+        private SharedIdentity $sharedIdentity,
     ) {
     }
 
@@ -41,11 +45,13 @@ final readonly class LoginHints
         }
 
         try {
-            return $reading->userNamedBy($request->client, $hint);
+            $user = $reading->userNamedBy($request->client, $hint);
         } catch (OAuth2Exception) {
             // OIDC Core §3.1.2.1: a hint is only a hint, so a value the reading refuses names nobody.
             return null;
         }
+
+        return $user !== null && $this->sharedIdentity->isSharedWith($user, $request->client) ? $user : null;
     }
 
     /**

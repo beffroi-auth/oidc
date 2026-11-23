@@ -6,6 +6,7 @@ namespace Beffroi\Oidc\Application\Interaction;
 
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Tenant\Tenant;
+use Beffroi\Oidc\Application\Consent\SharedIdentity;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Client\RedirectUri;
 use Beffroi\Oidc\Domain\Interaction\ThirdPartyInitiatedLogin;
@@ -16,13 +17,15 @@ use Beffroi\Oidc\Port\SubjectIdentifierResolverInterface;
 /**
  * OIDC Core §4
  *
- * An unknown client and one with no "initiate_login_uri" are one answer, so no caller learns which clients exist.
+ * An unknown client and one with no "initiate_login_uri" are one answer, so no caller learns which clients exist, and
+ * the hint names only a person the client may be told of.
  */
 final readonly class ThirdPartyInitiatedLoginHandler
 {
     public function __construct(
         private ClientRepositoryInterface $clients,
         private SubjectIdentifierResolverInterface $subjects,
+        private SharedIdentity $sharedIdentity,
     ) {
     }
 
@@ -43,7 +46,7 @@ final readonly class ThirdPartyInitiatedLoginHandler
         return new ThirdPartyInitiatedLogin(
             $client->registration->initiateLoginUri,
             $tenant->issuer,
-            $user === null ? null : $this->subjects->resolve($user, $client),
+            $user === null || ! $this->sharedIdentity->isSharedWith($user, $client) ? null : $this->subjects->resolve($user, $client),
             self::registered($client, $targetLinkUri),
         );
     }
