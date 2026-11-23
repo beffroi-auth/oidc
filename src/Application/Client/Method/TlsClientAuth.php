@@ -12,17 +12,20 @@ use Beffroi\Oidc\Domain\Event\ClientAuthenticationFailureReason;
 use Beffroi\Oidc\Exception\ClientNotAuthenticatedHereException;
 use Beffroi\Oidc\Exception\UnreadableCertificateException;
 use Beffroi\Oidc\Port\CertificateReaderInterface;
+use Beffroi\Oidc\Port\ClientCertificateAuthoritiesInterface;
 use function sprintf;
 
 /**
- * RFC 8705 §2.1
+ * RFC 8705 §2.1, §7.4
  *
- * The chain, its validity and its revocation are checked by the TLS listener: only the leaf reaches the provider.
+ * The listener hands over the leaf without judging it, so the chain and the validity are checked here; revocation is
+ * left to the deployment, as §2.1 allows.
  */
 final readonly class TlsClientAuth extends CertificateMethod implements CertificateIdentityBearingMethodInterface
 {
     public function __construct(
         private CertificateReaderInterface $certificates,
+        private ClientCertificateAuthoritiesInterface $authorities,
     ) {
     }
 
@@ -39,6 +42,7 @@ final readonly class TlsClientAuth extends CertificateMethod implements Certific
             throw new ClientNotAuthenticatedHereException($client, $this);
         }
         try {
+            $issued = $this->authorities->issued($certificate, $request->context->receivedAt);
             $subject = $this->certificates->subjectOf($certificate);
         } catch (UnreadableCertificateException $exception) {
             throw ClientAuthenticationFailure::refused(
@@ -47,6 +51,14 @@ final readonly class TlsClientAuth extends CertificateMethod implements Certific
                 $this->name(),
                 $exception->getMessage(),
                 $exception,
+            );
+        }
+        if (! $issued) {
+            throw ClientAuthenticationFailure::refused(
+                ClientAuthenticationFailureReason::UntrustedCertificate,
+                $client->registration->clientId,
+                $this->name(),
+                'the certificate presented was not issued by an authority the provider trusts, or is not valid now',
             );
         }
         if (! $identity->matches($subject)) {
@@ -61,6 +73,7 @@ final readonly class TlsClientAuth extends CertificateMethod implements Certific
             return;
         }
         try {
+            $this->authorities->issued($certificate, $request->context->receivedAt);
             $this->certificates->subjectOf($certificate);
         } catch (UnreadableCertificateException) {
         }
