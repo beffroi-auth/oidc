@@ -18,4 +18,13 @@ interface JweEncrypterInterface
      * @throws ClientKeysUnavailableException when the key cannot receive a JWE under that algorithm
      */
     public function encrypt(array $recipient, ResponseEncryption $encryption, string $payload, array $protectedHeader = []): string;
+
+    /**
+     * RFC 7516 §7.1, RFC 7518 §4
+     *
+     * @param array<string, mixed> $recipient the public JWK
+     *
+     * @throws ClientKeysUnavailableException when the key cannot receive a JWE under that algorithm
+     */
+    public function assertReceives(array $recipient, ResponseEncryption $encryption): void;
 }

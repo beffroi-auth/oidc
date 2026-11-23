@@ -40,7 +40,7 @@ final readonly class ClientDocumentIssuer
     /**
      * @throws KeyNotFoundException
      * @throws KmsUnavailableException
-     * @throws ClientKeysUnavailableException when the client's set cannot be read or holds no usable key
+     * @throws ClientKeysUnavailableException when the client's set cannot be read or holds no key that receives a JWE
      */
     public function address(Client $client, ResponseFormat $format): AddressedFormat
     {
@@ -49,16 +49,15 @@ final readonly class ClientDocumentIssuer
         if ($encryption === null) {
             return new AddressedFormat($format, $signingKey);
         }
+        $recipient = $this->keys->keysOf($client, null)->encryptionKeyFor($encryption->algorithm) ?? throw new ClientKeysUnavailableException(sprintf(
+            'The client "%s" publishes no key a document encrypted under "%s" can be addressed to.',
+            $client->registration->clientId,
+            $encryption->algorithm->name(),
+        ));
+        // Here, before the grant spends anything, and not when the document is encrypted after it did.
+        $this->encrypter->assertReceives($recipient, $encryption);
 
-        return new AddressedFormat(
-            $format,
-            $signingKey,
-            $this->keys->keysOf($client, null)->encryptionKeyFor($encryption->algorithm) ?? throw new ClientKeysUnavailableException(sprintf(
-                'The client "%s" publishes no key a document encrypted under "%s" can be addressed to.',
-                $client->registration->clientId,
-                $encryption->algorithm->name(),
-            )),
-        );
+        return new AddressedFormat($format, $signingKey, $recipient);
     }
 
     /**
