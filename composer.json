@@ -17,7 +17,7 @@
         "php": ">=8.4",
         "beffroi/core": "self.version",
         "spomky-labs/pki-framework": "^1.2.1",
-        "web-token/jwt-library": "^4.2"
+        "web-token/jwt-library": "^4.2.7"
     },
     "autoload": {
         "psr-4": {
