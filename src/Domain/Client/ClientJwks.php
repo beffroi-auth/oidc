@@ -9,10 +9,12 @@ use function array_find;
 use function hash_equals;
 use Beffroi\Core\Domain\Key\KeyEncryptionAlgorithmInterface;
 use Beffroi\Core\Domain\Key\KeyUse;
+use Beffroi\Core\Domain\Key\RsaModulus;
 use Beffroi\Oidc\Domain\Client\Certificate\ClientCertificate;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function is_array;
 use function is_string;
+use function sprintf;
 
 /**
  * RFC 7517 §5, RFC 7591 §2
@@ -41,6 +43,12 @@ final readonly class ClientJwks
             }
             if ($kty === 'oct') {
                 throw new InvalidArgumentException('A client publishes public keys; a symmetric key in a JWK Set is refused (RFC 8725 section 3.5).');
+            }
+            if ($kty === 'RSA' && ! self::holdsALongEnoughModulus($key)) {
+                throw new InvalidArgumentException(sprintf(
+                    'An RSA key of a JWK Set carries a modulus "n" of %d bits at least (RFC 7518 sections 3.3, 3.5, 4.3 and 6.3.1).',
+                    RsaModulus::MINIMUM_BITS,
+                ));
             }
         }
         $this->keys = $keys;
@@ -138,5 +146,16 @@ final readonly class ClientJwks
 
             return $published !== null && $published->isSameAs($certificate);
         });
+    }
+
+    /**
+     * @param array<string, mixed> $key
+     */
+    private static function holdsALongEnoughModulus(array $key): bool
+    {
+        $modulus = $key['n'] ?? null;
+        $bits = is_string($modulus) ? RsaModulus::bitsOf($modulus) : null;
+
+        return $bits !== null && $bits >= RsaModulus::MINIMUM_BITS;
     }
 }
