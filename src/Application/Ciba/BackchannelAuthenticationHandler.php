@@ -34,6 +34,7 @@ use Beffroi\Oidc\Domain\Scope\Scopes;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Beffroi\Oidc\Exception\InvalidBindingMessageException;
+use Beffroi\Oidc\Exception\InvalidClientException;
 use Beffroi\Oidc\Exception\InvalidRequestException;
 use Beffroi\Oidc\Exception\InvalidRequestObjectException;
 use Beffroi\Oidc\Exception\InvalidScopeException;
@@ -106,6 +107,9 @@ final readonly class BackchannelAuthenticationHandler
             $certificate,
         )->client;
         $registration = $client->registration;
+        if ($registration->isPublic()) {
+            throw new InvalidClientException('The backchannel authentication endpoint requires client authentication (CIBA Core section 7.1); a public client has none.');
+        }
         $waitsForAnApproval = array_any(
             $this->grants->askingTheUserThroughABackchannel(),
             static fn (GrantTypeName $grantType): bool => $registration->allowsGrant($grantType),
