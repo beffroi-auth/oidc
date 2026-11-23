@@ -204,7 +204,7 @@ final readonly class ClientMetadataReader
         try {
             $registration = new ClientRegistration(
                 $clientId,
-                $this->presentation($clientId, $metadata),
+                $this->presentation($clientId, $metadata, $redirectUris),
                 $method,
                 $secretIsHeld,
                 $redirectUris,
@@ -257,16 +257,40 @@ final readonly class ClientMetadataReader
         return $registration;
     }
 
-    private function presentation(string $clientId, ClientMetadata $metadata): ClientPresentation
+    /**
+     * @param list<RedirectUri> $redirectUris
+     */
+    private function presentation(string $clientId, ClientMetadata $metadata, array $redirectUris): ClientPresentation
     {
         return new ClientPresentation(
             $this->plainText($clientId, 'client_name', $metadata, self::MAX_NAME_LENGTH) ?? $clientId,
-            $this->clientUri($clientId, 'client_uri', $metadata),
-            $this->clientUri($clientId, 'logo_uri', $metadata),
-            $this->clientUri($clientId, 'policy_uri', $metadata),
-            $this->clientUri($clientId, 'tos_uri', $metadata),
+            $this->page($clientId, 'client_uri', $metadata, $redirectUris),
+            $this->page($clientId, 'logo_uri', $metadata, $redirectUris),
+            $this->page($clientId, 'policy_uri', $metadata, $redirectUris),
+            $this->page($clientId, 'tos_uri', $metadata, $redirectUris),
             $this->contacts($clientId, $metadata),
         );
+    }
+
+    /**
+     * RFC 7591 §5
+     *
+     * A page a client says it publishes is shown on the scheme and host of one of its redirection URIs, where the code
+     * goes back, and read as none elsewhere; a deployment that declares the client, or an authority that attests it, is
+     * believed wherever it puts the page.
+     *
+     * @param list<RedirectUri> $redirectUris
+     *
+     * @throws UnreadableClientMetadataException
+     */
+    private function page(string $clientId, string $member, ClientMetadata $metadata, array $redirectUris): ?ClientUri
+    {
+        $uri = $this->clientUri($clientId, $member, $metadata);
+        if ($uri === null || ! $metadata->isSelfAsserted($member)) {
+            return $uri;
+        }
+
+        return array_any($redirectUris, static fn (RedirectUri $redirectUri): bool => $redirectUri->sharesTheHostOf($uri)) ? $uri : null;
     }
 
     private function scopes(string $clientId, ClientMetadata $metadata): Scopes

@@ -38,6 +38,14 @@ final readonly class RedirectUri implements Stringable
     }
 
     /**
+     * RFC 7591 §5
+     */
+    public function sharesTheHostOf(ClientUri $uri): bool
+    {
+        return $this->uri->scheme === $uri->scheme && $this->uri->host === $uri->host;
+    }
+
+    /**
      * RFC 8252 §7.3
      *
      * Plain HTTP only: a client that registered HTTPS controls its host and is held to its port.
