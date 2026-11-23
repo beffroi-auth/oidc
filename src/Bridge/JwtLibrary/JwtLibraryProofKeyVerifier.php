@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Bridge\JwtLibrary;
 
 use function array_key_exists;
+use Beffroi\Core\Domain\Key\RsaModulus;
 use Beffroi\Oidc\Domain\Dpop\DpopProof;
 use Beffroi\Oidc\Domain\Token\UnverifiedJwt;
 use Beffroi\Oidc\Exception\InvalidJwtException;
@@ -64,6 +65,12 @@ final readonly class JwtLibraryProofKeyVerifier implements ProofKeyVerifierInter
             if (array_key_exists($member, $values)) {
                 throw new InvalidJwtException('The key the proof carries is not a public key (RFC 9449 section 4.3).');
             }
+        }
+        if (($values['kty'] ?? null) === 'RSA' && ! RsaModulus::isLongEnough($values['n'] ?? null)) {
+            throw new InvalidJwtException(sprintf(
+                'The RSA key the proof carries has a modulus "n" of %d bits at least (RFC 7518 sections 3.3 and 3.5).',
+                RsaModulus::MINIMUM_BITS,
+            ));
         }
 
         /** @var array<string, mixed> $values */
