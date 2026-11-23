@@ -69,6 +69,8 @@ use function in_array;
 use function is_array;
 use function is_bool;
 use function is_string;
+use function mb_strlen;
+use function preg_match;
 use function sprintf;
 
 /**
@@ -78,6 +80,11 @@ use function sprintf;
  */
 final readonly class ClientMetadataReader
 {
+    /**
+     * In characters: a name the provider writes into a sentence of a page and of a text message is read at a glance.
+     */
+    public const int MAX_NAME_LENGTH = 100;
+
     private const array MEMBERS = [
         'client_name',
         'client_uri',
@@ -248,7 +255,7 @@ final readonly class ClientMetadataReader
     private function presentation(string $clientId, ClientMetadata $metadata): ClientPresentation
     {
         return new ClientPresentation(
-            $this->text($clientId, 'client_name', $metadata) ?? $clientId,
+            $this->name($clientId, $metadata) ?? $clientId,
             $this->clientUri($clientId, 'client_uri', $metadata),
             $this->clientUri($clientId, 'logo_uri', $metadata),
             $this->clientUri($clientId, 'policy_uri', $metadata),
@@ -908,6 +915,32 @@ final readonly class ClientMetadataReader
     /**
      * @throws UnreadableClientMetadataException
      */
+    /**
+     * OIDC Registration §2
+     *
+     * Plain text, as a binding message is: the provider writes the name into its own sentences, so nothing in it breaks,
+     * reorders or hides a part of the line it is shown on.
+     *
+     * @throws InvalidClientMetadataException
+     */
+    private function name(string $clientId, ClientMetadata $metadata): ?string
+    {
+        $name = $this->text($clientId, 'client_name', $metadata);
+        if ($name !== null && (preg_match('/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u', $name) !== 0 || mb_strlen($name) > self::MAX_NAME_LENGTH)) {
+            throw new InvalidClientMetadataException(
+                'client_name',
+                $metadata->sourceOf('client_name'),
+                sprintf(
+                    'The client_name option of the client "%s" must be plain text of at most %d characters, with no control, format or line separator character.',
+                    $clientId,
+                    self::MAX_NAME_LENGTH,
+                ),
+            );
+        }
+
+        return $name;
+    }
+
     private function text(string $clientId, string $option, ClientMetadata $metadata): ?string
     {
         if (! $metadata->has($option)) {
