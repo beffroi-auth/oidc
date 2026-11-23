@@ -15,7 +15,9 @@ use Countable;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function implode;
 use IteratorAggregate;
+use function sprintf;
 use Stringable;
+use function substr_count;
 use Traversable;
 
 /**
@@ -25,6 +27,8 @@ use Traversable;
  */
 final readonly class Scopes implements Countable, IteratorAggregate, Stringable
 {
+    public const int MOST_PARSED = 100;
+
     /**
      * @var non-empty-list<Scope> in the order they were first seen
      */
@@ -48,10 +52,16 @@ final readonly class Scopes implements Countable, IteratorAggregate, Stringable
     }
 
     /**
+     * The scopes are counted before any is read: a parameter is as long as the body of a request.
+     *
      * @throws InvalidArgumentException
      */
     public static function parse(string $scope): self
     {
+        if (substr_count($scope, ' ') >= self::MOST_PARSED) {
+            throw new InvalidArgumentException(sprintf('A scope parameter names %d scopes at most.', self::MOST_PARSED));
+        }
+
         return new self(Scope::parseList($scope));
     }
 
