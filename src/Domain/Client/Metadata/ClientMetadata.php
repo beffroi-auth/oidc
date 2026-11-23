@@ -51,6 +51,11 @@ final readonly class ClientMetadata
         return $source->source();
     }
 
+    public function isSelfAsserted(string $member): bool
+    {
+        return $this->carrying($member) instanceof SelfAssertedMembersInterface;
+    }
+
     /**
      * @return list<string>
      */

@@ -9,7 +9,7 @@ use Beffroi\Oidc\Exception\InvalidClientMetadataException;
 /**
  * RFC 7591 §2
  */
-final readonly class RegisteredMembers implements ClientMetadataSourceInterface
+final readonly class RegisteredMembers implements SelfAssertedMembersInterface
 {
     /**
      * @param array<string, mixed> $members
