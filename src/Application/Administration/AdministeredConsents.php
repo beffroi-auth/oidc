@@ -12,6 +12,7 @@ use Beffroi\Oidc\Domain\Administration\ReadConsents;
 use Beffroi\Oidc\Domain\Consent\Consent;
 use Beffroi\Oidc\Domain\Event\ConsentsReadByAnAdministrator;
 use Beffroi\Oidc\Port\ActiveConsentsInterface;
+use Beffroi\Oidc\Exception\PersonsBudgetSpentException;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,10 +29,13 @@ final readonly class AdministeredConsents
         private ActiveConsentsInterface $consents,
         private ConsentRevocation $revocation,
         private EventDispatcherInterface $events,
+        private PersonsDelivered $delivered,
     ) {
     }
 
     /**
+     * @throws PersonsBudgetSpentException when the budget of the administrator has no person left
+     *
      * @return ReadConsents|null null when the tenant has no person of that identifier
      */
     public function of(ActingAdministrator $administrator, Uuid $person, RequestContext $context): ?ReadConsents
@@ -40,6 +44,7 @@ final readonly class AdministeredConsents
         if ($user === null) {
             return null;
         }
+        $this->delivered->spend($administrator, 1, $context);
         $read = new ReadConsents($user, $this->consents->activeOf($user));
         $this->events->dispatch(new ConsentsReadByAnAdministrator(
             $context->receivedAt,
