@@ -55,6 +55,20 @@ final readonly class LoginHints
     }
 
     /**
+     * @throws LogicException when two readings are wired for the parameter
+     */
+    public function usernameToShow(AuthorizationRequest $request): ?string
+    {
+        $hint = $request->loginHint;
+        $reading = $this->reading();
+        if ($hint !== null && $hint !== '' && $reading instanceof HintShownAsSentInterface) {
+            return $reading->shownAsSent($hint);
+        }
+
+        return $this->userNamedBy($request)?->username;
+    }
+
+    /**
      * @throws LogicException
      */
     private function reading(): ?UserHintInterface
