@@ -38,7 +38,16 @@ final readonly class RegistrationHeldToItsSector
         try {
             $listed = array_flip($this->documents->fetch($sectorIdentifierUri));
         } catch (SectorIdentifierUnavailableException $exception) {
-            throw $this->refusal($metadata, $exception->getMessage(), $exception);
+            // What the read met stays with the exception: a registrant who chose the URL would learn from it what
+            // answers at an address of the network of the provider.
+            throw $this->refusal(
+                $metadata,
+                sprintf(
+                    'The document at %s cannot be read as the JSON array of redirection URIs of OIDC Registration section 5.',
+                    $sectorIdentifierUri->value,
+                ),
+                $exception,
+            );
         }
         foreach ($this->sectors->publishedUris($registration) as $uri) {
             if (! isset($listed[$uri])) {
