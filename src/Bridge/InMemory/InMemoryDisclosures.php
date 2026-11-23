@@ -7,17 +7,12 @@ namespace Beffroi\Oidc\Bridge\InMemory;
 use function array_slice;
 use function array_values;
 use Beffroi\Core\Domain\Identity\User;
-use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Oidc\Domain\Disclosure\Disclosure;
 use Beffroi\Oidc\Port\DisclosuresInterface;
 use Beffroi\Oidc\Port\DisclosuresOfAPersonInterface;
-use DateTimeImmutable;
 use Symfony\Component\Uid\Uuid;
 use function usort;
 
-/**
- * The retention runs unbounded here: the bound of the port protects a table, and there is none.
- */
 final class InMemoryDisclosures implements DisclosuresInterface, DisclosuresOfAPersonInterface
 {
     /**
@@ -28,19 +23,6 @@ final class InMemoryDisclosures implements DisclosuresInterface, DisclosuresOfAP
     public function record(Disclosure $disclosure): void
     {
         $this->disclosures[$disclosure->id->toRfc4122()] = $disclosure;
-    }
-
-    public function forgetBefore(Tenant $tenant, DateTimeImmutable $moment): int
-    {
-        $forgotten = 0;
-        foreach ($this->disclosures as $key => $disclosure) {
-            if ($disclosure->tenant->equals($tenant) && $disclosure->handedOverAt < $moment) {
-                unset($this->disclosures[$key]);
-                ++$forgotten;
-            }
-        }
-
-        return $forgotten;
     }
 
     public function everyDisclosureTo(User $user, int $howMany, ?Uuid $after = null): array
