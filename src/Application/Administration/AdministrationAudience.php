@@ -8,12 +8,14 @@ use Beffroi\Core\Application\Administration\Administrators;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Core\Domain\Session\AuthenticationContextClass;
 use Beffroi\Core\Domain\Tenant\Tenant;
+use DateTimeImmutable;
 use Beffroi\Oidc\Domain\Authorization\AuthenticationContextRequest;
 use Beffroi\Oidc\Domain\Authorization\AuthorizationRequest;
 use Beffroi\Oidc\Domain\Resource\ResourceIndicators;
 use Beffroi\Oidc\Domain\Token\AuthorizationInterface;
 use Beffroi\Oidc\Domain\Token\UserAuthorizationInterface;
 use Beffroi\Oidc\Exception\AccessDeniedException;
+use Beffroi\Oidc\Exception\InvalidGrantException;
 use Beffroi\Oidc\Exception\InvalidTargetException;
 use Beffroi\Oidc\Port\AdministrationResourceInterface;
 
@@ -84,12 +86,14 @@ final readonly class AdministrationAudience
     /**
      * What every access token is held to when it is minted, whatever grant mints it: one whose audience is the
      * administration API of its tenant (RFC 8707 §2, "aud") is for a person who signed in, by a session whose proofs
-     * satisfy phishing_resistant, who administers the tenant now, and it is bound to a key of the client (RFC 9449
-     * §6, RFC 8705 §3). A person taken out of the group is refused at the next refresh.
+     * satisfy phishing_resistant and that has neither ended nor expired, who administers the tenant now, and it is bound
+     * to a key of the client (RFC 9449 §6, RFC 8705 §3). A person taken out of the group is refused at the next refresh,
+     * and so is a refresh once the session expired (decisions 0031 and 0038).
      *
      * @throws InvalidTargetException when the token would be addressed to that API and the authorization holds to less
+     * @throws InvalidGrantException  when the token would be addressed to that API and the session it descends from has ended or expired (RFC 6749 §5.2)
      */
-    public function assertMayBeAddressedBy(AuthorizationInterface $authorization): void
+    public function assertMayBeAddressedBy(AuthorizationInterface $authorization, DateTimeImmutable $now): void
     {
         $administration = $this->resources->administrationResourceOf($authorization->tenant);
         if ($administration === null || ! $authorization->audience()->has($administration->value)) {
@@ -102,6 +106,9 @@ final readonly class AdministrationAudience
             || ! $this->administrators->include($authorization->user)
         ) {
             throw InvalidTargetException::reserved();
+        }
+        if (! $authorization->session->isActive($now)) {
+            throw new InvalidGrantException('The session the administrator signed in with has ended or expired, and no token for the administration API outlives it (decision 0038).');
         }
     }
 

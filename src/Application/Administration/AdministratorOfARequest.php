@@ -30,11 +30,12 @@ use SensitiveParameter;
  * receives, before anything is read and the same way whatever the request names: an access token of this provider,
  * addressed to that API (RFC 8707 §2, "aud"), presented with the proof of the key it is bound to (RFC 9449 §7.1) or
  * over a connection that presented the certificate it is bound to (RFC 8705 §3), descending from a session that has
- * not ended and whose proofs satisfy phishing_resistant, issued to a person who administers the tenant now.
+ * neither ended nor expired and whose proofs satisfy phishing_resistant, issued to a person who administers the tenant
+ * now.
  *
  * The issuance of the token held it to all of this already (`AdministrationAudience`). It is asked again here because
- * a token outlives what it was issued on: the person may have left the group since, and a token whose binding is not
- * proven again opens nothing whoever holds it. A token bound to nothing is refused, a bearer token for the API being
+ * a token outlives what it was issued on: the person may have left the group since, the session may have expired, and
+ * a token whose binding is not proven again opens nothing whoever holds it. A token bound to nothing is refused, a bearer token for the API being
  * what decision 0038 excludes; so is a token somebody holds on behalf of its person (RFC 8693 §4.1), which is not the
  * person administering.
  *
@@ -123,6 +124,13 @@ final readonly class AdministratorOfARequest
         if ($session === null || ! $session->satisfies(AuthenticationContextClass::phishingResistant())) {
             throw new InvalidTokenException(
                 'The access token descends from a session whose proofs do not satisfy phishing_resistant.',
+                null,
+                $presented->scheme,
+            );
+        }
+        if (! $session->isActive($context->receivedAt)) {
+            throw new InvalidTokenException(
+                'The access token descends from a session that has expired, and no token for the administration API outlives it.',
                 null,
                 $presented->scheme,
             );
