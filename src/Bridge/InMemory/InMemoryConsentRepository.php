@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Beffroi\Oidc\Bridge\InMemory;
 
 use function array_filter;
-use Beffroi\Core\Domain\Listing\Period;
 use function array_values;
 use Beffroi\Core\Domain\Identity\User;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Consent\Consent;
+use Beffroi\Oidc\Domain\Consent\ConsentQuestion;
 use Beffroi\Core\Domain\Listing\Listing;
 use Beffroi\Core\Domain\Listing\Pagination;
 use Beffroi\Oidc\Port\ActiveConsentsInterface;
@@ -41,15 +41,9 @@ final class InMemoryConsentRepository implements ConsentRepositoryInterface, Act
     /**
      * @return Listing<Consent>
      */
-    public function pageOfActiveConsents(User $user, Pagination $pagination, ?Period $period = null): Listing
+    public function pageOfActiveConsents(User $user, ConsentQuestion $question, Pagination $pagination): Listing
     {
-        return Listing::of(
-            array_values(array_filter(
-                $this->activeOf($user),
-                static fn (Consent $consent): bool => $period?->holds($consent->grantedAt) !== false,
-            )),
-            $pagination,
-        );
+        return Listing::of(array_values(array_filter($this->activeOf($user), $question->admits(...))), $pagination);
     }
 
     /**
