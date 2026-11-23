@@ -79,7 +79,7 @@ final readonly class IssuerAssertionValidator
      */
     public function spend(Tenant $tenant, VerifiedAssertion $verified): void
     {
-        if (! $this->replays->remember($tenant, $verified->issuer, $verified->jti, $verified->expiresAt)) {
+        if (! $this->replays->remember($tenant, $verified->issuer, $verified->jti, $verified->expiresAt->add($this->leeway))) {
             throw new InvalidGrantException(self::REFUSED);
         }
     }

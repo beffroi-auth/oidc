@@ -98,7 +98,7 @@ final readonly class SoftwareStatementVerifier
             throw new InvalidSoftwareStatementException();
         }
         $jti = $jwt->claim('jti');
-        if ($jti === null || ! $this->replays->remember($tenant, $issuer, $jti, $expiresAt)) {
+        if ($jti === null || ! $this->replays->remember($tenant, $issuer, $jti, $expiresAt->add($this->leeway))) {
             throw new InvalidSoftwareStatementException();
         }
     }

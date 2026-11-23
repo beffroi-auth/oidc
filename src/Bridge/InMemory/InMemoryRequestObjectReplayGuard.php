@@ -15,9 +15,9 @@ use function sprintf;
 final class InMemoryRequestObjectReplayGuard implements RequestObjectReplayGuardInterface
 {
     /**
-     * @var array<string, DateTimeImmutable>
+     * @var array<string, DateTimeImmutable> until when each identifier is remembered
      */
-    private array $seen = [];
+    public private(set) array $seen = [];
 
     public function remember(Client $client, string $jti, DateTimeImmutable $expiresAt): bool
     {

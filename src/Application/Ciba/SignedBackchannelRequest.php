@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Ciba;
 
+use DateInterval;
 use Beffroi\Oidc\Application\Authorization\ResolvedRequestObject;
 use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Exception\InvalidRequestException;
@@ -17,6 +18,7 @@ final readonly class SignedBackchannelRequest
 {
     public function __construct(
         private RequestObjectReplayGuardInterface $replays,
+        private DateInterval $leeway,
     ) {
     }
 
@@ -40,10 +42,10 @@ final readonly class SignedBackchannelRequest
         if ($jti === null) {
             throw new InvalidRequestException('A signed backchannel authentication request carries a jti (CIBA Core section 7.1.1).');
         }
-        // "exp" is how long the "jti" must be remembered for the object to be single use.
         $expiresAt =
             $jwt->time('exp') ?? throw new LogicException('A signed request object reaches this rule validated, and an exp is one of the claims that were asked of it (RFC 9101 section 4).');
-        if (! $this->replays->remember($client, $jti, $expiresAt)) {
+        // Until the last instant RequestObjectValidator accepts the object, or a replay inside the leeway is new again.
+        if (! $this->replays->remember($client, $jti, $expiresAt->add($this->leeway))) {
             throw new InvalidRequestException('The jti of this backchannel authentication request has been used already (CIBA Core section 7.1.1).');
         }
     }
