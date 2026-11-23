@@ -35,6 +35,14 @@ final readonly class RegistrationHeldToItsSector
         if ($sectorIdentifierUri === null) {
             return;
         }
+        $published = $this->sectors->publishedUris($registration);
+        if ($published === []) {
+            throw $this->refusal($metadata, sprintf(
+                'The document at %s can vouch for no URI of the client "%s": neither a redirection URI its identifiers reach it through, nor the jwks_uri of a key it authenticates with (OIDC Registration section 5, CIBA Core section 4).',
+                $sectorIdentifierUri->value,
+                $registration->clientId,
+            ));
+        }
         try {
             $listed = array_flip($this->documents->fetch($sectorIdentifierUri));
         } catch (SectorIdentifierUnavailableException $exception) {
@@ -49,7 +57,7 @@ final readonly class RegistrationHeldToItsSector
                 $exception,
             );
         }
-        foreach ($this->sectors->publishedUris($registration) as $uri) {
+        foreach ($published as $uri) {
             if (! isset($listed[$uri])) {
                 throw $this->refusal($metadata, sprintf(
                     'The document at %s does not list the URI "%s" of the client "%s" (OIDC Registration section 5, CIBA Core section 4).',

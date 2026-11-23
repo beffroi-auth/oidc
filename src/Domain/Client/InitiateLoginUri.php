@@ -21,6 +21,8 @@ final readonly class InitiateLoginUri implements Stringable
 {
     public string $value;
 
+    public string $host;
+
     private ClientUri $uri;
 
     /**
@@ -38,6 +40,7 @@ final readonly class InitiateLoginUri implements Stringable
 
         $this->uri = new ClientUri($value);
         $this->value = $this->uri->value;
+        $this->host = $this->uri->host;
     }
 
     /**
