@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Client;
 
+use Beffroi\Core\Domain\Encoding\PlainText;
 use function array_any;
 use function array_diff;
 use function array_find;
@@ -69,8 +70,6 @@ use function in_array;
 use function is_array;
 use function is_bool;
 use function is_string;
-use function mb_strlen;
-use function preg_match;
 use function sprintf;
 
 /**
@@ -234,8 +233,8 @@ final readonly class ClientMetadataReader
                 $this->subjectType($clientId, $metadata),
                 $this->clientUri($clientId, 'sector_identifier_uri', $metadata),
                 $this->initiateLoginUri($clientId, $metadata),
-                $this->text($clientId, 'software_id', $metadata),
-                $this->text($clientId, 'software_version', $metadata),
+                $this->plainText($clientId, 'software_id', $metadata, PlainText::MAX_LENGTH),
+                $this->plainText($clientId, 'software_version', $metadata, PlainText::MAX_LENGTH),
                 $this->flag($clientId, 'dpop_bound_access_tokens', $metadata),
             );
         } catch (InvalidArgumentException $exception) {
@@ -255,12 +254,12 @@ final readonly class ClientMetadataReader
     private function presentation(string $clientId, ClientMetadata $metadata): ClientPresentation
     {
         return new ClientPresentation(
-            $this->name($clientId, $metadata) ?? $clientId,
+            $this->plainText($clientId, 'client_name', $metadata, self::MAX_NAME_LENGTH) ?? $clientId,
             $this->clientUri($clientId, 'client_uri', $metadata),
             $this->clientUri($clientId, 'logo_uri', $metadata),
             $this->clientUri($clientId, 'policy_uri', $metadata),
             $this->clientUri($clientId, 'tos_uri', $metadata),
-            $this->stringList($clientId, 'contacts', $metadata),
+            $this->contacts($clientId, $metadata),
         );
     }
 
@@ -913,32 +912,57 @@ final readonly class ClientMetadataReader
     }
 
     /**
-     * @throws UnreadableClientMetadataException
-     */
-    /**
-     * OIDC Registration §2
+     * OIDC Registration §2, RFC 7591 §2
      *
-     * Plain text, as a binding message is: the provider writes the name into its own sentences, so nothing in it breaks,
-     * reorders or hides a part of the line it is shown on.
+     * The provider writes these into its own sentences, its pages and its console: nothing in them breaks, reorders or
+     * hides a part of the line they are shown on.
      *
      * @throws InvalidClientMetadataException
      */
-    private function name(string $clientId, ClientMetadata $metadata): ?string
+    private function plainText(string $clientId, string $option, ClientMetadata $metadata, int $maxLength): ?string
     {
-        $name = $this->text($clientId, 'client_name', $metadata);
-        if ($name !== null && (preg_match('/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u', $name) !== 0 || mb_strlen($name) > self::MAX_NAME_LENGTH)) {
+        $value = $this->text($clientId, $option, $metadata);
+        if ($value !== null && ! PlainText::holds($value, $maxLength)) {
             throw new InvalidClientMetadataException(
-                'client_name',
-                $metadata->sourceOf('client_name'),
+                $option,
+                $metadata->sourceOf($option),
                 sprintf(
-                    'The client_name option of the client "%s" must be plain text of at most %d characters, with no control, format or line separator character.',
+                    'The %s option of the client "%s" must be plain text of at most %d characters, with no control, format or line separator character.',
+                    $option,
                     $clientId,
-                    self::MAX_NAME_LENGTH,
+                    $maxLength,
                 ),
             );
         }
 
-        return $name;
+        return $value;
+    }
+
+    /**
+     * RFC 7591 §2
+     *
+     * @throws InvalidClientMetadataException
+     *
+     * @return list<string>
+     */
+    private function contacts(string $clientId, ClientMetadata $metadata): array
+    {
+        $contacts = $this->stringList($clientId, 'contacts', $metadata);
+        foreach ($contacts as $contact) {
+            if (! PlainText::holds($contact, PlainText::MAX_LENGTH)) {
+                throw new InvalidClientMetadataException(
+                    'contacts',
+                    $metadata->sourceOf('contacts'),
+                    sprintf(
+                        'The contacts option of the client "%s" must list plain texts of at most %d characters, with no control, format or line separator character.',
+                        $clientId,
+                        PlainText::MAX_LENGTH,
+                    ),
+                );
+            }
+        }
+
+        return $contacts;
     }
 
     private function text(string $clientId, string $option, ClientMetadata $metadata): ?string

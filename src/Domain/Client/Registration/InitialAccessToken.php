@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Domain\Client\Registration;
 
+use Beffroi\Core\Domain\Encoding\PlainText;
 use Beffroi\Core\Domain\PersonalData\ClassifiedFieldsInterface;
 use Beffroi\Core\Domain\PersonalData\FieldClassificationInterface;
 use Beffroi\Core\Domain\PersonalData\NoPersonalDatum;
@@ -15,6 +16,7 @@ use Beffroi\Oidc\Domain\Record\ExpiringRecord;
 use Beffroi\Oidc\Domain\Secret\DrawnSecret;
 use Beffroi\Oidc\Exception\InvalidArgumentException;
 use function hash_equals;
+use function sprintf;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -45,6 +47,12 @@ final class InitialAccessToken extends ExpiringRecord implements ClassifiedField
         }
         if ($name === '') {
             throw new InvalidArgumentException('An initial access token carries the name the tenant gave it (RFC 7591 section 1.2).');
+        }
+        if (! PlainText::holds($name, PlainText::MAX_LENGTH)) {
+            throw new InvalidArgumentException(sprintf(
+                'The name of an initial access token is plain text of at most %d characters, with no control, format or line separator character.',
+                PlainText::MAX_LENGTH,
+            ));
         }
         if ($registrationsAllowed < 1) {
             throw new InvalidArgumentException('An initial access token is worth at least one registration; a token worth none is a token not issued.');
