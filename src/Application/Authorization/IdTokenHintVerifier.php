@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Application\Authorization;
 
+use function array_key_exists;
 use Beffroi\Core\Domain\Identity\Subject;
 use Beffroi\Core\Domain\Tenant\Tenant;
 use Beffroi\Core\Exception\InvalidArgumentException;
@@ -21,9 +22,10 @@ use JsonException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * OIDC Core §3.1.2.1, RP-Initiated Logout §2
+ * OIDC Core §3.1.2.1, RP-Initiated Logout §2, RFC 8725 §3.11
  *
- * "exp" is not checked: a hint may describe a past session.
+ * "exp" is not checked: a hint may describe a past session. A hint with a "typ" is refused: an ID token of this
+ * provider carries none, and its access tokens, logout tokens and signed introspection responses name theirs.
  */
 final readonly class IdTokenHintVerifier
 {
@@ -60,9 +62,13 @@ final readonly class IdTokenHintVerifier
     public function read(Tenant $tenant, string $idTokenHint, bool $redirectable): IdTokenHint
     {
         try {
-            $claims = self::decode($this->verifier->verify($tenant, $idTokenHint)->payload, $redirectable);
+            $jws = $this->verifier->verify($tenant, $idTokenHint);
+            $claims = self::decode($jws->payload, $redirectable);
         } catch (InvalidJwsException|JsonException $exception) {
             throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable, $exception);
+        }
+        if (array_key_exists('typ', $jws->protectedHeader)) {
+            throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable);
         }
         if (! isset($claims['iss']) || $claims['iss'] !== (string) $tenant->issuer) {
             throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable);
