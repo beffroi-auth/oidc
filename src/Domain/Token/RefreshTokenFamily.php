@@ -15,7 +15,7 @@ use Beffroi\Oidc\Exception\InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * RFC 6749 §4.1.2, RFC 9700 §4.13.2
+ * RFC 6749 §4.1.2, RFC 9700 §4.14.2
  */
 final class RefreshTokenFamily implements ClassifiedFieldsInterface
 {

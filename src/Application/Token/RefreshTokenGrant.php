@@ -27,7 +27,7 @@ use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * RFC 6749 §6, RFC 9700 §4.13
+ * RFC 6749 §6, RFC 9700 §4.14
  *
  * Only a token protected by neither client authentication nor a binding is rotated: rotating another would lock
  * out a client that lost the answer (FAPI 2.0 Security Profile §5.3.2.1-9). What the KMS opens is read before the
@@ -138,7 +138,7 @@ final readonly class RefreshTokenGrant implements SpendsRefreshTokensInterface
     }
 
     /**
-     * RFC 9700 §4.13.2
+     * RFC 9700 §4.14.2
      *
      * The person is named by the subject the store of sessions keeps in the clear, so the KMS need not answer.
      */

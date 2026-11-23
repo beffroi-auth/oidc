@@ -25,7 +25,7 @@ use Beffroi\Oidc\Exception\LogicException;
 use function min;
 
 /**
- * RFC 6749 §6, RFC 9700 §4.13.2
+ * RFC 6749 §6, RFC 9700 §4.14.2
  */
 final class RefreshToken extends ExpiringRecord implements HashedTokenInterface, ResolvesItsClientInterface, ClassifiedFieldsInterface
 {
@@ -104,7 +104,7 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     }
 
     /**
-     * RFC 9700 §4.13.2
+     * RFC 9700 §4.14.2
      *
      * Where client authentication or a binding protects the token, rotation adds nothing and FAPI 2.0 Security
      * Profile §5.3.2.1-9 forbids it.
@@ -123,7 +123,7 @@ final class RefreshToken extends ExpiringRecord implements HashedTokenInterface,
     }
 
     /**
-     * RFC 6749 §6, RFC 9700 §4.13.2
+     * RFC 6749 §6, RFC 9700 §4.14.2
      */
     public function rotate(DateTimeImmutable $now): void
     {
