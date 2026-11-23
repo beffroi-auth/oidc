@@ -9,8 +9,6 @@ use Beffroi\Core\Port\CredentialRepositoryInterface;
 use Beffroi\Core\Port\GroupsOfAPersonInterface;
 use Beffroi\Oidc\Domain\Administration\ActingAdministrator;
 use Beffroi\Oidc\Domain\Administration\ReadPerson;
-use Beffroi\Oidc\Domain\Event\PersonReadByAnAdministrator;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use function trim;
 
 /**
@@ -25,7 +23,7 @@ final readonly class AdministeredPerson
         private PersonsOfTheTenant $persons,
         private CredentialRepositoryInterface $credentials,
         private GroupsOfAPersonInterface $groups,
-        private EventDispatcherInterface $events,
+        private PersonDelivery $delivery,
     ) {
     }
 
@@ -36,14 +34,7 @@ final readonly class AdministeredPerson
             return null;
         }
         $read = new ReadPerson($user, $this->credentials->findByUser($user), $this->groups->of($user));
-        $this->events->dispatch(new PersonReadByAnAdministrator(
-            $context->receivedAt,
-            $administrator->tenant,
-            $administrator->clientId,
-            $user->subject,
-            $administrator->user->subject,
-            $context,
-        ));
+        $this->delivery->to($administrator, $user, $context);
 
         return $read;
     }

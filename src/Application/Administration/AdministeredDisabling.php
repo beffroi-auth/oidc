@@ -13,13 +13,15 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * A person of the tenant disabled by an administrator through the administration API (decision 0038), on the use case
- * `beffroi:user:disable` calls: the act and the end of each session of theirs name the administrator.
+ * `beffroi:user:disable` calls: the act and the end of each session of theirs name the administrator. A person disabled
+ * already is answered as they are, which is a read of them (decision 0022).
  */
 final readonly class AdministeredDisabling
 {
     public function __construct(
         private PersonsOfTheTenant $persons,
         private PersonDisabling $disabling,
+        private PersonDelivery $delivery,
     ) {
     }
 
@@ -37,7 +39,9 @@ final readonly class AdministeredDisabling
         if ($user->id->equals($administrator->user->id)) {
             throw new OwnAccountRefusedException('An administrator does not disable the account they act with.');
         }
-        $this->disabling->disableByAnAdministrator($user, $administrator->user->subject, $context);
+        if ($this->disabling->disableByAnAdministrator($user, $administrator->user->subject, $context) === null) {
+            $this->delivery->to($administrator, $user, $context);
+        }
 
         return $user;
     }
