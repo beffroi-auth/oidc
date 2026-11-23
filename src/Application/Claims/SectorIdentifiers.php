@@ -37,7 +37,7 @@ final readonly class SectorIdentifiers implements SectorIdentifiersInterface
         }
 
         throw new InvalidArgumentException(sprintf(
-            'The client "%s" registers nothing that says which sector its subject identifiers belong to: a sector_identifier_uri, redirection URIs on one host (OIDC Core section 8.1), or, for a client that registers no redirection URI, a jwks_uri (CIBA Core section 4).',
+            'The client "%s" registers nothing that says which sector its subject identifiers belong to: a sector_identifier_uri, redirection and login URIs on one host (OIDC Core section 8.1), or, for a client whose identifiers no redirection carries, the jwks_uri of a key it authenticates with (CIBA Core section 4).',
             $registration->clientId,
         ));
     }
