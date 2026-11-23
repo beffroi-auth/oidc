@@ -149,7 +149,7 @@ final readonly class DeviceAuthorizationHandler
     }
 
     /**
-     * Unique among live records, or one answer on the page could approve two requests.
+     * Unique among the records kept, or one answer on the page could approve two requests.
      *
      * @throws RuntimeException
      */
@@ -157,8 +157,7 @@ final readonly class DeviceAuthorizationHandler
     {
         for ($draw = 0; $draw < self::DRAWS; ++$draw) {
             $userCode = $this->userCodes->draw();
-            $held = $this->records->findByUserCodeHash($userCode->hash());
-            if ($held === null || $held->isExpired($this->clock->now())) {
+            if (! $this->records->holdsUserCode($userCode->hash())) {
                 return $userCode;
             }
         }

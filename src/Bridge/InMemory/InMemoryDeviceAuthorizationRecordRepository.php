@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Bridge\InMemory;
 
+use function array_any;
 use function array_find;
 use DateTimeImmutable;
 use Beffroi\Oidc\Domain\Consent\Consent;
@@ -34,6 +35,11 @@ final class InMemoryDeviceAuthorizationRecordRepository implements
             $this->records,
             static fn (DeviceAuthorizationRecord $record): bool => $record->userCodeHash === $userCodeHash,
         );
+    }
+
+    public function holdsUserCode(string $userCodeHash): bool
+    {
+        return array_any($this->records, static fn (DeviceAuthorizationRecord $record): bool => $record->userCodeHash === $userCodeHash);
     }
 
     public function findByGrantId(Uuid $grantId): ?DeviceAuthorizationRecord
