@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Beffroi\Oidc\Exception;
 
+use Beffroi\Oidc\Domain\Scope\Scopes;
+use function sprintf;
 use Throwable;
 
 /**
@@ -24,7 +26,11 @@ final class InvalidScopeException extends OAuth2Exception
      */
     public static function notASpaceSeparatedList(bool $redirectable = false, ?Throwable $previous = null): self
     {
-        return new self('The scope parameter is not a space-separated list of scope tokens (RFC 6749 section 3.3).', $redirectable, $previous);
+        return new self(
+            sprintf('The scope parameter is not a space-separated list of at most %d scope tokens (RFC 6749 section 3.3).', Scopes::MOST_PARSED),
+            $redirectable,
+            $previous,
+        );
     }
 
     /**

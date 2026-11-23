@@ -7,12 +7,14 @@ namespace Beffroi\Oidc\Application\Request;
 use function array_is_list;
 use function array_unique;
 use function array_values;
+use function count;
 use function explode;
 use Beffroi\Oidc\Exception\InvalidRequestException;
 use function is_array;
 use function is_string;
 use function preg_match;
 use function sprintf;
+use function substr_count;
 
 /**
  * RFC 6749 §3.1
@@ -44,6 +46,8 @@ final readonly class RequestParameters
      * OIDC Core §2
      */
     public const string ACR_VALUE_PATTERN = '/^[\x21-\x7E]+$/D';
+
+    public const int MOST_VALUES = 100;
 
     /**
      * @param array<string, mixed> $parameters
@@ -187,6 +191,9 @@ final readonly class RequestParameters
         if (! is_array($value) || ! array_is_list($value)) {
             throw new InvalidRequestException(sprintf('The %s parameter must be a string or a list of strings.', $name), $this->redirectable);
         }
+        if (count($value) > self::MOST_VALUES) {
+            throw $this->tooMany($name);
+        }
         $values = [];
         foreach ($value as $item) {
             if (! is_string($item) || $item === '') {
@@ -209,6 +216,9 @@ final readonly class RequestParameters
         if ($value === null) {
             return [];
         }
+        if (substr_count($value, ' ') >= self::MOST_VALUES) {
+            throw $this->tooMany($name);
+        }
         $items = explode(' ', $value);
         foreach ($items as $item) {
             if (preg_match($pattern, $item) !== 1) {
@@ -217,5 +227,10 @@ final readonly class RequestParameters
         }
 
         return array_values(array_unique($items));
+    }
+
+    private function tooMany(string $name): InvalidRequestException
+    {
+        return new InvalidRequestException(sprintf('The %s parameter holds %d values at most.', $name, self::MOST_VALUES), $this->redirectable);
     }
 }
