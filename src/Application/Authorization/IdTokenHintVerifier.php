@@ -15,15 +15,18 @@ use Beffroi\Oidc\Domain\Client\Client;
 use Beffroi\Oidc\Domain\Token\JwtPayload;
 use Beffroi\Oidc\Domain\Token\TokenAudience;
 use Beffroi\Oidc\Exception\InvalidRequestException;
+use function is_int;
 use function is_string;
 use JsonException;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * OIDC Core §3.1.2.1, RP-Initiated Logout §2, RFC 8725 §3.11
+ * OIDC Core §2, §3.1.2.1, RP-Initiated Logout §2, RFC 8725 §3.11
  *
- * "exp" is not checked: a hint may describe a past session. A hint with a "typ" is refused: an ID token of this
- * provider carries none, and its access tokens, logout tokens and signed introspection responses name theirs.
+ * "exp" is not compared with the clock: a hint may describe a past session. A hint with a "typ" is refused: an ID token
+ * of this provider carries none, and its access tokens, logout tokens and signed introspection responses name theirs. A
+ * hint without the instants every ID token of this provider carries is refused: a signed UserInfo response, which
+ * names no type either, carries none of them.
  */
 final readonly class IdTokenHintVerifier
 {
@@ -35,6 +38,13 @@ final readonly class IdTokenHintVerifier
      * Deeper than an "address" object inside the claims was not issued here.
      */
     private const int MAX_DEPTH = 4;
+
+    /**
+     * "exp" and "iat" are REQUIRED of every ID token (OIDC Core §2), and this provider writes "auth_time" into every one.
+     *
+     * @var list<non-empty-string>
+     */
+    private const array INSTANTS = ['exp', 'iat', 'auth_time'];
 
     public function __construct(
         private JwsVerifierInterface $verifier,
@@ -73,6 +83,11 @@ final readonly class IdTokenHintVerifier
         }
         if (! isset($claims['sub']) || ! is_string($claims['sub'])) {
             throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable);
+        }
+        foreach (self::INSTANTS as $instant) {
+            if (! is_int($claims[$instant] ?? null)) {
+                throw new InvalidRequestException(self::NOT_ISSUED_HERE, $redirectable);
+            }
         }
         try {
             $subject = new Subject($claims['sub']);
